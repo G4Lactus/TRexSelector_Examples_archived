@@ -801,14 +801,34 @@ def scal_solver_label(solver: str) -> str:
     rho = SCAL_SOLVER_RHO_AFS.get(solver)
     return solver if rho is None else f"{solver} (rho = {rho:g})"
 
-# Column labels as they appear in the CSV's 'metric' field.
-M_RUNTIME = "Total s"
-M_RSS = "RSS MiB"        # resident set size after select() (MiB) - tracks data
-M_PEAKRSS = "PeakRSS"    # process peak RSS (MiB) - inflated by cold-heap footprint
-M_XY = "X+y MiB"         # on-disk X/y mmap backing size (MiB)
+# Column labels as they appear in the CSV's 'metric' field (new n x p schema).
+M_SELMED = "SelMed_s"    # median select() wall-clock across trials [s]
+M_SELMIN = "SelMin_s"    # min select() time across trials [s]
+M_SELMAX = "SelMax_s"    # max select() time across trials [s]
+M_RSS = "RSS_MiB"        # resident set size after select() (MiB) - tracks data
+M_PEAKRSS = "PeakRSS_MiB"  # process peak RSS (MiB) - inflated by cold-heap footprint
+M_XY = "X+y_MiB"         # on-disk X/y mmap backing size (MiB)
+M_DESIGN = "DesignGiB"   # theoretical design volume [X|D] (GiB)
 M_FDR = "FDR"
 M_TPR = "TPR"
 SCAL_REF_COLOR = "0.35"  # X/y backing-size reference line
+
+
+def _scal_ram_gib():
+    """Physical RAM in GiB (for the out-of-core reference line); nan on failure."""
+    import subprocess
+    try:
+        if sys.platform == "darwin":
+            out = subprocess.run(["sysctl", "-n", "hw.memsize"],
+                                 capture_output=True, text=True, check=True)
+            return int(out.stdout.strip()) / (1024.0 ** 3)
+        with open("/proc/meminfo") as fh:
+            for line in fh:
+                if line.startswith("MemTotal:"):
+                    return float(line.split()[1]) / (1024.0 ** 2)
+    except Exception:
+        pass
+    return float("nan")
 
 
 def read_scalability(path: Path) -> pd.DataFrame:
@@ -821,210 +841,182 @@ def read_scalability(path: Path) -> pd.DataFrame:
     df = pd.read_csv(path)
     df.columns = df.columns.str.strip().str.lower()
 
-    required = {"scenario", "solver", "n", "p", "snr", "metric", "value"}
+    required = {"n", "p", "solver", "metric", "value"}
     missing = required - set(df.columns)
     if missing:
         raise ValueError(
             f"CSV is missing required columns: {sorted(missing)}\n"
             f"Found columns: {df.columns.tolist()}"
         )
+    if "is_barrier" not in df.columns:
+        df["is_barrier"] = 0
 
     df["solver"] = df["solver"].astype(str).str.strip()
     df["metric"] = df["metric"].astype(str).str.strip()
-    for col in ("n", "p", "snr", "value"):
+    for col in ("n", "p", "value", "is_barrier"):
         df[col] = pd.to_numeric(df[col], errors="raise")
     return df
 
 
-def _scal_metric_by_p(df: pd.DataFrame, solver: str, metric: str):
-    """Mean / min / max of a metric over the SNR grid, per problem size p.
-
-    Returns (p_values, mean, lo, hi) sorted by p. Aggregating over SNR collapses
-    the third sweep axis into a band, so each solver is a single curve in p.
-    """
-    sub = df[(df["solver"] == solver) & (df["metric"] == metric)]
-    if sub.empty:
-        return [], [], [], []
-    stats = sub.groupby("p")["value"].agg(["mean", "min", "max"]).sort_index()
-    return (
-        stats.index.tolist(), stats["mean"].tolist(),
-        stats["min"].tolist(), stats["max"].tolist(),
-    )
+def scal_pivot(df: pd.DataFrame) -> pd.DataFrame:
+    """Wide table: one row per (n, p, solver) with a column per metric."""
+    w = df.pivot_table(index=["n", "p", "solver", "is_barrier"],
+                       columns="metric", values="value").reset_index()
+    w.columns.name = None
+    return w.sort_values(["solver", "n", "p"])
 
 
-def _scal_metric_by_p_all(df: pd.DataFrame, metric: str):
-    """Mean of a metric per problem size p, aggregated over *all* solvers and
-    SNR levels. Used for the memory quantities, which are data-dominated and so
-    essentially solver-independent -- one curve per quantity keeps the panel
-    readable instead of three overlapping ones.
-    """
-    sub = df[df["metric"] == metric]
-    if sub.empty:
-        return [], []
-    stats = sub.groupby("p")["value"].mean().sort_index()
-    return stats.index.tolist(), stats.tolist()
+def _scal_n_colors(n_values):
+    """Stable colour per sample size n (viridis over the sorted n grid)."""
+    import matplotlib.cm as cm
+    import matplotlib.colors as mcolors
+    norm = mcolors.Normalize(vmin=0, vmax=max(len(n_values) - 1, 1))
+    return {n: cm.viridis(norm(i)) for i, n in enumerate(sorted(n_values))}
 
 
-def _scal_scatter_snr(ax, df: pd.DataFrame, solver: str, metric: str) -> None:
-    """Overlay the individual per-SNR values as small translucent dots, so the
-    spread behind a mean curve is visible without a dominating filled band."""
-    sub = df[(df["solver"] == solver) & (df["metric"] == metric)]
-    if not sub.empty:
-        ax.scatter(
-            sub["p"], sub["value"], s=18, color=SCAL_SOLVER_COLORS[solver],
-            alpha=0.35, edgecolors="none", zorder=2,
-        )
+def _scal_p_axis(ax, p_values, xscale: str = SCAL_XSCALE) -> None:
+    """x-axis in p (log by default); ticks pinned to the measured p grid.
 
-
-def _scal_p_axis(ax, p_values: list, n_for_p: dict,
-                 xscale: str = SCAL_XSCALE) -> None:
-    """x-axis in p, tick labels annotated with the paired sample size n.
-
-    The ticks stay pinned to the measured p values on every scale (their labels
-    carry the paired n, so a locator-chosen position would be mislabelled).
-    Unlike the SNR sweeps this axis defaults to ``log``: p is a problem *size*
-    spanning decades (1e3 ... 1e5), so on a linear axis the low decades collapse
-    into each other and their two-line tick labels overlap. ``--xscale`` still
-    overrides it.
+    p is a problem *size* spanning decades (1e3 ... 2e5), so a log axis keeps the
+    low decades legible. ``--xscale`` still overrides it.
     """
     apply_sweep_xaxis(ax, p_values, xscale, ticks=p_values, force_ticks=True)
     if xscale == "log":
-        # Roomier than the shared log limits: the p grid is sparse.
         ax.set_xlim(min(p_values) / 1.6, max(p_values) * 1.6)
-    ax.set_xticklabels(
-        [f"{int(p):,}\n(n={n_for_p[int(p)]:,})" for p in p_values]
-    )
-    ax.set_xlabel("Number of features $p$  (paired sample size $n$)", fontsize=11)
+    ax.set_xticklabels([f"{int(p):,}" for p in p_values], rotation=45,
+                       ha="right", fontsize=9)
+    ax.set_xlabel("Number of features $p$", fontsize=11)
 
 
 def plot_scalability_dashboard(
     df: pd.DataFrame, title: str, tfdr: float = DEFAULT_TFDR,
     xscale: str = SCAL_XSCALE,
 ) -> plt.Figure:
-    """Pattern 5 — demo-08 runtime / memory / quality scaling dashboard.
+    """demo-08 scaling dashboard for the n x p memory-mapped benchmark.
 
-    A 2x2 grid, x-axis = problem size p (log), one line per base solver,
-    aggregated over the SNR grid: runtime (min-max band), memory (backing size
-    vs resident RSS vs process peak), and FDR / TPR at scale (mean line with
-    translucent per-SNR dots).
+    2x2: runtime vs p (one line per n, styled per solver, with a min-max band),
+    memory vs p (process peak RSS per n + backing reference), the out-of-core
+    "money" plot (resident peak vs total design volume with the RAM line), and
+    FDR control at scale.
     """
-    solvers = [s for s in SCAL_SOLVERS if s in set(df["solver"])]
-    p_values = sorted(df["p"].unique())
-    n_for_p = {
-        int(p): int(df.loc[df["p"] == p, "n"].iloc[0]) for p in p_values
-    }
+    from matplotlib.lines import Line2D
 
-    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(14.0, 10.0))
+    w = scal_pivot(df)
+    solvers = [s for s in SCAL_SOLVERS if s in set(w["solver"])]
+    n_values = sorted(w["n"].unique())
+    p_values = sorted(w["p"].unique())
+    n_col = _scal_n_colors(n_values)
+    ram = _scal_ram_gib()
+    solver_ls = {"TLARS": "-", "TOMP": "--", "TAFS": ":"}
+
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(15.0, 11.0))
     ax_rt, ax_mem = axes[0]
-    ax_fdr, ax_tpr = axes[1]
+    ax_oc, ax_fdr = axes[1]
 
-    # --- Runtime (log-log), mean over SNR with a min-max band ---------------
-    for solver in solvers:
-        p, mean, lo, hi = _scal_metric_by_p(df, solver, M_RUNTIME)
-        if not p:
-            continue
-        ax_rt.fill_between(p, lo, hi, color=SCAL_SOLVER_COLORS[solver], alpha=0.15)
-        ax_rt.plot(
-            p, mean, color=SCAL_SOLVER_COLORS[solver],
-            marker=SCAL_SOLVER_MARKERS[solver], markersize=8,
-            markeredgecolor="white", markeredgewidth=0.8, linewidth=2.2,
-            label=scal_solver_label(solver),
-        )
+    # --- (0,0) Runtime vs p: colour = n, line style = solver; median + band --
+    for n in n_values:
+        for solver in solvers:
+            sub = w[(w["n"] == n) & (w["solver"] == solver)].sort_values("p")
+            if sub.empty:
+                continue
+            ax_rt.plot(sub["p"], sub[M_SELMED], color=n_col[n],
+                       linestyle=solver_ls.get(solver, "-"), linewidth=2.0,
+                       marker="o", markersize=4)
+            if solver == solvers[0] and M_SELMIN in sub and M_SELMAX in sub:
+                ax_rt.fill_between(sub["p"], sub[M_SELMIN], sub[M_SELMAX],
+                                   color=n_col[n], alpha=0.12)
     ax_rt.set_yscale("log")
-    ax_rt.set_ylabel("Total wall-clock per trial [s]", fontsize=12)
-    ax_rt.set_title("Runtime scaling", fontsize=14, fontweight="bold")
+    ax_rt.set_ylabel("select() per trial [s]  (median, band = min-max)",
+                     fontsize=11)
+    ax_rt.set_title("Runtime scaling  (colour = n, style = solver)",
+                    fontsize=13, fontweight="bold")
 
-    # --- Memory (log-log): backing size vs resident RSS vs process peak ------
-    # These three are data-dominated (nearly solver-independent), so each is a
-    # single curve aggregated over solvers. The story lives in the *gaps*:
-    # resident RSS after select() hugs the on-disk X/y size (memory-mapping
-    # works), while the process peak RSS runs ~10x higher -- the cold per-
-    # experiment coefficient-path heap the demo flags as the scalability limit.
-    p_xy, mean_xy = _scal_metric_by_p_all(df, M_XY)
-    if p_xy:
-        ax_mem.plot(
-            p_xy, mean_xy, color=SCAL_REF_COLOR, linestyle="--", linewidth=2.0,
-            marker="D", markersize=7, markerfacecolor="white",
-            label="$X$/$y$ mmap backing (on disk)",
-        )
-    p_rss, mean_rss = _scal_metric_by_p_all(df, M_RSS)
-    if p_rss:
-        ax_mem.plot(
-            p_rss, mean_rss, color="#1f77b4", linewidth=2.4, marker="o",
-            markersize=8, markeredgecolor="white", markeredgewidth=0.8,
-            label="Resident RSS after select()",
-        )
-    p_peak, mean_peak = _scal_metric_by_p_all(df, M_PEAKRSS)
-    if p_peak:
-        ax_mem.plot(
-            p_peak, mean_peak, color="#d62728", linewidth=2.4, marker="^",
-            markersize=8, markeredgecolor="white", markeredgewidth=0.8,
-            label="Process peak RSS (cold-heap inflated)",
-        )
+    # --- (0,1) Memory vs p: process peak RSS per n + X/y backing reference ---
+    for n in n_values:
+        sub = w[(w["n"] == n) & (w["solver"] == solvers[0])].sort_values("p")
+        if sub.empty:
+            continue
+        ax_mem.plot(sub["p"], sub[M_PEAKRSS], color=n_col[n], linewidth=2.2,
+                    marker="o", markersize=5, label=f"n = {int(n):,}")
+    ref = w.groupby("p")[M_XY].mean().sort_index()
+    ax_mem.plot(ref.index, ref.values, color=SCAL_REF_COLOR, linestyle="--",
+                linewidth=1.8, marker="D", markersize=5, markerfacecolor="white",
+                label="$X$/$y$ mmap backing")
+    if ram > 0:
+        ax_mem.axhline(ram * 1024.0, color="crimson", linestyle="-.",
+                       linewidth=1.6, label=f"physical RAM = {ram:.0f} GiB")
     ax_mem.set_yscale("log")
-    ax_mem.set_ylabel("Memory [MiB]", fontsize=12)
-    ax_mem.set_title(
-        "Memory scaling: mmap keeps resident RSS near the data size",
-        fontsize=13, fontweight="bold",
-    )
+    ax_mem.set_ylabel("Memory [MiB]", fontsize=11)
+    ax_mem.set_title("Memory scaling: peak RSS stays far below the design volume",
+                     fontsize=12, fontweight="bold")
 
-    # --- FDR at scale -------------------------------------------------------
+    # --- (1,0) Out-of-core money plot: resident peak vs total design volume --
+    for n in n_values:
+        for solver in solvers:
+            sub = w[(w["n"] == n) & (w["solver"] == solver)]
+            if sub.empty:
+                continue
+            ax_oc.scatter(sub[M_DESIGN], sub[M_PEAKRSS] / 1024.0, color=n_col[n],
+                          marker=SCAL_SOLVER_MARKERS.get(solver, "o"), s=45,
+                          edgecolors="white", linewidths=0.6, zorder=3)
+    oc = w[w["is_barrier"] == 1]
+    if not oc.empty:
+        ax_oc.scatter(oc[M_DESIGN], oc[M_PEAKRSS] / 1024.0, s=190,
+                      facecolors="none", edgecolors="crimson", linewidths=1.8,
+                      zorder=2, label="out-of-core ($[X\\,|\\,D] >$ RAM)")
+    if ram > 0:
+        ax_oc.axvline(ram, color="crimson", linestyle="-.", linewidth=1.8,
+                      label=f"physical RAM = {ram:.0f} GiB")
+    ax_oc.set_xscale("log")
+    ax_oc.set_xlabel("Total design volume $[X\\,|\\,D]$ [GiB]  (log)", fontsize=11)
+    ax_oc.set_ylabel("Process peak RSS [GiB]", fontsize=11)
+    ax_oc.set_title("Out-of-core: design crosses RAM, resident stays bounded",
+                    fontsize=12, fontweight="bold")
+    ax_oc.grid(True, which="both", linestyle="--", linewidth=0.6, alpha=0.4)
+
+    # --- (1,1) FDR control at scale: per solver, mean over n -----------------
     if tfdr > 0:
-        ax_fdr.axhline(
-            tfdr, color="black", linestyle=":", linewidth=2.0,
-            label=f"tFDR = {tfdr:g}",
-        )
-    fdr_top = tfdr * 1.25 if tfdr > 0 else 0.1
+        ax_fdr.axhline(tfdr, color="black", linestyle=":", linewidth=2.0,
+                       label=f"tFDR = {tfdr:g}")
+    fdr_top = tfdr * 1.5 if tfdr > 0 else 0.1
     for solver in solvers:
-        p, mean, _lo, hi = _scal_metric_by_p(df, solver, M_FDR)
-        if not p:
+        g = w[w["solver"] == solver].groupby("p")[M_FDR].mean().sort_index()
+        if g.empty:
             continue
-        fdr_top = max(fdr_top, max(hi) * 1.15)
-        _scal_scatter_snr(ax_fdr, df, solver, M_FDR)
-        ax_fdr.plot(
-            p, mean, color=SCAL_SOLVER_COLORS[solver],
-            marker=SCAL_SOLVER_MARKERS[solver], markersize=8,
-            markeredgecolor="white", markeredgewidth=0.8, linewidth=2.2,
-            label=scal_solver_label(solver),
-        )
+        fdr_top = max(fdr_top, float(g.max()) * 1.15)
+        ax_fdr.plot(g.index, g.values, color=SCAL_SOLVER_COLORS[solver],
+                    marker=SCAL_SOLVER_MARKERS[solver], markersize=6,
+                    linewidth=2.0, label=scal_solver_label(solver))
     ax_fdr.set_ylim(0.0, fdr_top)
-    ax_fdr.set_ylabel("False discovery rate", fontsize=12)
-    ax_fdr.set_title("FDR at scale (mean line, per-SNR dots)",
-                     fontsize=14, fontweight="bold")
+    ax_fdr.set_ylabel("False discovery rate  (mean over n)", fontsize=11)
+    ax_fdr.set_title("FDR control at scale", fontsize=13, fontweight="bold")
 
-    # --- TPR at scale -------------------------------------------------------
-    # TPR varies strongly with SNR, so per-SNR dots (not a filled band, which
-    # would swamp the panel at the low-SNR baseline scenario) show the spread.
-    for solver in solvers:
-        p, mean, _lo, _hi = _scal_metric_by_p(df, solver, M_TPR)
-        if not p:
-            continue
-        _scal_scatter_snr(ax_tpr, df, solver, M_TPR)
-        ax_tpr.plot(
-            p, mean, color=SCAL_SOLVER_COLORS[solver],
-            marker=SCAL_SOLVER_MARKERS[solver], markersize=8,
-            markeredgecolor="white", markeredgewidth=0.8, linewidth=2.2,
-            label=scal_solver_label(solver),
-        )
-    ax_tpr.set_ylim(-0.02, 1.05)
-    ax_tpr.set_ylabel("True positive rate", fontsize=12)
-    ax_tpr.set_title("TPR at scale (mean line, per-SNR dots)",
-                     fontsize=14, fontweight="bold")
+    for ax in (ax_rt, ax_mem, ax_fdr):
+        _scal_p_axis(ax, p_values, xscale)
+    for ax in (ax_rt, ax_mem, ax_fdr):
+        ax.grid(True, which="both", linestyle="--", linewidth=0.6, alpha=0.4)
+    for ax in (ax_rt, ax_mem, ax_oc, ax_fdr):
+        ax.tick_params(axis="both", labelsize=9)
 
-    for ax in (ax_rt, ax_mem, ax_fdr, ax_tpr):
-        _scal_p_axis(ax, p_values, n_for_p, xscale)
-        ax.grid(True, which="both", linestyle="--", linewidth=0.7, alpha=0.4)
-        ax.tick_params(axis="both", labelsize=10)
-        leg = ax.legend(
-            fontsize=9, loc="best",
-            frameon=True, framealpha=1.0, facecolor="white", edgecolor="0.7",
-        )
-        leg.get_frame().set_linewidth(0.8)
+    # Runtime legend needs an n-colour + solver-style key; the rest self-describe.
+    n_handles = [Line2D([0], [0], color=n_col[n], lw=2.4, label=f"n = {int(n):,}")
+                 for n in n_values]
+    s_handles = []
+    for s in solvers:
+        s_handles.append(Line2D(
+            [0], [0], color="0.3", lw=2.0,
+            linestyle=solver_ls.get(s, "-"),  # type: ignore[arg-type]
+            label=scal_solver_label(s)))
+    ax_rt.legend(handles=n_handles + s_handles, fontsize=8, ncol=2,
+                 loc="upper left", frameon=True, framealpha=1.0,
+                 facecolor="white", edgecolor="0.7")
+    for ax in (ax_mem, ax_oc, ax_fdr):
+        ax.legend(fontsize=8, loc="best", frameon=True, framealpha=1.0,
+                  facecolor="white", edgecolor="0.7")
 
     fig.suptitle(title, fontsize=15, fontweight="bold", y=0.99)
-    fig.subplots_adjust(
-        left=0.075, right=0.975, bottom=0.085, top=0.90, wspace=0.20, hspace=0.32
-    )
+    fig.subplots_adjust(left=0.07, right=0.98, bottom=0.10, top=0.91,
+                        wspace=0.18, hspace=0.38)
     return fig
 
 

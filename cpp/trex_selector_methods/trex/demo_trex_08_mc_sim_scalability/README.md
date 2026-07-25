@@ -2,96 +2,125 @@
 
 ## Purpose
 
-Characterize **T-Rex selector runtime and memory usage** as $n$ and $p$ scale to large sizes.
-On the **fully memory-mapped pipeline**: every Monte Carlo trial generates its data directly into
-memory-mapped $X$/$y$ backing files (`SyntheticDataMapped` over `memmap::MemoryMappedMatrix`.
-$X$ is never materialized in RAM), and `use_memory_mapping = true` additionally memory-maps the
-internal dummy matrices $D$ and serializes solver warm-start state to disk. The benchmark reports:
+Characterize **T-Rex selector runtime and memory usage** as $n$ and $p$ scale to
+large sizes, and demonstrate that the selector goes **high-dimensional and
+out-of-core** — into design volumes that exceed physical RAM. Everything runs on
+the **fully memory-mapped pipeline**: every Monte Carlo trial generates its
+$\mathbf{X}$/$\mathbf{y}$ into memory-mapped backing files
+(`SyntheticDataMapped` over `memmap::MemoryMappedMatrix`, $\mathbf{X}$ never
+materialized in RAM), and `use_memory_mapping = true` additionally memory-maps the
+internal dummy matrices $\mathbf{D}$ and serializes solver warm-start state to
+disk. The benchmark reports:
 
-- **Runtime scaling**: wall-clock time per algorithm phase (data generation, `select()`, per-$T$-iteration)
-    as a function of $n$ and $p$
-- **Memory scaling**: resident set size (RSS) after selection, process peak RSS, and the $X$/$y$ mmap
-    backing-file sizes on disk
-- **Solver comparison**: computational efficiency of TLARS vs. TOMP vs. TAFS at scale
-- **Selection quality at scale**: FDR, TPR, average dummy multiplier $L$, average stopping time $T$ as a sanity check
-
-The benchmark is a **2D sweep**: every scenario × solver combination is run over the SNR grid $\{0.5, 1.0, 2.0\}$.
+- **Runtime scaling** — wall-clock per phase (data generation, `select()`,
+  per-$T$-iteration) as a function of $n$ and $p$
+- **Memory scaling** — resident set size (RSS) after selection, process peak RSS,
+  physical footprint, and the $\mathbf{X}$/$\mathbf{y}$ backing sizes on disk
+- **Solver comparison** — TLARS vs. TOMP vs. TAFS at scale
+- **Selection quality at scale** — FDR, TPR, average $L$, average $T$ as a sanity check
 
 ---
 
-## Scenarios
+## The Grid
 
-| Scenario | $n$ | $p$ | num_MC | Purpose |
-| ---------- | ----- | ----- | -------- | --------- |
-| A | 300 | 1,000 | 10 | Baseline |
-| B | 1,000 | 10,000 | 10 | Moderate scale |
-| C | 5,000 | 100,000 | 3 | Large sample |
+A 2-D sweep over $n$ and $p$, `num_MC` sequential trials per $(n, p,
+\text{solver})$ (default 10; CLI-settable):
+
+- $n \in \{1000, 1500, 2000, 5000\}$
+- $p \in \{1000, 5000, 10\,000, 20\,000, 50\,000, 100\,000, 150\,000, 200\,000\}$
+
+$\Rightarrow$ 32 grid points × 3 solvers. The logical design volume is
+$[\mathbf{X}\,|\,\mathbf{D}] = n \times (1 + L) \times p \times 8$ bytes with
+$L = 10$:
+
+| $n$ \\ $p$ | 50k | 100k | 150k | 200k |
+| --- | --- | --- | --- | --- |
+| 2000 | 8.2 GiB | 16.4 GiB | 24.6 GiB | 32.8 GiB |
+| 5000 | 20.5 GiB | 41.0 GiB | 61.5 GiB | **82.0 GiB** |
+
+The **top-right corner** ($n = 5000$, $p = 200\,000$) is the **out-of-core
+barrier point**: its $[\mathbf{X}\,|\,\mathbf{D}] \approx 82$ GiB exceeds a 64 GiB
+machine's physical RAM, so it is feasible only because the pipeline is fully
+memory-mapped. Barrier points (design $>$ physical RAM) are flagged with `*` in
+the output table.
+
+SNR is fixed at $1.0$ — it is deliberately **not** a scaling axis here (sweeping
+it only burns time); that sweep belongs to Demos 02–07.
+
+A tiny smoke grid ($n \in \{150, 200\}$, $p \in \{500, 1000\}$) is available via
+the `smoke` argument for end-to-end pipeline verification.
 
 ### Memory behaviour
 
-The whole pipeline is memory-mapped; thus $X$/$y$ are generated on disk, dummy matrices $D$ mmap-backed,
-solver warm-start state serialized between T-loop iterations.
-The **resident** memory stays bounded even at scenario-C scale:
-measured max RSS is ~4.4 GiB while C's $X$ backing file alone is ~3.7 GiB, and most of that RSS is
-reclaimable page cache of the touched mmap regions.
+The whole pipeline is memory-mapped, so $\mathbf{X}$/$\mathbf{y}$ live on disk,
+the dummy matrices $\mathbf{D}$ are mmap-backed, and solver warm-start state is
+serialized between T-loop iterations. The **resident** memory therefore stays
+bounded even at the largest points: measured max RSS is a few GiB while the
+$\mathbf{X}$ backing at the corner is ~8 GiB, most of it reclaimable page cache of
+the touched mmap regions.
 
-The **physical footprint** is a different story, and is why the `FootprMiB` column exists: the per-experiment
-coefficient-path matrices ($(p + L \cdot p) \times \text{path-steps}$, allocated per experiment per
-T-iteration and never touched again) accumulate as cold anonymous heap.
-At scenario C scale this reached ~75 GiB — macOS's memory compressor swaps it out (observed ~49 GB swap in use),
-so the process does **not** OOM, but on systems without generous swap/compression this allocation pattern is the
- scalability limit.
-It is what killed an earlier $n = 10{,}000$, $p = 100{,}000$ attempt, and it is the main upstream optimization
- opportunity this benchmark surfaces (free or stream the beta paths after each T-iteration's $\Phi$ computation).
+The **physical footprint** is a different story, and is why the `Foot_MiB` column
+exists: the per-experiment coefficient-path matrices ($(p + L \cdot p) \times
+\text{path-steps}$, allocated per experiment per T-iteration and never touched
+again) accumulate as cold anonymous heap. At the largest scales this reaches tens
+of GiB — macOS's memory compressor swaps it out, so the process does **not** OOM,
+but on systems without generous swap/compression this allocation pattern is the
+scalability limit. It is the main upstream optimization opportunity this benchmark
+surfaces (free or stream the beta paths after each T-iteration's $\Phi$
+computation).
 
-Disk sizing: the $X$ backing file is $n \cdot p \cdot 8$ bytes per trial and the mmap dummy matrix $D$ grows up to
- `max_dummy_multiplier` $\times$ that.
-
-The benchmark runs the **scenario loop outermost** (every solver finishes the current scenario before the next, larger
- one starts) and **re-saves the result files after each completed scenario**, so a crash or OOM kill on a later
- scenario preserves all results finished so far.
-
-Every Monte Carlo trial uses the memory-mapped data model from the beginning: $X$ and $y$ are generated directly into
- Boost memory-mapped backing files (`SyntheticDataMapped` over `memmap::MemoryMappedMatrix`), fed to the selector
- through `Eigen::Map` views, and removed per trial by an RAII `MmapFileGuard`.
- On top of that, `use_memory_mapping = true` is set for **all** scenarios, so the internal dummy matrices $D$ are
- memory-mapped and solver warm-start state is serialized to disk between T-loop iterations in every grid point.
-
-A tiny smoke-test scenario (`make_smoke_scenarios()`, $n = 150$, $p = 500$) is gated behind `if (false)` in `main()`
- for end-to-end pipeline verification.
+Disk sizing: the $\mathbf{X}$ backing file is $n \cdot p \cdot 8$ bytes per trial
+and the mmap dummy matrix $\mathbf{D}$ grows up to `max_dummy_multiplier` × that;
+the corner needs hundreds of GB of free disk for the dummy backing.
 
 ---
 
 ## Data Generation Parameters
 
-The DGP mirrors **Demo 03** (variable support):
+The DGP mirrors **Demo 03** (variable support): Normal predictors and Normal noise.
 
-- **True support cardinality**: fixed at $s = 10$; the **indices** are redrawn per trial — each trial shuffles $\{0,
-  \ldots, p-1\}$ with `std::mt19937(seed + 500000)`, keeps the first 10, and sorts them
+- **True support cardinality**: fixed at $s = 10$; the **indices are redrawn per
+  trial** via `draw_support` (uniform without replacement, `mt19937(seed +
+  500000)`)
 - **True coefficients**: fixed $\beta_j = 1$ (`rnd_coef = false`)
-- **SNR grid**: $\{0.5, 1.0, 2.0\}$ — each scenario × solver grid point is swept over all three SNR levels
-- **DGP**: $\mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\epsilon}$, Normal predictors and Normal noise
-- **Seeding**: base seed $24 + 1000 \cdot (3 \cdot \text{scenario index} + \text{SNR index})$, unique per (scenario,
-   SNR) and shared across solvers so every solver sees identical data
+- **SNR**: fixed at $1.0$
+- Every trial writes its own mmap-backed $\mathbf{X}$/$\mathbf{y}$
+  (`SyntheticDataMapped`), fed to the selector through `Eigen::Map` views and
+  removed at end of scope by an RAII `MmapFileGuard` (declared before the data
+  object so the mmap handles close before the files are deleted — exception-safe).
 
-Unlike the other MC demos, trials run **sequentially** (no OpenMP parallel MC loop) so wall-clock and RSS measurements
- are undistorted; `omp_set_num_threads(6)` still applies to Eigen/solver internals.
+Trials run **sequentially** (no OpenMP parallel MC loop) so wall-clock and RSS
+measurements are undistorted; `omp_set_num_threads(6)` still applies to the K
+random experiments inside `select()` (inner OpenMP) — the parallelism this
+benchmark relies on.
 
 ---
 
 ## Control Parameters
 
+Every control option is set **explicitly and identically** in the C++ and Python
+demos (nothing left to a struct/helper default — that is what made the two
+diverge):
+
 ```text
-K = 20                           # Random experiments per T-loop iteration
-max_dummy_multiplier = 10        # Max dummies L = 10p
-use_max_T_stop = true            # Cap T ≤ ceil(n/2)
-dummy_distribution = Normal      # Dummy predictors drawn from N(0,1)
-lloop_strategy = HCONCAT         # Horizontally concatenated dummy columns
-tloop_stagnation_stop = true     # Early exit when R_mat stagnates
-tloop_max_stagnant_steps = 5     # Stagnation window
-use_memory_mapping = true        # All scenarios: D mmap + solver serialization
-tFDR = 0.1                       # Target FDR control level
+K                        = 20        # Random experiments per T-loop iteration
+max_dummy_multiplier     = 10        # Max dummies L = 10p (drives the D volume)
+use_max_T_stop           = true      # Cap T <= ceil(n/2)
+opt_threshold            = 0.75      # Voting/optimization threshold (C++ 0.75, Python default 0.02 — pinned)
+dummy_distribution       = Normal    # Dummy predictors drawn from N(0,1)
+lloop_strategy           = STANDARD  # Fresh i.i.d. dummy matrix per L-loop iteration
+tloop_stagnation_stop    = true      # Early exit when R_mat stagnates
+tloop_max_stagnant_steps = 5         # Stagnation window
+parallel_rnd_experiments = false     # Sequential experiments (Eigen-parallel inside); one D working set at a time
+use_memory_mapping       = true      # All points: X/y mmap + D mmap + solver serialization
+tFDR                     = 0.1       # Target FDR control level
 ```
+
+`parallel_rnd_experiments = false` is essential here: the alternative (parallel
+across the K experiments) holds up to *K* dummy-augmented working sets in RAM at
+once, which defeats the out-of-core goal. With it off, the K experiments run
+sequentially and each one's linear algebra uses the inner OpenMP threads
+(`omp_set_num_threads(6)`).
 
 ---
 
@@ -101,122 +130,118 @@ Three base solvers spanning the LARS-path and greedy families (Demo 05 configura
 
 - **TLARS** — equiangular LARS path; terminates on its own
 - **TOMP** — greedy orthogonal matching pursuit
-- **TAFS** — greedy adaptive forward selection, `rho_afs = 0.3` (TLARS/TOMP take `0`); the figures label it
-  `TAFS (rho = 0.3)`, so the setting is not lost when a plot is read apart from this README
+- **TAFS** — greedy adaptive forward selection, `rho_afs = 0.3` (TLARS/TOMP take `0`)
 
 ---
 
 ## Measurements
 
-Per scenario × solver × SNR, averaged over `num_MC` sequential trials:
+Per $(n, p)$ × solver, averaged/aggregated over the cached trials:
 
-| Metric | Meaning |
-| -------- | --------- |
-| `FDR`, `TPR` | Averaged false discovery / true positive rates |
-| `Avg L`, `Avg T` | Averaged dummy multiplier and stopping time |
-| `DGP s` | Data generation wall-clock (seconds) |
-| `Select s` | Selector construction + `select()` wall-clock (L-loop + T-loop) (seconds) |
-| `s/T-iter` | Select time per T-loop iteration (`select_s / T_stop`) (seconds) |
-| `Total s` | `DGP s + Select s` (seconds) |
-| `RSS MiB` | Max post-`select()` resident set size across trials (MiB) |
-| `FootprMiB` | Max post-`select()` physical footprint across trials (MiB) — anonymous heap **including compressed/swapped pages** (Activity Monitor's "Memory"); captures the cold coefficient-path allocations that RSS misses |
-| `PeakRSS` | Process peak RSS at grid-point end (MiB) — monotone over the process lifetime, i.e. a running maximum |
-| `X+y MiB` | Data footprint: $X$/$y$ mmap backing-file sizes on disk (MiB) |
+| Column | Meaning |
+| --- | --- |
+| `DesignGiB` | Logical design volume $[\mathbf{X}\,\|\,\mathbf{D}]$ (GiB) |
+| `SelMed_s` / `SelMin_s` / `SelMax_s` | Median / min / max `select()` wall-clock (s) |
+| `DGP_s` | Data-generation wall-clock (s) |
+| `s/Titer` | `select()` time per T-loop iteration (s) |
+| `PeakRSS_MiB` | Process peak RSS (running maximum) |
+| `RSS_MiB` | Post-`select()` resident set size |
+| `Foot_MiB` | Physical footprint (anonymous heap incl. compressed/swapped pages) |
+| `X+y_MiB` | $\mathbf{X}$/$\mathbf{y}$ mmap backing-file sizes on disk |
+| `FDR` / `TPR` / `Avg_L` / `Avg_T` | Selection-quality sanity metrics |
 
-RSS is read via `mach task_info(MACH_TASK_BASIC_INFO)` (macOS) / `/proc/self/statm` (Linux); the physical footprint
-via `task_info(TASK_VM_INFO).phys_footprint` (macOS) / `VmRSS + VmSwap` (Linux); peak RSS via `getrusage`.
+RSS is read via `mach task_info(MACH_TASK_BASIC_INFO)` (macOS) / `/proc/self/statm`
+(Linux); the physical footprint via `task_info(TASK_VM_INFO).phys_footprint`
+(macOS) / `VmRSS + VmSwap` (Linux); peak RSS via `getrusage`. The
+`SelMed`/`SelMin`/`SelMax` triple (rather than a single mean) is deliberate:
+per-trial `select()` times span a wide range at scale.
 
 ---
 
 ## Output Files
 
-Both files are written to `simulation_results/data/` with stem `demo_trex_08_scalability_results`.
+Written to `simulation_results/data/` with stem `demo_trex_08_scalability_results`,
+**re-derived from the trial cache and re-saved after each completed grid point**
+(a crash or OOM kill on a later, larger point preserves everything finished so far):
 
-### Main Result File
+- **`demo_trex_08_scalability_results_trials.csv`** — the **raw per-trial cache**
+  (source of truth): one row per $(n, p, \text{solver}, \text{mc})$ with its seed
+  and every measured quantity, appended as each trial finishes.
+- **`demo_trex_08_scalability_results.txt`** — per-solver aligned table, one row
+  per $(n, p)$ grid point across the 14 metric columns; barrier points marked `*`.
+- **`demo_trex_08_scalability_results.csv`** — tidy long summary, header column
+  order `n,p,is_barrier,solver,num_mc,snr,metric,value` (`num_mc` is the actual
+  cached trial count per cell).
 
-**`demo_trex_08_scalability_results.txt`**
+---
 
-Scenario info block (label, $n$, $p$, num_MC) followed by an aligned table in the demo 02–07 style — one column per
- scenario × SNR combination (labelled `<scenario>/<snr>`, e.g. `A/0.5`), twelve metric rows per solver.
+## Expandability
 
-### Tidy-Format CSV
+The benchmark is designed to grow incrementally rather than be re-run from
+scratch. Every trial is keyed by $(n, p, \text{solver}, \text{mc})$ in the raw
+cache, and a run computes **only the trials it is missing**:
 
-**`demo_trex_08_scalability_results.csv`**
+- **num_MC top-up** — run at `num_MC = 2` now, then `num_MC = 10` later computes
+  just the 8 new trials per cell and re-aggregates; the first 2 are reused.
+- **Grid growth** — append new $n$ / $p$ values to `N_VALUES` / `P_VALUES` later;
+  existing cells are reused, only the new ones are computed.
+- **Trial-level resume** — a crash or OOM mid-grid-point keeps every trial that
+  already finished (each is flushed to the cache immediately).
 
-Long/stacked format for plotting, header column order **`scenario,solver,n,p,num_mc,snr,metric,value`**:
-
-```text
-scenario,solver,n,p,num_mc,snr,metric,value
-A,TLARS,300,1000,10,0.500000,FDR,0.045000
-A,TLARS,300,1000,10,0.500000,TPR,0.290000
-...
-```
+Per-trial seeds are a stable function of $(n, p, \text{mc})$ —
+`24 + n·100003 + p·13 + mc` (mod $2^{31}{-}1$), independent of grid position and
+**identical to the Python demo's `_trial_seed`** — so reuse and reproducibility
+survive reordering or extending the grid. (The two languages seed identically; the
+*draws* still differ because `std::mt19937` and NumPy's PRNG are different
+generators.)
 
 ---
 
 ## Results Visualization
 
-Demo 08's CSV uses the wider `scenario,solver,n,p,num_mc,snr,metric,value` schema
+Demo 08's CSV uses the wider `n,p,is_barrier,solver,num_mc,snr,metric,value` schema
 rather than the suite's tidy `solver,metric,snr,value`, so the suite plotter
-handles it in a dedicated `scalability` mode (`../trex_plt_utils.py scalability
-<csv> ...`): the wide CSV is read by `read_scalability()` and rendered by
-`plot_scalability_dashboard()`, writing a single dashboard into
-`simulation_results/plots/`.
-
-### Scalability dashboard
-
-A 2×2 grid with the x-axis = number of features $p$ on a log scale (annotated
-with the paired sample size $n$: scenario A = 1k/300, B = 10k/1k, C = 100k/5k),
-one line per base solver, aggregated over the SNR grid $\{0.5, 1.0, 2.0\}$:
-
-![Runtime, memory, FDR and TPR scaling across scenarios A/B/C](simulation_results/plots/demo_trex_08_scalability.png)
-
-- **Runtime scaling** (top-left, log-log): total wall-clock per trial, mean over
-  SNR with a min–max band. The three solvers track each other closely; cost grows
-  steeply from ~1 s at scenario A to ~7–9 min at scenario C.
-- **Memory scaling** (top-right, log-log): the story is in the *gaps* between three
-  quantities. The resident RSS after `select()` (blue) hugs the on-disk $X$/$y$
-  mmap backing size (dashed) — memory-mapping keeps the working set near the data
-  size (~3.8 GiB resident at scenario C, whose $X$ backing is ~3.7 GiB). The
-  process **peak** RSS (red) runs ~10× higher: that is the cold per-experiment
-  coefficient-path heap the demo flags as the true scalability limit (swapped out
-  by the OS rather than OOM-killed — see *Memory behaviour* above).
-- **FDR at scale** (bottom-left): mean line per solver with translucent per-SNR
-  dots. FDR stays well under `tFDR = 0.1` at every scale — calibration holds as
-  $p$ grows by two orders of magnitude.
-- **TPR at scale** (bottom-right): power holds — TPR is already high at scenario A
-  and saturates to 1.0 at scenarios B and C, where the larger $n$ makes recovery
-  easy at every SNR.
-
-A vector (PDF) copy sits alongside the PNG.
-
-### Regenerating the figure
-
-The wrapper picks up the repo's local `.venv` automatically:
-
-```bash
-# From this demo folder:
-./generate_plots.sh                 # scalability dashboard (png+pdf)
-./generate_plots.sh --formats png   # png only
-./generate_plots.sh --tfdr 0.05     # e.g. a different target-FDR line
-```
-
-The plotter needs `matplotlib` and `pandas` (both already in the repo `.venv`).
+handles it in a dedicated `scalability` mode
+([`../trex_plt_utils.py`](../trex_plt_utils.py) `scalability <csv> …`): the wide
+CSV is read by `read_scalability()` and rendered by `plot_scalability_dashboard()`
+— a 2×2 dashboard (runtime vs $p$, memory vs $p$, the out-of-core money plot with
+the RAM line and the barrier point ringed, and FDR control at scale). Render it
+with `./generate_plots.sh`.
 
 ---
 
-## Running the Demo
+## Status of the Recorded Data
 
-```bash
-./build/debug/bin/trex_selector_methods/trex/demo_trex_08_mc_sim_scalability/demo_trex_08_mc_sim_scalability
-```
-
-Scenarios run outermost (every solver finishes the current scenario before the
-next, larger one starts) and the result files are re-saved after each completed
-scenario, so an OOM/crash on a later scenario preserves everything finished so
-far. Scenario C is heavy (large $n \times p$ and the cold-heap footprint noted
-above) — expect minutes per grid point and tens of GiB of swap/compression.
+The full 32-point × 3-solver grid is a **long-running benchmark**. A **first pass
+at `num_MC = 2`** is run to get early numbers over the whole grid; `num_MC` is then
+topped up to 10 later as a pure cache extension (only the 8 missing trials per cell
+are computed). The committed `demo_trex_08_scalability_smoke.{txt,csv}` is the
+end-to-end smoke recording that exercises the pipeline and table/CSV format.
 
 ---
 
-**Last updated**: 2026-07-17
+## Building and Running
+
+Release build is recommended (the large points are heavy):
+
+```bash
+cd TRexSelector_Examples/cpp
+cmake --build build/release --target demo_trex_08_mc_sim_scalability
+
+bin=build/release/bin/trex_selector_methods/trex/demo_trex_08_mc_sim_scalability/demo_trex_08_mc_sim_scalability
+"$bin"           # full grid, num_MC = 10 (long-running)
+"$bin" 2         # full grid, num_MC = 2  (first pass; top up to 10 later)
+"$bin" smoke     # tiny end-to-end smoke check (num_MC = 2)
+"$bin" smoke 3   # smoke grid, num_MC = 3
+```
+
+The optional integer argument sets `num_MC`; re-running with a larger value tops
+up the trial cache rather than recomputing. Grid points run smallest-first and the
+summaries are re-derived from the cache after each point. The benchmark sweeps its
+own memory-mapped orphans (`demo08_scalability_*`, `trex_memmap_*`) at startup and
+on exit / SIGINT / SIGTERM (SIGKILL cannot be trapped; the next startup sweep
+reclaims it).
+
+---
+
+**Last updated**: 2026-07-23

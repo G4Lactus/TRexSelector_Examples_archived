@@ -45,7 +45,7 @@ fi
 
 # The scalability dashboard lives in the suite plotter's 'scalability' mode.
 exec "$venv_python" "$here/../trex_plt_utils.py" scalability "$csv" \
-  --title 'T-Rex scalability on the memory-mapped pipeline (SNR grid $\{0.5, 1.0, 2.0\}$)' \
+  --title 'T-Rex scalability on the memory-mapped pipeline ($n \times p$ grid, SNR = 1)' \
   --stem demo_trex_08_scalability \
   --outdir "$here/simulation_results/plots" \
   "$@"
