@@ -86,13 +86,13 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import numpy as np
-import pandas as pd
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
 
-import trex_selector_neo as tsn
-from trex_selector_neo.ml_methods import PCA
+import trex_selector_neo as trex  # noqa: E402
+from trex_selector_neo.ml_methods import PCA  # noqa: E402
 
-from trex_spca_sim_utils import (N_CORES, center_columns,
+from trex_spca_sim_utils import (N_CORES, center_columns,  # noqa: E402
                                  generate_sparse_factor_model,
                                  run_mc_trials_oracle_pca, run_mc_trials_pca,
                                  run_mc_trials_trex_spca,
@@ -249,20 +249,20 @@ def _trial_heatmap(task):
     y_oracle = dat["Z"][:, 0] - dat["Z"][:, 0].mean()
 
     # Same per-PC selector configuration as TRexSPCASelector internally.
-    gvs_ctrl = tsn.TRexGVSControlParameter()
-    gvs_ctrl.gvs_type = tsn.GVSType.EN
-    gvs_ctrl.en_solver = tsn.ENSolverType.TENET
-    gvs_ctrl.lambda2_method = tsn.LambdaSelectionMethod.CV_1SE_CCD
+    gvs_ctrl = trex.TRexGVSControlParameter()
+    gvs_ctrl.gvs_type = trex.GVSType.EN
+    gvs_ctrl.en_solver = trex.ENSolverType.TENET
+    gvs_ctrl.lambda2_method = trex.LambdaSelectionMethod.CV_1SE_CCD
     gvs_ctrl.lambda_2 = -1.0   # auto via CV
-    trex_ctrl = tsn.TRexControlParameter()
-    trex_ctrl.scaling_mode = tsn.ScalingMode.L2
-    trex_ctrl.solver_type = tsn.SolverTypeForTRex.TENET
+    trex_ctrl = trex.TRexControlParameter()
+    trex_ctrl.scaling_mode = trex.ScalingMode.L2
+    trex_ctrl.solver_type = trex.SolverTypeForTRex.TENET
 
     def score(y):
         # Selector seed -1: hardware-entropy dummies per trial (required for
         # valid MC FDR estimates). Fresh Fortran copies per run — the selector
         # maps X and y zero-copy and works on them in place.
-        sel = tsn.TRexGVSSelector(np.asfortranarray(X), y.copy(), tFDR=tfdr,
+        sel = trex.TRexGVSSelector(np.asfortranarray(X), y.copy(), tFDR=tfdr,
                                   gvs_control=gvs_ctrl,
                                   trex_control=trex_ctrl,
                                   seed=-1, verbose=False)

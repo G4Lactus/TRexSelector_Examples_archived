@@ -40,7 +40,7 @@ from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 import pandas as pd
 
-import trex_selector_neo as tsn
+import trex_selector_neo as trex
 from trex_selector_neo.ml_methods.clustering import LinkageMethod
 from trex_selector_neo.utils import compute_fdp, compute_tpp
 
@@ -55,12 +55,12 @@ if _THIS_DIR not in sys.path:
 
 N_CORES = min(6, os.cpu_count() or 1)
 
-_DA_METHOD = {"AR1": tsn.DAMethod.AR1, "NN": tsn.DAMethod.NN,
-              "EQUI": tsn.DAMethod.EQUI, "BT": tsn.DAMethod.BT,
-              "PRIOR_GROUPS": tsn.DAMethod.PRIOR_GROUPS}
-_SOLVER = {"TLARS": tsn.SolverTypeForTRex.TLARS,
-           "TAFS": tsn.SolverTypeForTRex.TAFS,
-           "TOMP": tsn.SolverTypeForTRex.TOMP}
+_DA_METHOD = {"AR1": trex.DAMethod.AR1, "NN": trex.DAMethod.NN,
+              "EQUI": trex.DAMethod.EQUI, "BT": trex.DAMethod.BT,
+              "PRIOR_GROUPS": trex.DAMethod.PRIOR_GROUPS}
+_SOLVER = {"TLARS": trex.SolverTypeForTRex.TLARS,
+           "TAFS": trex.SolverTypeForTRex.TAFS,
+           "TOMP": trex.SolverTypeForTRex.TOMP}
 # Keys follow the cpp scenario-tag spelling (Single / Complete / Average).
 _LINKAGE = {"Single": LinkageMethod.Single, "Complete": LinkageMethod.Complete,
             "Average": LinkageMethod.Average}
@@ -147,12 +147,12 @@ def make_support_one_per_block(s, p, block_size=0):
 def _make_trex_ctrl(args):
     """Build a TRexControlParameter from the flat args dict (mirrors cpp
     make_trex_control + the per-solver fields set by run_param_sweep)."""
-    tc = tsn.TRexControlParameter()
+    tc = trex.TRexControlParameter()
     tc.K = int(args["K"])
     tc.max_dummy_multiplier = 10
     tc.use_max_T_stop = True
-    tc.dummy_distribution = tsn.DummyDistribution.normal()
-    tc.lloop_strategy = tsn.LLoopStrategy.STANDARD
+    tc.dummy_distribution = trex.DummyDistribution.normal()
+    tc.lloop_strategy = trex.LLoopStrategy.STANDARD
     tc.tloop_stagnation_stop = bool(args["use_stagnation"])
     tc.tloop_max_stagnant_steps = 7
     tc.use_memory_mapping = False
@@ -169,7 +169,7 @@ def _make_da_ctrl(da_spec):
     "Complete" | "Average"), prior_groups (list of label vectors; when present
     the method field is ignored by the selector), rho_thr_DA, cor_coef.
     """
-    da = tsn.TRexDAControlParameter()
+    da = trex.TRexDAControlParameter()
     if da_spec.get("method") is not None:
         da.method = _DA_METHOD[da_spec["method"]]
     if da_spec.get("hc_linkage") is not None:
@@ -210,12 +210,12 @@ def _mc_worker(args):
 
     tc = _make_trex_ctrl(args)
     if args["da_spec"] is not None:
-        sel = tsn.TRexDASelector(np.asfortranarray(dat["X"]), dat["y"],
+        sel = trex.TRexDASelector(np.asfortranarray(dat["X"]), dat["y"],
                                  tFDR=args["tFDR"],
                                  da_control=_make_da_ctrl(args["da_spec"]),
                                  trex_control=tc, seed=-1, verbose=False)
     else:
-        sel = tsn.TRexSelector(np.asfortranarray(dat["X"]), dat["y"],
+        sel = trex.TRexSelector(np.asfortranarray(dat["X"]), dat["y"],
                                tFDR=args["tFDR"],
                                trex_control=tc, seed=-1, verbose=False)
     sel.select()

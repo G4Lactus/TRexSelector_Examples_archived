@@ -88,15 +88,15 @@ committed C++ results while reproducing the same qualitative patterns).
 ## T-Rex+GVS specific concepts
 
 Grouped selection introduces a few additional control parameters and types beyond the classical T-Rex selector
- (all accessed via `import trex_selector_neo as tsn`, e.g. `tsn.TRexGVSControlParameter`):
+ (all accessed via `import trex_selector_neo as trex`, e.g. `trex.TRexGVSControlParameter`):
 
-- **`tsn.GVSType`** — the group-level base method:
+- **`trex.GVSType`** — the group-level base method:
   - `EN`: elastic-net-based grouped selection [[1]](#references),
   - `IEN`: informed (iterative) elastic-net-based grouped selection [[2]](#references).
-- **`tsn.ENSolverType`** (only applies to `GVSType.EN`) — which elastic-net solver drives the random experiments:
+- **`trex.ENSolverType`** (only applies to `GVSType.EN`) — which elastic-net solver drives the random experiments:
   - `TENET`: the base Gram-based elastic-net solver,
   - `TENET_AUG`: the augmented-LASSO formulation of the elastic net.
-- **`tsn.LambdaSelectionMethod`** — how the elastic-net penalty $\lambda_2$ is chosen: `CV_1SE_CCD`
+- **`trex.LambdaSelectionMethod`** — how the elastic-net penalty $\lambda_2$ is chosen: `CV_1SE_CCD`
    (cross-validation, 1-SE rule, via coordinate descent) or `CV_1SE_SVD` (via SVD).
 - **`prior_groups`** — the 0-based per-column group-ID vector. When groups are known in advance (an "oracle" run),
    this vector is taken directly from the data-generating process. When groups must be discovered from the data,

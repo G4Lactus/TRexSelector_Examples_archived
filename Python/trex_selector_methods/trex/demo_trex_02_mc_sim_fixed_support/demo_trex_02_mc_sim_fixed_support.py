@@ -3,21 +3,22 @@
 # ==============================================================================
 #
 # Classical T-Rex selector demo — Monte Carlo simulation with fixed true support.
-# Mirrors R/trex_selector_methods/trex/demo_trex_02_mc_sim_fixed_support.R and
-# cpp/trex_selector_methods/trex/demo_trex_02_mc_sim_fixed_support.cpp.
+# Mirrors:
+# cpp/trex_selector_methods/trex/demo_trex_02_mc_sim_fixed_support.cpp
+# and
+# R/trex_selector_methods/trex/demo_trex_02_mc_sim_fixed_support.R
 #
 # Demo content:
 #  - 14 solvers; SNR sweep {0.1, 0.5, 1.0, 2.0, 5.0}.
 #  - Fixed support drawn once with seed 24 (shared across all trials).
 #  - Reports averaged FDR / TPR per solver x SNR.
 #
-# Python downscale: num_MC = 100 (C++ runs 200) to keep the
-# ProcessPoolExecutor-based run time moderate.
-#
 # ==============================================================================
 
 import sys
 import os
+
+import numpy as np
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _PARENT_DIR = os.path.dirname(_THIS_DIR)
@@ -25,13 +26,10 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import numpy as np
-
-from support_generators import make_support_random
-from trex_sim_common import (
+from support_generators import make_support_random  # noqa: E402
+from trex_sim_common import (  # noqa: E402
     SOLVERS_DEFAULT,
     run_mc_trex,
-    print_solver_table,
     save_mc_results,
 )
 
@@ -41,7 +39,7 @@ from trex_sim_common import (
 
 _OUT_DIR     = os.path.join(_THIS_DIR, "simulation_results", "data")
 _NUM_WORKERS = 6
-_NUM_MC      = 100
+_NUM_MC      = 200
 
 
 # ==============================================================================
@@ -71,7 +69,7 @@ def trx_02_mc_sim_fixed_support(num_MC=_NUM_MC, num_workers=_NUM_WORKERS, high_d
         tloop_stagnation_stop    = True,
         tloop_max_stagnant_steps = stagnant_sw,
         opt_threshold            = 0.75,
-        parallel_rnd_experiments = False,   # mirrors R use_openmp=FALSE
+        parallel_rnd_experiments = False,
         use_memory_mapping       = False,
     )
 
@@ -84,7 +82,13 @@ def trx_02_mc_sim_fixed_support(num_MC=_NUM_MC, num_workers=_NUM_WORKERS, high_d
     fdr_mat = np.zeros((n_sol, n_snr))
     tpr_mat = np.zeros((n_sol, n_snr))
 
-    # Simulation loop: iterate over solvers, then SNR values
+    solver_names = [s["name"] for s in SOLVERS_DEFAULT]
+    stem = (f"demo_trex_02_mc_sim_fixed_support_trex_results_n{n}_p{p}"
+            f"_stagnation_window_{stagnant_sw}")
+
+    # Simulation loop: iterate over solvers, then SNR values. Results are
+    # re-saved after each solver (growing file), so an abort mid-run keeps the
+    # solvers already finished.
     for si, solver in enumerate(SOLVERS_DEFAULT):
         print(f"Solver: {solver['name']}")
         for snr_idx, snr in enumerate(snr_values):
@@ -106,14 +110,12 @@ def trx_02_mc_sim_fixed_support(num_MC=_NUM_MC, num_workers=_NUM_WORKERS, high_d
             tpr_mat[si, snr_idx] = result["mean_TPR"]
         print()
 
-    solver_names = [s["name"] for s in SOLVERS_DEFAULT]
-    stem = (f"demo_trex_02_mc_sim_fixed_support_trex_results_n{n}_p{p}"
-            f"_stagnation_window_{stagnant_sw}")
-    save_mc_results(
-        _OUT_DIR, stem, num_MC,
-        solver_names, snr_values,
-        fdr_mat, tpr_mat,
-    )
+        # Incremental save over the solvers completed so far (abort-safe).
+        save_mc_results(
+            _OUT_DIR, stem, num_MC,
+            solver_names[:si + 1], snr_values,
+            fdr_mat[:si + 1], tpr_mat[:si + 1],
+        )
 
 
 # ==============================================================================

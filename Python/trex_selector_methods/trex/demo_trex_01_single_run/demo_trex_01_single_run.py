@@ -3,7 +3,10 @@
 # ==============================================================================
 #
 # Classical T-Rex Selector demo — single-run.
-# Mirrors cpp/trex_selector_methods/trex/demo_trex_01_single_run.cpp and
+#
+# Mirrors:
+# cpp/trex_selector_methods/trex/demo_trex_01_single_run.cpp
+# and
 # R/trex_selector_methods/trex/demo_trex_01_single_run.R.
 #
 # Demo content:
@@ -22,19 +25,22 @@
 import sys
 import os
 
+import numpy as np
+
+import trex_selector_neo as trex
+
+# The shared helper modules live one directory up (the trex/ suite root); put
+# that on sys.path before importing them so the demo runs from any directory.
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _PARENT_DIR = os.path.dirname(_THIS_DIR)
 for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import numpy as np
+from dgp_gauss_snr import dgp_gauss_snr  # noqa: E402 (after sys.path setup)
+from trex_helpers import make_dual_out, print_single_run_result  # noqa: E402
+from trex_sim_common import _make_trex_ctrl_from_dict  # noqa: E402
 
-import trex_selector_neo as tsn
-
-from dgp_gauss_snr import dgp_gauss_snr
-from trex_helpers import make_dual_out, print_single_run_result
-from trex_sim_common import _make_trex_ctrl_from_dict
 
 # ==============================================================================
 # Global parameters
@@ -55,20 +61,25 @@ _OUT_DIR = os.path.join(_THIS_DIR, "simulation_results", "data")
 def part_1_single_run():
     tFDR      = 0.1
     snr       = 1.0
-    data_seed = 58   # mirrors C++ SyntheticData(..., seed=58)
-    trex_seed = 42   # mirrors C++ TRexSelector(..., 42, true)
+    data_seed = 58
+    trex_seed = 42
 
+    # Complete control block, values taken from the C++ reference
+    # (demo_trex_01_single_run.cpp) — every option explicit, no reliance on
+    # binding/helper defaults.
     ctrl_dict = dict(
         solver_name               = "TLARS",
         K                         = 20,
         max_dummy_multiplier      = 10,
         use_max_T_stop            = True,
+        opt_threshold             = 0.75,
         lloop_strategy            = "STANDARD",
         tloop_stagnation_stop     = False,
         tloop_max_stagnant_steps  = 5,
         parallel_rnd_experiments  = False,   # mirrors C++ / R use_openmp=FALSE
+        use_memory_mapping        = False,
         lambda2                   = 0.1,
-        rho_afs                   = 0.3,
+        rho_afs                   = 0.0,   # non-TAFS solver; rho_afs is unused
         ncgmp_variant             = 0,
     )
 
@@ -99,7 +110,7 @@ def part_1_single_run():
 
             out("Running T-Rex Selector (TLARS) ...\n\n")
             ctrl = _make_trex_ctrl_from_dict(ctrl_dict)
-            sel  = tsn.TRexSelector(
+            sel  = trex.TRexSelector(
                 np.asfortranarray(dat["X"]),
                 dat["y"],
                 tFDR=tFDR,

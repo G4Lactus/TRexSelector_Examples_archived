@@ -1,14 +1,16 @@
-# Type-checking dependencies for the Python plotting modules under cpp/.
+# Type-checking dependencies for the Python plotting modules under cpp/ and the
+# Python demo suites under Python/ (scope and mypy_path are defined in mypy.ini).
 #
 #   .venv/bin/pip install -r requirements-dev.txt
 #
 # These are NOT needed to generate figures -- the plotters run on matplotlib,
-# pandas and plotly alone (see the hint in each demo's generate_plots.sh). They
-# are only needed to run the linter over cpp/**/*_plt_utils.py, configured in
-# mypy.ini:
+# pandas and plotly alone (see the hint in each demo's generate_plots.sh).
+# They are only needed to run the linter, configured in mypy.ini.
+# Launch from the repository root so the relative mypy_path entries resolve:
 #
 #   mypy cpp/trex_selector_methods/trex/trex_plt_utils.py \
 #        cpp/trex_selector_methods/trex_da/trex_da_plt_utils.py
+#   mypy Python/tsolvers/demo_ts_01_tlars/demo_ts_01_tlars.py
 
 mypy
 

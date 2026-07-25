@@ -32,7 +32,7 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from gvs_sim_common import (N_CORES, fmt_num, print_mc_matrix,
+from gvs_sim_common import (N_CORES, fmt_num, print_mc_matrix,  # noqa: E402
                             print_section_header, run_gvs_2d_sweep,
                             save_mc_2d_tables)
 
@@ -82,14 +82,18 @@ def run_arma_part1_2d_sweep(cfg, preset):
 
     en = run_gvs_2d_sweep("dgp_arma_blocks_snr", cell_kwargs,
                           preset["snr_grid_2d"], preset["ar_coef_grid_2d"],
-                          cfg, "EN", "TENET", "TENET", max_workers=N_WORKERS)
+                          cfg, "EN", "TENET", "TENET",
+                          hc_linkage="Single", lambda2_method="CV_1SE_CCD",
+                          max_workers=N_WORKERS)
     en_aug = run_gvs_2d_sweep("dgp_arma_blocks_snr", cell_kwargs,
                               preset["snr_grid_2d"], preset["ar_coef_grid_2d"],
                               cfg, "EN", "TENET_AUG", "TENET_AUG",
+                              hc_linkage="Single", lambda2_method="CV_1SE_CCD",
                               max_workers=N_WORKERS)
     ien = run_gvs_2d_sweep("dgp_arma_blocks_snr", cell_kwargs,
                            preset["snr_grid_2d"], preset["ar_coef_grid_2d"],
-                           cfg, "IEN", "TENET", "TIENET_AUG",
+                           cfg, "IEN", None, "TIENET_AUG",
+                           hc_linkage="Single", lambda2_method="CV_1SE_CCD",
                            max_workers=N_WORKERS)
 
     snr_labels = [f"snr={fmt_num(s)}" for s in preset["snr_grid_2d"]]

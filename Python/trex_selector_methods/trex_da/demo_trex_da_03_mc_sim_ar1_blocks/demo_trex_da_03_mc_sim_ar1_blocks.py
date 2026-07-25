@@ -15,9 +15,10 @@
 #   Part 3: Q sweep      Q in {5, 10, ..., 50}; p = M*Q varies; s = M = 5 fixed.
 #   Part 4: M sweep      M in {1, 3, 5, 10, 15, 20, 30}; p = M*Q and s = M vary.
 #
-# Mirrors cpp/trex_selector_methods/trex_da/demo_trex_da_03_mc_sim_ar1_blocks
-# (same DGP, control parameters, sweep axes, and result files). Results are
-# saved to simulation_results/ as TXT and CSV files. Reduce NUM_MC to preview.
+# Mirrors:
+# cpp/trex_selector_methods/trex_da/demo_trex_da_03_mc_sim_ar1_blocks
+#
+# Results are saved to simulation_results/ as TXT and CSV files.
 # ==============================================================================
 
 import os
@@ -29,7 +30,7 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from da_sim_common import (default_solvers, fmt_num,
+from da_sim_common import (default_solvers, fmt_num,  # noqa: E402
                            make_support_one_per_block, run_param_sweep,
                            run_snr_sweep)
 
@@ -75,7 +76,8 @@ def part_1_snr_sweep():
                              support=support_base, s=M),
             {"method": "BT", "hc_linkage": lnk}, K,
             f"AR(1)-block SNR sweep  n={N}  M={M}  Q={Q}  p={BASE_P}  s={M}"
-            f"  rho={fmt_num(RHO)}  linkage={lnk}")
+            f"  rho={fmt_num(RHO)}  linkage={lnk}",
+            include_base_trex=False)
 
 
 # ==============================================================================
@@ -97,7 +99,8 @@ def part_2_rho_sweep():
                              support=support_base, s=M),
             {"method": "BT", "hc_linkage": lnk}, K,
             f"AR(1)-block rho sweep  n={N}  M={M}  Q={Q}  p={BASE_P}  s={M}"
-            f"  SNR={fmt_num(SNR)}  linkage={lnk}")
+            f"  SNR={fmt_num(SNR)}  linkage={lnk}",
+            include_base_trex=False)
 
 
 # ==============================================================================
@@ -124,7 +127,8 @@ def part_3_q_sweep():
             BASE_SEED, default_solvers("+BT"), make_dgp,
             {"method": "BT", "hc_linkage": lnk}, K,
             f"AR(1)-block Q sweep  n={N}  M={M}  s={M}  rho={fmt_num(RHO)}"
-            f"  SNR={fmt_num(SNR)}  p=M*Q varies  linkage={lnk}")
+            f"  SNR={fmt_num(SNR)}  p=M*Q varies  linkage={lnk}",
+            include_base_trex=False)
 
 
 # ==============================================================================
@@ -152,7 +156,8 @@ def part_4_m_sweep():
             BASE_SEED, default_solvers("+BT"), make_dgp,
             {"method": "BT", "hc_linkage": lnk}, K,
             f"AR(1)-block M sweep  n={N}  Q={Q}  rho={fmt_num(RHO)}"
-            f"  SNR={fmt_num(SNR)}  p=M*Q and s=M vary  linkage={lnk}")
+            f"  SNR={fmt_num(SNR)}  p=M*Q and s=M vary  linkage={lnk}",
+            include_base_trex=False)
 
 
 # ==============================================================================

@@ -4,8 +4,11 @@
 #
 # Classical T-Rex selector demo — dummy distribution comparison across three
 # base solvers (TLARS, TOMP, TAFS), with the STANDARD L-loop strategy fixed.
-# Mirrors R/trex_selector_methods/trex/demo_trex_05_mc_sim_dummy_distributions.R and
-# cpp/trex_selector_methods/trex/demo_trex_05_mc_sim_dummy_distributions.cpp.
+#
+# Mirrors:
+# cpp/trex_selector_methods/trex/demo_trex_05_mc_sim_dummy_distributions.cpp
+# and
+# R/trex_selector_methods/trex/demo_trex_05_mc_sim_dummy_distributions.R
 #
 # Base solvers compared (one result file pair per solver):
 #   TLARS — equiangular LARS path (stagnation stop AUTO-resolves to disabled).
@@ -21,7 +24,7 @@
 # skewness, sparsity, cross-column dependence) affects the achieved FDR / TPR
 # and the calibrated dummy multiplier L / stopping time T.
 #
-# Demo content (spec dicts resolved by trex_sim_common._make_dummy_distribution):
+# Demo content (resolved by trex_sim_common._make_dummy_distribution):
 #
 #    Normal              — N(0, 1); the reference choice.
 #    Uniform             — U(-sqrt(3), sqrt(3)); bounded, light tails.
@@ -44,13 +47,12 @@
 #  High-dimensional (n = 300, p = 1000, s = 10).
 #  SNR sweep: {0.1, 0.2, 0.5, 0.6, 1.0, 2.0, 5.0}  (7 values, mirrors the
 #  current C++ grid and its committed results).
+#
 #  Two support scenarios:
 #    random support — redrawn per trial;
 #    block support  — contiguous block {0, 1, ..., s-1}  (0-based).
 #  Reports averaged FDR / TPR / Avg L / Avg T per distribution x SNR.
 #
-# Python downscale: num_MC = 10 (C++ runs 200) to keep the 3-solver x
-# 12-distribution sweep moderate.
 #
 # ==============================================================================
 
@@ -63,9 +65,9 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import numpy as np
+import numpy as np  # noqa: E402
 
-from trex_sim_common import run_mc_trex, save_mc_results
+from trex_sim_common import run_mc_trex, save_mc_results  # noqa: E402
 
 # ==============================================================================
 # Global parameters
@@ -73,7 +75,7 @@ from trex_sim_common import run_mc_trex, save_mc_results
 
 _OUT_DIR     = os.path.join(_THIS_DIR, "simulation_results", "data")
 _NUM_WORKERS = 6
-_NUM_MC      = 10
+_NUM_MC      = 200
 
 # ==============================================================================
 # Dummy distributions to compare
@@ -103,9 +105,9 @@ DISTRIBUTIONS = [
 
 # Base solvers for the outer sweep (rho_afs only meaningful for TAFS)
 _SOLVERS = [
-    dict(solver_name="TLARS", name="TLARS", lambda2=0.1, rho_afs=0.3, ncgmp_variant=0),
-    dict(solver_name="TOMP",  name="TOMP",  lambda2=0.1, rho_afs=0.3, ncgmp_variant=0),
-    dict(solver_name="TAFS",  name="TAFS",  lambda2=0.1, rho_afs=0.3, ncgmp_variant=0),
+    dict(solver_name="TLARS", name="TLARS", lambda2=0.0, rho_afs=0.0, ncgmp_variant=0),
+    dict(solver_name="TOMP",  name="TOMP",  lambda2=0.0, rho_afs=0.0, ncgmp_variant=0),
+    dict(solver_name="TAFS",  name="TAFS",  lambda2=0.0, rho_afs=0.3, ncgmp_variant=0),
 ]
 
 
@@ -150,14 +152,22 @@ def trx_05_dummy_distributions(num_MC=_NUM_MC, num_workers=_NUM_WORKERS,
             print(f"Solver: {solver_desc['name']}  |  Dummy distribution: {dist['name']}")
             print(f"{'=' * 50}\n")
 
-            # Per-distribution ctrl — only dummy_distribution varies
+            # Per-distribution ctrl — only dummy_distribution varies. Values taken
+            # from the C++ reference (demo_trex_05_mc_sim_dummy_distributions.cpp)
+            # — every option explicit.
+            # tloop_stagnation_stop = None is the tri-state AUTO (C++ nullopt):
+            # resolved per solver family (disabled for TLARS, enabled for the greedy TOMP/TAFS).
             base_ctrl = dict(
                 K                        = 20,
                 max_dummy_multiplier     = 10,
                 use_max_T_stop           = True,
+                opt_threshold            = 0.75,
                 lloop_strategy           = "STANDARD",
                 dummy_distribution       = dist["spec"],
-                parallel_rnd_experiments = False,   # mirrors R use_openmp=FALSE
+                tloop_stagnation_stop    = None,    # AUTO (C++ nullopt)
+                tloop_max_stagnant_steps = 5,
+                parallel_rnd_experiments = False,
+                use_memory_mapping       = False,
             )
 
             for snr_idx, snr in enumerate(snr_values):
@@ -184,7 +194,7 @@ def trx_05_dummy_distributions(num_MC=_NUM_MC, num_workers=_NUM_WORKERS,
             print()
 
         stem = (f"demo_trex_05_dummy_distributions_results_n{n}_p{p}"
-                f"_{solver_desc['name'].lower()}_{support_label}_support")
+                f"_{str(solver_desc['name']).lower()}_{support_label}_support")
         save_mc_results(
             _OUT_DIR, stem, num_MC,
             dist_names, snr_values,
@@ -199,5 +209,4 @@ def trx_05_dummy_distributions(num_MC=_NUM_MC, num_workers=_NUM_WORKERS,
 
 if __name__ == "__main__":
     trx_05_dummy_distributions(block_support=False)
-    # trx_05_dummy_distributions(block_support=True)
     print("\ndemo_trex_05_mc_sim_dummy_distributions.py complete.")

@@ -4,9 +4,11 @@
 #
 # Classical T-Rex selector demo — L-loop strategy comparison, repeated across
 # three base solvers (TLARS / TOMP / TAFS).
-# Mirrors cpp/trex_selector_methods/trex/demo_trex_04_mc_sim_lloop_strategies.cpp
-# (which extends R/trex_selector_methods/trex/demo_trex_04_mc_sim_lloop_strategies.R;
-# the R version fixes the base solver at TLARS).
+#
+# Mirrors:
+# cpp/trex_selector_methods/trex/demo_trex_04_mc_sim_lloop_strategies.cpp
+# and
+# R/trex_selector_methods/trex/demo_trex_04_mc_sim_lloop_strategies.R
 #
 # L-loop strategies (8 rows):
 #
@@ -32,9 +34,6 @@
 #    block support  — contiguous block {0, 1, ..., s-1}  (0-based).
 #  Reports averaged FDR / TPR / Avg L / Avg T per L-strategy x SNR.
 #
-# Python downscale: num_MC = 25 (C++ runs 200) — the 3-solver x 8-strategy x
-# 21-SNR grid is large; increase _NUM_MC for publication-grade curves.
-#
 # ==============================================================================
 
 import sys
@@ -46,9 +45,9 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import numpy as np
+import numpy as np  # noqa: E402
 
-from trex_sim_common import run_mc_trex, save_mc_results
+from trex_sim_common import run_mc_trex, save_mc_results  # noqa: E402
 
 # ==============================================================================
 # Global parameters
@@ -56,7 +55,7 @@ from trex_sim_common import run_mc_trex, save_mc_results
 
 _OUT_DIR     = os.path.join(_THIS_DIR, "simulation_results", "data")
 _NUM_WORKERS = 6
-_NUM_MC      = 25
+_NUM_MC      = 200
 
 # ==============================================================================
 # L-loop strategies to compare (mirrors make_lloop_strategies() in C++)
@@ -84,9 +83,9 @@ L_STRATEGIES = [
 # Base solvers for the outer sweep (rho_afs only meaningful for TAFS).
 # Deviations between the solvers will be detectable in the results.
 _SOLVERS = [
-    dict(solver_name="TLARS", name="TLARS", lambda2=0.1, rho_afs=0.3, ncgmp_variant=0),
-    dict(solver_name="TOMP",  name="TOMP",  lambda2=0.1, rho_afs=0.3, ncgmp_variant=0),
-    dict(solver_name="TAFS",  name="TAFS",  lambda2=0.1, rho_afs=0.3, ncgmp_variant=0),
+    dict(solver_name="TLARS", name="TLARS", lambda2=0.0, rho_afs=0.0, ncgmp_variant=0),
+    dict(solver_name="TOMP",  name="TOMP",  lambda2=0.0, rho_afs=0.0, ncgmp_variant=0),
+    dict(solver_name="TAFS",  name="TAFS",  lambda2=0.0, rho_afs=0.3, ncgmp_variant=0),
 ]
 
 
@@ -131,13 +130,22 @@ def trx_04_lloop_strategies(num_MC=_NUM_MC, num_workers=_NUM_WORKERS,
             print(f"Solver: {solver_desc['name']}  |  L-strategy: {strat['name']}")
             print(f"{'=' * 50}\n")
 
-            # Per-strategy ctrl — max_dummy_multiplier and lloop_strategy vary
+            # Per-strategy ctrl — max_dummy_multiplier and lloop_strategy vary.
+            # Values taken from the C++ reference — every option explicit.
+            # tloop_stagnation_stop = None is the tri-state AUTO (C++ nullopt):
+            # the selector resolves it per solver family (disabled for TLARS,
+            # enabled for the greedy TOMP/TAFS). tloop_max_stagnant_steps = 5 is
+            # the C++ struct default (only active when AUTO enables the stop).
             base_ctrl = dict(
                 K                        = 20,
                 max_dummy_multiplier     = strat["max_dummy_mult"],
                 use_max_T_stop           = True,
+                opt_threshold            = 0.75,
                 lloop_strategy           = strat["strategy"],
-                parallel_rnd_experiments = False,   # mirrors R use_openmp=FALSE
+                tloop_stagnation_stop    = None,    # AUTO (C++ nullopt)
+                tloop_max_stagnant_steps = 5,
+                parallel_rnd_experiments = False,
+                use_memory_mapping       = False,
             )
 
             for snr_idx, snr in enumerate(snr_values):
@@ -164,7 +172,7 @@ def trx_04_lloop_strategies(num_MC=_NUM_MC, num_workers=_NUM_WORKERS,
             print()
 
         stem = (f"demo_trex_04_lloop_strategies_results_n{n}_p{p}"
-                f"_{solver_desc['name'].lower()}_{support_label}_support")
+                f"_{str(solver_desc['name']).lower()}_{support_label}_support")
         save_mc_results(
             _OUT_DIR, stem, num_MC,
             strat_names, snr_values,
@@ -179,5 +187,4 @@ def trx_04_lloop_strategies(num_MC=_NUM_MC, num_workers=_NUM_WORKERS,
 
 if __name__ == "__main__":
     trx_04_lloop_strategies(block_support=False)
-    # trx_04_lloop_strategies(block_support=True)
     print("\ndemo_trex_04_mc_sim_lloop_strategies.py complete.")

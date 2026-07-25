@@ -15,7 +15,7 @@ Instead of selecting sparse *variables* in a regression model, T-Rex SPCA select
 The demos are the Python counterparts of the C++ suite in
  [`cpp/trex_selector_methods/trex_spca/`](../../../cpp/trex_selector_methods/trex_spca/README.md)
  (and the R suite in `R/trex_selector_methods/trex_spca/`), using the `trex_selector_neo` root-level
- `tsn.TRexSPCASelector`. They are designed to help users understand:
+ `trex.TRexSPCASelector`. They are designed to help users understand:
 
 1. whether the FDR of the estimated loading support is actually held at the target,
 2. what that control costs in explained variance, measured against ordinary PCA and an oracle that is told
@@ -148,10 +148,10 @@ Keeping all readings is what makes the trade-off legible: the first prices the s
    the FDR of the regression it is handed, and that transfers to the factor model only where the proxy is
    good. Demo 01 (union-FDR section) and demo 02 (FDR-heatmap section) measure where the condition holds
    and where it fails.
-- **`tsn.SPCAMode`** — how the sparse loading vector is assembled once a support has been selected:
+- **`trex.SPCAMode`** — how the sparse loading vector is assembled once a support has been selected:
   - `ActiveSet`: use only the T-Rex+GVS selected variables' loadings,
   - `Thresholded`: assemble loadings from the full ordinary-PCA solution, restricted to the selected support.
-- **`tsn.ENSolverType`** — the elastic-net solver driving each per-component selection: `TENET`
+- **`trex.ENSolverType`** — the elastic-net solver driving each per-component selection: `TENET`
    (Gram-based) or `TENET_AUG` (augmented-LASSO formulation); see
    [../trex_gvs/](../trex_gvs/README.md) for the shared elastic-net background.
 - **`lambda_2`** — the ridge penalty (`spca_ctrl.gvs_ctrl.lambda_2`): a negative value selects it by

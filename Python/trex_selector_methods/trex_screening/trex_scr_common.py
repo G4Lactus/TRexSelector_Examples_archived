@@ -34,8 +34,7 @@ from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 import pandas as pd
 
-import trex_selector_neo as tsn
-from trex_selector_neo.utils import compute_fdp, compute_tpp
+import trex_selector_neo as trex
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
@@ -157,32 +156,40 @@ def dgp_block_equi(n, p, p1, rho, n_blocks, snr, beta_val, seed):
 
 
 def _build_trex_ctrl(d):
-    """Build a tsn.TRexControlParameter from a flat, picklable dict.
+    """Build a trex.TRexControlParameter from a flat, picklable dict.
 
     Mirrors make_trex_control() / make_trex_control_mmap() / make_trex_ctrl_for()
     in the cpp simulation utils. Rebuilt inside worker processes.
+
+    DIVERGENCE-SAFE: the tloop fields are assigned only when the dict supplies
+    a non-None value, so a missing/None key keeps the C++/binding default.
+    In particular tloop_stagnation_stop = None preserves the tri-state AUTO
+    (C++ std::nullopt, resolved per solver family in the selector) — a bool()
+    coercion cannot represent AUTO and would force it to False.
     """
-    ctrl = tsn.TRexControlParameter()
+    ctrl = trex.TRexControlParameter()
     ctrl.K = int(d.get("K", 20))
-    ctrl.lloop_strategy = tsn.LLoopStrategy.STANDARD
-    ctrl.dummy_distribution = tsn.DummyDistribution.normal()
-    ctrl.solver_type = getattr(tsn.SolverTypeForTRex, d.get("solver", "TLARS"))
+    ctrl.lloop_strategy = trex.LLoopStrategy.STANDARD
+    ctrl.dummy_distribution = trex.DummyDistribution.normal()
+    ctrl.solver_type = getattr(trex.SolverTypeForTRex, d.get("solver", "TLARS"))
     ctrl.use_memory_mapping = bool(d.get("use_memory_mapping", False))
-    ctrl.tloop_stagnation_stop = bool(d.get("tloop_stagnation_stop", False))
-    ctrl.tloop_max_stagnant_steps = int(d.get("tloop_max_stagnant_steps", 10))
+    if d.get("tloop_stagnation_stop") is not None:
+        ctrl.tloop_stagnation_stop = bool(d["tloop_stagnation_stop"])
+    if d.get("tloop_max_stagnant_steps") is not None:
+        ctrl.tloop_max_stagnant_steps = int(d["tloop_max_stagnant_steps"])
     if d.get("rho_afs") is not None:
         ctrl.solver_params.rho_afs = float(d["rho_afs"])
     return ctrl
 
 
 def _build_screen_ctrl(d):
-    """Build a tsn.ScreenTRexControlParameter from a flat dict.
+    """Build a trex.ScreenTRexControlParameter from a flat dict.
 
     Mirrors make_screen_control(): trex_method / use_bootstrap_CI / R_boot /
     ci_grid_step / rho_thr_DA / n_blocks. Rebuilt inside worker processes.
     """
-    sc = tsn.ScreenTRexControlParameter()
-    sc.trex_method = getattr(tsn.ScreenTRexMethod, d.get("trex_method", "TREX"))
+    sc = trex.ScreenTRexControlParameter()
+    sc.trex_method = getattr(trex.ScreenTRexMethod, d.get("trex_method", "TREX"))
     sc.use_bootstrap_CI = bool(d.get("bootstrap", False))
     sc.R_boot = int(d.get("R_boot", 1000))
     sc.ci_grid_step = float(d.get("ci_grid_step", 0.001))

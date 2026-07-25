@@ -4,8 +4,11 @@
 #
 # Classical T-Rex selector demo — Monte Carlo simulations with memory-mapped
 # workflows.
-# Mirrors R/trex_selector_methods/trex/demo_trex_07_mc_sim_mmap.R and
-# cpp/trex_selector_methods/trex/demo_trex_07_mc_sim_mmap.cpp.
+#
+# Mirrors:
+# cpp/trex_selector_methods/trex/demo_trex_07_mc_sim_mmap.cpp
+# and
+# R/trex_selector_methods/trex/demo_trex_07_mc_sim_mmap.R
 #
 # Demo content:
 #
@@ -24,13 +27,13 @@
 # Both parts should produce statistically equivalent FDR/TPR results since the
 # data and algorithm are identical — the equivalence is the verification goal.
 #
-# Shared configuration (mirrors C++ Demo C/D and R Part C/D):
+# Shared configuration:
 #   n=300, p=1000, s=10  (high-dim)
 #   TLARS only
 #   Fixed support drawn once with seed=24 (shared across all MC trials)
 #   SNR sweep: {0.1, 0.5, 1.0, 2.0, 5.0}
 #   tloop_max_stagnant_steps=7,  opt_threshold=0.75
-#   num_MC=200 (mirrors C++; the two parts are directly comparable)
+#   num_MC=200.
 #
 # Seed spaces (no clashes):
 #   DGP (X, noise)   : trial_seed = base_seed + mc - 1
@@ -43,16 +46,16 @@
 import sys
 import os
 
+import numpy as np
+
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _PARENT_DIR = os.path.dirname(_THIS_DIR)
 for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import numpy as np
-
-from support_generators import make_support_random
-from trex_sim_common import (
+from support_generators import make_support_random # noqa: E402
+from trex_sim_common import ( # noqa: E402
     run_mc_trex,
     run_mc_trex_full_mmap,
     save_mc_results,
@@ -71,7 +74,7 @@ _TLARS_SOLVER = dict(
     solver_name   = "TLARS",
     name          = "TLARS",
     lambda2       = 0.1,
-    rho_afs       = 0.3,
+    rho_afs       = 0.0,   # non-TAFS solver; rho_afs is unused
     ncgmp_variant = 0,
 )
 
@@ -111,8 +114,8 @@ def trx_03_part_c(num_MC=_NUM_MC, num_workers=_NUM_WORKERS, high_dim=True):
 
     dim_label = "High-dimensional (p > n)" if high_dim else "Low-dimensional (n > p)"
     print(f"\n{'=' * 70}")
-    print(f"Part C: MC \u2014 In-Memory X + use_memory_mapping=True")
-    print(f"  Verifies D-mmap + solver-serialization pipeline over many runs.")
+    print("Part C: MC \u2014 In-Memory X + use_memory_mapping=True")
+    print("  Verifies D-mmap + solver-serialization pipeline over many runs.")
     print(f"  {dim_label}  (n = {n}, p = {p},  num_MC = {num_MC})\n")
 
     # Fixed support shared across all MC runs — mirrors C++ rng(24) and R seed=24
@@ -184,8 +187,8 @@ def trx_03_part_d(num_MC=_NUM_MC, num_workers=_NUM_WORKERS, high_dim=True):
 
     dim_label = "High-dimensional (p > n)" if high_dim else "Low-dimensional (n > p)"
     print(f"\n{'=' * 70}")
-    print(f"Part D: MC \u2014 Fully Memory-Mapped X + use_memory_mapping=True")
-    print(f"  Full mmap pipeline: X mmap + D mmap + solver serialization.")
+    print("Part D: MC \u2014 Fully Memory-Mapped X + use_memory_mapping=True")
+    print("  Full mmap pipeline: X mmap + D mmap + solver serialization.")
     print(f"  {dim_label}  (n = {n}, p = {p},  num_MC = {num_MC})\n")
 
     # Fixed support — same as Part C, enabling direct comparison

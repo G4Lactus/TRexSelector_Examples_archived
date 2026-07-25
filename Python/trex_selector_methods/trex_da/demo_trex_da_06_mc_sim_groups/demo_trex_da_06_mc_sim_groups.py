@@ -15,9 +15,11 @@
 #
 #   Part 1: SNR sweep (n=300, p=1000, s=10, Random support, 200 MC, 3 solvers).
 #
-# Mirrors cpp/trex_selector_methods/trex_da/demo_trex_da_06_mc_sim_groups
-# (same DGP, control parameters, sweep axis, and result files). Results are
-# saved to simulation_results/ as TXT and CSV files. Reduce NUM_MC to preview.
+# Mirrors:
+# cpp/trex_selector_methods/trex_da/demo_trex_da_06_mc_sim_groups
+# (same DGP, control parameters, sweep axis, and result files).
+#
+# Results are saved to simulation_results/ as TXT and CSV files.
 # ==============================================================================
 
 import os
@@ -29,7 +31,7 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from da_sim_common import default_solvers, fmt_num, run_snr_sweep
+from da_sim_common import default_solvers, fmt_num, run_snr_sweep  # noqa: E402
 
 RUN_PART_1 = True
 

@@ -111,7 +111,7 @@ Notes on the grids:
    record but are not displayed.
 - **Part 5 is the support-recovery counterpart of Part 4**, run over the full 2D grid instead of the 0 dB
    slice, and only for PC1. Each trial runs the per-PC T-Rex+GVS(EN) selector
-   (`tsn.TRexGVSSelector`, the same configuration `tsn.TRexSPCASelector` uses internally) twice on the same
+   (`trex.TRexGVSSelector`, the same configuration `trex.TRexSPCASelector` uses internally) twice on the same
    data: once on the **plug-in response** $y = \boldsymbol{X} v_1$ (what T-Rex SPCA actually regresses on)
    and once on the **oracle response** $y = z_1$, the true factor scores. The pairing isolates the mechanism
    behind the FDR overshoot at loose targets — see the caveat section below.

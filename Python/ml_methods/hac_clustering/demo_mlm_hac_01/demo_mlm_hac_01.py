@@ -42,10 +42,11 @@
 #                                   N = 300, P = 500 here.)
 #
 # Notes:
-#   - agglomerative_cluster() clusters the ROWS of its input. Sample
-#     clustering passes X directly; variable clustering passes the transposed
-#     matrix so that variables become the clustered objects. (The cpp engine
-#     clusters columns and uses Eigen transposed views instead.)
+#   - agglomerative_cluster() clusters the ROWS of its input.
+#     Sample clustering passes X directly.
+#     Variable clustering passes the transposed matrix so that variables
+#     become the clustered objects.
+#
 #   - The cpp demo fills matrices with OpenMP-parallel per-thread RNGs — that
 #     part is C++-exclusive; vectorized NumPy generation is used here, so
 #     results match the cpp output qualitatively, not bitwise.

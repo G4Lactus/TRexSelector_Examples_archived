@@ -3,16 +3,17 @@
 # ==============================================================================
 #
 # Classical T-Rex selector demo — Monte Carlo simulation with variable support.
-# Mirrors R/trex_selector_methods/trex/demo_trex_03_mc_sim_variable_support.R and
-# cpp/trex_selector_methods/trex/demo_trex_03_mc_sim_variable_support.cpp.
+#
+# Mirrors:
+# cpp/trex_selector_methods/trex/demo_trex_03_mc_sim_variable_support.cpp
+# and
+# R/trex_selector_methods/trex/demo_trex_03_mc_sim_variable_support.R
 #
 # Demo content:
 #  - 14 solvers; SNR sweep {0.1, 0.2, ..., 2.0, 5.0}  (21 values).
 #  - Support and (optionally) coefficients redrawn each trial.
 #  - Reports averaged FDR / TPR / Avg L / Avg T per solver x SNR.
 #
-# Python downscale: num_MC = 100 (C++ runs 200) to keep the
-# ProcessPoolExecutor-based run time moderate.
 #
 # ==============================================================================
 
@@ -25,9 +26,9 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import numpy as np
+import numpy as np  # noqa: E402
 
-from trex_sim_common import (
+from trex_sim_common import (  # noqa: E402
     SOLVERS_DEFAULT,
     run_mc_trex,
     save_mc_results,
@@ -39,7 +40,7 @@ from trex_sim_common import (
 
 _OUT_DIR     = os.path.join(_THIS_DIR, "simulation_results", "data")
 _NUM_WORKERS = 6
-_NUM_MC      = 100
+_NUM_MC      = 200
 
 
 # ==============================================================================
@@ -61,15 +62,19 @@ def trx_03_mc_sim_variable_support(num_MC=_NUM_MC, num_workers=_NUM_WORKERS,
     print(f"MC Simulation \u2014 Variable Support  |  {dim_label}")
     print(f"n = {n},  p = {p},  s = {s},  num_MC = {num_MC}\n")
 
-    # Base control shared by all solvers
+    # Base control shared by all solvers. Values taken from the C++ reference
+    # (demo_trex_03_mc_sim_variable_support.cpp) — every option explicit, no
+    # reliance on binding/helper defaults.
     base_ctrl = dict(
         K                        = 20,
         max_dummy_multiplier     = 10,
         use_max_T_stop           = True,
+        opt_threshold            = 0.75,
         lloop_strategy           = "HCONCAT",
         tloop_stagnation_stop    = True,
         tloop_max_stagnant_steps = stagnant_sw,
-        parallel_rnd_experiments = False,   # mirrors R use_openmp=FALSE
+        parallel_rnd_experiments = False,
+        use_memory_mapping       = False,
     )
 
     n_sol = len(SOLVERS_DEFAULT)
@@ -79,7 +84,13 @@ def trx_03_mc_sim_variable_support(num_MC=_NUM_MC, num_workers=_NUM_WORKERS,
     avg_L_mat = np.zeros((n_sol, n_snr))
     avg_T_mat = np.zeros((n_sol, n_snr))
 
-    # Simulation loop: iterate over solvers and SNR values
+    solver_names = [s["name"] for s in SOLVERS_DEFAULT]
+    stem = (f"demo_trex_03_mc_sim_variable_support_trex_results_n{n}_p{p}"
+            f"_stagnation_window_{stagnant_sw}")
+
+    # Simulation loop: iterate over solvers and SNR values. Results are re-saved
+    # after each solver (growing file), so an abort mid-run keeps the solvers
+    # already finished.
     for si, solver in enumerate(SOLVERS_DEFAULT):
         print(f"{'=' * 50}")
         print(f"Solver: {solver['name']}")
@@ -107,14 +118,13 @@ def trx_03_mc_sim_variable_support(num_MC=_NUM_MC, num_workers=_NUM_WORKERS,
             avg_T_mat[si, snr_idx] = result["mean_T"]
         print()
 
-    solver_names = [s["name"] for s in SOLVERS_DEFAULT]
-    stem = (f"demo_trex_03_mc_sim_variable_support_trex_results_n{n}_p{p}"
-            f"_stagnation_window_{stagnant_sw}")
-    save_mc_results(
-        _OUT_DIR, stem, num_MC,
-        solver_names, snr_values,
-        fdr_mat, tpr_mat, avg_L_mat, avg_T_mat,
-    )
+        # Incremental save over the solvers completed so far (abort-safe).
+        save_mc_results(
+            _OUT_DIR, stem, num_MC,
+            solver_names[:si + 1], snr_values,
+            fdr_mat[:si + 1], tpr_mat[:si + 1],
+            avg_L_mat[:si + 1], avg_T_mat[:si + 1],
+        )
 
 
 # ==============================================================================

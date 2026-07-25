@@ -10,10 +10,8 @@
 #      overlap_pool_size=30 (shared candidate-index pool across factors).
 #
 # Section 1: SNR sweep over the snr_values grid set in main()
-#            (currently the single point -10 dB, num_MC=200 — a deliberate
-#            Python-side downscale of the cpp legacy CRAN reference grid
-#            {-10, -7, -5, -3, 0, 3, 5, 7, 10} dB; the committed results match
-#            this configuration).
+#            (the legacy CRAN reference grid {-10, -7, -5, -3, 0, 3, 5, 7, 10} dB,
+#            num_MC=200 — matching the cpp reference exactly).
 #   Methods compared:
 #     1. OrdPCA             — ordinary PCA (baseline; no sparsity constraint)
 #     2. OraclePCA          — thresholded PCA with known support cardinality p1
@@ -60,12 +58,12 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import numpy as np
-import pandas as pd
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
 
-import trex_selector_neo as tsn
+import trex_selector_neo as trex  # noqa: E402
 
-from trex_spca_sim_utils import (N_CORES, center_columns,
+from trex_spca_sim_utils import (N_CORES, center_columns,  # noqa: E402
                                  generate_sparse_factor_model,
                                  run_mc_trials_oracle_pca, run_mc_trials_pca,
                                  run_mc_trials_trex_spca,
@@ -180,16 +178,16 @@ def _trial_union_fdr(task):
     # Union of the true factor supports.
     in_union = (dat["V"] != 0.0).any(axis=1)
 
-    ctrl = tsn.TRexSPCAControlParameter()
-    ctrl.mode = tsn.SPCAMode.ActiveSet
-    ctrl.en_solver = tsn.ENSolverType.TENET
-    ctrl.gvs_ctrl.trex_ctrl.scaling_mode = tsn.ScalingMode.L2
-    ctrl.gvs_ctrl.lambda2_method = tsn.LambdaSelectionMethod.CV_1SE_CCD
+    ctrl = trex.TRexSPCAControlParameter()
+    ctrl.mode = trex.SPCAMode.ActiveSet
+    ctrl.en_solver = trex.ENSolverType.TENET
+    ctrl.gvs_ctrl.trex_ctrl.scaling_mode = trex.ScalingMode.L2
+    ctrl.gvs_ctrl.lambda2_method = trex.LambdaSelectionMethod.CV_1SE_CCD
     ctrl.gvs_ctrl.lambda_2 = lambda_2
 
     # Selector seed -1: hardware-entropy dummies per trial (required for valid
     # MC FDR estimates).
-    sel = tsn.TRexSPCASelector(np.asfortranarray(X), spca_ctrl=ctrl, seed=-1)
+    sel = trex.TRexSPCASelector(np.asfortranarray(X), spca_ctrl=ctrl, seed=-1)
     sel.select(M, tFDR)
 
     fdr, k = [], []
@@ -305,10 +303,8 @@ def main():
     if os.environ.get("TREX_SPCA_NUM_MC"):
         cfg["num_MC"] = int(os.environ["TREX_SPCA_NUM_MC"])
 
-    # TEMP fast-validation: single SNR point — a deliberate downscale of the
-    # cpp legacy CRAN reference grid {-10, -7, -5, -3, 0, 3, 5, 7, 10} dB
-    # (the committed results match this single-point configuration).
-    snr_values = [-10.0]
+    # Legacy CRAN reference grid, mirroring the cpp demo exactly.
+    snr_values = [-10.0, -7.0, -5.0, -3.0, 0.0, 3.0, 5.0, 7.0, 10.0]
 
     # Part selection, e.g. TREX_SPCA_PARTS=2 runs only the union-FDR sweep.
     parts = os.environ.get("TREX_SPCA_PARTS", "12")

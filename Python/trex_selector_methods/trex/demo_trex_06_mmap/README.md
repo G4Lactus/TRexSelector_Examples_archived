@@ -2,56 +2,107 @@
 
 ## Purpose
 
-Demonstrate memory-mapped (mmap) I/O workflows for the T-Rex selector via two
-single-run patterns. Setting `use_memory_mapping = True` activates both
-mmap storage of the internal dummy matrices `D` and solver LARS-path
-serialization to disk between T-loop iterations; Part B additionally
-memory-maps the design matrix `X` itself. Python port of
-`cpp/trex_selector_methods/trex/demo_trex_06_mmap`.
+Demonstrate **memory-mapped (mmap) I/O workflows** for the T-Rex selector via two
+single-run usage patterns. Setting `use_memory_mapping = True` couples two
+behaviours: the internal dummy matrices $\mathbf{D}$ are memory-mapped, and solver
+LARS-path warm-start state is serialized to disk between T-loop iterations. Part B
+additionally memory-maps the design matrix $\mathbf{X}$ itself. Python port of
+[cpp/trex_selector_methods/trex/demo_trex_06_mmap](../../../../cpp/trex_selector_methods/trex/demo_trex_06_mmap/),
+using `trex_selector_neo`.
 
-## DGP / Data
+---
 
-Each part runs twice (low- then high-dimensional) via `dgp_gauss_snr`:
+## Data Generation Parameters
 
-- Low-dimensional (`n > p`): `n = 5000`, `p = 1000`
-- High-dimensional (`p > n`): `n = 1000`, `p = 5000`
-- Fixed true support (0-based): `{27, 149, 398, 420, 4}` (`s = 5`)
-- Fixed coefficients `beta_j = 1`, SNR = 1.0, tFDR = 0.1, seed = 58
+Each part runs twice (low- then high-dimensional) via the shared Gaussian
+generator `dgp_gauss_snr` (i.i.d. standard-normal design, independent columns —
+the shared design family whose column-correlation is essentially the identity):
 
-Control (`_MMAP_CTRL_DICT`): TLARS, `K = 20`, `max_dummy_multiplier = 10`,
-`lloop_strategy = "HCONCAT"`, `tloop_stagnation_stop = True`,
-`use_memory_mapping = True`.
+![Design-matrix correlation of the shared i.i.d. Gaussian DGP (shown at n=300, p=1000; natural order, no clustering)](../dgp_corr_plots/trex_gauss.png)
+
+- **Low-dimensional** ($n > p$): $n = 5000$, $p = 1000$
+- **High-dimensional** ($p > n$): $n = 1000$, $p = 5000$
+- **True support** (0-based): fixed $\mathcal{S}^\ast = \{4, 27, 149, 398, 420\}$ ($s = 5$)
+- **True coefficients**: fixed $\beta_j = 1$ (`rnd_coef = False`)
+- SNR $= 1.0$, tFDR $= 0.1$, seed $= 58$
+
+**Data size** (largest config, $n = 1000$, $p = 5000$): $\mathbf{X}$ is
+$\approx 40$ MB — comfortably in RAM. The motivation for mmap here is the
+augmented dummy space: with up to $L = 10p$ dummy columns, the internal dummy
+matrices $\mathbf{D}$ and serialized solver state dominate memory (hundreds of
+MB), which is what `use_memory_mapping = True` offloads to disk.
+
+---
+
+## Control Parameters
+
+```text
+solver_name           = TLARS      # Base solver
+K                     = 20         # Random experiments per T-loop iteration
+max_dummy_multiplier  = 10         # Max L = 10p
+use_max_T_stop        = True       # Cap T <= ceil(n/2)
+dummy_distribution    = Normal     # Dummy predictors drawn from N(0,1)
+lloop_strategy        = HCONCAT    # Horizontally concatenated dummy columns
+tloop_stagnation_stop = True       # Early exit when R_mat stagnates
+use_memory_mapping    = True       # D mmap + solver serialization (both parts)
+tFDR                  = 0.1        # Target FDR control level
+```
+
+---
 
 ## Parts
 
-- **Part A** (`part_a_d_mmap_solver_serial`): `X` stays in RAM;
-  `use_memory_mapping = True` gives D-mmap + solver serialization.
-- **Part B** (`part_b_full_mmap`): `X` is written to a temporary binary file via
-  `numpy_to_memmap`, and the zero-copy `X_mmap.to_numpy()` view is passed to
-  `TRexSelector`. The temp file is removed in a `finally` block (exception-safe,
-  mirrors the C++ RAII `MmapFileGuard`).
+- **Part A** (`part_a_d_mmap_solver_serial`) — $\mathbf{X}$ stays in RAM;
+  `use_memory_mapping = True` gives D-mmap + solver serialization. *Use case:*
+  $\mathbf{X}$ fits in RAM but the dummy/solver working set is large.
+- **Part B** (`part_b_full_mmap`) — the **fully memory-mapped pipeline**:
+  $\mathbf{X}$ is written to a temporary binary file via `numpy_to_memmap`, and
+  the zero-copy `X_mmap.to_numpy()` view is passed to `TRexSelector`. The temp
+  file is removed in a `finally` block (exception-safe, mirroring the C++ RAII
+  `MmapFileGuard`). *Use case:* $\mathbf{X}$ too large for RAM; maximum memory
+  efficiency.
 
 `main()` runs Part A (low then high dim) followed by Part B (low then high dim).
-Each run prints (and writes) the C++-style selection block via
-`print_selection_results`: selected indices, FDP/TPP, sparse `phi_prime` /
-`phi_mat`, `fdp_hat_mat`, `r_mat`, and the voting grid, plus `T_stop` and `L`.
 
-## Imports
+---
 
-The demo inserts its own folder and the parent suite dir onto `sys.path` to
-import the shared `dgp_gauss_snr`, `trex_helpers`, and `trex_sim_common`
-modules. The selector layer is used via the root alias
-`import trex_selector_neo as tsn` (`tsn.TRexSelector`); `numpy_to_memmap`
-comes from `trex_selector_neo.utils` via an explicit `from`-import.
+## Output Files
 
-## Output
+Dual console + file output. Per configuration, one `.txt` (full selection block —
+selected indices, FDP/TPP, sparse `phi_prime` / `phi_mat`, `fdp_hat_mat`,
+`r_mat`, voting grid, plus $T_{\text{stop}}$ and $L$) and one per-variable
+selection `.csv` (`variable_index,phi_prime,selected,true_positive`), in
+`simulation_results/data/`, stems `d02_trex_mmap_demo_a_n{n}_p{p}` and
+`d02_trex_mmap_demo_b_n{n}_p{p}` — matching the C++ result files.
 
-Dual console + file output (mirrors the C++ `print_dual` pattern). Per
-configuration, one `.txt` (full selection block) and one per-variable
-selection `.csv` (via `save_selection_csv`) in this demo's own
-`simulation_results/data/` folder, stems `d02_trex_mmap_demo_a_n{n}_p{p}` and
-`d02_trex_mmap_demo_b_n{n}_p{p}` — matching the C++ result files. This is a
-single-run demo (no `multiprocessing`).
+---
+
+## Recorded Results
+
+From the committed recordings (seed $= 58$) — the mmap pipeline recovers the
+support cleanly in both regimes, and the selected set is exactly the true support
+$\{4, 27, 149, 398, 420\}$ in all four cases (storage medium does not change the
+selection):
+
+| Part | Config | Selected | TP | FP | FDP | TPP | Calibration |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| A (D-mmap) | $n{=}5000$, $p{=}1000$ | 5 | 5 | 0 | 0.000 | 1.000 | $T_{\text{stop}}{=}3$, $L{=}2$ |
+| A (D-mmap) | $n{=}1000$, $p{=}5000$ | 5 | 5 | 0 | 0.000 | 1.000 | $T_{\text{stop}}{=}4$, $L{=}2$ |
+| B (full mmap) | $n{=}5000$, $p{=}1000$ | 5 | 5 | 0 | 0.000 | 1.000 | $T_{\text{stop}}{=}3$, $L{=}2$ |
+| B (full mmap) | $n{=}1000$, $p{=}5000$ | 5 | 5 | 0 | 0.000 | 1.000 | $T_{\text{stop}}{=}4$, $L{=}2$ |
+
+- **Selection quality** matches an in-memory run — all five actives recovered
+  with no false positive in all four cases.
+- **A ≡ B (same seed)**: for each dimension, the in-memory-mmap (Part A) and
+  fully-memory-mapped (Part B) pipelines produce **identical** output — same
+  selected indices, same `Phi_prime`, and the same calibration ($T_{\text{stop}}$,
+  $L$). The backing storage of $\mathbf{X}$ does not alter the selection.
+- With `use_memory_mapping = True`, the dummy matrices and solver state live on
+  disk, keeping RAM usage low; Part B additionally keeps $\mathbf{X}$ off the
+  heap. Disk speed (SSD vs. HDD) drives the wall-clock cost of the
+  page-fault-driven access — prefer an SSD for the backing files.
+
+---
 
 ## Running
 
@@ -59,4 +110,8 @@ single-run demo (no `multiprocessing`).
 python Python/trex_selector_methods/trex/demo_trex_06_mmap/demo_trex_06_mmap.py
 ```
 
-**Last updated**: 2026-07-21
+Single-run demo — no `multiprocessing`.
+
+---
+
+**Last updated**: 2026-07-25

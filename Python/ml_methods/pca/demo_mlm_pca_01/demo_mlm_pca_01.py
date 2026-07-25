@@ -27,6 +27,7 @@
 #     original values are needed afterwards. PCA.restore() undoes the in-place
 #     preprocessing of the fitted matrix (the cpp API passes the map
 #     explicitly: pca.restore(X_map)).
+#
 #   - The C++ demo seeds std::mt19937; here numpy's default_rng is seeded with
 #     the same values. The RNG streams differ, so the printed numbers match
 #     the C++ output qualitatively, not bitwise.

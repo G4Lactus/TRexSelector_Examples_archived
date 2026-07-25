@@ -36,7 +36,7 @@ In particular:
 - variants that rely on preprocessing reuse components from `ml_methods`, for example HAC clustering for group construction in `trex_gvs`, or scaling utilities shared across variants,
 - `trex_screening` and the memory-mapped demos in `trex` build on the memory-mapping utilities for large design matrices.
 
-All selector-layer classes and enums are accessed through the package root (`import trex_selector_neo as tsn`); see the [import conventions](../README.md#import-conventions).
+All selector-layer classes and enums are accessed through the package root (`import trex_selector_neo as trex`); see the [import conventions](../README.md#import-conventions).
 
 ---
 

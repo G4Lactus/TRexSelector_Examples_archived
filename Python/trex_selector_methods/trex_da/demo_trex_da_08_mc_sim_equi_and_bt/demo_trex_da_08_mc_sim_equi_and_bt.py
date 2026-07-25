@@ -22,8 +22,8 @@
 #
 # Mirrors cpp/trex_selector_methods/trex_da/demo_trex_da_08_mc_sim_equi_and_bt
 # (same DGP, control parameters, sweep axes, and result files — one TXT/CSV
-# pair per SNR column). Results are saved to simulation_results/. Reduce
-# NUM_MC to preview.
+# pair per SNR column).
+# Results are saved to simulation_results/.
 # ==============================================================================
 
 import os
@@ -35,7 +35,7 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from da_sim_common import default_solvers, fmt_num, run_param_sweep
+from da_sim_common import default_solvers, fmt_num, run_param_sweep  # noqa: E402
 
 RUN_PART_1 = True
 

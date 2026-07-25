@@ -21,19 +21,19 @@
 import os
 import sys
 
-_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-_PARENT_DIR = os.path.dirname(_THIS_DIR)
-for _p in (_THIS_DIR, _PARENT_DIR):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
-
 import numpy as np
 
 from trex_selector_neo.ml_methods import LpNormScaler, NormType
 from trex_selector_neo.tsolvers.omp_based import TOOLS_Solver
 from trex_selector_neo.utils import get_max_threads, numpy_to_memmap, set_num_threads
 
-from ts_demo_utils import (
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+_PARENT_DIR = os.path.dirname(_THIS_DIR)
+for _p in (_THIS_DIR, _PARENT_DIR):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+from ts_demo_utils import ( # noqa: E402
     gen_synthetic_data,
     print_demo_config,
     print_section_header,

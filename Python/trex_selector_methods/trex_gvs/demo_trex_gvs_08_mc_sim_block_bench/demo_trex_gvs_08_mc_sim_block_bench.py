@@ -55,7 +55,7 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from gvs_sim_common import (N_CORES, fmt_num, print_block_grid_table,
+from gvs_sim_common import (N_CORES, fmt_num, print_block_grid_table,  # noqa: E402
                             print_section_header, run_block_mc)
 
 N_WORKERS = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else N_CORES

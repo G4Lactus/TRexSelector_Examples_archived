@@ -8,7 +8,7 @@
 # Mirrors cpp/ml_methods/model_selection/demo_mlm_ms_01_ridge_cv_svd/
 #         demo_mlm_ms_01_ridge_cv_svd.cpp.
 #
-# Scenarios covered:
+# Scenarios:
 #
 #   Demo 1 | Low-dimensional  : n=1000, p=500  (n > p,  10-fold)
 #   Demo 2 | High-dimensional : n=300,  p=500  (p > n,  10-fold)
@@ -21,10 +21,11 @@
 #                               re-opened ReadWrite because the Python
 #                               zero-copy view requires ReadWrite mode.)
 #
-# Notes on the port:
+# Notes:
 #   - Same n / p / fold values and data seeds as the C++ and R demos; NumPy's
 #     PCG64 stream differs from std::mt19937 and from R's Mersenne-Twister,
 #     so results match qualitatively, not bitwise.
+#
 #   - RidgeCV requires float64, Fortran-ordered (column-major) arrays;
 #     np.asfortranarray() provides the required layout.
 #
@@ -157,20 +158,20 @@ def demo_kfold_high_dim():
 
 
 # ==============================================================================
-# Demo 3: Very high-dimensional scenario (n=300, p=1000, p >> n, 5-fold)
+# Demo 3: Very high-dimensional scenario (n=300, p=1000, p >> n, 10-fold)
 # ==============================================================================
 
 def demo_kfold_very_high_dim():
     print_section_header(
-        "Demo MS-01 | ridge_cv_svd | Very High-Dimensional (n=300, p=1000, 5-fold)")
+        "Demo MS-01 | ridge_cv_svd | Very High-Dimensional (n=300, p=1000, 10-fold)")
 
-    n, p, sigma, n_folds = 300, 1_000, 1.0, 5
+    n, p, sigma, n_folds = 300, 1_000, 1.0, 10
 
     X, y, beta_true = generate_regression_data(n, p, sigma, seed=333)
 
     print(f"Data: n={n}, p={p}, folds={n_folds}, "
           f"active coefs={int(np.sum(beta_true != 0))}")
-    print("  Note: 5 folds used to ensure each fold's training set is large "
+    print("  Note: 10 folds used to ensure each fold's training set is large "
           "enough relative to n.\n")
 
     fit_and_report(X, y, n_folds, seed=333)

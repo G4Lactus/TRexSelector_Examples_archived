@@ -43,7 +43,7 @@ priori known group structures.
 
 ## DA-TRex specific concepts
 
-- **`tsn.DAMethod`** — the dependency-correction strategy: `AR1`, `EQUI`,
+- **`trex.DAMethod`** — the dependency-correction strategy: `AR1`, `EQUI`,
   `NN`, `BT` (plus `PRIOR_GROUPS`, engaged automatically whenever
   `da_control.prior_groups` is non-empty). Each targets the matching
   correlation structure; DA-TRex uses it to widen or narrow the "correction

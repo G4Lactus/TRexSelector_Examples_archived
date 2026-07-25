@@ -54,21 +54,27 @@ from support_generators import make_support_random  # noqa: E402
 # for ProcessPoolExecutor. Solver names are mapped to SolverTypeForTRex enums
 # inside the worker, never across the process boundary.
 #
+# Values mirror the C++ DemoSolverInfo list exactly: lambda2 and rho_afs default
+# to 0.0, overridden only where C++ does — TENET (lambda2=0.1), TAFS_rho_0.3 /
+# TAFS_rho_1.0 (rho_afs=0.3 / 1.0), TNCGMP_v1 (ncgmp_variant=1). lambda2 only
+# affects the elastic-net solvers (TENET; a nonzero value would turn TLASSO into
+# an elastic net), and rho_afs only affects TAFS — so the per-solver defaults
+# must be 0.0 to match C++, not a blanket 0.1 / 0.3.
 SOLVERS_DEFAULT = [
-    dict(solver_name="TLARS",      name="TLARS",        lambda2=0.1, rho_afs=0.3, ncgmp_variant=0),
-    dict(solver_name="TLASSO",     name="TLASSO",       lambda2=0.1, rho_afs=0.3, ncgmp_variant=0),
-    dict(solver_name="TENET",      name="TENET",        lambda2=0.1, rho_afs=0.3, ncgmp_variant=0),
-    dict(solver_name="TSTAGEWISE", name="TSTAGEWISE",   lambda2=0.1, rho_afs=0.3, ncgmp_variant=0),
-    dict(solver_name="TSTEPWISE",  name="TSTEPWISE",    lambda2=0.1, rho_afs=0.3, ncgmp_variant=0),
-    dict(solver_name="TOMP",       name="TOMP",         lambda2=0.1, rho_afs=0.3, ncgmp_variant=0),
-    dict(solver_name="TGP",        name="TGP",          lambda2=0.1, rho_afs=0.3, ncgmp_variant=0),
-    dict(solver_name="TACGP",      name="TACGP",        lambda2=0.1, rho_afs=0.3, ncgmp_variant=0),
-    dict(solver_name="TMP",        name="TMP",          lambda2=0.1, rho_afs=0.3, ncgmp_variant=0),
-    dict(solver_name="TAFS",       name="TAFS_rho_0.3", lambda2=0.1, rho_afs=0.3, ncgmp_variant=0),
-    dict(solver_name="TAFS",       name="TAFS_rho_1.0", lambda2=0.1, rho_afs=1.0, ncgmp_variant=0),
-    dict(solver_name="TNCGMP",     name="TNCGMP_v1",    lambda2=0.1, rho_afs=0.3, ncgmp_variant=1),
-    dict(solver_name="TNCGMP",     name="TNCGMP_v0",    lambda2=0.1, rho_afs=0.3, ncgmp_variant=0),
-    dict(solver_name="TOOLS",      name="TOOLS",        lambda2=0.1, rho_afs=0.3, ncgmp_variant=0),
+    dict(solver_name="TLARS",      name="TLARS",        lambda2=0.0, rho_afs=0.0, ncgmp_variant=0),
+    dict(solver_name="TLASSO",     name="TLASSO",       lambda2=0.0, rho_afs=0.0, ncgmp_variant=0),
+    dict(solver_name="TENET",      name="TENET",        lambda2=0.1, rho_afs=0.0, ncgmp_variant=0),
+    dict(solver_name="TSTAGEWISE", name="TSTAGEWISE",   lambda2=0.0, rho_afs=0.0, ncgmp_variant=0),
+    dict(solver_name="TSTEPWISE",  name="TSTEPWISE",    lambda2=0.0, rho_afs=0.0, ncgmp_variant=0),
+    dict(solver_name="TOMP",       name="TOMP",         lambda2=0.0, rho_afs=0.0, ncgmp_variant=0),
+    dict(solver_name="TGP",        name="TGP",          lambda2=0.0, rho_afs=0.0, ncgmp_variant=0),
+    dict(solver_name="TACGP",      name="TACGP",        lambda2=0.0, rho_afs=0.0, ncgmp_variant=0),
+    dict(solver_name="TMP",        name="TMP",          lambda2=0.0, rho_afs=0.0, ncgmp_variant=0),
+    dict(solver_name="TAFS",       name="TAFS_rho_0.3", lambda2=0.0, rho_afs=0.3, ncgmp_variant=0),
+    dict(solver_name="TAFS",       name="TAFS_rho_1.0", lambda2=0.0, rho_afs=1.0, ncgmp_variant=0),
+    dict(solver_name="TNCGMP",     name="TNCGMP_v1",    lambda2=0.0, rho_afs=0.0, ncgmp_variant=1),
+    dict(solver_name="TNCGMP",     name="TNCGMP_v0",    lambda2=0.0, rho_afs=0.0, ncgmp_variant=0),
+    dict(solver_name="TOOLS",      name="TOOLS",        lambda2=0.0, rho_afs=0.0, ncgmp_variant=0),
 ]
 
 
@@ -131,20 +137,20 @@ _LLOOP_MAP  = None
 def _get_solver_map():
     global _SOLVER_MAP
     if _SOLVER_MAP is None:
-        import trex_selector_neo as tsn
+        import trex_selector_neo as trex
         _SOLVER_MAP = {
-            "TLARS":      tsn.SolverTypeForTRex.TLARS,
-            "TLASSO":     tsn.SolverTypeForTRex.TLASSO,
-            "TENET":      tsn.SolverTypeForTRex.TENET,
-            "TSTEPWISE":  tsn.SolverTypeForTRex.TSTEPWISE,
-            "TSTAGEWISE": tsn.SolverTypeForTRex.TSTAGEWISE,
-            "TOMP":       tsn.SolverTypeForTRex.TOMP,
-            "TGP":        tsn.SolverTypeForTRex.TGP,
-            "TACGP":      tsn.SolverTypeForTRex.TACGP,
-            "TMP":        tsn.SolverTypeForTRex.TMP,
-            "TNCGMP":     tsn.SolverTypeForTRex.TNCGMP,
-            "TOOLS":      tsn.SolverTypeForTRex.TOOLS,
-            "TAFS":       tsn.SolverTypeForTRex.TAFS,
+            "TLARS":      trex.SolverTypeForTRex.TLARS,
+            "TLASSO":     trex.SolverTypeForTRex.TLASSO,
+            "TENET":      trex.SolverTypeForTRex.TENET,
+            "TSTEPWISE":  trex.SolverTypeForTRex.TSTEPWISE,
+            "TSTAGEWISE": trex.SolverTypeForTRex.TSTAGEWISE,
+            "TOMP":       trex.SolverTypeForTRex.TOMP,
+            "TGP":        trex.SolverTypeForTRex.TGP,
+            "TACGP":      trex.SolverTypeForTRex.TACGP,
+            "TMP":        trex.SolverTypeForTRex.TMP,
+            "TNCGMP":     trex.SolverTypeForTRex.TNCGMP,
+            "TOOLS":      trex.SolverTypeForTRex.TOOLS,
+            "TAFS":       trex.SolverTypeForTRex.TAFS,
         }
     return _SOLVER_MAP
 
@@ -152,21 +158,21 @@ def _get_solver_map():
 def _get_lloop_map():
     global _LLOOP_MAP
     if _LLOOP_MAP is None:
-        import trex_selector_neo as tsn
+        import trex_selector_neo as trex
         _LLOOP_MAP = {
-            "STANDARD":             tsn.LLoopStrategy.STANDARD,
-            "HCONCAT":              tsn.LLoopStrategy.HCONCAT,
-            "PERMUTATION":          tsn.LLoopStrategy.PERMUTATION,
-            "PERMUTATION_ONDEMAND": tsn.LLoopStrategy.PERMUTATION_ONDEMAND,
-            "ONDEMAND":             tsn.LLoopStrategy.ONDEMAND,
-            "SKIPL":                tsn.LLoopStrategy.SKIPL,
+            "STANDARD":             trex.LLoopStrategy.STANDARD,
+            "HCONCAT":              trex.LLoopStrategy.HCONCAT,
+            "PERMUTATION":          trex.LLoopStrategy.PERMUTATION,
+            "PERMUTATION_ONDEMAND": trex.LLoopStrategy.PERMUTATION_ONDEMAND,
+            "ONDEMAND":             trex.LLoopStrategy.ONDEMAND,
+            "SKIPL":                trex.LLoopStrategy.SKIPL,
         }
     return _LLOOP_MAP
 
 
 def _make_dummy_distribution(spec):
     """
-    Build a tsn.DummyDistribution from a plain (picklable) spec dict.
+    Build a trex.DummyDistribution from a plain (picklable) spec dict.
 
     spec: {"type": <name>, <optional distribution-specific parameters>}
     Types and parameters mirror R's trex_dummy_distribution():
@@ -176,8 +182,8 @@ def _make_dummy_distribution(spec):
         Laplace/Gumbel/Logistic(location, scale)
     Omitted parameters use the binding's unit-variance defaults.
     """
-    import trex_selector_neo as tsn
-    D = tsn.DummyDistribution
+    import trex_selector_neo as trex
+    D = trex.DummyDistribution
     t = spec["type"]
     if t == "Normal":
         return D.normal()
@@ -208,6 +214,18 @@ def _make_trex_ctrl_from_dict(d):
     """
     Build a TRexControlParameter from a flat dict.
 
+    DIVERGENCE-SAFE by construction: it starts from ``trex.TRexControlParameter()``
+    — whose field defaults are *identical* to the C++ ``TRexControlParameter``
+    struct (verified field-by-field) — and overrides a field ONLY when the dict
+    supplies a non-None value. A missing or None key therefore keeps the
+    C++/binding default; the helper never substitutes a Python-specific fallback
+    that could silently diverge from the C++ reference.
+
+    In particular, a missing/None ``tloop_stagnation_stop`` preserves the
+    tri-state AUTO (``std::nullopt``) that the C++ demos 04/05 rely on (resolved
+    per solver family in the selector) — the previous ``bool(...)`` coercion
+    could not represent AUTO and forced it to False.
+
     Called inside worker processes — the object is never sent across a process
     boundary (only the flat dict is pickled).
 
@@ -218,26 +236,37 @@ def _make_trex_ctrl_from_dict(d):
         parallel_rnd_experiments, use_memory_mapping,
         dummy_distribution (a spec dict for _make_dummy_distribution).
     """
-    import trex_selector_neo as tsn
+    import trex_selector_neo as trex
     solver_map = _get_solver_map()
     lloop_map  = _get_lloop_map()
 
-    ctrl = tsn.TRexControlParameter()
-    ctrl.K                        = int(d.get("K", 20))
-    ctrl.max_dummy_multiplier     = int(d.get("max_dummy_multiplier", 10))
-    ctrl.use_max_T_stop           = bool(d.get("use_max_T_stop", True))
-    ctrl.opt_threshold            = float(d.get("opt_threshold", 0.02))
-    ctrl.lloop_strategy           = lloop_map[d.get("lloop_strategy", "HCONCAT")]
-    ctrl.tloop_stagnation_stop    = bool(d.get("tloop_stagnation_stop", False))
-    ctrl.tloop_max_stagnant_steps = int(d.get("tloop_max_stagnant_steps", 10))
-    ctrl.parallel_rnd_experiments = bool(d.get("parallel_rnd_experiments", True))
-    ctrl.use_memory_mapping       = bool(d.get("use_memory_mapping", False))
+    ctrl = trex.TRexControlParameter()   # defaults == C++ struct defaults
+
+    # (dict key, ctrl attribute, cast) — applied only when present and not None.
+    scalar_fields = (
+        ("K",                        "K",                        int),
+        ("max_dummy_multiplier",     "max_dummy_multiplier",     int),
+        ("use_max_T_stop",           "use_max_T_stop",           bool),
+        ("opt_threshold",            "opt_threshold",            float),
+        ("tloop_stagnation_stop",    "tloop_stagnation_stop",    bool),
+        ("tloop_max_stagnant_steps", "tloop_max_stagnant_steps", int),
+        ("parallel_rnd_experiments", "parallel_rnd_experiments", bool),
+        ("use_memory_mapping",       "use_memory_mapping",       bool),
+    )
+    for key, attr, cast in scalar_fields:
+        if d.get(key) is not None:
+            setattr(ctrl, attr, cast(d[key]))
+
+    if d.get("lloop_strategy") is not None:
+        ctrl.lloop_strategy = lloop_map[d["lloop_strategy"]]
     if d.get("dummy_distribution") is not None:
-        ctrl.dummy_distribution   = _make_dummy_distribution(d["dummy_distribution"])
-    ctrl.solver_type              = solver_map[d["solver_name"]]
-    ctrl.solver_params.lambda2    = float(d.get("lambda2", 0.1))
-    ctrl.solver_params.rho_afs   = float(d.get("rho_afs", 0.3))
-    ctrl.solver_params.ncgmp_variant = int(d.get("ncgmp_variant", 0))
+        ctrl.dummy_distribution = _make_dummy_distribution(d["dummy_distribution"])
+
+    ctrl.solver_type = solver_map[d["solver_name"]]   # required
+    for key, cast in (("lambda2", float), ("rho_afs", float),
+                      ("ncgmp_variant", int)):
+        if d.get(key) is not None:
+            setattr(ctrl.solver_params, key, cast(d[key]))
     return ctrl
 
 
@@ -261,7 +290,6 @@ def _trial_worker(args):
         tloop_stagnation_stop, tloop_max_stagnant_steps, lloop_strategy,
         parallel_rnd_experiments, use_memory_mapping.
     """
-    mc         = args["mc"]
     trial_seed = args["trial_seed"]
     n, p, s    = args["n"], args["p"], args["s"]
     snr        = args["snr"]
@@ -271,7 +299,7 @@ def _trial_worker(args):
     tFDR       = args["tFDR"]
     track_L_T  = args.get("track_L_T", False)
 
-    import trex_selector_neo as tsn
+    import trex_selector_neo as trex
 
     # Resolve support
     if fixed_supp is None:
@@ -292,7 +320,7 @@ def _trial_worker(args):
     ctrl = _make_trex_ctrl_from_dict(args)
 
     # TRexSelector expects Fortran-contiguous (column-major) X
-    sel = tsn.TRexSelector(
+    sel = trex.TRexSelector(
         np.asfortranarray(dat["X"]),
         dat["y"],
         tFDR=tFDR,
@@ -394,8 +422,9 @@ def run_mc_trex(
             "track_L_T":     track_L_T,
             # Solver-specific params (from solver_desc)
             "solver_name":   solver_desc["solver_name"],
-            "lambda2":       solver_desc.get("lambda2", 0.1),
-            "rho_afs":       solver_desc.get("rho_afs", 0.3),
+            # Defaults match the C++ DemoSolverInfo struct (0.0 / 0.0 / 0).
+            "lambda2":       solver_desc.get("lambda2", 0.0),
+            "rho_afs":       solver_desc.get("rho_afs", 0.0),
             "ncgmp_variant": solver_desc.get("ncgmp_variant", 0),
             # Shared control params (from base_ctrl_dict; no key conflicts with above)
             **base_ctrl_dict,
@@ -581,10 +610,9 @@ def _trial_worker_full_mmap(args):
     will be set in the ctrl dict by the caller).
     """
     import tempfile
-    import trex_selector_neo as tsn
+    import trex_selector_neo as trex
     from trex_selector_neo.utils import numpy_to_memmap
 
-    mc         = args["mc"]
     trial_seed = args["trial_seed"]
     n, p, s    = args["n"], args["p"], args["s"]
     snr        = args["snr"]
@@ -625,7 +653,7 @@ def _trial_worker_full_mmap(args):
         # X_mmap.to_numpy() returns a Fortran-contiguous float64 view backed
         # by the mmap buffer; TRexSelector.__init__ calls
         # np.asfortranarray(X, dtype=np.float64) which returns it unchanged.
-        sel = tsn.TRexSelector(
+        sel = trex.TRexSelector(
             X_mmap.to_numpy(),
             dat["y"],
             tFDR=tFDR,
@@ -709,8 +737,9 @@ def run_mc_trex_full_mmap(
             "tFDR":          tFDR,
             "track_L_T":     track_L_T,
             "solver_name":   solver_desc["solver_name"],
-            "lambda2":       solver_desc.get("lambda2", 0.1),
-            "rho_afs":       solver_desc.get("rho_afs", 0.3),
+            # Defaults match the C++ DemoSolverInfo struct (0.0 / 0.0 / 0).
+            "lambda2":       solver_desc.get("lambda2", 0.0),
+            "rho_afs":       solver_desc.get("rho_afs", 0.0),
             "ncgmp_variant": solver_desc.get("ncgmp_variant", 0),
             **base_ctrl_dict,
         }

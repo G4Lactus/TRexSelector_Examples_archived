@@ -10,10 +10,12 @@
 #   Part 3: 2D Gap x Rho sweep — probes the kappa boundary where gap < kappa
 #           collapses TPP (CappedSpread(gap) matrices + Random column).
 #
-# Mirrors cpp/trex_selector_methods/trex_da/demo_trex_da_01_mc_sim_ar1 (same
-# DGP, control parameters, sweep axes, and result files). Results are saved to
-# simulation_results/ as TXT and CSV files. Every part runs num_MC=200 trials
-# per grid point — reduce NUM_MC to preview.
+# Mirrors:
+# cpp/trex_selector_methods/trex_da/demo_trex_da_01_mc_sim_ar1
+#
+# Results are saved to
+# simulation_results/ as TXT and CSV files.
+# Every part runs num_MC=200 trials per grid point.
 # ==============================================================================
 
 import os
@@ -25,9 +27,9 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import numpy as np
+import numpy as np  # noqa: E402
 
-from da_sim_common import (default_solvers, fmt_num, make_support_capped_spread,
+from da_sim_common import (default_solvers, fmt_num, make_support_capped_spread,  # noqa: E402
                            print_section_header, run_mc_trials, run_param_sweep,
                            run_snr_sweep, save_and_print_2d_gap_rho_results)
 
@@ -150,8 +152,8 @@ def part_3_gap_rho_sweep():
     sd_fdp_rand = {nm: np.zeros(n_rho) for nm in names}
 
     print_section_header("AR(1) Part 3: Gap x Rho sweep")
-    print(f"  n={N}  p={P}  s={S}  SNR={snr_fixed}  MC={NUM_MC}"
-          f"  tFDR={TFDR}  amplitude={AMPLITUDE}")
+    print(f"  n={N}  p={P}  s={S}  SNR={fmt_num(snr_fixed)}  MC={NUM_MC}"
+          f"  tFDR={TFDR}  amplitude={fmt_num(AMPLITUDE)}")
     print("  gap_grid: {" + ", ".join(map(str, gap_grid)) + "}")
     print("  rho_grid: {" + ", ".join(f"{r:.1f}" for r in rho_grid) + "}\n")
 

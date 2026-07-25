@@ -31,8 +31,7 @@ from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 import pandas as pd
 
-import trex_selector_neo as tsn
-from trex_selector_neo.utils import compute_fdp, compute_tpp
+import trex_selector_neo as trex
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
@@ -56,18 +55,18 @@ BIOBANK_DISPLAY = ["Screen-TRex Ordinary: TLARS",
 # ==============================================================================
 
 def _build_biobank_ctrl(d):
-    """Build a tsn.BiobankScreenTRexControl from a flat dict (mirrors makeBiobankControl()).
+    """Build a trex.BiobankScreenTRexControl from a flat dict (mirrors makeBiobankControl()).
 
     BiobankScreenTRexControl nests ScreenTRexControlParameter as
     trex_screen_ctrl, which in turn nests its own trex_ctrl. Rebuilt inside
     worker processes.
     """
-    ctrl = tsn.BiobankScreenTRexControl()
+    ctrl = trex.BiobankScreenTRexControl()
     ctrl.lower_bound_FDR = float(d.get("lower_bound_FDR", 0.05))
     ctrl.upper_bound_FDR = float(d.get("upper_bound_FDR", 0.15))
     ctrl.target_FDR_trex = float(d.get("target_FDR_trex", 0.10))
 
-    ctrl.trex_screen_ctrl.trex_method = tsn.ScreenTRexMethod.TREX
+    ctrl.trex_screen_ctrl.trex_method = trex.ScreenTRexMethod.TREX
     ctrl.trex_screen_ctrl.R_boot = int(d.get("R_boot", 1000))
     ctrl.trex_screen_ctrl.ci_grid_step = float(d.get("ci_grid_step", 0.001))
 
@@ -75,9 +74,9 @@ def _build_biobank_ctrl(d):
     tc.K = int(d.get("K", 20))
     tc.max_dummy_multiplier = 10
     tc.use_max_T_stop = True
-    tc.dummy_distribution = tsn.DummyDistribution.normal()
-    tc.lloop_strategy = tsn.LLoopStrategy.STANDARD
-    tc.solver_type = tsn.SolverTypeForTRex.TLARS
+    tc.dummy_distribution = trex.DummyDistribution.normal()
+    tc.lloop_strategy = trex.LLoopStrategy.STANDARD
+    tc.solver_type = trex.SolverTypeForTRex.TLARS
     tc.use_memory_mapping = bool(d.get("use_mmap", False))
     return ctrl
 

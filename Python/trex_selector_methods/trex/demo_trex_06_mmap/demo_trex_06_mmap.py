@@ -3,8 +3,11 @@
 # ==============================================================================
 #
 # Classical T-Rex Selector demo — memory-mapped workflows.
-# Mirrors R/trex_selector_methods/trex/demo_trex_06_mmap.R and
+#
+# Mirrors:
 # cpp/trex_selector_methods/trex/demo_trex_06_mmap.cpp.
+# and
+# R/trex_selector_methods/trex/demo_trex_06_mmap.R
 #
 # Demo content:
 #
@@ -20,8 +23,7 @@
 #          X_mmap.to_numpy() (a zero-copy OS-paged view) is passed to
 #          TRexSelector; use_memory_mapping=True adds D-mmap + solver
 #          serialization on top.
-#          Mirrors C++ Demo B (SyntheticDataMapped) and R Part B
-#          (execute_with_temp_mmap).
+#          Mirrors C++ Demo B (SyntheticDataMapped).
 #
 # Seed note:
 #   Both parts use seed=58 for DGP and TRexSelector (single-run reproducibility,
@@ -43,16 +45,16 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import tempfile
+import tempfile  # noqa: E402
 
-import numpy as np
+import numpy as np  # noqa: E402
 
-import trex_selector_neo as tsn
-from trex_selector_neo.utils import numpy_to_memmap
+import trex_selector_neo as trex  # noqa: E402
+from trex_selector_neo.utils import numpy_to_memmap  # noqa: E402
 
-from dgp_gauss_snr import dgp_gauss_snr
-from trex_helpers import make_dual_out, print_selection_results, save_selection_csv
-from trex_sim_common import _make_trex_ctrl_from_dict
+from dgp_gauss_snr import dgp_gauss_snr  # noqa: E402
+from trex_helpers import make_dual_out, print_selection_results, save_selection_csv  # noqa: E402
+from trex_sim_common import _make_trex_ctrl_from_dict  # noqa: E402
 
 # ==============================================================================
 # Shared demo configuration
@@ -70,19 +72,23 @@ _SEED         = 58
 
 _OUT_DIR = os.path.join(_THIS_DIR, "simulation_results", "data")
 
-# Shared control: mirrors make_mmap_trex_ctrl() in C++ and R
+# Shared control: mirrors make_mmap_trex_ctrl() in C++ (demo_trex_06_mmap.cpp).
+# Every option explicit, values from the C++ reference — no reliance on
+# binding/helper defaults.
 _MMAP_CTRL_DICT = dict(
     solver_name               = "TLARS",
     K                         = 20,
     max_dummy_multiplier      = 10,
     use_max_T_stop            = True,
+    opt_threshold             = 0.75,
     lloop_strategy            = "HCONCAT",
     tloop_stagnation_stop     = True,
+    tloop_max_stagnant_steps  = 5,
     use_memory_mapping        = True,   # activates D-mmap + solver serialization
     lambda2                   = 0.1,
-    rho_afs                   = 0.3,
+    rho_afs                   = 0.0,   # non-TAFS solver; rho_afs is unused
     ncgmp_variant             = 0,
-    parallel_rnd_experiments  = False,  # mirrors R use_openmp=FALSE
+    parallel_rnd_experiments  = False,
 )
 
 
@@ -139,7 +145,7 @@ def part_a_d_mmap_solver_serial():
             ctrl = _make_trex_ctrl_from_dict(_MMAP_CTRL_DICT)
 
             out("Running T-Rex Selector ...\n\n")
-            sel = tsn.TRexSelector(
+            sel = trex.TRexSelector(
                 np.asfortranarray(dat["X"]),
                 dat["y"],
                 tFDR=_TFDR,
@@ -206,7 +212,7 @@ def part_b_full_mmap():
                 # X_mmap.to_numpy() → Fortran-contiguous float64 mmap view.
                 # TRexSelector.__init__ calls np.asfortranarray(X) which returns
                 # the view unchanged (already F-contiguous float64, zero copy).
-                sel = tsn.TRexSelector(
+                sel = trex.TRexSelector(
                     X_mmap.to_numpy(),
                     dat["y"],
                     tFDR=_TFDR,

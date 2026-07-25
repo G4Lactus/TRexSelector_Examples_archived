@@ -73,11 +73,11 @@ base_seed = 42        # Trial mc draws its data from base_seed_offset + mc * 100
                       # with base_seed_offset = base_seed + round(snr_db)
 ```
 
-The control object is assembled as `tsn.TRexSPCAControlParameter()` with `mode`
- (`tsn.SPCAMode.ActiveSet` / `Thresholded`), `en_solver` (`tsn.ENSolverType.TENET` / `TENET_AUG`) and the
- nested `gvs_ctrl` (`lambda2_method = tsn.LambdaSelectionMethod.CV_1SE_CCD`, `lambda_2 = -1.0`,
- `trex_ctrl.scaling_mode = tsn.ScalingMode.L2`). The selector is the root-level wrapper
- `tsn.TRexSPCASelector(X, spca_ctrl=ctrl, seed=-1)`; `sel.select(M, tFDR)` returns `self`, and the results
+The control object is assembled as `trex.TRexSPCAControlParameter()` with `mode`
+ (`trex.SPCAMode.ActiveSet` / `Thresholded`), `en_solver` (`trex.ENSolverType.TENET` / `TENET_AUG`) and the
+ nested `gvs_ctrl` (`lambda2_method = trex.LambdaSelectionMethod.CV_1SE_CCD`, `lambda_2 = -1.0`,
+ `trex_ctrl.scaling_mode = trex.ScalingMode.L2`). The selector is the root-level wrapper
+ `trex.TRexSPCASelector(X, spca_ctrl=ctrl, seed=-1)`; `sel.select(M, tFDR)` returns `self`, and the results
  are read from the `sel.V`, `sel.Z` and `sel.active_sets` properties (0-based). The PCA baselines use
  `trex_selector_neo.ml_methods.PCA(center=False, normalize=False).fit(X, M)` → `PCAResult` with `.V` / `.Z`
  — `center=False` because $\boldsymbol{X}$ is already centered (covariance PCA).
@@ -156,12 +156,12 @@ The CSV tags them `PEV`, `PEVsig` and `PEVsigmix`.
 
 ## The Sweep
 
-The cpp reference runs a single **SNR sweep in decibels** over the legacy CRAN grid
- $\mathrm{SNR} \in \{-10, -7, -5, -3, 0, 3, 5, 7, 10\}$ dB, 200 MC trials per point.
- **This Python port currently runs the single point $-10$ dB** (`snr_values = [-10.0]` in `main()`, a
- deliberate fast-validation downscale — one grid point of the full sweep already takes several minutes per
- method in Python); the committed results match this single-point configuration. Extending `snr_values` to
- the full grid makes the demo identical to the cpp reference.
+This demo runs a single **SNR sweep in decibels** over the legacy CRAN grid
+ $\mathrm{SNR} \in \{-10, -7, -5, -3, 0, 3, 5, 7, 10\}$ dB, 200 MC trials per point — `snr_values` in
+ `main()` now mirrors the cpp reference exactly. (Each grid point takes several minutes per method in
+ Python, so the full sweep is a multi-hour overnight run; `TREX_SPCA_NUM_MC` and `TREX_SPCA_PARTS`
+ remain available for quick pilot runs.) The **Committed Results** section below still reflects the
+ earlier single-point ($-10$ dB) run and is superseded once the full grid is regenerated.
 
 Section 2 reruns the same grid for the **union-support FDR per PC** (`ActiveSet`/`TENET` only) — see the
  [dedicated section below](#union-support-fdr-beyond-pc1) for what it measures and why the union of the

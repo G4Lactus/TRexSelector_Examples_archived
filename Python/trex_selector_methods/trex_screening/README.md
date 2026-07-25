@@ -19,13 +19,13 @@ All six demos are **Monte Carlo studies** that parallelize their trials with
 (`.txt` + tidy `.csv`) into each demo's own `simulation_results/data/` folder.
 
 ```python
-import trex_selector_neo as tsn
+import trex_selector_neo as trex
 
 # Ordinary / DA screening
-sc = tsn.ScreenTRexControlParameter()
-sc.trex_method = tsn.ScreenTRexMethod.TREX          # or a TREX_DA_* variant
-tc = tsn.TRexControlParameter(); tc.K = 20
-sel = tsn.TRexScreeningSelector(X, y, screen_control=sc, trex_control=tc,
+sc = trex.ScreenTRexControlParameter()
+sc.trex_method = trex.ScreenTRexMethod.TREX          # or a TREX_DA_* variant
+tc = trex.TRexControlParameter(); tc.K = 20
+sel = trex.TRexScreeningSelector(X, y, screen_control=sc, trex_control=tc,
                                 seed=-1, verbose=False)
 res = sel.select()
 sel.selected_indices          # 0-based screened support (numpy array)
@@ -37,9 +37,9 @@ compute_fdp(list(sel.selected_indices), true_support)
 compute_tpp(list(sel.selected_indices), true_support)
 
 # Biobank / Algorithm 1 (many phenotypes, one shared X)
-bc = tsn.BiobankScreenTRexControl()
+bc = trex.BiobankScreenTRexControl()
 bc.lower_bound_FDR = 0.05; bc.upper_bound_FDR = 0.15; bc.target_FDR_trex = 0.10
-bio = tsn.TRexBiobankScreeningSelector(X, Y, bio_ctrl=bc, seed=-1, verbose=False)
+bio = trex.TRexBiobankScreeningSelector(X, Y, bio_ctrl=bc, seed=-1, verbose=False)
 results = bio.select()        # BiobankScreenTRexResult, or a list for m-D Y
 results[0].method_used        # routing decision per phenotype
 results[0].selected_indices   # per-phenotype 0-based selected indices
@@ -53,7 +53,7 @@ selected indices are **0-based** in Python (matching the C++ sources; the R
 suite is 1-based).
 
 The `ScreenTRexMethod` values accepted by `ScreenTRexControlParameter.trex_method`
-are `tsn.ScreenTRexMethod.TREX` (ordinary voting-based screening), `.TREX_DA_AR1`,
+are `trex.ScreenTRexMethod.TREX` (ordinary voting-based screening), `.TREX_DA_AR1`,
 `.TREX_DA_EQUI`, and `.TREX_DA_BLOCK_EQUI` (dependency-aware variants).
 
 The folder layout mirrors the C++ suite one-to-one: one subfolder per demo,

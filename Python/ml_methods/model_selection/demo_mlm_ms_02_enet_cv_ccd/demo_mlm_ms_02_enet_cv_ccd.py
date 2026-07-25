@@ -8,18 +8,19 @@
 # Mirrors cpp/ml_methods/model_selection/demo_mlm_ms_02_enet_cv_ccd/
 #         demo_mlm_ms_02_enet_cv_ccd.cpp.
 #
-# Scenarios covered:
+# Scenarios:
 #
 #   Part A — ElasticNet (path fit):
 #     A1. Auto-grid path for alpha = {0.0 (ridge), 0.5 (EN), 1.0 (lasso)},
 #         low-dimensional (n=300, p=100, n > p); each auto path is also
-#         reproduced via fit_grid() at the same explicit lambda grid
-#         (a Python-side addition).
+#         reproduced via fit_grid() at the same explicit lambda grid.
+#
 #     A2. High-dimensional path (n=200, p=500, p > n) for alpha = 0.0 and 1.0.
 #
 #   Part B — ElasticNetCV (K-fold CV):
 #     B1. CV lambda selection (lambda.min / lambda.1se) for each alpha,
 #         low-dimensional (n=300, p=100, 10-fold).
+#
 #     B2. CV for pure ridge (alpha=0) as used by TRexGVS; shows the
 #         lambda_2_lars = lambda.{min,1se} * p / 2 conversion for both
 #         selections.
@@ -28,13 +29,13 @@
 #   - ElasticNet replicates glmnet's pathwise CCD with the sequential strong
 #     rule and glmnet's fdev/devmax early termination, so the auto grid may
 #     stop before n_lambda points for alpha > 0. ElasticNetCV builds the
-#     full-data lambda grid once and reuses it across folds (glmnet
-#     semantics); the grid is stored in glmnet's descending order (largest
+#     full-data lambda grid once and reuses it across folds;
+#     the grid is stored in glmnet's descending order (largest
 #     penalty first), unlike RidgeCV's ascending grid.
 #   - For alpha=0 (pure ridge) the returned lambdas are on glmnet's reported
 #     scale; the T-Rex conversion is: lambda_2_lars = lambda.{min,1se} * p / 2.
 #
-# Notes on the port:
+# Notes:
 #   - Same n / p / alpha / fold values and data seeds as the C++ demo;
 #     NumPy's PCG64 stream differs from std::mt19937, so results match
 #     qualitatively, not bitwise.

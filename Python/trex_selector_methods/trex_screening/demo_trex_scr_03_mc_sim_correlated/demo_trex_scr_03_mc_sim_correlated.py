@@ -24,8 +24,7 @@
 #   Part 4: rho sweep on equicorrelated data (SNR=1): vs. +DA-EQUI.
 #   Part 5: rho sweep on block-equicorrelated data (SNR=1, 5 blocks): vs. +DA-BLOCK-EQUI.
 #
-# Downscaled from cpp: the cpp demo uses num_MC = 200; committed default is
-# smaller here for a practical Python runtime (override with SCR_NUM_MC). Support
+# The Monte Carlo count matches the cpp reference (num_MC = 200). Support
 # indices are 0-based.
 # ==============================================================================
 
@@ -38,12 +37,12 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from trex_scr_common import run_mc_screen, save_and_print_scr_mc
+from trex_scr_common import run_mc_screen, save_and_print_scr_mc  # noqa: E402
 
 _OUT_DIR = os.path.join(_THIS_DIR, "simulation_results", "data")
 
-# Committed defaults (cpp uses num_MC = 200; downscaled here - five heavy MC parts).
-_NUM_MC      = int(os.environ.get("SCR_NUM_MC", 50))
+# Monte Carlo count mirrors the cpp reference (num_MC = 200).
+_NUM_MC = 200
 _NUM_WORKERS = int(os.environ.get("SCR_NUM_WORKERS", 6))
 
 N, P, P1 = 300, 1000, 10
@@ -74,7 +73,9 @@ def run_sweep(part_title, methods, dgp_kind, sweep_name, sweep_values,
         return {nm: [0.0] * len(sweep_values) for nm in method_names}
     fdr_map, tpr_map, est_fdr_map = init(), init(), init()
 
-    trex_args = {"solver": "TLARS", "use_memory_mapping": False, "K": 20}
+    trex_args = {"solver": "TLARS", "use_memory_mapping": False, "K": 20,
+                 "tloop_stagnation_stop": None,   # AUTO (C++ nullopt)
+                 "tloop_max_stagnant_steps": 5}
 
     for m in methods:
         print("=" * 70)

@@ -20,8 +20,7 @@
 #   Ordinary vs. Bootstrap-CI Screen-TRex over an SNR grid with the mmap pipeline
 #   enabled - equivalence to demo 01 at a lower memory footprint.
 #
-# Downscaled from cpp: the cpp demo uses num_MC = 200; committed default is
-# smaller here for a practical Python runtime (override with SCR_NUM_MC). Support
+# The Monte Carlo count matches the cpp reference (num_MC = 200). Support
 # indices are 0-based.
 # ==============================================================================
 
@@ -34,12 +33,12 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from trex_scr_common import default_scr_methods, run_mc_screen, save_and_print_scr_mc
+from trex_scr_common import default_scr_methods, run_mc_screen, save_and_print_scr_mc  # noqa: E402
 
 _OUT_DIR = os.path.join(_THIS_DIR, "simulation_results", "data")
 
-# Committed defaults (cpp uses num_MC = 200; downscaled here for Python runtime).
-_NUM_MC      = int(os.environ.get("SCR_NUM_MC", 100))
+# Monte Carlo count mirrors the cpp reference (num_MC = 200).
+_NUM_MC = 200
 _NUM_WORKERS = int(os.environ.get("SCR_NUM_WORKERS", 6))
 
 N, P, SUPPORT_SIZE = 300, 1000, 10
@@ -64,7 +63,9 @@ def demo_screen_trex_mmap_monte_carlo(num_MC=_NUM_MC, num_workers=_NUM_WORKERS):
         return {nm: [0.0] * len(SNR_GRID) for nm in method_names}
     fdr_map, tpr_map, est_fdr_map = init(), init(), init()
 
-    trex_args = {"solver": "TLARS", "use_memory_mapping": True, "K": 20}
+    trex_args = {"solver": "TLARS", "use_memory_mapping": True, "K": 20,
+                 "tloop_stagnation_stop": None,   # AUTO (C++ nullopt)
+                 "tloop_max_stagnant_steps": 5}
 
     for m in methods:
         print("=" * 70)

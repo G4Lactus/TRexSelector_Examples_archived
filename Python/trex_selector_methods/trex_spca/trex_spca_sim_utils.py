@@ -47,19 +47,19 @@ from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 import pandas as pd
 
-import trex_selector_neo as tsn
+import trex_selector_neo as trex
 from trex_selector_neo.ml_methods import PCA
 
 N_CORES = min(6, os.cpu_count() or 1)
 
 # String -> enum maps: only plain strings cross the process boundary; workers
 # resolve them to trex_selector_neo enums on their side.
-_SPCA_MODE = {"ActiveSet": tsn.SPCAMode.ActiveSet,
-              "Thresholded": tsn.SPCAMode.Thresholded}
-_EN_SOLVER = {"TENET": tsn.ENSolverType.TENET,
-              "TENET_AUG": tsn.ENSolverType.TENET_AUG}
-_SCALING = {"L2": tsn.ScalingMode.L2,
-            "ZSCORE": tsn.ScalingMode.ZSCORE}
+_SPCA_MODE = {"ActiveSet": trex.SPCAMode.ActiveSet,
+              "Thresholded": trex.SPCAMode.Thresholded}
+_EN_SOLVER = {"TENET": trex.ENSolverType.TENET,
+              "TENET_AUG": trex.ENSolverType.TENET_AUG}
+_SCALING = {"L2": trex.ScalingMode.L2,
+            "ZSCORE": trex.ScalingMode.ZSCORE}
 
 
 # ==============================================================================
@@ -223,13 +223,13 @@ def _trial_trex_spca(task):
     dat = generate_sparse_factor_model(seed=seed, **dgp_kwargs)
     X = center_columns(dat["X"])
 
-    ctrl = tsn.TRexSPCAControlParameter()
+    ctrl = trex.TRexSPCAControlParameter()
     ctrl.mode = _SPCA_MODE[mode]
     ctrl.en_solver = _EN_SOLVER[en_solver]
     # The base control parameters live under gvs_ctrl.trex_ctrl (GVS
     # sub-selector) — TRexSPCAControlParameter has no top-level trex_ctrl.
     ctrl.gvs_ctrl.trex_ctrl.scaling_mode = _SCALING[scaling_mode]
-    ctrl.gvs_ctrl.lambda2_method = tsn.LambdaSelectionMethod.CV_1SE_CCD
+    ctrl.gvs_ctrl.lambda2_method = trex.LambdaSelectionMethod.CV_1SE_CCD
     ctrl.gvs_ctrl.lambda_2 = lambda_2  # < 0: auto via CV; 0: no ridge; > 0: fixed
 
     # 0 means "extract as many components as there are true factors"; a
@@ -238,7 +238,7 @@ def _trial_trex_spca(task):
 
     # Selector seed -1: hardware entropy per trial (dummies independent across
     # trials). The wrapper maps X zero-copy — hand it a Fortran-ordered copy.
-    sel = tsn.TRexSPCASelector(np.asfortranarray(X), spca_ctrl=ctrl, seed=-1)
+    sel = trex.TRexSPCASelector(np.asfortranarray(X), spca_ctrl=ctrl, seed=-1)
     sel.select(n_comp, tFDR)
 
     m = evaluate_spca(X, np.asarray(sel.V), np.asarray(sel.Z), dat["V"])

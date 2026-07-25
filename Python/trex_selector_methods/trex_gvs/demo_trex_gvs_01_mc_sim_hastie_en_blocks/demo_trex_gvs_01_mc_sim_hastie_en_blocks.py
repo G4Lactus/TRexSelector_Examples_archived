@@ -34,7 +34,7 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from gvs_sim_common import (N_CORES, fmt_num, print_mc_matrix,
+from gvs_sim_common import (N_CORES, fmt_num, print_mc_matrix,  # noqa: E402
                             print_section_header, run_gvs_2d_sweep,
                             run_gvs_mc_trials, save_mc_1d_method_tables,
                             save_mc_2d_tables)
@@ -85,12 +85,16 @@ def sim_hastie_part_1(cfg, tag):
 
     en_2d = run_gvs_2d_sweep("dgp_hastie_snr", cell_kwargs, snr_grid_2d,
                              rho_grid_2d, cfg, "EN", "TENET", "TENET",
+                             hc_linkage="Single", lambda2_method="CV_1SE_CCD",
                              max_workers=N_WORKERS)
     en_aug_2d = run_gvs_2d_sweep("dgp_hastie_snr", cell_kwargs, snr_grid_2d,
                                  rho_grid_2d, cfg, "EN", "TENET_AUG",
-                                 "TENET_AUG", max_workers=N_WORKERS)
+                                 "TENET_AUG", hc_linkage="Single",
+                                 lambda2_method="CV_1SE_CCD",
+                                 max_workers=N_WORKERS)
     ien_2d = run_gvs_2d_sweep("dgp_hastie_snr", cell_kwargs, snr_grid_2d,
-                              rho_grid_2d, cfg, "IEN", "TENET", "TIENET_AUG",
+                              rho_grid_2d, cfg, "IEN", None, "TIENET_AUG",
+                              hc_linkage="Single", lambda2_method="CV_1SE_CCD",
                               max_workers=N_WORKERS)
 
     snr_labels = [f"snr={fmt_num(s)}" for s in snr_grid_2d]
@@ -132,12 +136,12 @@ def sim_hastie_part_2(cfg, tag):
         en_results.append(run_gvs_mc_trials(
             "dgp_hastie_snr", dgp_kwargs, cfg["num_MC"], f"TENET+{lm}",
             cfg["tFDR"], cfg["K"], "EN", cfg["corr_max"],
-            en_solver="TENET", lambda2_method=lm,
+            hc_linkage="Single", en_solver="TENET", lambda2_method=lm,
             base_seed=cfg["base_seed"], max_workers=N_WORKERS))
         ien_results.append(run_gvs_mc_trials(
             "dgp_hastie_snr", dgp_kwargs, cfg["num_MC"], f"TIENET_AUG+{lm}",
             cfg["tFDR"], cfg["K"], "IEN", cfg["corr_max"],
-            lambda2_method=lm,
+            hc_linkage="Single", en_solver=None, lambda2_method=lm,
             base_seed=cfg["base_seed"], max_workers=N_WORKERS))
 
     save_mc_1d_method_tables(
@@ -173,12 +177,12 @@ def sim_hastie_part_3(cfg, tag):
         en_results.append(run_gvs_mc_trials(
             "dgp_hastie_snr", dgp_kwargs, cfg["num_MC"], f"TENET+{lk}",
             cfg["tFDR"], cfg["K"], "EN", cfg["corr_max"],
-            hc_linkage=lk, en_solver="TENET",
+            hc_linkage=lk, en_solver="TENET", lambda2_method="CV_1SE_CCD",
             base_seed=cfg["base_seed"], max_workers=N_WORKERS))
         ien_results.append(run_gvs_mc_trials(
             "dgp_hastie_snr", dgp_kwargs, cfg["num_MC"], f"TIENET_AUG+{lk}",
             cfg["tFDR"], cfg["K"], "IEN", cfg["corr_max"],
-            hc_linkage=lk,
+            hc_linkage=lk, en_solver=None, lambda2_method="CV_1SE_CCD",
             base_seed=cfg["base_seed"], max_workers=N_WORKERS))
 
     save_mc_1d_method_tables(

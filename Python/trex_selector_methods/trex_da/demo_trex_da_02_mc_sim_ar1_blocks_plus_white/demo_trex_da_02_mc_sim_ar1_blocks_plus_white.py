@@ -16,10 +16,11 @@
 #   Part 3: Q sweep      Q in {5, 10, ..., 50}; p_ar = M*Q; p_white = 1000-p_ar.
 #   Part 4: M sweep      M in {1, 3, 5, 10, 15, 20, 30}; p_ar, p_white, s = M vary.
 #
-# Mirrors cpp/trex_selector_methods/trex_da/
-# demo_trex_da_02_mc_sim_ar1_blocks_plus_white (same DGP, control parameters,
-# sweep axes, and result files). Results are saved to simulation_results/ as
-# TXT and CSV files. Reduce NUM_MC to preview.
+# Mirrors:
+# cpp/trex_selector_methods/trex_da/demo_trex_da_02_mc_sim_ar1_blocks_plus_white
+#
+# Same DGP, control parameters, sweep axes, and result files.
+# Results are saved to simulation_results/ as TXT and CSV files.
 # ==============================================================================
 
 import os
@@ -31,7 +32,7 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from da_sim_common import (default_solvers, fmt_num,
+from da_sim_common import (default_solvers, fmt_num,  # noqa: E402
                            make_support_one_per_block, run_param_sweep,
                            run_snr_sweep)
 
@@ -51,7 +52,7 @@ P_AR_BASE = M * Q  # 25
 AMPLITUDE = 1.0
 RHO = 0.7
 SNR = 2.0
-TFDR = 0.1         # target FDR (0.1 for R06)
+TFDR = 0.1
 K = 20
 NUM_MC = 200
 BASE_SEED = 2026
@@ -85,7 +86,8 @@ def part_1_snr_sweep():
                              support=support_base, s=M),
             {"method": "BT", "hc_linkage": lnk}, K,
             f"AR(1)+white SNR sweep  n={N}  p_total={P_TOTAL}  M={M}  Q={Q}"
-            f"  p_ar={P_AR_BASE}  s={M}  rho={fmt_num(RHO)}  linkage={lnk}")
+            f"  p_ar={P_AR_BASE}  s={M}  rho={fmt_num(RHO)}  linkage={lnk}",
+            include_base_trex=False)
 
 
 # ==============================================================================
@@ -109,7 +111,8 @@ def part_2_rho_sweep():
                              support=support_base, s=M),
             {"method": "BT", "hc_linkage": lnk}, K,
             f"AR(1)+white rho sweep  n={N}  p_total={P_TOTAL}  M={M}  Q={Q}"
-            f"  s={M}  SNR={fmt_num(SNR)}  linkage={lnk}")
+            f"  s={M}  SNR={fmt_num(SNR)}  linkage={lnk}",
+            include_base_trex=False)
 
 
 # ==============================================================================
@@ -138,7 +141,8 @@ def part_3_q_sweep():
             {"method": "BT", "hc_linkage": lnk}, K,
             f"AR(1)+white Q sweep  n={N}  p_total={P_TOTAL}  M={M}  s={M}"
             f"  rho={fmt_num(RHO)}  SNR={fmt_num(SNR)}  p_ar=M*Q varies"
-            f"  linkage={lnk}")
+            f"  linkage={lnk}",
+            include_base_trex=False)
 
 
 # ==============================================================================
@@ -168,7 +172,8 @@ def part_4_m_sweep():
             {"method": "BT", "hc_linkage": lnk}, K,
             f"AR(1)+white M sweep  n={N}  p_total={P_TOTAL}  Q={Q}"
             f"  rho={fmt_num(RHO)}  SNR={fmt_num(SNR)}  p_ar=M*Q and s=M vary"
-            f"  linkage={lnk}")
+            f"  linkage={lnk}",
+            include_base_trex=False)
 
 
 # ==============================================================================

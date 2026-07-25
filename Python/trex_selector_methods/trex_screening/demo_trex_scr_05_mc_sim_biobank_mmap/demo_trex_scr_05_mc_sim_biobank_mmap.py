@@ -21,10 +21,8 @@
 #   Part 1: single phenotype (s=10): per-method Usage %, FDR, TPR, Est. FDR.
 #   Part 2: q=5 phenotypes sharing one X (s=5): same per-method metrics.
 #
-# Downscaled from cpp: the cpp demo uses num_MC = 200 and R_boot = 1000. This
-# biobank workflow is expensive, so the committed defaults use fewer trials and
-# R_boot = 500 for a practical Python runtime (override num_MC with SCR_NUM_MC /
-# SCR_NUM_MC_MULTI). Support indices are 0-based.
+# The Monte Carlo counts and R_boot match the cpp reference (num_MC = 200,
+# num_MC_multi = 200, R_boot = 1000). Support indices are 0-based.
 # ==============================================================================
 
 import os
@@ -36,22 +34,22 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from trex_scr_bb_common import (BIOBANK_METHODS, BIOBANK_DISPLAY,
+from trex_scr_bb_common import (BIOBANK_METHODS, BIOBANK_DISPLAY,  # noqa: E402
                                 _biobank_single_worker, _biobank_multi_worker,
                                 run_mc_biobank, accumulate_snr,
                                 save_and_print_biobank_mc)
 
 _OUT_DIR = os.path.join(_THIS_DIR, "simulation_results", "data")
 
-# Committed defaults (cpp uses num_MC = 200; downscaled here for Python runtime).
-_NUM_MC       = int(os.environ.get("SCR_NUM_MC", 40))
-_NUM_MC_MULTI = int(os.environ.get("SCR_NUM_MC_MULTI", 15))
+# Monte Carlo counts mirror the cpp reference (num_MC = 200, num_MC_multi = 200).
+_NUM_MC       = 200
+_NUM_MC_MULTI = 200
 _NUM_WORKERS  = int(os.environ.get("SCR_NUM_WORKERS", 6))
 
 N, P = 300, 1000
 SNR_GRID = [0.1, 0.5, 1.0, 2.0, 5.0]
 TARGET_FDR_TREX = 0.10
-R_BOOT = 500                 # downscaled from cpp R_boot = 1000
+R_BOOT = 1000   # mirrors the cpp reference (R_boot = 1000)
 USE_MMAP = True              # dummy (D) matrices backed by on-disk files
 
 

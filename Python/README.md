@@ -35,7 +35,7 @@ import sys
 import numpy as np
 import pandas as pd
 
-import trex_selector_neo as tsn
+import trex_selector_neo as trex
 from trex_selector_neo.ml_methods import LpNormScaler, NormType
 from trex_selector_neo.ml_methods.clustering import LinkageMethod, agglomerative_cluster
 from trex_selector_neo.tsolvers.lars_based import TLARS_Solver
@@ -46,11 +46,11 @@ from trex_sim_common import run_mc_trex  # local demo helpers last
 
 The rules:
 
-1. **Selector layer via the `tsn` alias.** Everything the package root exports —
-   selector classes (`tsn.TRexSelector`, `tsn.TRexDASelector`, …), control
-   parameters (`tsn.TRexControlParameter`, …), and enums
-   (`tsn.SolverTypeForTRex`, `tsn.LLoopStrategy`, `tsn.DummyDistribution`, …) —
-   is accessed through `import trex_selector_neo as tsn`, mirroring the C++
+1. **Selector layer via the `trex` alias.** Everything the package root exports —
+   selector classes (`trex.TRexSelector`, `trex.TRexDASelector`, …), control
+   parameters (`trex.TRexControlParameter`, …), and enums
+   (`trex.SolverTypeForTRex`, `trex.LLoopStrategy`, `trex.DummyDistribution`, …) —
+   is accessed through `import trex_selector_neo as trex`, mirroring the C++
    `namespace` qualification and R's `trexselector::`. Root symbols are never
    `from`-imported, and the alias is only introduced in files that use it.
 2. **Subpackage symbols via explicit `from`-imports.** Solvers come from
@@ -58,7 +58,7 @@ The rules:
    blocks from `trex_selector_neo.ml_methods` (clustering from
    `trex_selector_neo.ml_methods.clustering`), and metrics/memory-mapping
    helpers from `trex_selector_neo.utils`. Call sites use the bare names;
-   subpackages are never aliased and never accessed as `tsn.utils.…`.
+   subpackages are never aliased and never accessed as `trex.utils.…`.
 3. **Only the public surface.** Demos never import from the raw binding module
    `trex_selector_neo.trex_selector_methods` (it bypasses the ergonomic Python
    wrappers), never from `trex_selector_neo._core`, and never through the

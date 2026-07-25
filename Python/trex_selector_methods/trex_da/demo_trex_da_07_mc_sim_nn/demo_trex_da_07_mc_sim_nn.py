@@ -17,9 +17,11 @@
 #   Part 3: 2D SNR x rho sweep on AR(1) data with DA+NN (all 3 solvers;
 #           CappedSpread and Random sub-sections).
 #
-# Mirrors cpp/trex_selector_methods/trex_da/demo_trex_da_07_mc_sim_nn (same
-# DGPs, control parameters, sweep axes, and result files). Results are saved
-# to simulation_results/ as TXT and CSV files. Reduce NUM_MC to preview.
+# Mirrors:
+#  cpp/trex_selector_methods/trex_da/demo_trex_da_07_mc_sim_nn
+#
+# (same DGPs, control parameters, sweep axes, and result files).
+# Results are saved to simulation_results/ as TXT and CSV files.
 # ==============================================================================
 
 import os
@@ -31,9 +33,9 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import numpy as np
+import numpy as np  # noqa: E402
 
-from da_sim_common import (default_solvers, fmt_num, make_support_capped_spread,
+from da_sim_common import (default_solvers, fmt_num, make_support_capped_spread,  # noqa: E402
                            print_section_header, run_mc_trials, run_snr_sweep,
                            save_and_print_2d_two_support_results)
 
@@ -169,7 +171,7 @@ def part_2_kappa_rho_sweep():
     rho_grid = [0.1, 0.3, 0.5, 0.7, 0.8, 0.9]
 
     print_section_header("NN Part 2: 2D Kappa x Rho sweep")
-    print(f"  n={N}  p={P}  s={S}  SNR={SNR}  MC={NUM_MC}"
+    print(f"  n={N}  p={P}  s={S}  SNR={fmt_num(SNR)}  MC={NUM_MC}"
           f"  tFDR={TFDR}  amplitude={AMPLITUDE}")
     print("  kappa_grid: {" + ", ".join(str(int(v)) for v in kappa_grid) + "}")
     print("  rho_grid:   {" + ", ".join(f"{r:.1f}" for r in rho_grid) + "}\n")

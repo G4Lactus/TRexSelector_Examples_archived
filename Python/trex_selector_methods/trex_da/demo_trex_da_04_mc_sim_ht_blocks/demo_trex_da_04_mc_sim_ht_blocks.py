@@ -20,9 +20,10 @@
 #   Part 5: tFDR sweep     tFDR in {0.05, ..., 0.50}.
 #   Part 6: linkage sweep  linkage codes {1=Single, 2=Complete, 3=Average}.
 #
-# Mirrors cpp/trex_selector_methods/trex_da/demo_trex_da_04_mc_sim_ht_blocks
-# (same DGP, control parameters, sweep axes, and result files). Results are
-# saved to simulation_results/ as TXT and CSV files. Reduce NUM_MC to preview.
+# Mirrors:
+# cpp/trex_selector_methods/trex_da/demo_trex_da_04_mc_sim_ht_blocks
+#
+# Results are saved to simulation_results/ as TXT and CSV files.
 # ==============================================================================
 
 import os
@@ -34,9 +35,9 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import numpy as np
+import numpy as np  # noqa: E402
 
-from da_sim_common import (default_solvers, fmt_num,
+from da_sim_common import (default_solvers, fmt_num,  # noqa: E402
                            make_support_one_per_block, run_mc_trials,
                            run_param_sweep, run_snr_sweep,
                            save_and_print_grid_results)
@@ -95,7 +96,8 @@ def part_1_snr_sweep():
                 {"method": "BT", "hc_linkage": lnk}, K,
                 f"HT-block SNR sweep  n={N}  M={M}  Q={Q}  p={BASE_P}  s={M}"
                 f"  rho={fmt_num(RHO)}  nu={fmt_num(NU)}  noise={scen}"
-                f"  linkage={lnk}")
+                f"  linkage={lnk}",
+                include_base_trex=False)
 
 
 # ==============================================================================
@@ -118,7 +120,8 @@ def part_2_rho_sweep():
                 {"method": "BT", "hc_linkage": lnk}, K,
                 f"HT-block rho sweep  n={N}  M={M}  Q={Q}  s={M}"
                 f"  SNR={fmt_num(SNR)}  nu={fmt_num(NU)}  noise={scen}"
-                f"  linkage={lnk}")
+                f"  linkage={lnk}",
+                include_base_trex=False)
 
 
 # ==============================================================================
@@ -146,7 +149,8 @@ def part_3_q_sweep():
                 {"method": "BT", "hc_linkage": lnk}, K,
                 f"HT-block Q sweep  n={N}  M={M}  s={M}  rho={fmt_num(RHO)}"
                 f"  SNR={fmt_num(SNR)}  nu={fmt_num(NU)}  p=M*Q varies"
-                f"  noise={scen}  linkage={lnk}")
+                f"  noise={scen}  linkage={lnk}",
+                include_base_trex=False)
 
 
 # ==============================================================================
@@ -175,7 +179,8 @@ def part_4_m_sweep():
                 {"method": "BT", "hc_linkage": lnk}, K,
                 f"HT-block M sweep  n={N}  Q={Q}  rho={fmt_num(RHO)}"
                 f"  SNR={fmt_num(SNR)}  nu={fmt_num(NU)}  p=M*Q and s=M vary"
-                f"  noise={scen}  linkage={lnk}")
+                f"  noise={scen}  linkage={lnk}",
+                include_base_trex=False)
 
 
 # ==============================================================================

@@ -25,6 +25,17 @@ calibrates the noise to a target SNR
 policy (evenly spaced, gap capped at `max_gap=20`) or the `Random` policy
 (uniform without replacement, redrawn per trial).
 
+![Design-matrix correlation — AR(1) Toeplitz, rho=0.7, leading 150×150 block, natural order (no clustering)](../dgp_corr_plots/da_ar1.png)
+
+Empirical Pearson correlation of an exemplary design drawn from this DGP
+(`dgp_ar1_snr`, seed 2026), in **natural variable order — no hierarchical
+clustering**. The red band fading off the diagonal is the `rho^|j-k|` AR(1)
+decay; only the leading 150×150 block of the p=1000 design is shown so that band
+stays legible. One figure per DGP lives in
+[`../dgp_corr_plots/`](../dgp_corr_plots/); regenerate the whole suite with
+[`../generate_corr_plots.sh`](../generate_corr_plots.sh) (shared plotter
+[`../../corr_plt_utils.py`](../../corr_plt_utils.py)).
+
 ## What it runs
 
 Parts are toggled by the `RUN_PART_*` flags at the top of the file (all `True`,
@@ -55,8 +66,9 @@ Carlo trials run in parallel via `concurrent.futures.ProcessPoolExecutor`
 ## Output files
 
 Written to `simulation_results/` (`.txt` pretty-printed, `.csv` tidy long
-format; the cpp suite splits into `data/` + `plots/`, the Python suite has no
-plotting layer):
+format; the cpp suite splits into `data/` + `plots/`. The Python suite has no
+results-plotting layer — the only figures are the per-DGP design-correlation
+heatmaps under `../dgp_corr_plots/`):
 
 - `da_trex_mc_da_ar1_snr_capped.txt` / `.csv`
 - `da_trex_mc_da_ar1_snr_random.txt` / `.csv`

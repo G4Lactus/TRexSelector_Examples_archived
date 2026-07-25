@@ -9,10 +9,13 @@
 # Parts:
 #   Demo 1: Basic T-LARS with early stopping (internal normalization),
 #           high-dimensional (p > n) and low-dimensional (n > p) regimes.
+#
 #   Demo 2: External L2 normalization (LpNormScaler) + centered y,
 #           solver run with normalize=False, intercept=False.
+#
 #   Demo 3: Serialization & warm start — save a partial path, reload,
 #           continue, and compare against a reference run.
+#
 #   Demo 4: Memory-mapped X/D/y via numpy_to_memmap.
 #           (cpp generates p = 500,000 on disk; scaled to p = 5,000 here.)
 #
@@ -21,25 +24,29 @@
 import os
 import sys
 
-_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-_PARENT_DIR = os.path.dirname(_THIS_DIR)
-for _p in (_THIS_DIR, _PARENT_DIR):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
-
 import numpy as np
 
 from trex_selector_neo.ml_methods import LpNormScaler, NormType
 from trex_selector_neo.tsolvers.lars_based import TLARS_Solver
 from trex_selector_neo.utils import get_max_threads, numpy_to_memmap, set_num_threads
 
-from ts_demo_utils import (
+# ts_demo_utils lives one directory up (Python/tsolvers/); put that on sys.path
+# before importing it so the demo runs regardless of the launch directory.
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+_PARENT_DIR = os.path.dirname(_THIS_DIR)
+for _p in (_THIS_DIR, _PARENT_DIR):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+from ts_demo_utils import (  # noqa: E402
     gen_synthetic_data,
     print_demo_config,
     print_section_header,
     print_selection,
     print_selection_quality,
 )
+
+
 
 
 # ==============================================================================

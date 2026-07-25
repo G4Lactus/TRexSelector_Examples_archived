@@ -88,15 +88,15 @@ _LINKAGE_MAP = None
 def _get_enum_maps():
     global _GVS_TYPE_MAP, _EN_SOLVER_MAP, _LAMBDA2_MAP, _LINKAGE_MAP
     if _GVS_TYPE_MAP is None:
-        import trex_selector_neo as tsn
+        import trex_selector_neo as trex
         from trex_selector_neo.ml_methods.clustering import LinkageMethod
-        _GVS_TYPE_MAP = {"EN": tsn.GVSType.EN, "IEN": tsn.GVSType.IEN}
-        _EN_SOLVER_MAP = {"TENET": tsn.ENSolverType.TENET,
-                          "TENET_AUG": tsn.ENSolverType.TENET_AUG}
-        _LAMBDA2_MAP = {"CV_1SE_CCD": tsn.LambdaSelectionMethod.CV_1SE_CCD,
-                        "CV_1SE_SVD": tsn.LambdaSelectionMethod.CV_1SE_SVD,
-                        "CV_MIN_CCD": tsn.LambdaSelectionMethod.CV_MIN_CCD,
-                        "CV_MIN_SVD": tsn.LambdaSelectionMethod.CV_MIN_SVD}
+        _GVS_TYPE_MAP = {"EN": trex.GVSType.EN, "IEN": trex.GVSType.IEN}
+        _EN_SOLVER_MAP = {"TENET": trex.ENSolverType.TENET,
+                          "TENET_AUG": trex.ENSolverType.TENET_AUG}
+        _LAMBDA2_MAP = {"CV_1SE_CCD": trex.LambdaSelectionMethod.CV_1SE_CCD,
+                        "CV_1SE_SVD": trex.LambdaSelectionMethod.CV_1SE_SVD,
+                        "CV_MIN_CCD": trex.LambdaSelectionMethod.CV_MIN_CCD,
+                        "CV_MIN_SVD": trex.LambdaSelectionMethod.CV_MIN_SVD}
         _LINKAGE_MAP = {"Single": LinkageMethod.Single,
                         "Complete": LinkageMethod.Complete,
                         "Average": LinkageMethod.Average,
@@ -112,12 +112,12 @@ def make_gvs_trex_control(K=20):
     make_gvs_trex_control). solver_type is left at its default — the
     TRexGVSSelector wrapper derives the required solver from gvs_type /
     en_solver (EN -> TENET/TENET_AUG, IEN -> TIENET_AUG)."""
-    import trex_selector_neo as tsn
-    tc = tsn.TRexControlParameter()
+    import trex_selector_neo as trex
+    tc = trex.TRexControlParameter()
     tc.K = int(K)
     tc.max_dummy_multiplier = 10
     tc.use_max_T_stop = True
-    tc.lloop_strategy = tsn.LLoopStrategy.HCONCAT
+    tc.lloop_strategy = trex.LLoopStrategy.HCONCAT
     tc.tloop_stagnation_stop = True
     tc.tloop_max_stagnant_steps = 5
     tc.use_memory_mapping = False
@@ -125,12 +125,14 @@ def make_gvs_trex_control(K=20):
 
 
 def build_gvs_selector(X, y, tFDR, K, gvs_type, corr_max, hc_linkage="Single",
-                       en_solver="TENET", lambda2_method="CV_1SE_CCD",
+                       en_solver: "str | None" = "TENET",
+                       lambda2_method="CV_1SE_CCD",
                        prior_groups=None, cv_seed=None, seed=-1):
     """Build and run a TRexGVSSelector; returns (selector, GVSSelectionResult).
 
     All method knobs are plain strings (picklable across process boundaries):
-    gvs_type in {"EN", "IEN"}, en_solver in {"TENET", "TENET_AUG"},
+    gvs_type in {"EN", "IEN"}, en_solver in {"TENET", "TENET_AUG"} for EN or
+    None for IEN (whose solver is always TIENET_AUG),
     hc_linkage in {"Single", "Complete", "Average", "WPGMA", ...},
     lambda2_method in {"CV_1SE_CCD", "CV_1SE_SVD", ...}.
 
@@ -140,14 +142,20 @@ def build_gvs_selector(X, y, tFDR, K, gvs_type, corr_max, hc_linkage="Single",
     default -1 = derive from the selector seed). The trex_control is passed as
     the wrapper's separate argument (it overrides the nested trex_ctrl).
     """
-    import trex_selector_neo as tsn
+    import trex_selector_neo as trex
     gvs_map, en_map, l2_map, hc_map = _get_enum_maps()
 
-    gc = tsn.TRexGVSControlParameter()
+    gc = trex.TRexGVSControlParameter()
     gc.gvs_type = gvs_map[gvs_type]
     gc.corr_max = float(corr_max)
     gc.hc_linkage = hc_map[hc_linkage]
-    gc.en_solver = en_map[en_solver]
+    # en_solver applies to EN only (TENET / TENET_AUG). For IEN the solver is
+    # always TIENET_AUG (the only IEN solver; no plain TIENET exists), derived
+    # from gvs_type by the selector — so IEN callers pass en_solver=None and the
+    # field is left untouched, mirroring the cpp demos (which never set en_solver
+    # on their IEN control).
+    if en_solver is not None:
+        gc.en_solver = en_map[en_solver]
     gc.lambda2_method = l2_map[lambda2_method]
     if cv_seed is not None:
         gc.cv_seed = int(cv_seed)
@@ -156,7 +164,7 @@ def build_gvs_selector(X, y, tFDR, K, gvs_type, corr_max, hc_linkage="Single",
 
     tc = make_gvs_trex_control(K)
 
-    sel = tsn.TRexGVSSelector(np.asfortranarray(X), y, tFDR=tFDR,
+    sel = trex.TRexGVSSelector(np.asfortranarray(X), y, tFDR=tFDR,
                               gvs_control=gc, trex_control=tc,
                               seed=int(seed), verbose=False)
     res = sel.select()
@@ -192,7 +200,8 @@ def _gvs_trial_worker(args):
 
 def run_gvs_mc_trials(dgp_name, dgp_kwargs, num_MC, progress_label, tFDR, K,
                       gvs_type, corr_max, hc_linkage="Single",
-                      en_solver="TENET", lambda2_method="CV_1SE_CCD",
+                      en_solver: "str | None" = "TENET",
+                      lambda2_method="CV_1SE_CCD",
                       base_seed=2026, max_workers=N_CORES):
     """Run num_MC parallel trials at a single parameter point.
 
@@ -228,7 +237,8 @@ def run_gvs_mc_trials(dgp_name, dgp_kwargs, num_MC, progress_label, tFDR, K,
 # ==============================================================================
 
 def run_gvs_2d_sweep(dgp_name, cell_kwargs_fn, snr_grid, rho_grid, cfg,
-                     gvs_type, en_solver, label, hc_linkage="Single",
+                     gvs_type, en_solver: "str | None", label,
+                     hc_linkage="Single",
                      lambda2_method="CV_1SE_CCD", max_workers=N_CORES):
     """Run a nested SNR x rho grid MC sweep for one method variant.
 
@@ -514,7 +524,9 @@ def _run_block_method(dat, gvs_type, oracle, cfg, seed):
     from trex_selector_neo.utils import compute_fdp, compute_tpp
 
     t0 = time.perf_counter()
-    en_solver = cfg["en_solver"] if gvs_type == "EN" else "TENET"
+    # EN uses the configured solver (TENET / TENET_AUG); IEN's solver is always
+    # TIENET_AUG (derived from gvs_type), so en_solver is not applicable -> None.
+    en_solver = cfg["en_solver"] if gvs_type == "EN" else None
     prior_groups = dat["prior_groups"] if oracle else None
     sel, res = build_gvs_selector(
         dat["X"], dat["y"], cfg["tFDR"], cfg["K"], gvs_type, cfg["corr_max"],

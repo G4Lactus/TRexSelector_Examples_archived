@@ -175,7 +175,7 @@ def plot_spca_sweep(df: pd.DataFrame, title: str, tfdr: float = DEFAULT_TFDR,
     methods = [m for m in METHOD_ORDER if m in present]
     methods += [m for m in present if m not in methods]   # keep any newcomers
     xs = sorted(df["snr_db"].unique())
-    colors = plt.get_cmap("tab10").colors
+    colors = matplotlib.color_sequences["tab10"]
 
     fig, axes = plt.subplots(1, len(METRICS), figsize=(6.2 * len(METRICS), 4.8))
     legend_handles: list = []
@@ -241,7 +241,7 @@ def plot_spca_pev_normalizations(df: pd.DataFrame, title: str,
     methods = [m for m in METHOD_ORDER if m in present]
     methods += [m for m in present if m not in methods]
     xs = sorted(df["snr_db"].unique())
-    colors = plt.get_cmap("tab10").colors
+    colors = matplotlib.color_sequences["tab10"]
 
     panels = [("PEV", "Normalized by the total variance of $X$"),
               ("PEVsig", "Normalized by Signal + Mixed EV (Definition 1)")]
@@ -338,7 +338,7 @@ def plot_spca_pev_panels(frames: dict, metric: str, title: str,
     if not cols:
         raise ValueError("No sweeps to plot.")
 
-    colors = plt.get_cmap("tab10").colors
+    colors = matplotlib.color_sequences["tab10"]
     fig, axes = plt.subplots(1, len(cols), figsize=(4.4 * len(cols), 4.8))
     if len(cols) == 1:
         axes = [axes]
@@ -436,7 +436,7 @@ def plot_union_fdr(df: pd.DataFrame, title: str, tfdr: float = DEFAULT_TFDR,
     """
     pcs = sorted(df["pc"].unique())
     xs = sorted(df["snr_db"].unique())
-    colors = plt.get_cmap("tab10").colors
+    colors = matplotlib.color_sequences["tab10"]
 
     panels = [("FDRunion", "Union-support FDR", "FDR (vs. union support)"),
               ("k", "Selected support size", "mean $|A_m|$")]

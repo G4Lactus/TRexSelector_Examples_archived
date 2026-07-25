@@ -32,7 +32,7 @@ Two thresholding rules, both `ScreenTRexMethod.TREX`:
   replicates, `ci_grid_step = 0.001`).
 
 Shared solver control: `solver = "TLARS"`, `K = 20`, `use_memory_mapping = False`.
-Each trial builds `tsn.TRexScreeningSelector(X, y, screen_control=…,
+Each trial builds `trex.TRexScreeningSelector(X, y, screen_control=…,
 trex_control=…, seed=-1)` and reads `sel.selected_indices` (0-based) and
 `res.estimated_FDR`.
 
