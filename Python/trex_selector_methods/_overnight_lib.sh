@@ -9,9 +9,29 @@
 #
 #   * continue-on-error — one failing demo never aborts the batch;
 #   * per-demo timestamped logs + a run summary under <suite>/_overnight_logs/;
-#   * SKIP_HEAVY=1 skips the demos listed in HEAVY_DEMOS (RAM/time hogs).
+#   * SKIP_HEAVY=1 skips the demos listed in HEAVY_DEMOS (RAM/time hogs);
+#   * no leaked workers — each demo runs in its own process group, which is
+#     reaped when the demo exits (see _reap_group) and on runner INT/TERM/EXIT.
 #
-# Not sourced by anything type-checked; pure bash.
+# Worker reaping
+# --------------
+# The demos parallelise with ProcessPoolExecutor. A clean exit shuts the pool
+# down, but a hard kill / crash / OOM of the demo leaves its spawned workers
+# behind: reparented to init (PPID 1), idle, each still holding its share of
+# the interpreter + design matrices (~1 GB for a 6-worker pool was observed).
+#
+# Each demo is therefore started as a background job with job control enabled
+# (set -m), which puts it in a NEW process group with PGID == the job's PID.
+# After the demo returns, anything left in that group is a stray worker and
+# gets TERM, then KILL. A process group survives reparenting to init, so this
+# catches orphans that PPID-based cleanup cannot.
+#
+# This is deliberately not tied to the controlling terminal: no `jobs`, no
+# SIGHUP, no tty. It works identically under nohup, disown, a detached
+# ssh session, cron, or a CI runner. (macOS has no setsid(1), hence set -m.)
+#
+# Not sourced by anything type-checked; pure bash — kept 3.2-compatible so it
+# runs under the stock /bin/bash on macOS.
 # ==============================================================================
 
 _find_venv() {
@@ -21,6 +41,59 @@ _find_venv() {
     d="$(dirname "$d")"
   done
   return 1
+}
+
+# _reap_group <pgid>
+# Kill every process remaining in process group <pgid>: TERM, up to 5s grace,
+# then KILL. Silent no-op when the group is already empty. Echoes a one-line
+# note only when it actually had to reap something, so a clean run stays quiet.
+#
+# Refuses to touch its own process group — `kill -- -$$` would otherwise take
+# the runner (and the user's shell) down with it.
+_reap_group() {
+  local pgid="$1"
+  [[ -z "$pgid" ]] && return 0
+
+  local self_pgid; self_pgid="$(ps -o pgid= -p $$ 2>/dev/null | tr -d ' ')"
+  if [[ -z "$pgid" || "$pgid" == "$self_pgid" || "$pgid" == "0" || "$pgid" == "1" ]]; then
+    return 0
+  fi
+
+  # kill -0 on a negative pid succeeds while ANY process in the group lives.
+  kill -0 -- "-$pgid" 2>/dev/null || return 0
+
+  local n; n="$(pgrep -g "$pgid" 2>/dev/null | wc -l | tr -d ' ')"
+  kill -TERM -- "-$pgid" 2>/dev/null
+
+  local i
+  for i in 1 2 3 4 5 6 7 8 9 10; do
+    kill -0 -- "-$pgid" 2>/dev/null || break
+    sleep 0.5
+  done
+
+  if kill -0 -- "-$pgid" 2>/dev/null; then
+    kill -KILL -- "-$pgid" 2>/dev/null
+    sleep 0.2
+  fi
+  echo "[reap ] pgid $pgid — cleaned up $n stray process(es)"
+  return 0
+}
+
+# Set while a demo is in flight so the signal/EXIT trap knows what to reap.
+_CURRENT_PGID=""
+
+_overnight_trap() {
+  local sig="$1"
+  if [[ -n "$_CURRENT_PGID" ]]; then
+    echo "" >&2
+    echo "[$sig ] runner interrupted — reaping demo process group $_CURRENT_PGID" >&2
+    _reap_group "$_CURRENT_PGID" >&2
+    _CURRENT_PGID=""
+  fi
+  if [[ "$sig" != "EXIT" ]]; then
+    trap - EXIT
+    exit 130
+  fi
 }
 
 # run_suite <suite_dir> <demo_name> [<demo_name> ...]
@@ -34,6 +107,13 @@ run_suite() {
     echo "       create it and install the demo deps, then re-run." >&2
     return 1
   }
+
+  # Reap the in-flight demo's workers if the runner itself is interrupted or
+  # exits early. Installed here so a sourcing script gets it for free.
+  trap '_overnight_trap INT'  INT
+  trap '_overnight_trap TERM' TERM
+  trap '_overnight_trap HUP'  HUP
+  trap '_overnight_trap EXIT' EXIT
 
   local logdir="$suite_dir/_overnight_logs"; mkdir -p "$logdir"
   local stamp; stamp="$(date +%Y%m%d_%H%M%S)"
@@ -50,7 +130,7 @@ run_suite() {
     echo
   } | tee "$summary"
 
-  local name dir log t0 rc ok=0 fail=0 skip=0
+  local name dir log t0 rc demo_pid corr_pid ok=0 fail=0 skip=0
   for name in "$@"; do
     dir="$suite_dir/$name"
     if [[ ! -f "$dir/$name.py" ]]; then
@@ -63,7 +143,19 @@ run_suite() {
     log="$logdir/${name}_${stamp}.log"
     echo "[START] $name  $(date +%H:%M:%S)" | tee -a "$summary"
     t0=$SECONDS
-    ( cd "$dir" && "$venv" "$dir/$name.py" ) >"$log" 2>&1; rc=$?
+
+    # set -m gives the background job its own process group (PGID == its PID),
+    # so the reap below can never reach the runner or the user's shell. `exec`
+    # keeps the PID, making the python process itself the group leader.
+    set -m
+    ( cd "$dir" && exec "$venv" "$dir/$name.py" ) >"$log" 2>&1 &
+    demo_pid=$!
+    set +m
+    _CURRENT_PGID="$demo_pid"
+    wait "$demo_pid"; rc=$?
+    _reap_group "$demo_pid" | tee -a "$summary"
+    _CURRENT_PGID=""
+
     if [[ $rc -eq 0 ]]; then
       echo "[ OK  ] $name  $((SECONDS - t0))s  -> $(basename "$log")" | tee -a "$summary"
       ok=$((ok + 1))
@@ -78,7 +170,16 @@ run_suite() {
   echo "--- design-correlation heatmaps (one per DGP) ---" | tee -a "$summary"
   local corr_sh="$suite_dir/generate_corr_plots.sh"
   if [[ -f "$corr_sh" ]]; then
-    if bash "$corr_sh" >>"$summary" 2>&1; then
+    # Same own-process-group treatment: the plotters import the extension too.
+    set -m
+    bash "$corr_sh" >>"$summary" 2>&1 &
+    corr_pid=$!
+    set +m
+    _CURRENT_PGID="$corr_pid"
+    wait "$corr_pid"; rc=$?
+    _reap_group "$corr_pid" | tee -a "$summary"
+    _CURRENT_PGID=""
+    if [[ $rc -eq 0 ]]; then
       echo "[corr ] $(basename "$suite_dir") DGP heatmaps rendered" | tee -a "$summary"
     else
       echo "[corr!] $(basename "$suite_dir") (failed — see summary)" | tee -a "$summary"
@@ -94,5 +195,7 @@ run_suite() {
     echo " summary : $summary"
   } | tee -a "$summary"
 
+  # Nothing left in flight — drop the traps so a later exit stays silent.
+  trap - INT TERM HUP EXIT
   return 0
 }

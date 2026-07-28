@@ -253,7 +253,9 @@ def _ex_gvs_arma_blocks():
 def _ex_gvs_block_equicorr():
     d = _gvs().dgp_block_equicorr(n=200, p=500, G=100, block_size=5,
                                   n_active_blocks=10, rho=0.9, seed=_SEED)
-    return dict(X=d["X"], title=_TITLE, crop=None,
+    # 100 blocks of 5 columns are sub-pixel at full p -- crop so the tiny
+    # 5 x 5 diagonal blocks stay legible.
+    return dict(X=d["X"], title=_TITLE, crop=_SP,
                 subtitle="Equicorrelated blocks (100 x size-5), rho=0.9  |  n=200, p=500")
 
 
