@@ -104,6 +104,8 @@ Data tables are written to `simulation_results/data/` (`.txt` pretty-printed, `.
 - `da_trex_mc_da_ar1_gap_rho.txt` / `.csv`
 
 Figures (PNG/PDF, plus interactive Plotly `.html` for the per-CSV overviews) go to `simulation_results/plots/`.
+The `.html` files are not committed to the repository (each embeds a full copy of plotly.js);
+`./generate_plots.sh` produces them locally alongside the PNG/PDF.
 
 ---
 

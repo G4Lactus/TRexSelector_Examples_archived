@@ -162,7 +162,9 @@ TLARS overview:
 
 The `_grouped` PNG/PDF and the interactive `.html` (hover for values, **click a
 strategy in the legend to isolate it** in both panels) sit alongside, one set per
-solver (`tlars` / `tomp` / `tafs`). Open an HTML directly in a browser:
+solver (`tlars` / `tomp` / `tafs`). Open an HTML directly in a browser.
+The `.html` figures are not committed to the repository (each embeds a full copy of
+plotly.js); run `./generate_plots.sh` to produce them locally.
 
 ```bash
 open simulation_results/plots/demo_trex_04_lloop_strategies_results_n300_p1000_tlars_random_support_fdr_tpr_vs_snr.html

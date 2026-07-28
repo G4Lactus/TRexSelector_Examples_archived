@@ -313,9 +313,11 @@ Each demo's `simulation_results/` folder holds machine-generated artifacts only:
 
 - **`data/`** — `.txt` files (human-readable summaries) and `.csv` files
   (tidy tables for plotting and post-processing), written by the demo binary.
-- **`plots/`** — figures (`.png`/`.pdf`/`.html`) rendered from the `data/` CSVs
-  by each demo's `generate_plots.sh` via the shared
-  [trex_plt_utils.py](trex_plt_utils.py).
+- **`plots/`** — figures (`.png`/`.pdf`) rendered from the `data/` CSVs by each
+  demo's `generate_plots.sh` via the shared
+  [trex_plt_utils.py](trex_plt_utils.py). The same script also writes interactive
+  Plotly `.html` twins; those are **not committed** (each embeds a full copy of
+  plotly.js) and are regenerated locally on demand.
 
 ---
 

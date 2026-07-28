@@ -120,7 +120,9 @@ scenario means there is nothing for the grouped 2×2 view to de-clutter, so it i
 ### Interactive (Plotly HTML)
 
 Each static figure has a self-contained `.html` twin — hover for exact values, click a scenario in the legend to
-isolate its curve in both panels. Open it directly in a browser (it is not rendered inline on GitHub):
+isolate its curve in both panels. Open it directly in a browser (it is not rendered inline on GitHub).
+The `.html` figures are not committed to the repository (each embeds a full copy of
+plotly.js); run `./generate_plots.sh` to produce them locally.
 
 ```bash
 open simulation_results/plots/d03_trex_mmap_demo_c_vs_d.html

@@ -115,7 +115,9 @@ up. Both FDR panels share a y-scale for comparison:
 
 `..._fdr_tpr_vs_snr.html` is a self-contained interactive figure — hover for exact
 values and **click a solver in the legend to isolate its curve** in both panels.
-Open it directly in a browser (it is not rendered inline on GitHub):
+Open it directly in a browser (it is not rendered inline on GitHub).
+The `.html` figures are not committed to the repository (each embeds a full copy of
+plotly.js); run `./generate_plots.sh` to produce them locally.
 
 ```bash
 open simulation_results/plots/demo_trex_03_mc_sim_variable_support_trex_results_n300_p1000_stagnation_window_5_fdr_tpr_vs_snr.html

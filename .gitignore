@@ -6,6 +6,12 @@
 *.tar.gz
 .!*
 
+# Interactive Plotly figures. Each embeds a full copy of plotly.js, so they run
+# several MB apiece and dominate the repository size, while being fully
+# regenerable from the committed CSVs via a demo's generate_plots.sh. They stay
+# local; the PNG/PDF twins are what the READMEs display.
+**/simulation_results/plots/*.html
+
 ################################
 ########### FOLDERS ############
 ################################

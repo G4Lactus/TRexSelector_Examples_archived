@@ -138,7 +138,9 @@ The TLARS overview, for example:
 The `_grouped` PNG and the interactive `.html` (hover for values, **click a
 distribution in the legend to isolate it** in both panels) sit alongside, one set
 per solver — the `_tomp_` and `_tafs_` files replicate the same layout. Open an
-HTML directly in a browser:
+HTML directly in a browser.
+The `.html` figures are not committed to the repository (each embeds a full copy of
+plotly.js); run `./generate_plots.sh` to produce them locally.
 
 ```bash
 open simulation_results/plots/demo_trex_05_dummy_distributions_results_n300_p1000_tlars_random_support_fdr_tpr_vs_snr.html
