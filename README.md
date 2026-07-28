@@ -39,7 +39,7 @@ The software implements the classical T-Rex selector plus several extensions:
 | Folder | Language | Status | Description |
 |---|---|---|---|
 | [cpp/](cpp/) | C++20 | reference | All selector variants, all terminating solvers, ML building blocks, memory mapping, and validation programs. Has its own CMake build; see [cpp/README.md](cpp/README.md). |
-| [R/](R/) | R >= 4.3 | mirrors cpp | Demos for the `TRexSelectorNeo` R package (R6 API): all selector suites (trex, trex_da, trex_gvs, trex_spca, trex_screening), all terminating-solver demos (`tsolvers/`) + validation, memory mapping, and the full ml_methods set. CRAN `TRexSelector` 1.0.0 is used only as an independent reference in the tsolvers cross-check. See [R/README.md](R/README.md). |
+| [R/](R/) | R ≥ 4.3 | mirrors cpp | Demos for the `TRexSelectorNeo` R package (R6 API): all selector suites (trex, trex_da, trex_gvs, trex_spca, trex_screening), all terminating-solver demos (`tsolvers/`) + validation, memory mapping, and the full ml_methods set. CRAN `TRexSelector` 1.0.0 is used only as an independent reference in the tsolvers cross-check. See [R/README.md](R/README.md). |
 | [Python/](Python/) | Python ≥ 3.10 | mirrors cpp | Demos for the `TRexSelectorNeo` Python package (`import trex_selector_neo`): all selector suites (trex, trex_da, trex_gvs, trex_spca, trex_screening), all terminating-solver demos (`tsolvers/`) + validation, memory mapping, and the full ml_methods set. Only the `ml_methods/validation/` reference programs are not ported. See [Python/README.md](Python/README.md). |
 
 Demo naming follows the C++ convention `demo_<area>_NN_<topic>`.
