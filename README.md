@@ -3,21 +3,9 @@
 This repository contains runnable examples, demos, and Monte Carlo simulation studies for the
 [TRexSelector](../TRexSelector) software — a high-performance C++ implementation of the T-Rex
 selector family with R and Python bindings. The examples are organized per language and are
-intended as the first stop for new users: each demo is a small, self-contained script or program
-that generates data, runs a selector (or building block), and explains the output.
-
----
-
-## Contents
-
-| Folder | Language | Status | Description |
-|---|---|---|---|
-| [cpp/](cpp/) | C++20 | reference | The most complete example set: all selector variants, 12 terminating solvers, ML building blocks, memory mapping, and validation programs. Has its own CMake build; see [cpp/README.md](cpp/README.md). |
-| [R/](R/) | R | mirrors cpp | Demos for the `TRexSelectorNeo` R package (R6 API): all selector suites (trex, trex_da, trex_gvs, trex_spca, trex_screening), the 12 terminating-solver demos (`tsolvers/`) + validation, memory mapping, and the full ml_methods set. CRAN `TRexSelector` 1.0.0 is used only as an independent reference in the tsolvers cross-check. See [R/README.md](R/README.md). |
-| [Python/](Python/) | Python ≥ 3.10 | mirrors cpp | Demos for the `TRexSelectorNeo` Python package (`import trex_selector_neo`): all selector suites (trex, trex_da, trex_gvs, trex_spca, trex_screening), the 12 terminating-solver demos (`tsolvers/`) + validation, memory mapping, and the full ml_methods set. Only the `ml_methods/validation/` reference programs are not ported. See [Python/README.md](Python/README.md). |
-
-Demo naming follows the C++ convention `demo_<area>_NN_<topic>`; R and Python demos state their
-C++ counterpart in the file header so the three implementations can be compared side by side.
+intended as the first stop for new users.
+Each demo is a small, self-contained script or program that generates data, runs a selector
+(or building block), and explains the output.
 
 ---
 
@@ -46,6 +34,19 @@ The software implements the classical T-Rex selector plus several extensions:
 
 ---
 
+## Contents
+
+| Folder | Language | Status | Description |
+|---|---|---|---|
+| [cpp/](cpp/) | C++20 | reference | All selector variants, all terminating solvers, ML building blocks, memory mapping, and validation programs. Has its own CMake build; see [cpp/README.md](cpp/README.md). |
+| [R/](R/) | R >= 4.3 | mirrors cpp | Demos for the `TRexSelectorNeo` R package (R6 API): all selector suites (trex, trex_da, trex_gvs, trex_spca, trex_screening), all terminating-solver demos (`tsolvers/`) + validation, memory mapping, and the full ml_methods set. CRAN `TRexSelector` 1.0.0 is used only as an independent reference in the tsolvers cross-check. See [R/README.md](R/README.md). |
+| [Python/](Python/) | Python ≥ 3.10 | mirrors cpp | Demos for the `TRexSelectorNeo` Python package (`import trex_selector_neo`): all selector suites (trex, trex_da, trex_gvs, trex_spca, trex_screening), all terminating-solver demos (`tsolvers/`) + validation, memory mapping, and the full ml_methods set. Only the `ml_methods/validation/` reference programs are not ported. See [Python/README.md](Python/README.md). |
+
+Demo naming follows the C++ convention `demo_<area>_NN_<topic>`.
+R and Python demos refer to their C++ counterpart in the file header, which simplifies cross-checking.
+
+---
+
 ## Overview of supported Languages and Packages
 
 All three languages are backed by the same C++ core; results agree across languages up to the
@@ -60,8 +61,7 @@ R CMD INSTALL <path-to>/TRexSelector/R/TRexSelectorNeo
 ```
 
 Typical usage: `TRexSelector$new(X, y, tFDR = 0.1, control = trex_control(...))$select()`.
-Some legacy demos additionally use the CRAN package `TRexSelector` (1.0.0, functional API) —
-see [R/README.md](R/README.md) for per-area status.
+See [R/README.md](R/README.md) for more details.
 
 ### Python Package
 
@@ -81,4 +81,4 @@ The [cpp/](cpp/) folder is a standalone CMake project; build it with the provide
 
 ---
 
-**Last updated**: 2026-07-08
+**Last updated**: 2026-07-27
