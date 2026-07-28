@@ -55,7 +55,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 from matplotlib.ticker import (  # noqa: E402
-    AutoMinorLocator, MaxNLocator, MultipleLocator, ScalarFormatter,
+    AutoMinorLocator, MultipleLocator, ScalarFormatter,
 )
 
 DEFAULT_TFDR = 0.1
@@ -117,9 +117,10 @@ def apply_db_xaxis(ax, values: list[float], xscale: str = "linear") -> None:
     """Configure the decibel sweep axis.
 
     The grid is already logarithmic in nature — decibels *are* a log scale — so
-    it is plotted linearly in dB and never re-mapped. Major ticks come from the
-    locators rather than from the swept values, so labels cannot collide, and
-    minor ticks carry a faint grid. ``sqrt`` is offered for parity with the
+    it is plotted linearly in dB and never re-mapped. Major ticks are placed at
+    a **whole number** of decibels and minor ticks every 1 dB in between: the
+    sweeps are specified in integer dB, so a fractional label (``-7.5``) would
+    name a level the grid never visits. ``sqrt`` is offered for parity with the
     other suites but is rarely useful on an axis that already spans evenly.
     """
     lo, hi = min(values), max(values)
@@ -131,8 +132,12 @@ def apply_db_xaxis(ax, values: list[float], xscale: str = "linear") -> None:
                       functions=(lambda x: np.sqrt(np.maximum(x + shift, 0.0)),
                                  lambda x: np.square(x) - shift))
     ax.set_xlim(lo - pad, hi + pad)
-    ax.xaxis.set_major_locator(MaxNLocator(nbins="auto", steps=[1, 2, 2.5, 5, 10]))
-    ax.xaxis.set_minor_locator(AutoMinorLocator())
+    # Coarsest integer step that keeps the axis at <= 8 major intervals, so the
+    # narrow demo-02 panels and the wide demo-01 figures stay equally readable.
+    step = next((s for s in (1, 2, 5, 10, 20, 25, 50, 100) if span <= 8 * s),
+                max(1, round(span / 8)))
+    ax.xaxis.set_major_locator(MultipleLocator(step))
+    ax.xaxis.set_minor_locator(AutoMinorLocator(step))   # one minor tick per dB
     ax.xaxis.set_major_formatter(ScalarFormatter())
     ax.grid(which="minor", axis="x", alpha=0.25, linewidth=0.5)
 
