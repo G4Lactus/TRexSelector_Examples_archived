@@ -78,7 +78,6 @@
 
 import os
 import sys
-from concurrent.futures import ProcessPoolExecutor
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _PARENT_DIR = os.path.dirname(_THIS_DIR)
@@ -93,7 +92,7 @@ import trex_selector_neo as trex  # noqa: E402
 from trex_selector_neo.ml_methods import PCA  # noqa: E402
 
 from trex_spca_sim_utils import (N_CORES, center_columns,  # noqa: E402
-                                 generate_sparse_factor_model,
+                                 generate_sparse_factor_model, get_executor,
                                  run_mc_trials_oracle_pca, run_mc_trials_pca,
                                  run_mc_trials_trex_spca,
                                  save_and_print_spca_sweep_results)
@@ -322,8 +321,8 @@ def run_fdr_tpr_heatmap(cfg):
                       dgp_kwargs, tfdr) for mc in range(cfg["num_MC"])]
 
             if N_WORKERS > 1:
-                with ProcessPoolExecutor(max_workers=N_WORKERS) as executor:
-                    out = list(executor.map(_trial_heatmap, tasks))
+                out = list(get_executor(N_WORKERS, len(tasks)).map(_trial_heatmap,
+                                                        tasks))
             else:
                 out = [_trial_heatmap(t) for t in tasks]
 

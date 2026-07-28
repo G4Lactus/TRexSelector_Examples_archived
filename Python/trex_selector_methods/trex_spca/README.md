@@ -171,20 +171,25 @@ trex_spca/
   │                                    #   counterpart of trex_spca_sim_utils.hpp)
   ├── trex_spca_plt_utils.py           # shared plotting module (dB sweep figures;
   │                                    #   identical to the cpp suite's module)
+  ├── generate_corr_plots.sh           # renders dgp_corr_plots/ (one figure per DGP)
+  ├── dgp_corr_plots/                  # design-correlation heatmap of the factor DGP
+  ├── run_overnight.sh                 # batch runner: both demos, then the heatmap
   │
   ├── demo_trex_spca_01_mc_sim/
   │   ├── demo_trex_spca_01_mc_sim.py  # the demo source
   │   ├── README.md                    # scenario description and results
   │   ├── generate_plots.sh            # renders this demo's figures from its CSVs
   │   └── simulation_results/
-  │       ├── data/                    # .txt summary + .csv table
+  │       ├── data/                    # .txt summary + .csv tables
   │       └── plots/                   # .png + .pdf figures
   │
   └── demo_trex_spca_02_mc_sim_pev/
       ├── demo_trex_spca_02_mc_sim_pev.py
       ├── README.md
       ├── generate_plots.sh            # combines the four sweep CSVs into panels
-      └── simulation_results/          # not committed yet — full runs pending
+      └── simulation_results/
+          ├── data/                    # one .txt + .csv pair per sweep
+          └── plots/                   # .png + .pdf figures
 ```
 
 The layout mirrors the C++ suite one-to-one.
@@ -195,6 +200,11 @@ The layout mirrors the C++ suite one-to-one.
  workers), and `save_and_print_spca_sweep_results()` (console + `.txt` table with per-sweep-column axis
  precision, plus a tidy pandas CSV `method,metric,<sweep_col>,value`) with the SNR convenience wrapper
  `save_and_print_spca_mc_results()`.
+ [generate_corr_plots.sh](generate_corr_plots.sh) renders the design-correlation heatmap of the factor DGP
+ into [dgp_corr_plots/](dgp_corr_plots/) via the category-level plotter
+ [../corr_plt_utils.py](../corr_plt_utils.py); it is embedded in the demo-01 README alongside the DGP
+ description. [run_overnight.sh](run_overnight.sh) runs both demos back to back and then the heatmap,
+ logging into `_overnight_logs/`.
 
 Correctness probes for the individual pipeline stages — TENET vs. TENET_AUG equivalence, scaling
  comparisons, step-by-step C++/R diffs, and a dump of the GVS selector's internal calibration matrices —
@@ -209,7 +219,7 @@ Correctness probes for the individual pipeline stages — TENET vs. TENET_AUG eq
 
 | # | Name | Purpose | Setting | Main parameters |
 |---|------|---------|---------|-----------------|
-| **01** | MC Sim | Compare T-Rex SPCA (2 solvers × 2 modes) against OrdPCA/OraclePCA; union-support FDR per PC | Sparse 3-factor model, $n=50$, $p=100$ | $p_1=5$, `overlap_pool_size=30`, tFDR=0.10, SNR sweep in dB (currently one point) |
+| **01** | MC Sim | Compare T-Rex SPCA (2 solvers × 2 modes) against OrdPCA/OraclePCA; union-support FDR per PC | Sparse 3-factor model, $n=50$, $p=100$ | $p_1=5$, `overlap_pool_size=30`, tFDR=0.10, SNR sweep in dB ($-10 \ldots +10$) |
 | **02** | MC Sim PEV | Fig.-3-style cumulative-PEV sweeps (Definition 1 vs. total variance) + FDR/TPR heatmap study | Sparse 3-factor model, $n=50$, $p=100$ | $p_1=10$, sweeps over #PCs / SNR / $p_1$ / tFDR; part 5: (tFDR × SNR) grid |
 
 ---
@@ -290,4 +300,4 @@ in dB either way.
 
 ---
 
-**Last updated**: 2026-07-21
+**Last updated**: 2026-07-28

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+#
 # Overnight: (re)generate the T-Rex SPCA suite's mc_sim result data, then render
 # correlation heatmaps. (This suite already has a results-plotting layer:
 # per-demo generate_plots.sh renders FDR/TPR/PEV figures from the CSVs.)

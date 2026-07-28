@@ -41,6 +41,8 @@
 # Support indices are 0-based (Python convention).
 # ==============================================================================
 
+import atexit
+import multiprocessing
 import os
 from concurrent.futures import ProcessPoolExecutor
 
@@ -50,7 +52,139 @@ import pandas as pd
 import trex_selector_neo as trex
 from trex_selector_neo.ml_methods import PCA
 
-N_CORES = min(6, os.cpu_count() or 1)
+# ------------------------------------------------------------------------------
+# Worker budget  (identical helper in every suite's *_common / *_utils module)
+#
+# N_CORES MC worker processes, each pinned to one inner OpenMP thread by
+# init_worker(), so a demo never exceeds N_CORES cores in total. The default cap
+# matches the cpp demos' omp_set_num_threads(6), keeping runtimes comparable
+# across the C++ / Python suites.
+#
+# Override per run, no code edit needed:
+#   TREX_NUM_WORKERS=12   exactly 12 workers (clamped to the usable CPU count)
+#   TREX_NUM_WORKERS=0    use every usable CPU
+# The spca demos also accept the count as argv[1], which wins over the env var.
+#
+# "Usable" honours CPU affinity and cgroup quotas wherever the platform reports
+# them, so a 128-core host that granted this process only 4 CPUs yields 4, not
+# 128 — relevant under containers, Slurm/PBS, taskset and CI runners.
+# ------------------------------------------------------------------------------
+_WORKER_CAP = 6
+
+
+def _usable_cpus():
+    """Number of CPUs this process may actually use (>= 1, never None)."""
+    n = getattr(os, "process_cpu_count", None)   # Python 3.13+, affinity-aware
+    n = n() if n is not None else None
+    if not n:
+        try:
+            n = len(os.sched_getaffinity(0))     # Linux on Python < 3.13
+        except AttributeError:                   # macOS / Windows
+            n = os.cpu_count()
+    return max(1, int(n or 1))
+
+
+def resolve_workers(requested=None):
+    """Resolve the worker count from an explicit request, else env, else cap."""
+    if requested is None or str(requested).strip() == "":
+        requested = os.environ.get("TREX_NUM_WORKERS", "")
+    try:
+        n = int(str(requested).strip())
+    except (TypeError, ValueError):
+        n = None
+    usable = _usable_cpus()
+    if n is None:
+        return max(1, min(_WORKER_CAP, usable))
+    if n <= 0:                                   # 0 / negative = "all of them"
+        return usable
+    return max(1, min(n, usable))
+
+
+N_CORES = resolve_workers()
+
+
+def init_worker():
+    """Pin each worker's inner OpenMP pool to a single thread.
+
+    The MC parallelism lives in the process pool (n_cores processes). Left
+    alone, the selector's own OpenMP defaults to every logical core *inside each
+    worker*, so n_cores x n_logical threads contend for the machine. The cpp
+    demos avoid this because OpenMP nested parallelism is off by default, so the
+    inner regions of a trial run serially inside one of the outer threads.
+    Here: n_cores outer trials x 1 inner thread = n_cores cores total.
+
+    Public (no leading underscore) because the demos build their own pools for
+    the parts that do not go through _run_mc() and import this as initializer.
+    """
+    from trex_selector_neo.utils import set_num_threads
+    set_num_threads(1)
+
+
+# ------------------------------------------------------------------------------
+# Persistent worker pool (mirrors trex_da/da_sim_common.py)
+#
+# The demos call the MC runners once per parameter point, so a pool created per
+# call re-pays (process spawn + `import trex_selector_neo`) every time: measured
+# at ~0.5 s for 6 workers. One lazily-created pool is reused instead, keyed on
+# n_cores so a demo's CLI worker-count override still takes effect. Public, like
+# init_worker(), because the demos drive their own loops for the parts that
+# bypass _run_mc().
+#
+# Workers are recycled after _RECYCLE_AFTER_TASKS trials. Measured worker RSS
+# grows ~0.25 MB/trial on a small design (allocator arenas + extension caches
+# that never return to baseline) — negligible per cell, but a demo can push
+# thousands of trials through one worker, so the pool is rebuilt periodically to
+# keep that bounded. Respawning costs ~0.5 s against several minutes of trials,
+# i.e. ~0.2%. Rebuilding also drops a pool broken by a dead worker instead of
+# handing out the corpse for the rest of the run.
+#
+# This is done here rather than with ProcessPoolExecutor's own
+# max_tasks_per_child because that argument deadlocks Executor.map on
+# CPython 3.14.6 / macOS arm64 (main thread blocks in Future.result while the
+# executor management thread waits in wait_result_broken_or_wakeup; reproducible
+# with pure stdlib, no project code). Recycling between cells is also safer than
+# mid-cell: the pool is only ever replaced when no futures are in flight.
+#
+# mp_context is pinned to "spawn" for two reasons: forking a parent that has already initialised the
+# extension's OpenMP runtime risks deadlocking the child; and spawn is what
+# macOS and Windows use anyway, so all three platforms now behave identically.
+# ------------------------------------------------------------------------------
+_RECYCLE_AFTER_TASKS = 500
+_TASKS_SINCE_SPAWN = 0
+
+_EXECUTOR = None
+_EXECUTOR_WORKERS = None
+_ATEXIT_REGISTERED = False
+
+
+def _shutdown_executor():
+    """Shut the persistent pool down (atexit hook; safe to call repeatedly)."""
+    global _EXECUTOR, _EXECUTOR_WORKERS, _TASKS_SINCE_SPAWN
+    if _EXECUTOR is not None:
+        _EXECUTOR.shutdown()
+        _EXECUTOR = None
+        _EXECUTOR_WORKERS = None
+        _TASKS_SINCE_SPAWN = 0
+
+
+def get_executor(n_cores, n_tasks=0):
+    """Return the shared pool, (re)creating it if the worker count changed."""
+    global _EXECUTOR, _EXECUTOR_WORKERS, _ATEXIT_REGISTERED, _TASKS_SINCE_SPAWN
+    if _EXECUTOR is not None and (_EXECUTOR_WORKERS != n_cores
+                                  or _TASKS_SINCE_SPAWN >= _RECYCLE_AFTER_TASKS):
+        _shutdown_executor()
+    if _EXECUTOR is None:
+        _EXECUTOR = ProcessPoolExecutor(
+            max_workers=n_cores,
+            initializer=init_worker,
+            mp_context=multiprocessing.get_context("spawn"))
+        _EXECUTOR_WORKERS = n_cores
+        _TASKS_SINCE_SPAWN = 0
+        if not _ATEXIT_REGISTERED:
+            atexit.register(_shutdown_executor)
+            _ATEXIT_REGISTERED = True
+    _TASKS_SINCE_SPAWN += max(0, int(n_tasks))
+    return _EXECUTOR
 
 # String -> enum maps: only plain strings cross the process boundary; workers
 # resolve them to trex_selector_neo enums on their side.
@@ -291,8 +425,7 @@ def _trial_oracle_pca(task):
 def _run_mc(worker, tasks, label, n_cores):
     print(f"  {label} — Running {len(tasks)} MC trials ...", flush=True)
     if n_cores > 1:
-        with ProcessPoolExecutor(max_workers=n_cores) as executor:
-            res = list(executor.map(worker, tasks))
+        res = list(get_executor(n_cores, len(tasks)).map(worker, tasks))
     else:
         res = [worker(t) for t in tasks]
 
