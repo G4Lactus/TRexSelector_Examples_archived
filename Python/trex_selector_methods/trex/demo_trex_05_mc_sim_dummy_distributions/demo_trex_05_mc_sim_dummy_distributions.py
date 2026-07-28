@@ -68,13 +68,14 @@ for _p in (_THIS_DIR, _PARENT_DIR):
 import numpy as np  # noqa: E402
 
 from trex_sim_common import run_mc_trex, save_mc_results  # noqa: E402
+from trex_sim_common import resolve_workers  # noqa: E402
 
 # ==============================================================================
 # Global parameters
 # ==============================================================================
 
 _OUT_DIR     = os.path.join(_THIS_DIR, "simulation_results", "data")
-_NUM_WORKERS = 6
+_NUM_WORKERS = resolve_workers()
 _NUM_MC      = 200
 
 # ==============================================================================

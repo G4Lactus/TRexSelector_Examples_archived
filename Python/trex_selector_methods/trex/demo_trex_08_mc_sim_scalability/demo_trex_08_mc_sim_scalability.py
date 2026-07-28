@@ -79,7 +79,10 @@ import atexit  # noqa: E402
 import csv  # noqa: E402
 import ctypes  # noqa: E402
 import glob  # noqa: E402
-import resource  # noqa: E402
+try:
+    import resource  # noqa: E402  (POSIX only — see peak_rss_mib)
+except ImportError:  # Windows has no resource module
+    resource = None
 import shutil  # noqa: E402
 import signal  # noqa: E402
 import subprocess  # noqa: E402
@@ -351,8 +354,51 @@ def _install_cleanup_handlers():
 # Memory profiling hooks
 # ==============================================================================
 
+class _PROCESS_MEMORY_COUNTERS(ctypes.Structure):
+    """Windows PROCESS_MEMORY_COUNTERS (psapi.h) — working set, current + peak."""
+    _fields_ = [
+        ("cb",                         ctypes.c_uint32),
+        ("PageFaultCount",             ctypes.c_uint32),
+        ("PeakWorkingSetSize",         ctypes.c_size_t),
+        ("WorkingSetSize",             ctypes.c_size_t),
+        ("QuotaPeakPagedPoolUsage",    ctypes.c_size_t),
+        ("QuotaPagedPoolUsage",        ctypes.c_size_t),
+        ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+        ("QuotaNonPagedPoolUsage",     ctypes.c_size_t),
+        ("PagefileUsage",              ctypes.c_size_t),
+        ("PeakPagefileUsage",          ctypes.c_size_t),
+    ]
+
+
+def _win_working_set_mib():
+    """(current, peak) working set in MiB on Windows, or None elsewhere/on error.
+
+    Working set is the closest Windows analogue of RSS; PeakWorkingSetSize is
+    the monotone high-water mark, matching ru_maxrss on POSIX.
+    """
+    if sys.platform != "win32":
+        return None
+    try:
+        counters = _PROCESS_MEMORY_COUNTERS()
+        counters.cb = ctypes.sizeof(_PROCESS_MEMORY_COUNTERS)
+        psapi = ctypes.WinDLL("psapi.dll")  # type: ignore[attr-defined]
+        kernel32 = ctypes.WinDLL("kernel32.dll")  # type: ignore[attr-defined]
+        if psapi.GetProcessMemoryInfo(kernel32.GetCurrentProcess(),
+                                      ctypes.byref(counters),
+                                      counters.cb):
+            mib = 1024.0 * 1024.0
+            return (counters.WorkingSetSize / mib,
+                    counters.PeakWorkingSetSize / mib)
+    except Exception:
+        pass
+    return None
+
+
 def current_rss_mib():
     """Current resident set size (RSS) of this process in MiB (0.0 if unavailable)."""
+    win = _win_working_set_mib()
+    if win is not None:
+        return win[0]
     if sys.platform == "darwin":
         try:
             out = subprocess.run(["ps", "-o", "rss=", "-p", str(os.getpid())],
@@ -426,6 +472,11 @@ def current_footprint_mib():
 
 def peak_rss_mib():
     """Peak RSS of this process in MiB (monotone over the process lifetime)."""
+    win = _win_working_set_mib()
+    if win is not None:
+        return win[1]
+    if resource is None:            # no getrusage: best effort
+        return current_rss_mib()
     r = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     # ru_maxrss is bytes on macOS, KiB on Linux
     return r / (1024.0 * 1024.0) if sys.platform == "darwin" else r / 1024.0
