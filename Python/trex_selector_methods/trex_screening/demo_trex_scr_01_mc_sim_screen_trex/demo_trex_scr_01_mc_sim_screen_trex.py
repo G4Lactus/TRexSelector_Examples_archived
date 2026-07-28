@@ -36,12 +36,13 @@ for _p in (_THIS_DIR, _PARENT_DIR):
         sys.path.insert(0, _p)
 
 from trex_scr_common import default_scr_methods, run_mc_screen, save_and_print_scr_mc  # noqa: E402
+from trex_scr_common import resolve_workers  # noqa: E402
 
 _OUT_DIR = os.path.join(_THIS_DIR, "simulation_results", "data")
 
 # Monte Carlo count mirrors the cpp reference (num_MC = 200).
 _NUM_MC = 200
-_NUM_WORKERS = int(os.environ.get("SCR_NUM_WORKERS", 6))
+_NUM_WORKERS = resolve_workers(os.environ.get("SCR_NUM_WORKERS"))
 
 N, P, SUPPORT_SIZE = 300, 1000, 10
 SNR_GRID = [0.01, 0.1, 0.2, 0.5, 0.6, 1.0, 2.0, 5.0]

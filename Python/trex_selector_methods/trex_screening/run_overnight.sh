@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+#
 # Overnight: (re)generate the T-Rex screening suite's mc_sim result data, then
 # render correlation heatmaps.
 #

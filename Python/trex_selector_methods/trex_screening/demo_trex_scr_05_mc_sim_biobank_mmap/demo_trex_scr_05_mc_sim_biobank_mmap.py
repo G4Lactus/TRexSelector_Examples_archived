@@ -38,13 +38,14 @@ from trex_scr_bb_common import (BIOBANK_METHODS, BIOBANK_DISPLAY,  # noqa: E402
                                 _biobank_single_worker, _biobank_multi_worker,
                                 run_mc_biobank, accumulate_snr,
                                 save_and_print_biobank_mc)
+from trex_scr_common import resolve_workers  # noqa: E402
 
 _OUT_DIR = os.path.join(_THIS_DIR, "simulation_results", "data")
 
 # Monte Carlo counts mirror the cpp reference (num_MC = 200, num_MC_multi = 200).
 _NUM_MC       = 200
 _NUM_MC_MULTI = 200
-_NUM_WORKERS  = int(os.environ.get("SCR_NUM_WORKERS", 6))
+_NUM_WORKERS  = resolve_workers(os.environ.get("SCR_NUM_WORKERS"))
 
 N, P = 300, 1000
 SNR_GRID = [0.1, 0.5, 1.0, 2.0, 5.0]

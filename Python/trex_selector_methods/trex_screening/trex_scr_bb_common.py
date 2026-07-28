@@ -26,7 +26,6 @@
 
 import os
 import sys
-from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
 import pandas as pd
@@ -37,7 +36,8 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
     sys.path.insert(0, _THIS_DIR)
 
-from trex_scr_common import dgp_iid_snr, _make_response  # noqa: E402
+from trex_scr_common import (dgp_iid_snr, _make_response,  # noqa: E402
+                             _get_executor)
 
 # Canonical method-name keys returned in each result's `method_used` field.
 BIOBANK_METHODS = ["Screen-TRex (ordinary)",
@@ -162,8 +162,7 @@ def run_mc_biobank(worker, args_list, max_workers):
     Each worker returns a list of per-phenotype records (length 1 for the
     single-phenotype worker, q for the multi-phenotype worker).
     """
-    with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        chunks = list(executor.map(worker, args_list))
+    chunks = list(_get_executor(max_workers, len(args_list)).map(worker, args_list))
     records = []
     for chunk in chunks:
         records.extend(chunk)
