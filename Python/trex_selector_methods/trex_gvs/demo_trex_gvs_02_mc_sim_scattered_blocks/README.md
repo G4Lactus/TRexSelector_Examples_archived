@@ -45,6 +45,16 @@ $$
    $\mathcal{N}(0,1)$, $\beta_j = 0$.
 - Within-group correlation $\rho = 1/(1 + \sigma_x^2)$, same convention as Demo 01.
 
+![Design-matrix correlation — scattered correlated groups, natural order (no clustering)](../dgp_corr_plots/gvs_scattered.png)
+
+Empirical Pearson correlation of an exemplary design drawn from this DGP (`dgp_scattered_grouped_snr`, $n=200$,
+$p=500$, seed 2026, default $\sigma_x = \sqrt{0.01}$), in **natural variable order — no hierarchical clustering**.
+The same three 50-variable groups as Demo 01 are present, but the random column permutation scatters their members
+across the design, so the contiguous diagonal blocks of Demo 01 dissolve into a speckle of isolated high-correlation
+entries. One figure per DGP lives in [`../dgp_corr_plots/`](../dgp_corr_plots/); regenerate the whole suite with
+[`../generate_corr_plots.sh`](../generate_corr_plots.sh) (shared plotter
+[`../../corr_plt_utils.py`](../../corr_plt_utils.py)).
+
 ---
 
 ## Control Parameters
@@ -84,7 +94,10 @@ Written to `simulation_results/data/`:
 
 - `gvs_scattered_grouped_2d.txt` / `.csv` — mean FDP/TPP over the SNR $\times$ $\rho$ grid.
 
-The file names and CSV schema match the C++ demo.
+The file names and CSV schema match the C++ demo, and the suite plotter
+[`../trex_gvs_plt_utils.py`](../trex_gvs_plt_utils.py) is the same module the C++ suite uses.
+
+Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
 
 ---
 
@@ -93,6 +106,7 @@ The file names and CSV schema match the C++ demo.
 ```bash
 python demo_trex_gvs_02_mc_sim_scattered_blocks.py       # full run (hours)
 python demo_trex_gvs_02_mc_sim_scattered_blocks.py 8     # with 8 worker processes
+./generate_plots.sh                                      # render the figure below from the saved CSV
 ```
 
 Monte Carlo trials are parallelized with `ProcessPoolExecutor`; the optional
@@ -102,21 +116,30 @@ the sweep grids at the top of the script.
 
 ---
 
-## Expected Results
+## Simulation Results
 
-Reference numbers and heatmaps live in the C++ counterpart's
-[simulation_results](../../../../cpp/trex_selector_methods/trex_gvs/demo_trex_gvs_02_mc_sim_scattered_blocks/README.md#simulation-results);
-the Python port reproduces the same qualitative pattern:
+The numbers and figure below are this Python run's own results (200 MC trials per cell). They agree with the
+[C++ reference](../../../../cpp/trex_selector_methods/trex_gvs/demo_trex_gvs_02_mc_sim_scattered_blocks/README.md#simulation-results)
+up to Monte-Carlo noise — the two ports draw from independent RNG streams.
 
-- **TENET** and **TENET_AUG** track each other closely and keep FDR below the $\mathrm{tFDR} = 0.1$ target
-   everywhere; **TIENET_AUG** is markedly more conservative (lower FDR), and its power collapses in the extreme
-   $\rho = 0.99$ column where the within-group columns become nearly collinear.
+- **TENET** and **TENET_AUG** are numerically identical here and keep FDR below the $\mathrm{tFDR} = 0.1$ target
+   in every cell ($0.042$–$0.088$, no cyan violation outlines), with TPR $\approx 1$ from $\mathrm{SNR} \ge 1$ for
+   $\rho \ge 0.5$ and $0.87 \to 0.96 \to 0.99$ over $\mathrm{SNR} \in \{1, 2, 5\}$ in the weakest column
+   $\rho = 0.30$.
+- **TIENET_AUG** is markedly more conservative (FDR $\le 0.027$), and its power collapses in the extreme
+   $\rho = 0.99$ column (TPR $\approx 0.02$, flat in SNR) where the within-group columns become nearly collinear.
 - Because HAC-based grouping clusters columns by **correlation**, not by column adjacency, scattering group members
    across the design leaves the FDR/TPR pattern very close to Demo 01's contiguous-block results — the clustering
-   step is insensitive to column order by construction.
+   step is insensitive to column order by construction. Cell by cell the two demos differ by at most a few
+   hundredths of TPR (e.g. $0.87$ here vs. $0.88$ in Demo 01 at $\mathrm{SNR}=1$, $\rho=0.3$).
 - Best read side-by-side with Demo 01: matching results confirm that group *discovery* depends on correlation
    structure rather than spatial layout, while a noticeable divergence would point to a layout-sensitive bug or
    clustering limitation.
+
+TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver;
+FDR cells above the $\mathrm{tFDR} = 0.1$ target would be outlined in cyan.
+
+![Scattered-grouped SNR × rho sweep](simulation_results/plots/gvs_scattered_grouped_2d.png)
 
 ---
 
@@ -136,4 +159,4 @@ the Python port reproduces the same qualitative pattern:
 
 ---
 
-**Last updated**: 2026-07-21
+**Last updated**: 2026-07-27

@@ -47,6 +47,18 @@ $$
 - The DGP exports `prior_groups[j] = j // 5` — the exact generating block of every column — which the oracle
    variants pass to `TRexGVSControlParameter.prior_groups`.
 
+![Design-matrix correlation — 100 equicorrelated blocks of size 5, natural order (no clustering)](../dgp_corr_plots/gvs_block_equicorr.png)
+
+Empirical Pearson correlation of an exemplary design drawn from this DGP (`dgp_block_equicorr`, $n=200$, $p=500$,
+$\rho = 0.9$, seed 2026), in **natural variable order — no hierarchical clustering**; only the leading
+$75 \times 75$ corner is shown, because 100 blocks of 5 columns are sub-pixel over the full $p = 500$. The chain
+of tiny $5 \times 5$ squares along the diagonal is the block structure the oracle prior encodes exactly and HAC has to
+rediscover — at $\rho = 0.9$ it does, but at $\rho \le 0.35$ the same blocks fall below the `corr_max` $= 0.5$ cut
+and dissolve into singletons. One figure per DGP lives in
+[`../dgp_corr_plots/`](../dgp_corr_plots/); regenerate the whole suite with
+[`../generate_corr_plots.sh`](../generate_corr_plots.sh) (shared plotter
+[`../../corr_plt_utils.py`](../../corr_plt_utils.py)).
+
 ### Truth scenarios
 
 - **WHOLE** (headline): all 5 variables of each active block are active, $s = 50$. This matches the grouped-selection
@@ -142,7 +154,10 @@ Written to `simulation_results/data/`, one pair per truth scenario:
 - `gvs_block_bench_individual.txt` / `.csv`
 
 Each `.txt` reproduces the console grid tables; each `.csv` is a tidy long-format table with all four methods'
-aggregates per $(\rho, \mathrm{SNR})$ cell. The file names and CSV schemas match the C++ demo.
+aggregates per $(\rho, \mathrm{SNR})$ cell. The file names and CSV schemas match the C++ demo, and the suite
+plotter [`../trex_gvs_plt_utils.py`](../trex_gvs_plt_utils.py) is the same module the C++ suite uses.
+
+Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
 
 ---
 
@@ -151,6 +166,7 @@ aggregates per $(\rho, \mathrm{SNR})$ cell. The file names and CSV schemas match
 ```bash
 python demo_trex_gvs_08_mc_sim_block_bench.py       # full run (hours)
 python demo_trex_gvs_08_mc_sim_block_bench.py 8     # with 8 worker processes
+./generate_plots.sh                                 # render the figures below from the saved CSVs
 ```
 
 Both scenarios run in the same invocation and print one grid table per scenario, per $\rho$ value.
@@ -160,35 +176,63 @@ reduce `num_MC` and the grids at the top of the script.
 
 ---
 
-## Expected Results
+## Simulation Results
 
-Reference numbers and line plots live in the C++ counterpart's
-[simulation_results](../../../../cpp/trex_selector_methods/trex_gvs/demo_trex_gvs_08_mc_sim_block_bench/README.md#simulation-results);
-the Python port reproduces the same qualitative pattern:
+The numbers and figures below are this Python run's own results (200 MC trials per cell). They agree with the
+[C++ reference](../../../../cpp/trex_selector_methods/trex_gvs/demo_trex_gvs_08_mc_sim_block_bench/README.md#simulation-results)
+up to Monte-Carlo noise — the two ports draw from independent RNG streams.
 
 ### WHOLE truth — value of the prior vs. $\rho$ (headline)
 
-- **FDR is controlled everywhere** for all four methods across the entire grid.
-- **For the EN variants the prior is inert**: M1 and M2 differ only marginally at every grid point. Since EN
-   consumes the group information only through the dummy correlation structure, knowing the true groups neither
-   helps nor hurts it here.
+- **FDR is controlled everywhere**: the realized coordinate-level FDR never exceeds $0.071$ against the
+   $\mathrm{tFDR} = 0.1$ target, for all four methods across the entire grid.
+- **For the EN variants the prior is inert**: M1 and M2 differ by at most $0.004$ TPR at every grid point. Since
+   EN consumes the group information only through the dummy correlation structure, knowing the true groups
+   neither helps nor hurts it here.
 - **For IEN the value of the prior is non-monotone in $\rho$.** Below the discoverability boundary the oracle
-   prior *costs* power — clustered IEN degenerates to per-variable ridge rows (purity $0$, $M \approx 500$)
-   while the oracle's genuine 5-member ties couple actives with their group-aligned dummies, terminating the
-   T-loop early. Only around the boundary ($\rho = 0.5$) does the oracle pay off mildly, and from
-   $\rho \ge 0.65$ both IEN variants coincide because HAC recovers exactly the true blocks.
-- **IEN is much more conservative than EN throughout** — the same conservatism seen across Demos 01–07.
+   prior *costs* power: at $\rho = 0.35$, $\mathrm{SNR} = 5$, clustered IEN reaches TPR $0.30$ vs. $0.11$ for
+   oracle IEN (and $0.21$ vs. $0.08$ at $\rho = 0.2$). This is **not** HAC outperforming the truth — at these
+   $\rho$ the `corr_max` $= 0.5$ cut sits above the within-block correlation, so no merge survives it
+   (purity $0$, $M \approx 500$) and clustered IEN degenerates to per-variable ridge rows. It is the oracle's
+   genuine 5-member ties that hurt: the shared group-indicator rows couple each active with its group-aligned
+   dummies, and with weak within-group correlation the data block barely separates them, so dummies enter the
+   solver path almost as early as actives, the FDP estimate stays high, and the T-loop terminates early
+   ($\overline{T}_{\mathrm{stop}} = 6.3$ vs. $13.1$ for clustered at $\rho = 0.35$, $\mathrm{SNR} = 5$, at the
+   *same* CV-chosen $\lambda_2$). Only around the boundary ($\rho = 0.5$, purity $0.58$, $M \approx 179$) does
+   the oracle pay off mildly ($0.127$ vs. $0.100$), and from $\rho \ge 0.65$ both IEN variants are numerically
+   identical because HAC recovers exactly the true blocks (purity $1.0$, $M = 100$).
+- **IEN is much more conservative than EN throughout** (TPR $\le 0.15$ for $\rho \ge 0.5$ vs. up to $0.90$ for
+   EN) — the same conservatism seen across Demos 01–07.
+
+TPR (top) and FDR (bottom) vs. $\rho$, one panel per SNR $\in \{0.5, 2, 5\}$, one line per method; the dashed
+red line marks the $\mathrm{tFDR} = 0.1$ target.
+
+![Block benchmark — WHOLE, value of prior groups vs rho](simulation_results/plots/gvs_block_bench_whole_vs_rho.png)
+
+- The supplementary vs.-SNR view below shows the same data at three discoverability regimes
+   ($\rho = 0.2$ undiscoverable, $0.5$ partial, $0.9$ fully discovered): the EN pair overlaps in every panel,
+   and recovery grows with both SNR and $\rho$ (stronger within-block correlation concentrates the signal on
+   fewer effective directions, which helps whole-block recovery).
+
+![Block benchmark — WHOLE, TPR/FDR vs SNR](simulation_results/plots/gvs_block_bench_whole.png)
 
 ### INDIVIDUAL truth — cautionary appendix
 
-- **Coordinate-level FDR control collapses by construction once siblings correlate strongly** (realized FDR far
-   above target at $\rho = 0.9$, while the active variable's whole block is selected). Oracle and clustered
-   variants are identical here — no amount of correct group knowledge identifies *which* exchangeable member is
-   active.
-- At the weaker $\rho = 0.35$ the violation is mild for EN and, notably, the oracle prior *does* rescue IEN's
-   error control — the group ties concentrate the selection on one representative per block.
-- The block-level diagnostics in the saved tables stay near the target, which is exactly the point: the method
-   still finds the right *blocks*, but no guarantee attaches to that number.
+- **Coordinate-level FDR control collapses by construction once siblings correlate strongly.** At $\rho = 0.9$
+   the EN methods realize FDR $\approx 0.77$–$0.80$ (target $0.1$) while selecting the active variable's whole
+   block; IEN sits at $0.39$–$0.49$. Oracle and clustered variants are identical here — no amount of correct
+   group knowledge identifies *which* exchangeable member is active.
+- At the weaker $\rho = 0.35$ the violation is mild for EN (FDR up to $\approx 0.16$ at high SNR) and, notably,
+   the oracle prior *does* rescue IEN's error control (FDR $\le 0.05$ vs. $\approx 0.11$ clustered) — the group
+   ties concentrate the selection on one representative per block.
+- The block-level diagnostics in the saved tables stay near the target ($\mathrm{block\_FDR} \le 0.13$ at
+   $\rho = 0.9$ for EN, $\le 0.02$ for IEN), which is exactly the point: the method still finds the right
+   *blocks*, but no guarantee attaches to that number.
+
+TPR (top) and FDR (bottom) vs. SNR, one panel per $\rho \in \{0.35, 0.9\}$; note the different FDR
+axis scales.
+
+![Block benchmark — INDIVIDUAL](simulation_results/plots/gvs_block_bench_individual.png)
 
 ---
 
@@ -205,4 +249,4 @@ the Python port reproduces the same qualitative pattern:
 
 ---
 
-**Last updated**: 2026-07-21
+**Last updated**: 2026-07-27

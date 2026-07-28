@@ -44,6 +44,17 @@ The design matrix keeps the 4-block geometry of Demos 03/05/06 (sizes $\{20, 50,
 Unlike Demo 06, the sweep parameter here is `ar_coef` (shared by the AR(1) and ARMA(2,1) blocks), **not** $\rho$ —
  the MA(3) block has no AR component at all, so it does not respond to the sweep.
 
+![Design-matrix correlation — block-diagonal ARMA, natural order (no clustering)](../dgp_corr_plots/gvs_arma_blocks.png)
+
+Empirical Pearson correlation of an exemplary design drawn from this DGP (`dgp_arma_blocks_snr`, $n=200$, $p=500$,
+`ar_coef` $=0.8$, seed 2026), in **natural variable order — no hierarchical clustering**. The heterogeneity is
+visible directly: the ARMA(2,1) block (80 vars) carries a broad, slowly decaying band, the two AR(1) blocks (20 and
+65 vars — active and trap) look structurally alike, and the MA(3) block (50 vars) is nearly a bare diagonal, since
+its correlation dies after 3 lags. One figure per DGP lives in
+[`../dgp_corr_plots/`](../dgp_corr_plots/); regenerate the whole suite with
+[`../generate_corr_plots.sh`](../generate_corr_plots.sh) (shared plotter
+[`../../corr_plt_utils.py`](../../corr_plt_utils.py)).
+
 ---
 
 ## Control Parameters
@@ -84,7 +95,10 @@ Written to `simulation_results/data/`:
 
 - `gvs_arma_blocks_2d.txt` / `.csv` — mean FDP/TPP over the SNR $\times$ `ar_coef` grid.
 
-The file names and CSV schema match the C++ demo.
+The file names and CSV schema match the C++ demo, and the suite plotter
+[`../trex_gvs_plt_utils.py`](../trex_gvs_plt_utils.py) is the same module the C++ suite uses.
+
+Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
 
 ---
 
@@ -93,6 +107,7 @@ The file names and CSV schema match the C++ demo.
 ```bash
 python demo_trex_gvs_07_mc_sim_arma_blocks.py       # full run (hours)
 python demo_trex_gvs_07_mc_sim_arma_blocks.py 8     # with 8 worker processes
+./generate_plots.sh                                 # render the figure below from the saved CSV
 ```
 
 Monte Carlo trials are parallelized with `ProcessPoolExecutor`; the optional
@@ -102,22 +117,34 @@ the sweep grids at the top of the script.
 
 ---
 
-## Expected Results
+## Simulation Results
 
-Reference numbers and heatmaps live in the C++ counterpart's
-[simulation_results](../../../../cpp/trex_selector_methods/trex_gvs/demo_trex_gvs_07_mc_sim_arma_blocks/README.md#simulation-results);
-the Python port reproduces the same qualitative pattern:
+The numbers and figure below are this Python run's own results (200 MC trials per cell). They agree with the
+[C++ reference](../../../../cpp/trex_selector_methods/trex_gvs/demo_trex_gvs_07_mc_sim_arma_blocks/README.md#simulation-results)
+up to Monte-Carlo noise — the two ports draw from independent RNG streams.
 
 - Because the three active blocks carry genuinely different correlation structures (AR(1), MA(3), ARMA(2,1)),
    recovery is **uneven across blocks** — the MA(3) block (short-range, decaying-but-bounded correlation) and the
    ARMA(2,1) block behave differently from the pure AR(1) block, so the aggregate TPR blends these per-block
-   difficulties.
-- **TENET** and **TENET_AUG** track each other closely and keep FDR near or below the $\mathrm{tFDR} = 0.1$ target.
-   The trap block (AR(1), same `ar_coef` as the active AR(1) block) is structurally similar to an active block and
-   is the main test of false-group exclusion here.
-- **TIENET_AUG** is markedly more conservative — lower FDR, with a TPR collapse in the high-`ar_coef` columns.
-- Compare against Demo 06 (uniform AR(1) blocks) to see whether heterogeneity across blocks costs additional power
-   beyond what AR(1) decay alone costs.
+   difficulties and saturates around $0.6$: at $\mathrm{SNR}=5$, TENET's TPR rises steeply over
+   `ar_coef` $\in \{0.3, 0.5, 0.7\}$ ($0.11 \to 0.36 \to 0.59$) and then plateaus, since the MA(3) block never
+   responds to the sweep.
+- **TENET** and **TENET_AUG** are numerically identical here and keep FDR below the $\mathrm{tFDR} = 0.1$ target
+   in every cell (max $0.080$, no cyan outlines). The trap block (AR(1), same `ar_coef` as the active AR(1) block)
+   is structurally similar to an active block and is the main test of false-group exclusion here — it does not
+   inflate FDR.
+- **TIENET_AUG** is markedly more conservative (FDR $\le 0.035$), and its TPR collapses in the high-`ar_coef`
+   columns — $0.25$ at `ar_coef` $=0.8$ and $\approx 0.01$ from `ar_coef` $\ge 0.9$ — whereas TENET keeps
+   improving there.
+- Compared against Demo 06 (uniform AR(1) blocks), heterogeneity does cost power: TENET tops out near $0.61$ here
+   versus $0.96$ there, because the MA(3) block's 3-lag correlation gives the grouping step almost nothing to
+   aggregate.
+
+TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ `ar_coef` grid, one column per solver
+(row axis = SNR, column axis = AR coefficient); FDR cells above the $\mathrm{tFDR} = 0.1$ target
+would be outlined in cyan.
+
+![ARMA blocks SNR × AR-coefficient sweep](simulation_results/plots/gvs_arma_blocks_2d.png)
 
 ---
 
@@ -137,4 +164,4 @@ the Python port reproduces the same qualitative pattern:
 
 ---
 
-**Last updated**: 2026-07-21
+**Last updated**: 2026-07-27

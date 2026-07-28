@@ -45,6 +45,17 @@ $$
    the blocks) filled with i.i.d. $\mathcal{N}(0,1)$ background columns.
 - Within-block correlation $\rho = 1/(1 + \sigma_x^2)$, same convention as Demo 01.
 
+![Design-matrix correlation — mixed-size equicorrelated blocks, natural order (no clustering)](../dgp_corr_plots/gvs_mixed_blocks.png)
+
+Empirical Pearson correlation of an exemplary design drawn from this DGP (`dgp_mixed_blocks_snr`, $n=200$,
+$p=500$, seed 2026, default $\sigma_x = \sqrt{0.01}$), in **natural variable order — no hierarchical clustering**.
+The four solid diagonal squares are the blocks of sizes $\{20, 50, 80, 65\}$ in one random order, separated by the
+random-width white-noise gaps; the inactive trap block is indistinguishable from the active ones in the correlation
+structure alone — which is exactly the point of this demo. One figure per DGP lives in
+[`../dgp_corr_plots/`](../dgp_corr_plots/); regenerate the whole suite with
+[`../generate_corr_plots.sh`](../generate_corr_plots.sh) (shared plotter
+[`../../corr_plt_utils.py`](../../corr_plt_utils.py)).
+
 ---
 
 ## Control Parameters
@@ -86,7 +97,10 @@ Written to `simulation_results/data/`:
 
 - `gvs_mixed_blocks_2d.txt` / `.csv` — mean FDP/TPP over the SNR $\times$ $\rho$ grid.
 
-The file names and CSV schema match the C++ demo.
+The file names and CSV schema match the C++ demo, and the suite plotter
+[`../trex_gvs_plt_utils.py`](../trex_gvs_plt_utils.py) is the same module the C++ suite uses.
+
+Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
 
 ---
 
@@ -95,6 +109,7 @@ The file names and CSV schema match the C++ demo.
 ```bash
 python demo_trex_gvs_03_mc_sim_mixed_blocks.py       # full run (hours)
 python demo_trex_gvs_03_mc_sim_mixed_blocks.py 8     # with 8 worker processes
+./generate_plots.sh                                  # render the figure below from the saved CSV
 ```
 
 Monte Carlo trials are parallelized with `ProcessPoolExecutor`; the optional
@@ -104,22 +119,29 @@ the sweep grids at the top of the script.
 
 ---
 
-## Expected Results
+## Simulation Results
 
-Reference numbers and heatmaps live in the C++ counterpart's
-[simulation_results](../../../../cpp/trex_selector_methods/trex_gvs/demo_trex_gvs_03_mc_sim_mixed_blocks/README.md#simulation-results);
-the Python port reproduces the same qualitative pattern:
+The numbers and figure below are this Python run's own results (200 MC trials per cell). They agree with the
+[C++ reference](../../../../cpp/trex_selector_methods/trex_gvs/demo_trex_gvs_03_mc_sim_mixed_blocks/README.md#simulation-results)
+up to Monte-Carlo noise — the two ports draw from independent RNG streams.
 
-- **TENET** and **TENET_AUG** track each other closely and keep FDR controlled (roughly $0.05$–$0.08$, everywhere
-   below target) — the inactive equicorrelated trap block does **not** inflate FDR, since its group is identified
-   as null and excluded.
-- **TIENET_AUG** is far more conservative (FDR near $0$, lower TPR), with a TPR collapse in the extreme
-   $\rho = 0.99$ column where the within-block columns become nearly collinear.
+- **TENET** and **TENET_AUG** are numerically identical here and keep FDR controlled everywhere
+   ($0.056$–$0.082$, no cyan violation outlines) — the inactive equicorrelated trap block does **not** inflate
+   FDR, since its group is identified as null and excluded. TPR peaks at $0.96$ (a ceiling below $1$: the small
+   20-variable block is the hardest to recover).
+- **TIENET_AUG** is far more conservative (FDR $\le 0.023$, TPR $\le 0.87$), with a TPR collapse in the extreme
+   $\rho = 0.99$ column (TPR $\approx 0.01$) where the within-block columns become nearly collinear.
 - The random gaps and random block order mainly test that the grouping/clustering logic is invariant to block
    *placement*: TPR rises with SNR just as in the contiguous designs, so placement does not materially change
    detection power.
 - Sweeping $\rho$ from $0.30$ up to $0.99$ shows how detection power and FDR control respond as within-block
-   correlation strengthens, all else equal.
+   correlation strengthens, all else equal: for TENET at $\mathrm{SNR}=1$, TPR climbs $0.82 \to 0.92$ between
+   $\rho = 0.30$ and $\rho = 0.85$ and then flattens, while FDR drifts *down* from $0.078$ to $0.056$.
+
+TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver;
+FDR cells above the $\mathrm{tFDR} = 0.1$ target would be outlined in cyan.
+
+![Mixed-blocks SNR × rho sweep](simulation_results/plots/gvs_mixed_blocks_2d.png)
 
 ---
 
@@ -139,4 +161,4 @@ the Python port reproduces the same qualitative pattern:
 
 ---
 
-**Last updated**: 2026-07-21
+**Last updated**: 2026-07-27

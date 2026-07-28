@@ -117,20 +117,28 @@ trex_gvs/
   ├── gvs_sim_common.py               # selector adapter, parallel MC runners,
   │                                   # table printers, .txt/.csv writers
   │                                   # (mirrors trex_gvs_simulation_utils.hpp)
+  ├── trex_gvs_plt_utils.py           # shared plotting module (heatmaps / bars / line plots)
+  ├── generate_corr_plots.sh          # renders dgp_corr_plots/ (one figure per DGP)
+  ├── dgp_corr_plots/                 # design-correlation heatmaps per DGP
+  ├── run_overnight.sh                # batch runner: all 8 demos, then the correlation heatmaps
   │
   ├── demo_trex_gvs_01_mc_sim_hastie_en_blocks/
   │   ├── demo_trex_gvs_01_mc_sim_hastie_en_blocks.py   # the demo script
   │   ├── README.md                    # scenario description and interpretation
+  │   ├── generate_plots.sh            # renders this demo's figures from its CSVs
   │   └── simulation_results/
-  │       └── data/                    # .txt summaries + .csv tables
+  │       ├── data/                    # .txt summaries + .csv tables
+  │       └── plots/                   # .png + .pdf figures
   │
   │   ... demos 02–08 follow the same layout ...
   │
   └── demo_trex_gvs_08_mc_sim_block_bench/
       ├── demo_trex_gvs_08_mc_sim_block_bench.py
       ├── README.md
+      ├── generate_plots.sh
       └── simulation_results/
-          └── data/
+          ├── data/
+          └── plots/
 ```
 
 Shared infrastructure:
@@ -144,6 +152,13 @@ Shared infrastructure:
   oracle `prior_groups`), the parallel MC runners `run_gvs_mc_trials` / `run_gvs_2d_sweep` /
   `run_block_mc` (`ProcessPoolExecutor`, mirroring the cpp OpenMP loops), and the table printers and
   `.txt`/`.csv` writers whose output matches the cpp layout and schemas.
+- [trex_gvs_plt_utils.py](trex_gvs_plt_utils.py) — the suite plotter, byte-identical to the cpp suite's
+  module: it auto-detects the CSV shape and renders 2-D sweeps as TPR/FDR heatmap grids, the demo-01
+  $\lambda_2$/linkage studies as grouped bar charts, and the demo-08 block benchmark as TPR/FDR line
+  plots (vs. SNR or, via `--vs rho`, vs. the within-block correlation).
+- [generate_corr_plots.sh](generate_corr_plots.sh) — renders one design-correlation heatmap per DGP into
+  [dgp_corr_plots/](dgp_corr_plots/) via the category-level plotter [../corr_plt_utils.py](../corr_plt_utils.py);
+  these are embedded in the demo READMEs alongside the DGP description.
 
 ---
 
@@ -162,7 +177,7 @@ Notes:
 
 - Every demo writes a human-readable `.txt` summary and a tidy `.csv` table into its local
   `simulation_results/data/` folder, using the same file names and CSV schemas as the C++ suite
-  (so the cpp-side `trex_gvs_plt_utils.py` can render the same figures from the Python CSVs).
+  (so either suite's `trex_gvs_plt_utils.py` renders the same figures from either side's CSVs).
 - Each demo inserts its own directory and the parent suite directory onto `sys.path`, so the shared
   `trex_gvs_dgps` / `gvs_sim_common` modules resolve from the nested location and are re-importable
   by the `spawn`-launched Monte Carlo workers — run the demos **as files**, not piped via `python -`.
@@ -173,6 +188,22 @@ Notes:
 - Seeding mirrors the cpp MC loops: trial i uses data seed `base_seed + i`, which is also passed as
   the selector seed (and as `cv_seed` in demos 01–07); demo 08 staggers seeds per grid cell.
 - Indices are **0-based** (Python convention); the R counterparts are 1-based.
+
+### Figures
+
+Each demo folder has a `generate_plots.sh` that renders its figures from the saved CSVs into
+`simulation_results/plots/` using the shared [trex_gvs_plt_utils.py](trex_gvs_plt_utils.py) and the
+repo-root `.venv` (matplotlib + pandas + numpy):
+
+```bash
+cd demo_trex_gvs_01_mc_sim_hastie_en_blocks
+./generate_plots.sh                 # this demo's full figure set (PNG + PDF)
+./generate_plots.sh --formats png   # extra args pass through to the plotter
+```
+
+The design-correlation heatmaps embedded in each demo README's DGP section are separate — they
+depend only on the DGP, not on a simulation run, and are regenerated suite-wide with
+[generate_corr_plots.sh](generate_corr_plots.sh).
 
 ---
 
@@ -192,4 +223,4 @@ Notes:
 
 ---
 
-**Last updated**: 2026-07-21
+**Last updated**: 2026-07-27

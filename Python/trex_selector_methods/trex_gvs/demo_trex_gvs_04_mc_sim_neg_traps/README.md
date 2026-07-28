@@ -48,6 +48,17 @@ $$
 - Within-group correlation $\rho = 1/(1 + \sigma_x^2)$, same convention as Demo 01 — in magnitude, since half the
    loadings are sign-flipped.
 
+![Design-matrix correlation — negative-correlation traps, natural order (no clustering)](../dgp_corr_plots/gvs_neg_traps.png)
+
+Empirical Pearson correlation of an exemplary design drawn from this DGP (`dgp_neg_traps_snr`, $n=200$, $p=500$,
+seed 2026, default $\sigma_x = \sqrt{0.01}$), in **natural variable order — no hierarchical clustering**. Each
+sign-flipped group shows as a $2 \times 2$ checkerboard — dark red within each half, dark blue between the halves:
+the active group $G_1$ (columns 0–99), Trap 1 (100–199) and the smaller Trap 2 (300–359). The traps are
+indistinguishable from the active group in correlation structure alone. One figure per DGP lives in
+[`../dgp_corr_plots/`](../dgp_corr_plots/); regenerate the whole suite with
+[`../generate_corr_plots.sh`](../generate_corr_plots.sh) (shared plotter
+[`../../corr_plt_utils.py`](../../corr_plt_utils.py)).
+
 ---
 
 ## Control Parameters
@@ -87,7 +98,10 @@ Written to `simulation_results/data/`:
 
 - `gvs_Neg-Traps_2d.txt` / `.csv` — mean FDP/TPP over the SNR $\times$ $\rho$ grid.
 
-The file names and CSV schema match the C++ demo.
+The file names and CSV schema match the C++ demo, and the suite plotter
+[`../trex_gvs_plt_utils.py`](../trex_gvs_plt_utils.py) is the same module the C++ suite uses.
+
+Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
 
 ---
 
@@ -96,6 +110,7 @@ The file names and CSV schema match the C++ demo.
 ```bash
 python demo_trex_gvs_04_mc_sim_neg_traps.py       # full run (hours)
 python demo_trex_gvs_04_mc_sim_neg_traps.py 8     # with 8 worker processes
+./generate_plots.sh                               # render the figure below from the saved CSV
 ```
 
 Monte Carlo trials are parallelized with `ProcessPoolExecutor`; the optional
@@ -105,22 +120,33 @@ the sweep grids at the top of the script.
 
 ---
 
-## Expected Results
+## Simulation Results
 
-Reference numbers and heatmaps live in the C++ counterpart's
-[simulation_results](../../../../cpp/trex_selector_methods/trex_gvs/demo_trex_gvs_04_mc_sim_neg_traps/README.md#simulation-results);
-the Python port reproduces the same qualitative pattern:
+The numbers and figure below are this Python run's own results (200 MC trials per cell). They agree with the
+[C++ reference](../../../../cpp/trex_selector_methods/trex_gvs/demo_trex_gvs_04_mc_sim_neg_traps/README.md#simulation-results)
+up to Monte-Carlo noise — the two ports draw from independent RNG streams.
 
-- **TENET** and **TENET_AUG** are essentially identical: both recover the active sign-flipped group almost
-   completely (TPR $\approx 1$ except at the lowest SNR $= 0.2$) while holding FDR at or just below target — the
-   two inactive traps are excluded rather than falsely selected.
-- The mechanism behind that recovery is that HAC clusters on **unsigned** correlation, so the sign-flipped active
+- **TENET** and **TENET_AUG** are numerically identical here: both recover the active sign-flipped group almost
+   completely (TPR $\ge 0.97$ everywhere except the $\mathrm{SNR}=0.2$, $\rho=0.3$ cell at $0.80$) — the two
+   inactive traps are excluded rather than falsely selected.
+- FDR sits just below the $\mathrm{tFDR} = 0.1$ target across the grid ($0.077$–$0.099$), with **two cells
+   marginally above it**: $\rho = 0.99$ at $\mathrm{SNR} = 2$ and $5$ realize $0.107$ and $0.112$ (outlined cyan
+   in the figure). The Monte-Carlo standard error of those cells is $\approx 0.009$, so both sit within
+   $\approx 1.3$ standard errors of the target; the C++ reference peaks at $0.098$ in the same near-collinear
+   column. This is MC-scale jitter in the hardest corner of the grid, not a systematic loss of control.
+- The mechanism behind the recovery is that HAC clusters on **unsigned** correlation, so the sign-flipped active
    group is identified as a *single* group rather than split into its positive and negative halves.
-- **TIENET_AUG** is far more conservative (FDR $\le 0.03$ everywhere) and its TPR collapses to near zero in the
-   extreme $\rho = 0.99$ column; otherwise it behaves as in the uniformly-positive-correlation scenarios of
-   Demos 01–03 — the sign-flipped halves do not by themselves trigger different informed-EN behavior.
-- The two spatially separated traps are a stronger test of false-group exclusion than a single trap: watch whether
-   FDR creeps up with SNR, which would indicate one of the traps starting to be (partially) selected.
+- **TIENET_AUG** is far more conservative (FDR $\le 0.030$ everywhere) and its TPR collapses to $0.03$–$0.08$ in
+   the extreme $\rho = 0.99$ column; elsewhere it reaches TPR $\approx 1$ from $\mathrm{SNR} \ge 0.5$, so the
+   sign-flipped halves do not by themselves trigger different informed-EN behavior.
+- The two spatially separated traps are a stronger test of false-group exclusion than a single trap: FDR does not
+   creep up with SNR outside the $\rho = 0.99$ column, so neither trap starts being selected as the signal
+   strengthens.
+
+TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver;
+FDR cells above the $\mathrm{tFDR} = 0.1$ target are outlined in cyan.
+
+![Neg-traps SNR × rho sweep](simulation_results/plots/gvs_Neg-Traps_2d.png)
 
 ---
 
@@ -140,4 +166,4 @@ the Python port reproduces the same qualitative pattern:
 
 ---
 
-**Last updated**: 2026-07-21
+**Last updated**: 2026-07-27

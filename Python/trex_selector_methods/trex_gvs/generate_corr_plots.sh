@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
-# Render one design-correlation heatmap per DGP in this suite (natural order,
-# no clustering) into dgp_corr_plots/, via the shared plotter ../corr_plt_utils.py.
 #
+# Render design-correlation heatmap per DGP (natural order,
+# no clustering) into:
+#   dgp_corr_plots/
+# via the shared plotter ../corr_plt_utils.py.
+#
+# Usage:
 #   ./generate_corr_plots.sh
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

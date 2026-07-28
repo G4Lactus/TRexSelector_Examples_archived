@@ -43,6 +43,16 @@ $$
 - Within-group correlation $\rho = 1/(1+\sigma_x^2)$; the default $\sigma_x = \sqrt{0.01}$ gives $\rho \approx 0.99$.
 - SNR calibrated via $\sigma_{\varepsilon}^2 = \mathrm{Var}(\boldsymbol{X}\beta)/\mathrm{SNR}$.
 
+![Design-matrix correlation — Hastie equicorrelated groups, natural order (no clustering)](../dgp_corr_plots/gvs_hastie.png)
+
+Empirical Pearson correlation of an exemplary design drawn from this DGP (`dgp_hastie_snr`, $n=200$, $p=500$,
+seed 2026, default $\sigma_x = \sqrt{0.01}$), in **natural variable order — no hierarchical clustering**. The three
+dark squares on the diagonal are the active groups (columns 0–49 / 50–99 / 100–149) at $\rho \approx 0.99$; the 350
+background columns are mutually uncorrelated. One figure per DGP lives in
+[`../dgp_corr_plots/`](../dgp_corr_plots/); regenerate the whole suite with
+[`../generate_corr_plots.sh`](../generate_corr_plots.sh) (shared plotter
+[`../../corr_plt_utils.py`](../../corr_plt_utils.py)).
+
 ---
 
 ## Control Parameters
@@ -94,8 +104,10 @@ Written to `simulation_results/data/`:
 - `gvs_Hastie_lambda2_method.txt` / `.csv` — $\lambda_2$-selection comparison (Part 2).
 - `gvs_Hastie_hc_linkage.txt` / `.csv` — HAC-linkage comparison (Part 3).
 
-The file names and CSV schemas match the C++ demo, so the C++ suite's
-`trex_gvs_plt_utils.py` can render the same figures from these CSVs if desired.
+The file names and CSV schemas match the C++ demo, and the suite plotter
+[`../trex_gvs_plt_utils.py`](../trex_gvs_plt_utils.py) is the same module the C++ suite uses.
+
+Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
 
 ---
 
@@ -104,6 +116,7 @@ The file names and CSV schemas match the C++ demo, so the C++ suite's
 ```bash
 python demo_trex_gvs_01_mc_sim_hastie_en_blocks.py       # full run (hours)
 python demo_trex_gvs_01_mc_sim_hastie_en_blocks.py 8     # with 8 worker processes
+./generate_plots.sh                                      # render the figures below from the saved CSVs
 ```
 
 Monte Carlo trials are parallelized with `ProcessPoolExecutor`; the optional
@@ -113,23 +126,62 @@ the sweep grids at the top of the script.
 
 ---
 
-## Expected Results
+## Simulation Results
 
-The committed reference numbers live in the C++ counterpart's
-[simulation_results](../../../../cpp/trex_selector_methods/trex_gvs/demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md#simulation-results)
-(the Python port draws from NumPy's PRNG, so per-cell numbers differ slightly,
-but the qualitative pattern is reproduced):
+The numbers and figures below are this Python run's own results (200 MC trials per grid point). They agree with
+the [C++ reference](../../../../cpp/trex_selector_methods/trex_gvs/demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md#simulation-results)
+up to Monte-Carlo noise — the two ports draw from independent RNG streams (NumPy here, the C++ engine there).
 
-- FDR stays at or below the $\mathrm{tFDR} = 0.1$ target everywhere, and **TENET** and
-  **TENET_AUG** reach $\mathrm{TPR} \approx 1$ once $\mathrm{SNR} \gtrsim 1$.
-- **TIENET_AUG** is more conservative (very low FDR, low TPR that grows only slowly with SNR) and
-  its power collapses in the extreme $\rho = 0.99$ column, where the within-group columns become
-  nearly collinear. This conservatism is not specific to this design — the same pattern recurs
-  across the other block demos in this folder.
-- `CV_1SE_SVD` and `CV_1SE_CCD` give essentially the same FDR/TPR (Part 2), and
-  Single / Complete / Average / WPGMA linkage are interchangeable here (Part 3) — the Part 1
-  conclusions are not sensitive to the $\lambda_2$-selection backend or the linkage rule for
-  this data scenario.
+### Part 1 — 2-D SNR $\times$ $\rho$ sweep
+
+- FDR stays at or below the $\mathrm{tFDR} = 0.1$ target in every cell (no cyan violation outlines):
+  **TENET** and **TENET_AUG** — numerically identical throughout this demo — realize $0.043$–$0.091$, and
+  **TIENET_AUG** never exceeds $0.030$.
+- **TENET / TENET_AUG** reach $\mathrm{TPR} \approx 1$ once $\mathrm{SNR} \gtrsim 1$ for $\rho \ge 0.5$; the
+  weakest column, $\rho = 0.30$, still climbs $0.88 \to 0.96 \to 0.99$ over $\mathrm{SNR} \in \{1, 2, 5\}$.
+- **TIENET_AUG** is more conservative (very low FDR, TPR that grows more slowly with SNR — e.g. $0.58$ at
+  $\mathrm{SNR}=1$, $\rho = 0.3$ vs. $0.88$ for TENET) and its power **collapses in the extreme $\rho = 0.99$
+  column** (TPR $\approx 0.02$, flat in SNR), where the within-group columns become nearly collinear. This
+  conservatism is not specific to this design — the same pattern recurs across the other block demos in this
+  folder.
+- Along the $\rho$ axis, performance is otherwise stable across correlation levels, since all three methods use
+  HAC-based grouping to aggregate evidence across strongly correlated columns; only $\rho = 0.99$ stresses
+  TIENET_AUG.
+
+TPR (top) and FDR (bottom) heatmaps, one column per solver; FDR cells above the
+$\mathrm{tFDR} = 0.1$ target would be outlined in cyan.
+
+![Hastie SNR × rho sweep](simulation_results/plots/gvs_Hastie_2d.png)
+
+---
+
+### Part 2 — $\lambda_2$ selection method
+
+- At the fixed operating point both backends behave the same where it matters: TENET realizes
+  FDR $0.071$ (`CV_1SE_SVD`) vs. $0.070$ (`CV_1SE_CCD`) at TPR $1.000$, and TIENET_AUG reaches TPR
+  $1.000$ vs. $0.996$.
+- The only visible difference is TIENET_AUG's FDR ($0.004$ SVD vs. $0.017$ CCD) — both far below the
+  $0.1$ target, so the pipeline is insensitive to the penalty-selection backend.
+
+Grouped bar charts at the fixed operating point $\mathrm{SNR} = 2$, $\rho = 0.7$; error bars show
+$\pm 1$ Monte Carlo standard deviation.
+
+![lambda2 selection comparison](simulation_results/plots/gvs_Hastie_lambda2_method.png)
+
+---
+
+### Part 3 — HAC linkage
+
+- Single / Complete / Average / WPGMA linkage produce **numerically identical** results here (TENET:
+  FDR $0.070$, TPR $1.000$; TIENET_AUG: FDR $0.017$, TPR $0.996$) — with groups this strongly
+  equicorrelated, every linkage rule cuts the dendrogram the same way.
+- Taken together, Parts 2 and 3 confirm that the Part 1 conclusions are not sensitive to the
+  $\lambda_2$-selection backend or the linkage rule for this data scenario.
+
+Grouped bar charts at the same fixed operating point as Part 2; error bars show $\pm 1$ Monte
+Carlo standard deviation.
+
+![HAC linkage comparison](simulation_results/plots/gvs_Hastie_hc_linkage.png)
 
 ---
 
@@ -152,4 +204,4 @@ but the qualitative pattern is reproduced):
 
 ---
 
-**Last updated**: 2026-07-21
+**Last updated**: 2026-07-27

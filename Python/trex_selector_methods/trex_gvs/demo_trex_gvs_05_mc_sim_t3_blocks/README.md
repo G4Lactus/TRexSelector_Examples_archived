@@ -45,6 +45,17 @@ $$
 - Both the latent factors $Z_{\cdot,k}$ and the within-block perturbations $\xi_{ij}$ are $t(3)/\sqrt{3}$, so the
    heavy tails enter the design matrix as well as the response.
 
+![Design-matrix correlation — Student-t(3) equicorrelated blocks, natural order (no clustering)](../dgp_corr_plots/gvs_t3_blocks.png)
+
+Empirical Pearson correlation of an exemplary design drawn from this DGP (`dgp_t3_equi_blocks_snr`, $n=200$,
+$p=500$, $\rho = 0.75$, seed 2026), in **natural variable order — no hierarchical clustering**. The four diagonal
+squares are the blocks of sizes $\{20, 50, 80, 65\}$ in one random order; compared with the Gaussian Demo 03 they
+are visibly *paler and grainier* at the same nominal correlation — the $t(3)$ tails make the empirical correlation
+a noisier estimate of the population value. One figure per DGP lives in
+[`../dgp_corr_plots/`](../dgp_corr_plots/); regenerate the whole suite with
+[`../generate_corr_plots.sh`](../generate_corr_plots.sh) (shared plotter
+[`../../corr_plt_utils.py`](../../corr_plt_utils.py)).
+
 ---
 
 ## Control Parameters
@@ -84,7 +95,10 @@ Written to `simulation_results/data/`:
 
 - `gvs_t3_blocks_2d.txt` / `.csv` — mean FDP/TPP over the SNR $\times$ $\rho$ grid.
 
-The file names and CSV schema match the C++ demo.
+The file names and CSV schema match the C++ demo, and the suite plotter
+[`../trex_gvs_plt_utils.py`](../trex_gvs_plt_utils.py) is the same module the C++ suite uses.
+
+Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
 
 ---
 
@@ -93,6 +107,7 @@ The file names and CSV schema match the C++ demo.
 ```bash
 python demo_trex_gvs_05_mc_sim_t3_blocks.py       # full run (hours)
 python demo_trex_gvs_05_mc_sim_t3_blocks.py 8     # with 8 worker processes
+./generate_plots.sh                               # render the figure below from the saved CSV
 ```
 
 Monte Carlo trials are parallelized with `ProcessPoolExecutor`; the optional
@@ -102,21 +117,29 @@ the sweep grids at the top of the script.
 
 ---
 
-## Expected Results
+## Simulation Results
 
-Reference numbers and heatmaps live in the C++ counterpart's
-[simulation_results](../../../../cpp/trex_selector_methods/trex_gvs/demo_trex_gvs_05_mc_sim_t3_blocks/README.md#simulation-results);
-the Python port reproduces the same qualitative pattern:
+The numbers and figure below are this Python run's own results (200 MC trials per cell). They agree with the
+[C++ reference](../../../../cpp/trex_selector_methods/trex_gvs/demo_trex_gvs_05_mc_sim_t3_blocks/README.md#simulation-results)
+up to Monte-Carlo noise — the two ports draw from independent RNG streams.
 
-- Despite the $t(3)$ noise, FDR control holds throughout: **TENET** and **TENET_AUG** (identical here) stay just
-   under the $\mathrm{tFDR} = 0.1$ target in every cell, with TPR rising steadily with SNR.
+- Despite the $t(3)$ noise, FDR control holds throughout: **TENET** and **TENET_AUG** (numerically identical here)
+   stay in the $0.065$–$0.097$ band, just under the $\mathrm{tFDR} = 0.1$ target in every cell, with TPR rising
+   from $0.39$ to $0.95$.
 - The heavy tails cost the TENET variants a little power relative to the equivalent Gaussian case (Demo 03) at
    comparable SNR — occasional large outliers make exact group boundaries noisier to detect — but they do not
    compromise FDR control. That is the headline result: heavy tails buy lower TPR, not FDR drift.
-- **TIENET_AUG** is the most conservative of the three within this demo, and its power collapses entirely in the
-   extreme $\rho = 0.99$ column, where the within-block columns become nearly collinear.
+- **TIENET_AUG** is the most conservative of the three within this demo (FDR $0.00$–$0.06$, peak TPR $0.83$ rather
+   than $0.95$), and its power collapses entirely in the extreme $\rho = 0.99$ column (TPR $\approx 0.01$, flat in
+   SNR), where the within-block columns become nearly collinear.
 - Judged against *its own* behavior on the Gaussian equicorrelated designs (Demos 01–03), though, TIENET_AUG is far
-   more competitive here: away from the $\rho = 0.99$ column its TPR is substantial rather than near-zero.
+   more competitive here: away from the $\rho = 0.99$ column its TPR reaches $\approx 0.83$ instead of the
+   near-zero power those demos show. Both comparisons are visible in the same heatmap.
+
+TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver;
+FDR cells above the $\mathrm{tFDR} = 0.1$ target would be outlined in cyan (none are here).
+
+![t(3) blocks SNR × rho sweep](simulation_results/plots/gvs_t3_blocks_2d.png)
 
 ---
 
@@ -136,4 +159,4 @@ the Python port reproduces the same qualitative pattern:
 
 ---
 
-**Last updated**: 2026-07-21
+**Last updated**: 2026-07-27
