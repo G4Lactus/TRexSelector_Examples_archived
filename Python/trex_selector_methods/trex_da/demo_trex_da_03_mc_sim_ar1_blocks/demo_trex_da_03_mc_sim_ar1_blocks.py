@@ -18,7 +18,7 @@
 # Mirrors:
 # cpp/trex_selector_methods/trex_da/demo_trex_da_03_mc_sim_ar1_blocks
 #
-# Results are saved to simulation_results/ as TXT and CSV files.
+# Results are saved to simulation_results/data/ as TXT and CSV files.
 # ==============================================================================
 
 import os
@@ -39,7 +39,7 @@ RUN_PART_2 = True
 RUN_PART_3 = True
 RUN_PART_4 = True
 
-OUT_DIR = os.path.join(_THIS_DIR, "simulation_results")
+OUT_DIR = os.path.join(_THIS_DIR, "simulation_results", "data")
 
 # Shared base parameters (mirror cpp)
 N = 150

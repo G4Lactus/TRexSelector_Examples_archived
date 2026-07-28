@@ -23,7 +23,7 @@
 # Mirrors cpp/trex_selector_methods/trex_da/demo_trex_da_08_mc_sim_equi_and_bt
 # (same DGP, control parameters, sweep axes, and result files — one TXT/CSV
 # pair per SNR column).
-# Results are saved to simulation_results/.
+# Results are saved to simulation_results/data/.
 # ==============================================================================
 
 import os
@@ -39,7 +39,7 @@ from da_sim_common import default_solvers, fmt_num, run_param_sweep  # noqa: E40
 
 RUN_PART_1 = True
 
-OUT_DIR = os.path.join(_THIS_DIR, "simulation_results")
+OUT_DIR = os.path.join(_THIS_DIR, "simulation_results", "data")
 
 # Simulation config (mirrors cpp)
 N, P, S = 300, 1000, 10

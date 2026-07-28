@@ -21,7 +21,7 @@
 #  cpp/trex_selector_methods/trex_da/demo_trex_da_07_mc_sim_nn
 #
 # (same DGPs, control parameters, sweep axes, and result files).
-# Results are saved to simulation_results/ as TXT and CSV files.
+# Results are saved to simulation_results/data/ as TXT and CSV files.
 # ==============================================================================
 
 import os
@@ -43,7 +43,7 @@ RUN_PART_1 = True
 RUN_PART_2 = True
 RUN_PART_3 = True
 
-OUT_DIR = os.path.join(_THIS_DIR, "simulation_results")
+OUT_DIR = os.path.join(_THIS_DIR, "simulation_results", "data")
 
 # Shared MC parameters (mirror cpp)
 N, P, S = 300, 1000, 10

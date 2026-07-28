@@ -19,7 +19,7 @@
 # cpp/trex_selector_methods/trex_da/demo_trex_da_06_mc_sim_groups
 # (same DGP, control parameters, sweep axis, and result files).
 #
-# Results are saved to simulation_results/ as TXT and CSV files.
+# Results are saved to simulation_results/data/ as TXT and CSV files.
 # ==============================================================================
 
 import os
@@ -35,7 +35,7 @@ from da_sim_common import default_solvers, fmt_num, run_snr_sweep  # noqa: E402
 
 RUN_PART_1 = True
 
-OUT_DIR = os.path.join(_THIS_DIR, "simulation_results")
+OUT_DIR = os.path.join(_THIS_DIR, "simulation_results", "data")
 
 # Simulation config (mirrors cpp SimConfig defaults)
 N, P, S = 300, 1000, 10

@@ -99,6 +99,9 @@ trex_da/
   ├── README.md
   ├── dgp_generators.py       ┐  suite-level shared modules
   ├── da_sim_common.py        ┘  (imported by every demo)
+  ├── trex_da_plt_utils.py       <- shared plotting module (all DA demos)
+  ├── generate_corr_plots.sh     <- renders dgp_corr_plots/ (one per DGP)
+  ├── dgp_corr_plots/            <- design-correlation heatmaps per DGP
   ├── demo_trex_da_01_mc_sim_ar1/
   ├── demo_trex_da_02_mc_sim_ar1_blocks_plus_white/
   ├── demo_trex_da_03_mc_sim_ar1_blocks/
@@ -110,12 +113,11 @@ trex_da/
 ```
 
 Each demo subfolder contains its `.py` script (named after the folder), a
-`README.md`, and a `simulation_results/` folder that receives the `.txt`
-(pretty-printed tables) and `.csv` (tidy long format) files written by the
-demo, following the cpp naming pattern `da_trex_mc_{scenario_tag}.{txt,csv}`.
-(The cpp suite splits `simulation_results/` into `data/` + `plots/`; the
-Python suite has no plotting layer, so results live directly in
-`simulation_results/`.)
+`README.md`, a `generate_plots.sh`, and a `simulation_results/` folder split
+exactly like the cpp suite into `data/` — the `.txt` (pretty-printed tables)
+and `.csv` (tidy long format) files written by the demo, following the cpp
+naming pattern `da_trex_mc_{scenario_tag}.{txt,csv}` — and `plots/`, the
+figures rendered from those CSVs.
 
 Shared infrastructure:
 
@@ -129,6 +131,13 @@ Shared infrastructure:
   stagnation), parallel MC runners for DA-TRex and base T-Rex, generic
   parameter sweeps, and the console/TXT/CSV writers, mirroring
   `cpp/.../trex_da_sim_common.hpp`.
+- [trex_da_plt_utils.py](trex_da_plt_utils.py) — the shared results plotter
+  (identical to `cpp/.../trex_da_plt_utils.py`), driven by each demo's
+  `generate_plots.sh`.
+- [generate_corr_plots.sh](generate_corr_plots.sh) — renders one
+  design-correlation heatmap per DGP into [dgp_corr_plots/](dgp_corr_plots/)
+  via the category-level plotter [../corr_plt_utils.py](../corr_plt_utils.py);
+  these are embedded in the demo READMEs alongside the DGP description.
 
 ---
 
@@ -156,6 +165,68 @@ Indices are **0-based** (Python convention); the R counterparts are 1-based.
 
 ---
 
+## Plotting the results
+
+Each demo has a `generate_plots.sh` that renders its figures from the committed
+`simulation_results/data/*.csv` into `simulation_results/plots/` (as `png` /
+`pdf`, plus interactive `html`), via the suite-level plotting module
+[trex_da_plt_utils.py](trex_da_plt_utils.py). The scripts use the repo-root
+`.venv` (`pip install matplotlib pandas plotly`) and are byte-identical to
+their cpp counterparts, so both suites render the same figure set from their
+own data:
+
+```bash
+cd TRexSelector_Examples/Python/trex_selector_methods/trex_da
+./demo_trex_da_01_mc_sim_ar1/generate_plots.sh          # this demo's full figure set
+./demo_trex_da_03_mc_sim_ar1_blocks/generate_plots.sh
+# ... one per demo; pass a single CSV to plot just that file, or extra flags
+# (e.g. --formats png, --bands) which pass straight through to the plotter.
+```
+
+All the tidy demos share the CSV schema `solver,metric,<SWEEP>,value`, where
+`<SWEEP>` is whatever that scenario sweeps (`SNR`, `Rho`, `M`, `Q`, `tFDR`, or a
+`Linkage` index) — the plotter auto-detects the sweep column and picks the
+matching x-axis. It offers four figure patterns:
+
+- **per-CSV FDR/TPR overview** — side-by-side FDR | TPR vs the swept quantity,
+  one line per method (`TREX-DA:` TLARS/TAFS/TOMP, and the classical `TREX:`
+  baseline in Demos 01, 07 and 08), with the `tFDR` target drawn as a reference
+  (a horizontal line, or the identity line for a `tFDR` sweep);
+- **comparison grid** (`grid` mode) — a 2×N grid sharing FDR/TPR scales across
+  columns, used for the HAC-linkage sensitivity study (Single/Complete/Average
+  columns, Demos 02–05), the Gaussian-vs-heavy-tailed scenario contrast
+  (Demos 04–05), and the CappedSpread-vs-Random support contrast (Demos 01
+  and 07);
+- **gap × ρ study** (`gaprho` mode, Demo 01) — `mean_TPP` / `mean_FDP` heatmaps
+  over the (gap, ρ) grid with the DA+AR1 correction-window (κ-boundary) overlaid;
+- **generic 2D sweep** (`sweep2d` mode, Demo 07) — per-solver TPR/FDR heatmaps
+  over a 2D grid (κ × ρ on NN data; SNR × ρ for the AR(1) method-mismatch
+  study), one figure per support placement, with FDR cells above the `tFDR`
+  target outlined in cyan.
+
+---
+
+## What to expect
+
+Every demo ships with real committed data and figures, and the pattern matches
+the C++ reference throughout (independent RNG streams, so cells agree up to
+Monte-Carlo noise): DA-TRex's FDR stays far closer to controlled than the
+classical (no-DA) T-Rex selector on the same correlated data — in Demo 01 at
+$\mathrm{SNR}=2$, DA-TRex realizes $\mathrm{FDR}\approx 0.05$–$0.08$ against
+base T-Rex TLARS's $\approx 0.27$ — at some cost in TPR, mostly at low SNR and
+under `Random` support. The greedy DA solvers (TAFS/TOMP) are FDR-controlled
+across the full $\rho$ grid and both support placements thanks to the
+exchangeable-tie fix, and generally outperform DA-TLARS on block designs. The
+known rough edges are documented in the demo READMEs: TLARS breaks the target at
+$\rho = 0.9$ on block designs (Demos 03/04) and on the multi-level prior-groups
+DGP (Demo 06, flat in SNR — a structural property of the symmetric
+nearest-partner deflation under LARS-type occurrence profiles), heavy tails cost
+FDR rather than power (Demos 04/05), the NN correction breaks down when applied
+to AR(1) data at $\rho \geq 0.8$ (Demo 07), and equicorrelation suppresses the
+DA selector entirely from $\rho = 0.025$ on (Demo 08).
+
+---
+
 ## Start here
 
 1. **Demo 01 — AR(1)**: the foundational scenario, including a direct
@@ -174,4 +245,4 @@ match demos by name, not number.
 
 ---
 
-**Last updated**: 2026-07-21
+**Last updated**: 2026-07-26

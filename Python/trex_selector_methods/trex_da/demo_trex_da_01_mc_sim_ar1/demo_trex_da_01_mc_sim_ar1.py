@@ -13,8 +13,7 @@
 # Mirrors:
 # cpp/trex_selector_methods/trex_da/demo_trex_da_01_mc_sim_ar1
 #
-# Results are saved to
-# simulation_results/ as TXT and CSV files.
+# Results are saved to simulation_results/data/ as TXT and CSV files.
 # Every part runs num_MC=200 trials per grid point.
 # ==============================================================================
 
@@ -37,7 +36,7 @@ RUN_PART_1 = True
 RUN_PART_2 = True
 RUN_PART_3 = True
 
-OUT_DIR = os.path.join(_THIS_DIR, "simulation_results")
+OUT_DIR = os.path.join(_THIS_DIR, "simulation_results", "data")
 
 # Simulation config (mirrors cpp SimConfig + per-part constants)
 N, P, S = 300, 1000, 10

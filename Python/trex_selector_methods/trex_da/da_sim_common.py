@@ -7,7 +7,10 @@
 # parallel Monte Carlo runners for DA-TRex and the base (no-DA) T-Rex, generic
 # parameter sweeps, and the console / TXT / CSV result writers.
 #
-# Mirrors cpp/trex_selector_methods/trex_da/trex_da_sim_common.hpp:
+# Mirrors:
+#  cpp/trex_selector_methods/trex_da/trex_da_sim_common.hpp:
+#
+# Content:
 #   default_solvers()                       <- default_solvers()
 #   make_support_capped_spread()            <- capped_spread_support()
 #   make_support_random()                   <- random_support() (seed + 500000)
@@ -20,9 +23,9 @@
 #
 # Result files use the cpp naming pattern da_trex_mc_{scenario_tag}.{txt,csv}
 # and the same tidy CSV schemas; they are written into each demo's
-# simulation_results/ folder (the cpp suite splits into data/ + plots/; the
-# Python suite has no plotting layer, so results live directly in
-# simulation_results/).
+# simulation_results/data/ folder, alongside the simulation_results/plots/
+# figures rendered from those CSVs by ../trex_da_plt_utils.py (same split as
+# the cpp suite).
 #
 # Seed spaces (mirror cpp):
 #   DGP (X, noise)    : trial_seed = base_seed_offset + mc
@@ -33,6 +36,7 @@
 # ==============================================================================
 
 import atexit
+import multiprocessing
 import os
 import sys
 from concurrent.futures import ProcessPoolExecutor
@@ -42,7 +46,7 @@ import pandas as pd
 
 import trex_selector_neo as trex
 from trex_selector_neo.ml_methods.clustering import LinkageMethod
-from trex_selector_neo.utils import compute_fdp, compute_tpp
+from trex_selector_neo.utils import compute_fdp, compute_tpp, set_num_threads
 
 # ------------------------------------------------------------------------------
 # Ensure this directory is on sys.path so that spawned workers (ProcessPool-
@@ -53,16 +57,70 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
     sys.path.insert(0, _THIS_DIR)
 
-N_CORES = min(6, os.cpu_count() or 1)
+# ------------------------------------------------------------------------------
+# Worker budget  (identical helper in every suite's *_common / *_utils module)
+#
+# N_CORES MC worker processes, each pinned to one inner OpenMP thread by
+# _init_worker(), so a demo never exceeds N_CORES cores in total. The default
+# cap matches the cpp demos' omp_set_num_threads(6) + inner set(1), keeping
+# runtimes comparable across the C++ / Python suites.
+#
+# Override per run, no code edit needed:
+#   TREX_NUM_WORKERS=12   exactly 12 workers (clamped to the usable CPU count)
+#   TREX_NUM_WORKERS=0    use every usable CPU
+#
+# "Usable" honours CPU affinity and cgroup quotas wherever the platform reports
+# them, so a 128-core host that granted this process only 4 CPUs yields 4, not
+# 128 — relevant under containers, Slurm/PBS, taskset and CI runners.
+# ------------------------------------------------------------------------------
+_WORKER_CAP = 6
 
-_DA_METHOD = {"AR1": trex.DAMethod.AR1, "NN": trex.DAMethod.NN,
-              "EQUI": trex.DAMethod.EQUI, "BT": trex.DAMethod.BT,
+
+def _usable_cpus():
+    """Number of CPUs this process may actually use (>= 1, never None)."""
+    n = getattr(os, "process_cpu_count", None)   # Python 3.13+, affinity-aware
+    n = n() if n is not None else None
+    if not n:
+        try:
+            n = len(os.sched_getaffinity(0))     # Linux on Python < 3.13
+        except AttributeError:                   # macOS / Windows
+            n = os.cpu_count()
+    return max(1, int(n or 1))
+
+
+def resolve_workers(requested=None):
+    """Resolve the worker count from an explicit request, else env, else cap."""
+    if requested is None or str(requested).strip() == "":
+        requested = os.environ.get("TREX_NUM_WORKERS", "")
+    try:
+        n = int(str(requested).strip())
+    except (TypeError, ValueError):
+        n = None
+    usable = _usable_cpus()
+    if n is None:
+        return max(1, min(_WORKER_CAP, usable))
+    if n <= 0:                                   # 0 / negative = "all of them"
+        return usable
+    return max(1, min(n, usable))
+
+
+N_CORES = resolve_workers()
+
+# DA method keys
+_DA_METHOD = {"AR1": trex.DAMethod.AR1,
+              "NN": trex.DAMethod.NN,
+              "EQUI": trex.DAMethod.EQUI,
+              "BT": trex.DAMethod.BT,
               "PRIOR_GROUPS": trex.DAMethod.PRIOR_GROUPS}
+
+# Solver Keys
 _SOLVER = {"TLARS": trex.SolverTypeForTRex.TLARS,
            "TAFS": trex.SolverTypeForTRex.TAFS,
            "TOMP": trex.SolverTypeForTRex.TOMP}
-# Keys follow the cpp scenario-tag spelling (Single / Complete / Average).
-_LINKAGE = {"Single": LinkageMethod.Single, "Complete": LinkageMethod.Complete,
+
+# Linkage Keys follow the cpp (Single / Complete / Average).
+_LINKAGE = {"Single": LinkageMethod.Single,
+            "Complete": LinkageMethod.Complete,
             "Average": LinkageMethod.Average}
 
 
@@ -88,8 +146,8 @@ def default_solvers(da_variant=""):
 
     exch_tie_alpha = 0.25 for the greedy solvers TAFS/TOMP: exchangeability-
     calibrated stochastic tie-breaking, required for DA FDR control at high
-    correlation (see HISTORY 2026-07-15 in TRexSelector). Path solver TLARS
-    stays 0. LARS-based solvers run with stagnation control OFF; greedy solvers
+    correlation. Path solver TLARS stays 0.
+    LARS-based solvers run with  stagnation control OFF; greedy solvers
     default it ON. `da_variant` tags the DA method in the row label, e.g.
     "+AR1" -> "TREX-DA+AR1: TLARS".
     """
@@ -227,16 +285,78 @@ def _mc_worker(args):
             float(sel.L), float(sel.T_stop))
 
 
+# Workers are recycled after _RECYCLE_AFTER_TASKS trials. Measured worker RSS
+# grows ~0.25 MB/trial on a small design (allocator arenas + extension caches
+# that never return to baseline) — negligible per cell, but a demo can push
+# thousands of trials through one worker, so the pool is rebuilt periodically to
+# keep that bounded. Respawning costs ~0.5 s against several minutes of trials,
+# i.e. ~0.2%. Rebuilding also drops a pool broken by a dead worker instead of
+# handing out the corpse for the rest of the run.
+#
+# This is done here rather than with ProcessPoolExecutor's own
+# max_tasks_per_child because that argument deadlocks Executor.map on
+# CPython 3.14.6 / macOS arm64 (main thread blocks in Future.result while the
+# executor management thread waits in wait_result_broken_or_wakeup; reproducible
+# with pure stdlib, no project code). Recycling between cells is also safer than
+# mid-cell: the pool is only ever replaced when no futures are in flight.
+#
+# mp_context is pinned to "spawn" for two reasons: forking a parent that has already initialised the
+# extension's OpenMP runtime risks deadlocking the child; and spawn is what
+# macOS and Windows use anyway, so all three platforms now behave identically.
+# (That is also why this module puts its own directory on sys.path above —
+# spawned children re-import it instead of inheriting the parent's memory.)
+_RECYCLE_AFTER_TASKS = 500
+_TASKS_SINCE_SPAWN = 0
+
 _EXECUTOR = None
+_EXECUTOR_WORKERS = None
+_ATEXIT_REGISTERED = False
 
 
-def _get_executor(n_cores):
+def _init_worker():
+    """Pin each worker's inner OpenMP pool to a single thread.
+
+    The MC parallelism lives in the process pool (n_cores workers). Left alone,
+    the selector's own OpenMP defaults to every logical core *inside each
+    worker*, so n_cores x n_logical threads contend for the machine. This
+    mirrors the cpp omp_set_num_threads(1) inside run_mc_trials' parallel
+    region: n_cores outer trials x 1 inner thread = n_cores cores in total.
+    """
+    set_num_threads(1)
+
+
+def _shutdown_executor():
+    """Shut the persistent pool down (atexit hook; safe to call repeatedly)."""
+    global _EXECUTOR, _EXECUTOR_WORKERS, _TASKS_SINCE_SPAWN
+    if _EXECUTOR is not None:
+        _EXECUTOR.shutdown()
+        _EXECUTOR = None
+        _EXECUTOR_WORKERS = None
+        _TASKS_SINCE_SPAWN = 0
+
+
+def _get_executor(n_cores, n_tasks=0):
     """Lazily create one persistent worker pool, reused across grid points so
-    the per-pool spawn + import cost is paid only once per demo run."""
-    global _EXECUTOR
+    the per-pool spawn + import cost is paid only once per demo run.
+
+    Keyed on n_cores: a caller asking for a different worker count rebuilds the
+    pool rather than silently getting the previously-created one.
+    """
+    global _EXECUTOR, _EXECUTOR_WORKERS, _ATEXIT_REGISTERED, _TASKS_SINCE_SPAWN
+    if _EXECUTOR is not None and (_EXECUTOR_WORKERS != n_cores
+                                  or _TASKS_SINCE_SPAWN >= _RECYCLE_AFTER_TASKS):
+        _shutdown_executor()
     if _EXECUTOR is None:
-        _EXECUTOR = ProcessPoolExecutor(max_workers=n_cores)
-        atexit.register(_EXECUTOR.shutdown)
+        _EXECUTOR = ProcessPoolExecutor(
+            max_workers=n_cores,
+            initializer=_init_worker,
+            mp_context=multiprocessing.get_context("spawn"))
+        _EXECUTOR_WORKERS = n_cores
+        _TASKS_SINCE_SPAWN = 0
+        if not _ATEXIT_REGISTERED:
+            atexit.register(_shutdown_executor)
+            _ATEXIT_REGISTERED = True
+    _TASKS_SINCE_SPAWN += max(0, int(n_tasks))
     return _EXECUTOR
 
 
@@ -269,7 +389,7 @@ def run_mc_trials(num_MC, progress_label, n, p, dgp, dgp_kwargs, support, s,
     print(f"  {progress_label} — Running {num_MC} MC trials ...", flush=True)
 
     if n_cores > 1:
-        res = list(_get_executor(n_cores).map(_mc_worker, tasks))
+        res = list(_get_executor(n_cores, len(tasks)).map(_mc_worker, tasks))
     else:
         res = [_mc_worker(t) for t in tasks]
 
