@@ -18,10 +18,10 @@ design $\boldsymbol{X}$ (independent columns), so the design carries **no
 correlation structure** — the empirical column-correlation matrix is essentially
 the identity:
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta} + \boldsymbol{\epsilon},
 \qquad \boldsymbol{\epsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma^2 \boldsymbol{I}_n).
-$$
+```
 
 ![Design-matrix correlation of the shared i.i.d. Gaussian DGP (natural order, no clustering)](../dgp_corr_plots/trex_gauss.png)
 
@@ -30,7 +30,7 @@ $$
   shared across every solver, SNR level, and MC trial — it is **not** the first
   10 features
 - **True coefficients**: fixed $\beta_j = 1$ (`rnd_coef = False`)
-- **SNR grid**: $\{0.1, 0.5, 1.0, 2.0, 5.0\}$
+- **SNR grid**: $\lbrace0.1, 0.5, 1.0, 2.0, 5.0\rbrace$
 - **Monte Carlo repetitions**: `num_MC = 200` trials per solver × SNR
   (`_NUM_MC = 200`; mirrors the C++ reference exactly)
 
@@ -157,7 +157,3 @@ python Python/trex_selector_methods/trex/demo_trex_02_mc_sim_fixed_support/demo_
 ```
 
 The MC loop is parallelized with `ProcessPoolExecutor` using `_NUM_WORKERS = 6`.
-
----
-
-**Last updated**: 2026-07-25

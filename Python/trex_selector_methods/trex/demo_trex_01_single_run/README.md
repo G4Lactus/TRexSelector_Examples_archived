@@ -20,10 +20,10 @@ using `trex_selector_neo`'s `TRexSelector`.
 
 Both scenarios use the shared Gaussian generator `dgp_gauss_snr`:
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta} + \boldsymbol{\epsilon},
 \qquad \boldsymbol{\epsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma^2 \boldsymbol{I}_n),
-$$
+```
 
 with an i.i.d. standard-normal design $\boldsymbol{X}$ (independent columns), so
 the design carries **no correlation structure** — the empirical column-correlation
@@ -31,9 +31,9 @@ matrix is essentially the identity:
 
 ![Design-matrix correlation of the shared i.i.d. Gaussian DGP (natural order, no clustering)](../dgp_corr_plots/trex_gauss.png)
 
-- Fixed true support (0-based): $\mathcal{S}^\ast = \{4, 27, 42, 43, 128, 149\}$ ($s = 6$)
+- Fixed true support (0-based): $\mathcal{S}^\ast = \lbrace4, 27, 42, 43, 128, 149\rbrace$ ($s = 6$)
 - Fixed coefficients $\beta_j = 1$ (`rnd_coef=False`; as in C++, the `rnd_coef`
-  path selects a fixed hardcoded vector $\{-0.4, -0.25, -0.8, 1.1, 2.5, -1.2\}$
+  path selects a fixed hardcoded vector $\lbrace-0.4, -0.25, -0.8, 1.1, 2.5, -1.2\rbrace$
   that mimics random coefficients — it is not a random draw)
 - SNR $= 1.0$, tFDR $= 0.1$
 - **Scenario A — High-dimensional** ($p > n$): $n = 150$, $p = 300$ (run first, as in C++)
@@ -101,7 +101,3 @@ python Python/trex_selector_methods/trex/demo_trex_01_single_run/demo_trex_01_si
 ```
 
 Single-seed demo — no `multiprocessing`.
-
----
-
-**Last updated**: 2026-07-25

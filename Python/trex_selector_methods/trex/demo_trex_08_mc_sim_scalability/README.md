@@ -16,7 +16,7 @@ using `trex_selector_neo`.
 The benchmark reports, per $(n, p)$ × solver grid point:
 
 - **Runtime scaling** — wall-clock per phase (data generation, `select()`,
-  per-$T$-iteration, total)
+  $\text{per-}T\text{-iteration}$, total)
 - **Memory scaling** — post-`select()` resident RSS, physical footprint, process
   peak RSS, and the $\mathbf{X}/\mathbf{y}$ backing size on disk
 - **Selection quality at scale** — FDR, TPR, average $L$, average $T$ as a sanity check
@@ -43,7 +43,7 @@ readings are undistorted; the K random experiments inside `select()` still run i
 parallel via the selector's inner OpenMP, **pinned to 6 threads**
 (`set_num_threads(6)`, `_NUM_THREADS`) to match the C++ demo's
 `omp_set_num_threads(6)`. Left at the library default (all logical cores) the
-large-$p$ points run 6 vs. 12 threads' worth of concurrent dummy matrices near
+$\text{large-}p$ points run 6 vs. 12 threads' worth of concurrent dummy matrices near
 the RAM limit, which distorts the timing — so both languages use the same thread
 budget for a fair comparison.
 
@@ -51,11 +51,10 @@ budget for a fair comparison.
 
 ## The Grid
 
-A 2-D sweep over $n$ and $p$, `num_MC = 10` sequential trials per $(n, p,
-\text{solver})$:
+A 2-D sweep over $n$ and $p$, `num_MC = 10` sequential trials per $(n, p, \text{solver})$:
 
-- $n \in \{1000, 1500, 2000, 5000\}$
-- $p \in \{1000, 5000, 10\,000, 20\,000, 50\,000, 100\,000, 150\,000, 200\,000\}$
+- $n \in \lbrace1000, 1500, 2000, 5000\rbrace$
+- $p \in \lbrace1000, 5000, 10\,000, 20\,000, 50\,000, 100\,000, 150\,000, 200\,000\rbrace$
 
 $\Rightarrow$ 32 grid points × 3 solvers. The logical design volume is
 $[\mathbf{X}\,|\,\mathbf{D}] = n \times (1 + L) \times p \times 8$ bytes with
@@ -207,7 +206,7 @@ $(n, p)$ points and the out-of-core corner take minutes each, sequentially). A
 `num_MC` is then topped up to 10 later as a pure cache extension (only the 8
 missing trials per cell are computed). The committed
 `demo_trex_08_scalability_smoke.{txt,csv}` is the end-to-end **smoke recording**
-(tiny $n \in \{150, 200\}$, $p \in \{500, 1000\}$) that exercises the full
+(tiny $n \in \lbrace150, 200\rbrace$, $p \in \lbrace500, 1000\rbrace$) that exercises the full
 memory-mapped pipeline and the table/CSV format — a pipeline check, not a
 scientific result.
 
@@ -230,7 +229,3 @@ summaries are re-derived from the cache after each point, so an OOM/crash on a
 later point preserves everything finished so far. The benchmark installs cleanup
 handlers (`atexit` + `SIGINT`/`SIGTERM`) that sweep any orphaned memory-mapped
 backing files on exit.
-
----
-
-**Last updated**: 2026-07-23

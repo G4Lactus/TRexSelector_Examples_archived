@@ -36,9 +36,9 @@ In matrix form, the fitted scores are obtained by projecting the centered data o
 
 Conceptually, PCA approximates the data matrix by
 
-$$
+```math
 \boldsymbol{X} \approx \boldsymbol{Z}\boldsymbol{V}^\top,
-$$
+```
 
 where the columns of $\boldsymbol{V}$ are the retained principal directions and the columns of $\boldsymbol{Z}$ are the
 corresponding principal-component scores.
@@ -52,9 +52,9 @@ explained variance percentages for the retained $M$ components after fitting.
 
 The first part of the demo generates a random matrix with
 
-$$
+```math
 n = 500, \qquad p = 200, \qquad M = 10,
-$$
+```
 
 fits PCA, and prints the dimensions of the returned score matrix $\boldsymbol{Z}$, loading matrix $\boldsymbol{V}$, and
 explained-variance vector $\boldsymbol{\lambda}$.
@@ -69,9 +69,9 @@ the relative contribution of each retained component to the retained variance bu
 The second part studies whether the PCA object can safely undo its in-place preprocessing operations. The script
 generates a random matrix with
 
-$$
+```math
 n = 300, \qquad p = 100, \qquad M = 5,
-$$
+```
 
 fits PCA on a working copy, restores the matrix, and then compares the restored matrix against the original one using
 maximum and mean absolute reconstruction errors.
@@ -85,15 +85,15 @@ operation on the preprocessed training matrix representation.
 
 The third part separates training and test data. PCA is fit on a training matrix with
 
-$$
+```math
 n_{\mathrm{train}} = 400, \qquad p = 80, \qquad M = 8,
-$$
+```
 
 and then applied to a test matrix with
 
-$$
+```math
 n_{\mathrm{test}} = 50
-$$
+```
 
 to produce principal-component scores for unseen observations.
 
@@ -139,7 +139,3 @@ When reading the console output, focus on the following points:
   $p$-dimensional variance decomposition.
 - RNG seeds match the C++ demo, but NumPy's `default_rng` stream differs from `std::mt19937`, so numbers agree
   qualitatively, not bitwise.
-
----
-
-**Last updated**: 2026-07-21

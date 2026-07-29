@@ -33,9 +33,9 @@ Let
 
 In this demo, the dimensions are
 
-$$
+```math
 n = 2000, \qquad p = 4000, \qquad K = 10
-$$
+```
 
 (cpp: $n = 100000$, $p = 400000$, $K = 10$; the ten block sizes are the cpp block sizes scaled by $1/100$).
 
@@ -49,7 +49,7 @@ indicates perfect recovery of the true block structure.
 The synthetic variables are generated from a blockwise latent-factor model. For each variable $j$ in block $b(j)$, the
 entries of $\boldsymbol{X}$ are generated according to
 
-$$
+```math
 X_{ij} =
 \mu_{b(j)}
 +
@@ -57,7 +57,7 @@ X_{ij} =
 \left[
 \alpha L_{i,b(j)} + \gamma \varepsilon_{ij}
 \right],
-$$
+```
 
 where
 
@@ -68,11 +68,11 @@ where
 
 In the implementation, the within-block signal and noise weights are fixed to
 
-$$
+```math
 \alpha = 0.85,
 \qquad
 \gamma = 0.15,
-$$
+```
 
 which produces strongly correlated variable blocks while preserving some within-block heterogeneity.
 
@@ -86,9 +86,9 @@ the HAC stage begins.
 The full matrix is not assembled in RAM. Instead, the entries of $\boldsymbol{X}$ are written variable by variable into
 a memory-mapped file, while only the latent signal matrix
 
-$$
+```math
 \boldsymbol{L} \in \mathbb{R}^{n \times K}
-$$
+```
 
 is held in memory.
 
@@ -103,11 +103,11 @@ clustering call directly.
 
 Before correlation-based clustering, each variable is standardized in place by
 
-$$
+```math
 \widetilde{\boldsymbol{x}}_j =
 \frac{\boldsymbol{x}_j - \bar{x}_j \mathbf{1}}
 {\lVert \boldsymbol{x}_j - \bar{x}_j \mathbf{1} \rVert_2}.
-$$
+```
 
 This preprocessing step is required for correlation-based distance calculations and is performed directly on the
 memory-mapped matrix (one variable at a time, sequential-streaming-friendly) rather than on a copied in-memory version.
@@ -118,11 +118,11 @@ memory-mapped matrix (one variable at a time, sequential-streaming-friendly) rat
 
 After standardization, the demo clusters variables under the **LSH correlation approximation**,
 
-$$
+```math
 d_{\mathrm{LSH}}(j,\ell)
 \approx
 1 - \left| \mathrm{corr}(\boldsymbol{x}_j, \boldsymbol{x}_\ell) \right|,
-$$
+```
 
 a pure $O(1)$ SimHash-based correlation approximation, used to avoid repeatedly evaluating full high-dimensional exact
 correlations at scale. The `use_mmap=True` flag additionally keeps the backend's intermediate distance data on disk.
@@ -189,7 +189,3 @@ You can compare this out-of-core behavior with the in-memory HAC examples in
   variable at a time through the zero-copy view, so numbers match qualitatively, not bitwise.
 - Cleanup is handled in a `try/finally` block: the mapped objects are deleted (unmapped) first, then the backing file
   is removed.
-
----
-
-**Last updated**: 2026-07-21

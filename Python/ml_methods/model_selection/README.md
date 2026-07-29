@@ -24,11 +24,11 @@ walkthroughs are available under `R/ml_methods/model_selection/`.
 
 The demos study penalized regression models of the form
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta} + \boldsymbol{\varepsilon},
 \qquad
 \boldsymbol{\varepsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma^2 \boldsymbol{I}_n).
-$$
+```
 
 They focus on:
 
@@ -89,7 +89,3 @@ model_selection/
 - Both demos use synthetic Gaussian regression data with known signal structure.
 - The focus is on hyperparameter selection and diagnostic output rather than downstream prediction benchmarking.
 - The demo-specific README files explain the exact model, penalty, and cross-validation setup in more detail.
-
----
-
-**Last updated**: 2026-07-21

@@ -23,10 +23,10 @@ design $\boldsymbol{X}$ (independent columns), so the design carries **no
 correlation structure** — the empirical column-correlation matrix is essentially
 the identity:
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta} + \boldsymbol{\epsilon},
 \qquad \boldsymbol{\epsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma^2 \boldsymbol{I}_n).
-$$
+```
 
 ![Design-matrix correlation of the shared i.i.d. Gaussian DGP (natural order, no clustering)](../dgp_corr_plots/trex_gauss.png)
 
@@ -37,7 +37,7 @@ and its correlation structure above are held fixed.)
 - **True support**: random subset of size 10, **redrawn per trial**
   (`block_support=False`)
 - **True coefficients**: fixed $\beta_j = 1$ (`rnd_coef = False`)
-- **SNR grid**: 7 values — $\{0.1, 0.2, 0.5, 0.6, 1.0, 2.0, 5.0\}$
+- **SNR grid**: 7 values — $\lbrace0.1, 0.2, 0.5, 0.6, 1.0, 2.0, 5.0\rbrace$
 - **Monte Carlo repetitions**: `num_MC = 200` trials per solver × distribution × SNR
   (`_NUM_MC = 200`, mirroring the C++ reference)
 - **Base solvers** (`_SOLVERS`, outer sweep): TLARS, TOMP, TAFS (`rho_afs = 0.3`);
@@ -108,12 +108,12 @@ are directly comparable:
 
 The dummy distribution's **shape** barely moves the statistics: at SNR 1.0
 (`num_MC = 200`) the entire twelve-distribution mean-FDR spread is tiny within
-each solver family — TLARS spans only $\approx 0.048$–$0.057$ (min Rademacher
-$0.0484$, max Uniform $0.0574$), TOMP $\approx 0.022$–$0.026$ (min StudentT_df3
-$0.0215$, max Normal $0.0264$), and TAFS $\approx 0.032$–$0.037$ (min
+each solver family — TLARS spans only $\approx 0.048\text{–}0.057$ (min Rademacher
+$0.0484$, max Uniform $0.0574$), TOMP $\approx 0.022\text{–}0.026$ (min StudentT_df3
+$0.0215$, max Normal $0.0264$), and TAFS $\approx 0.032\text{–}0.037$ (min
 SparseRad_s0.1 $0.0323$, max Uniform $0.0370$) — all well under `tFDR = 0.1`. The
-TPR curves are equally indistinguishable at SNR 1.0 (TLARS $\approx 0.737$–$0.750$,
-TOMP $\approx 0.860$–$0.874$, TAFS $\approx 0.866$–$0.879$) and every distribution
+TPR curves are equally indistinguishable at SNR 1.0 (TLARS $\approx 0.737\text{–}0.750$,
+TOMP $\approx 0.860\text{–}0.874$, TAFS $\approx 0.866\text{–}0.879$) and every distribution
 reaches $1.0$ by SNR 5.0. The *level* is solver-dependent — TLARS shows the
 familiar FDR hump near SNR 0.5–1, while the greedy TOMP / TAFS stay flatter and
 lower — but even the dependent **UnifSphere_d5** rows show no systematic deviation.
@@ -162,7 +162,3 @@ python Python/trex_selector_methods/trex/demo_trex_05_mc_sim_dummy_distributions
 ```
 
 The MC loop is parallelized with `ProcessPoolExecutor` using `_NUM_WORKERS = 6`.
-
----
-
-**Last updated**: 2026-07-25

@@ -8,7 +8,7 @@ The data-generating process is a three-level nested latent-factor model with a n
 Toeplitz leaf layer.
 Common setup: $n=300$, $p=1000$, $s=10$, `Random` support, amplitude $3.0$, $\mathrm{tFDR}=0.2$,
 $K=20$ random experiments, $\mathrm{MC}=200$ per grid point; solvers TLARS / TAFS / TOMP; SNR sweep
-$\mathrm{SNR} \in \{0.1, 0.2, 0.5, 1, 2, 5\}$.
+$\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 1, 2, 5\rbrace$.
 
 Python port of the C++ demo
 [cpp/trex_selector_methods/trex_da/demo_trex_da_06_mc_sim_groups](../../../../cpp/trex_selector_methods/trex_da/demo_trex_da_06_mc_sim_groups/README.md)
@@ -63,11 +63,11 @@ keep the raw `TREX-DA:` labels the demo writes).
 
 Each predictor is a sum of nested latent factors plus a correlated leaf term,
 
-$$
+```math
 X_{i,j} = \sum_{x=1}^{L-1} \sqrt{\rho_x - \rho_{x+1}}\; f_{g_x(j)}
         + \sqrt{\rho_0 - \rho_1}\; u_{g_0(j),\,j}
         + \sqrt{1-\rho_0}\;\eta_{i,j},
-$$
+```
 
 where the coarser levels $x \geq 1$ use one standard-normal latent factor per group, and the finest
 level ($x = 0$) uses a **Toeplitz-correlated leaf block** — within each finest group the leaf
@@ -76,7 +76,7 @@ so even the members of a finest-level group are *not* exchangeable.
 
 - **Three nested grouping levels** over $p = 1000$: level 1 = groups of $10$ ($100$ groups),
   level 2 = groups of $50$ ($20$ groups), level 3 = groups of $250$ ($4$ groups).
-- **Cumulative correlation masses** (fine → coarse): $\rho = \{0.55, 0.25, 0.10\}$ — a variable
+- **Cumulative correlation masses** (fine → coarse): $\rho = \lbrace0.55, 0.25, 0.10\rbrace$ — a variable
   shares $55\%$ of its variance with its group of 10, $25\%$ with its group of 50, $10\%$ with its
   group of 250.
 - Support: $s = 10$ active variables drawn by the `Random` policy per trial (0-based indices),
@@ -86,7 +86,7 @@ so even the members of a finest-level group are *not* exchangeable.
 ![Design-matrix correlation — three-level nested groups with Toeplitz leaves](../dgp_corr_plots/da_groups.png)
 
 Empirical Pearson correlation of an exemplary design drawn from this DGP (groups of 10/50/250,
-$\rho = \{0.55, 0.25, 0.10\}$, $\phi = 0.5$, seed 2026), in **natural variable order — no
+$\rho = \lbrace0.55, 0.25, 0.10\rbrace$, $\phi = 0.5$, seed 2026), in **natural variable order — no
 hierarchical clustering**: the nested block structure is visible as squares within squares.
 Regenerate the per-DGP figures with [`../generate_corr_plots.sh`](../generate_corr_plots.sh)
 (shared plotter [`../../corr_plt_utils.py`](../../corr_plt_utils.py)).
@@ -123,14 +123,14 @@ The figure (PNG/PDF + interactive Plotly HTML) goes to `simulation_results/plots
 ## Results — SNR sweep
 
 - **The greedy solvers win on power and are controlled wherever the signal is resolvable**: TOMP
-  reaches TPR $0.983$ with FDR down to $\approx 0.05$–$0.06$ at high SNR; TAFS reaches TPR $0.961$
-  with FDR $\approx 0.09$–$0.11$ from $\mathrm{SNR}=1$ on.
+  reaches TPR $0.983$ with FDR down to $\approx 0.05\text{–}0.06$ at high SNR; TAFS reaches TPR $0.961$
+  with FDR $\approx 0.09\text{–}0.11$ from $\mathrm{SNR}=1$ on.
 - Both greedy solvers have a **high-variance excursion in the low-SNR transition region**: at
   $\mathrm{SNR}=0.5$ TAFS realizes $0.230$ (above the $\mathrm{tFDR}=0.2$ target, sd $0.217$) and
-  TOMP $0.180$, with TPR still only $0.26$–$0.35$ there. With so few selections per trial the FDP is
+  TOMP $0.180$, with TPR still only $0.26\text{–}0.35$ there. With so few selections per trial the FDP is
   near-binary, so these cells carry a large Monte-Carlo error (the C++ reference run lands at $0.181$
   / $0.128$ in the same cells).
-- **TLARS remains the outlier of the suite**: FDR $\approx 0.37$–$0.43$ from $\mathrm{SNR}=0.5$ on
+- **TLARS remains the outlier of the suite**: FDR $\approx 0.37\text{–}0.43$ from $\mathrm{SNR}=0.5$ on
   (vs. the $\mathrm{tFDR}=0.2$ target) and **flat in SNR**, with TPR $\approx 0.84$ at
   $\mathrm{SNR}=5$.
 
@@ -143,9 +143,9 @@ The figure (PNG/PDF + interactive Plotly HTML) goes to `simulation_results/plots
 With the constrained sub-clustering, the deflation operates on tight, data-driven neighbourhoods
 inside the true groups — the structure the nearest-partner penalty
 
-$$
+```math
 \Psi_j = \frac{1}{2 - \min_{j' \in \mathrm{Gr}(j)} |\Phi_j - \Phi_{j'}|}
-$$
+```
 
 was designed for. What it *cannot* repair is the penalty's **pairwise symmetry**: it deflates a
 shadow and its nearest neighbour (typically the true active) by the same factor, leaving their
@@ -174,7 +174,3 @@ nearest-partner) — the one §7 candidate the constrained sub-clustering does n
 (b) sweep $\rho_1$ toward $0.9$ — TLARS should *recover* as the fine groups approach
 exchangeability and mutual deflation kicks in; (c) log per-trial occurrence histograms per solver
 to verify the "intermediate shadow occurrence" picture directly.
-
----
-
-**Last updated**: 2026-07-26

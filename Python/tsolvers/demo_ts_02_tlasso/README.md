@@ -19,9 +19,9 @@ In addition to the standard selection diagnostics, the demo also reports T-LASSO
 
 Like the other terminating solvers, T-LASSO stops early once a prescribed number $T_{\text{stop}}$ of dummy variables has entered the active set, rather than tracing a full path:
 
-$$
+```math
 \hat{\boldsymbol{\beta}}^{(T)} = \mathrm{TLASSO}(\mathbf{X}, \mathbf{D}, \mathbf{y}; T_{\text{stop}}).
-$$
+```
 
 In the demo, this is done through calls of the form
 
@@ -101,7 +101,3 @@ When reading the console output, focus on the following points:
 - The serialization example writes a temporary checkpoint file `tlasso_checkpoint.bin` into the demo folder and removes it afterward.
 - The memory-mapped example writes `demo_tlasso_{X,D,y}.bin` into the demo folder, runs T-LASSO on those mapped views, and removes those files at the end.
 - For a dedicated cross-check against related LARS/LASSO reference behavior, see `validation_ts_02_tlars_tlasso_rcompare` in the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/tsolvers/`).
-
----
-
-**Last updated**: 2026-07-08

@@ -143,7 +143,3 @@ The scaler/HAC cross-language reference programs that used to live under
 `cpp/ml_methods/validation/` moved to the TRexSelector library test suite
 (`TRexSelector/cpp/tests/validation/hac_clustering/`); as validation
 infrastructure rather than demos, they have no Python port by design.
-
----
-
-**Last updated**: 2026-07-21

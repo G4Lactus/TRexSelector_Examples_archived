@@ -20,28 +20,28 @@ matrix with a vectorized NumPy broadcast.
 ## Mathematical setup
 
 Let $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ denote a data matrix with columns
-$\boldsymbol{x}_1, \dots, \boldsymbol{x}_p$.
+$`\boldsymbol{x}_1, \dots, \boldsymbol{x}_p`$.
 
 ### Z-score scaling
 
 For each column $j$, the transformed column is
 
-$$
+```math
 \tilde{\boldsymbol{x}}_j =
 \frac{\boldsymbol{x}_j - \bar{x}_j \mathbf{1}}{s_j},
-$$
+```
 
-where $\bar{x}_j$ is the sample mean and $s_j$ is the stored scale parameter.
+where $`\bar{x}_j`$ is the sample mean and $s_j$ is the stored scale parameter.
 
 ### Lp-norm scaling
 
 With centering enabled, the transformed column is
 
-$$
+```math
 \tilde{\boldsymbol{x}}_j =
 \frac{\boldsymbol{x}_j - \bar{x}_j \mathbf{1}}
 {\lVert \boldsymbol{x}_j - \bar{x}_j \mathbf{1} \rVert_p}.
-$$
+```
 
 The demo explicitly uses both $p = 2$ and $p = 1$ in memory, and uses the $L_2$ version again in the memory-mapped
 example.
@@ -52,9 +52,9 @@ example.
 
 The first part generates a dense random matrix with
 
-$$
+```math
 n = 1000, \qquad p = 500,
-$$
+```
 
 drawn from $\mathcal{N}(5, 3^2)$ so the effect of each switch is visible, and applies
 
@@ -72,9 +72,9 @@ normalization drives the average $L_2$-norm toward 1.
 The second part tests whether scaling can be numerically reversed after an in-place transform. It generates a random
 matrix with
 
-$$
+```math
 n = 1000, \qquad p = 5000,
-$$
+```
 
 then applies `fit()`, `transform_inplace()`, and `inverse_transform_inplace()` for both `ZScoreScaler` and the
 $L_2$-based `LpNormScaler`.
@@ -88,9 +88,9 @@ interface correctness and numerical reversibility rather than downstream modelin
 
 The third part demonstrates persistence of a fitted scaler. A `ZScoreScaler` is fit on synthetic data with
 
-$$
+```math
 n = 1000, \qquad p = 500,
-$$
+```
 
 saved to disk via `save()`, loaded back into a fresh scaler object via `load()`, and then compared through the norms of
 the differences in stored means and scales.
@@ -104,9 +104,9 @@ when training and deployment happen in separate stages.
 
 The fourth part applies scaling to a `MemoryMappedMatrix` with
 
-$$
+```math
 n = 2000, \qquad p = 10000
-$$
+```
 
 (the C++ demo uses $n = 20000$, $p = 100000$; the sizes are scaled down here to keep the Python demo fast). The script
 creates a writable mapped matrix, fills its zero-copy `to_numpy()` view deterministically, fits an $L_2$-based
@@ -150,7 +150,3 @@ When reading the console output, focus on these points:
 - The mapped-matrix example uses `LpNormScaler` with $L_2$-norm rather than `ZScoreScaler`, matching the C++ demo.
 - The C++ demo pins the OpenMP thread count to 6; the Python demo mirrors this via
   `set_num_threads(min(6, get_max_threads()))` from `trex_selector_neo.utils`.
-
----
-
-**Last updated**: 2026-07-21

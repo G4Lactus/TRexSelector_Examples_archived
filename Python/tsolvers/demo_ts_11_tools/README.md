@@ -19,9 +19,9 @@ It mirrors `cpp/tsolvers/demo_ts_11_tools`.
 
 Like the other terminating solvers, T-OLS stops early once a prescribed number $T_{\text{stop}}$ of dummy variables has entered the active set:
 
-$$
+```math
 \hat{\boldsymbol{\beta}}^{(T)} = \mathrm{TOOLS}(\mathbf{X}, \mathbf{D}, \mathbf{y}; T_{\text{stop}}).
-$$
+```
 
 In the demo, this is done through calls of the form
 
@@ -99,7 +99,3 @@ Compared with T-OMP, T-OLS uses a different selection rule: it chooses the candi
 - The thread count is set to 6 via `trex_selector_neo.utils.set_num_threads`, mirroring the cpp OpenMP setup.
 - The serialization example writes a temporary checkpoint file `tools_checkpoint.bin` into the demo folder and removes it afterward.
 - The memory-mapped example writes `demo_tools_{X,D,y}.bin` into the demo folder, runs T-OLS on those mapped views, and removes those files at the end.
-
----
-
-**Last updated**: 2026-07-08

@@ -26,7 +26,7 @@ columns — column-correlation essentially the identity):
 - **True support**: drawn **once** via `make_support_random(s, p, seed=24)`,
   fixed across all MC trials
 - **True coefficients**: fixed $\beta_j = 1$ (`rnd_coef = False`)
-- **SNR range**: $\{0.1, 0.5, 1.0, 2.0, 5.0\}$
+- **SNR range**: $\lbrace0.1, 0.5, 1.0, 2.0, 5.0\rbrace$
 - **Base solver**: TLARS only
 - **Monte Carlo repetitions**: `num_MC = 200` for **both** scenarios (`_NUM_MC =
   200`, mirrors C++) — the two runs are directly comparable
@@ -105,8 +105,8 @@ $\mathrm{SNR}=1.0$. *Right:* the power curves are indistinguishable — TPR clim
 from $\approx 0.002$ at $\mathrm{SNR}=0.1$ to full recovery ($1.0000$ in both) by
 $\mathrm{SNR}=5$.
 
-The two pipelines agree to within **$0.0073$ (FDR, at $\mathrm{SNR}=0.5$)** and
-**$0.0085$ (TPR, at $\mathrm{SNR}=0.5$)** at every grid point — the scale of Monte
+The two pipelines agree to within **0.0073 (FDR, at $\mathrm{SNR}=0.5$)** and
+**0.0085 (TPR, at $\mathrm{SNR}=0.5$)** at every grid point — the scale of Monte
 Carlo noise at $\text{num\_MC} = 200$, not a systematic effect. This is the result
 the demo exists to show: memory-mapping $\mathbf{X}$ and $\mathbf{D}$ is
 transparent to the selector, so it buys its memory savings without moving the
@@ -156,7 +156,3 @@ python Python/trex_selector_methods/trex/demo_trex_07_mc_sim_mmap/demo_trex_07_m
 ```
 
 The MC loop is parallelized with `ProcessPoolExecutor` using `_NUM_WORKERS = 6`.
-
----
-
-**Last updated**: 2026-07-25

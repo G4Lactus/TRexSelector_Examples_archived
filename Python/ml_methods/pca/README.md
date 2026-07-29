@@ -25,9 +25,9 @@ available under `R/ml_methods/pca/`.
 
 Given a data matrix
 
-$$
+```math
 \boldsymbol{X} \in \mathbb{R}^{n \times p},
-$$
+```
 
 PCA seeks a low-dimensional representation using $M$ principal directions with $M \le p$.
 
@@ -81,7 +81,3 @@ pca/
 - This folder currently contains one introductory PCA demo.
 - The demo prints its diagnostics to the console.
 - The demo is intended to explain PCA usage and interface behavior rather than to benchmark large-scale performance.
-
----
-
-**Last updated**: 2026-07-21

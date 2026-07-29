@@ -2,7 +2,7 @@
 
 Monte-Carlo results for **DA-TRex+BT** — the Binary-Tree Dependency-Aware T-Rex selector
 (`DAMethod.BT`) — on a **heavy-tailed** block-diagonal Toeplitz design: the predictors always follow
-a multivariate Student-$t(\nu{=}3)$ law, and the response noise is either Gaussian (**s1_Gauss**) or
+a multivariate $\text{Student-}t(\nu{=}3)$ law, and the response noise is either Gaussian (**s1_Gauss**) or
 $t(\nu{=}3)$ (**s2_Heavy**). Five ceteris-paribus sweeps (SNR, $\rho$, block size $Q$, number of
 blocks $M$, target FDR) plus a dedicated linkage sweep are each run under both noise scenarios and
 the three HAC linkage methods (Single / Complete / Average).
@@ -26,16 +26,16 @@ not `exch_tie_alpha`, and Parts 5–6 mirror that (the greedy solvers run there 
 ## Setup — the DA-TRex+BT selector
 
 The selector deflates each variable's ordinary relative occurrence $\Phi_{T,L}(j)$ by the penalty
-$\Psi^{\mathrm{BT}}_{T,L}(j) \in [1/2, 1]$ built from its most similar competitor within its
+$`\Psi^{\mathrm{BT}}_{T,L}(j) \in [1/2, 1]`$ built from its most similar competitor within its
 variable group,
 
-$$
+```math
 \Phi^{\mathrm{BT}}_{T,L}(j) := \Psi^{\mathrm{BT}}_{T,L}(j) \cdot \Phi_{T,L}(j),
-$$
+```
 
 where the **BT group design** obtains the groups $\mathrm{Gr}(j)$ from a **binary tree**: variables
 are clustered by hierarchical agglomerative clustering (HAC) on the dissimilarity
-$1 - |\mathrm{corr}(\boldsymbol{x}_j, \boldsymbol{x}_{j'})|$ and the dendrogram cut defines disjoint
+$`1 - |\mathrm{corr}(\boldsymbol{x}_j, \boldsymbol{x}_{j'})|`$ and the dendrogram cut defines disjoint
 groups (see [Demo 02](../demo_trex_da_02_mc_sim_ar1_blocks_plus_white/README.md) for the full penalty
 formula). The **linkage method** sets the between-cluster distance during agglomeration —
 **Single** ($\min$, prone to chaining), **Complete** ($\max$, compact clusters), **Average**
@@ -48,14 +48,14 @@ The design consists of $M$ statistically independent AR(1) blocks of size $Q$ �
 in Demo 03 there is no white-noise padding, so *every* column belongs to a correlated block and
 $p = M \cdot Q$. The within-block correlation follows the $Q \times Q$ Toeplitz matrix
 
-$$
+```math
 \left[\boldsymbol{\Sigma}_{m}(\rho)\right]_{j,k} = \rho^{|j-k|},
 \qquad m = 1, \ldots, M,
-$$
+```
 
 giving the block-diagonal scale matrix
 
-$$
+```math
 \boldsymbol{\Sigma} =
 \begin{bmatrix}
 \boldsymbol{\Sigma}_1(\rho) & & \\
@@ -63,18 +63,18 @@ $$
 & & \boldsymbol{\Sigma}_M(\rho)
 \end{bmatrix} \in \mathbb{R}^{p \times p},
 \qquad p = M \cdot Q.
-$$
+```
 
-**Heavy-tailed predictors.** Each block is drawn as a **multivariate Student-$t$** with $\nu$ degrees
-of freedom and scale matrix $\boldsymbol{\Sigma}_m$, via the Gaussian scale-mixture
+**Heavy-tailed predictors.** Each block is drawn as a **multivariate $\text{Student-}t$** with $\nu$ degrees
+of freedom and scale matrix $`\boldsymbol{\Sigma}_m`$, via the Gaussian scale-mixture
 
-$$
+```math
 \boldsymbol{X}_i^{(m)} = \sqrt{\tfrac{\nu}{u_{i,m}}}\; \boldsymbol{L}_m \boldsymbol{z}, \qquad
 \boldsymbol{z} \sim \mathcal{N}(\boldsymbol{0}, \boldsymbol{I}_Q),\;\;
 u_{i,m} \sim \chi^2_{\nu},
-$$
+```
 
-where $\boldsymbol{L}_m$ is the Cholesky factor of $\boldsymbol{\Sigma}_m$ and the mixing variable
+where $`\boldsymbol{L}_m`$ is the Cholesky factor of $`\boldsymbol{\Sigma}_m`$ and the mixing variable
 $u_{i,m}$ is drawn independently per row $i$ and block $m$ — so extreme events are block-local. The
 correlation structure $\rho^{|j-k|}$ is preserved; the marginals are $t(\nu)$ (finite variance
 $\tfrac{\nu}{\nu-2}$ for $\nu=3$), so the tails are much heavier than Gaussian.
@@ -92,9 +92,9 @@ here. Regenerate the per-DGP figures with
 
 **Support (`OnePerBlock`).** Exactly one representative per AR(1) block (the block's first column),
 
-$$
+```math
 \mathcal{S} = \{s_1, \ldots, s_M\}, \qquad s_m = (m-1)Q,
-$$
+```
 
 (0-based Python indices; the R suite is 1-based) so $s = M$ and every block carries a signal.
 
@@ -152,15 +152,15 @@ question: how much do heavy tails cost in FDR control and power?
 
 ---
 
-## Part 1 — SNR sweep ($\mathrm{SNR} \in \{0.1, 0.2, 0.5, 0.6, 1, 2, 5\}$)
+## Part 1 — SNR sweep ($\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 0.6, 1, 2, 5\rbrace$)
 
-- **TOMP is the clear winner**: FDR falls to $\approx 0.01$–$0.04$ at high SNR while TPR climbs to
-  $0.90$–$0.97$. TAFS peaks around $\mathrm{SNR}=2$ (TPR $\approx 0.75$–$0.79$, FDR $\leq 0.14$) then
-  *declines* toward $\mathrm{SNR}=5$ ($\approx 0.66$–$0.69$) — the same non-monotonicity seen in the
+- **TOMP is the clear winner**: FDR falls to $\approx 0.01\text{–}0.04$ at high SNR while TPR climbs to
+  $0.90\text{–}0.97$. TAFS peaks around $\mathrm{SNR}=2$ (TPR $\approx 0.75\text{–}0.79$, FDR $\leq 0.14$) then
+  *declines* toward $\mathrm{SNR}=5$ ($\approx 0.66\text{–}0.69$) — the same non-monotonicity seen in the
   Gaussian block demos.
 - **TLARS carries the highest FDR of the three and grazes the $\mathrm{tFDR}=0.2$ target around
   $\mathrm{SNR}=0.6$** ($0.215$ Gaussian noise / $0.205$ heavy noise), settling at $\approx 0.16$ for
-  higher SNR — with the lowest power throughout ($\approx 0.62$–$0.71$).
+  higher SNR — with the lowest power throughout ($\approx 0.62\text{–}0.71$).
 - **Gaussian vs. heavy-tailed noise is nearly indistinguishable** — the two columns almost overlay,
   because the predictors are heavy-tailed in both cases and dominate the added noise.
 
@@ -168,60 +168,60 @@ question: how much do heavy tails cost in FDR control and power?
 
 ---
 
-## Part 2 — $\rho$ sweep ($\rho \in \{0.0, 0.1, \ldots, 0.9\}$)
+## Part 2 — $\rho$ sweep ($\rho \in \lbrace0.0, 0.1, \ldots, 0.9\rbrace$)
 
 - **FDR rises with $\rho$ and TLARS breaks the target at $\rho = 0.9$** ($0.267$ under Gaussian noise,
   $0.247$ under heavy noise), while TAFS stays controlled ($\approx 0.14$) and **TOMP comfortably so**
-  ($0.06$–$0.08$). Strong within-block correlation makes the block shadows progressively harder to
-  deflate — the block counterpart of the high-$\rho$ corner in Demos 01 and 07.
-- TPR peaks mid-to-high $\rho$ and falls at $\rho=0.9$: TOMP $0.77$–$0.97$ (best), TAFS
-  $\approx 0.68$–$0.88$, TLARS $0.63$–$0.85$ (lowest).
+  ($0.06\text{–}0.08$). Strong within-block correlation makes the block shadows progressively harder to
+  deflate — the block counterpart of the $\text{high-}\rho$ corner in Demos 01 and 07.
+- TPR peaks mid-to-high $\rho$ and falls at $\rho=0.9$: TOMP $0.77\text{–}0.97$ (best), TAFS
+  $\approx 0.68\text{–}0.88$, TLARS $0.63\text{–}0.85$ (lowest).
 - Again the two noise scenarios track each other closely.
 
 ![rho sweep, Gaussian vs heavy-tailed noise](simulation_results/plots/da_trex_mc_da_ht_blocks_rho_scenario_grid.png)
 
 ---
 
-## Part 3 — Block-size $Q$ sweep ($Q \in \{5, 10, \ldots, 50\}$; $p = 5Q$ grows to $250 > n$)
+## Part 3 — Block-size $Q$ sweep ($Q \in \lbrace5, 10, \ldots, 50\rbrace$; $p = 5Q$ grows to $250 > n$)
 
 - Performance is **remarkably flat across the whole sweep**, even as the design crosses well into the
-  high-dimensional regime ($p = 250 > n = 150$ at $Q=50$): TOMP holds TPR $\approx 0.85$–$0.92$ with
-  FDR $\leq 0.058$; TAFS $\approx 0.76$–$0.84$ TPR at FDR $\approx 0.06$–$0.09$.
-- **TLARS is the FDR-loosest solver at every $Q$** ($\approx 0.13$–$0.19$, still under the $0.2$
-  target) with TPR $\approx 0.69$–$0.78$ — visibly looser than the fully-Gaussian Demo 03, whose
-  $Q$-sweep TLARS FDR stayed at $\approx 0.06$–$0.12$. Heavy-tailed predictors, not dimension growth,
+  high-dimensional regime ($p = 250 > n = 150$ at $Q=50$): TOMP holds TPR $\approx 0.85\text{–}0.92$ with
+  FDR $\leq 0.058$; TAFS $\approx 0.76\text{–}0.84$ TPR at FDR $\approx 0.06\text{–}0.09$.
+- **TLARS is the FDR-loosest solver at every $Q$** ($\approx 0.13\text{–}0.19$, still under the $0.2$
+  target) with TPR $\approx 0.69\text{–}0.78$ — visibly looser than the fully-Gaussian Demo 03, whose
+  $Q$-sweep TLARS FDR stayed at $\approx 0.06\text{–}0.12$. Heavy-tailed predictors, not dimension growth,
   are what loosen TLARS's FDR control here.
 
 ![Q sweep, Gaussian vs heavy-tailed noise](simulation_results/plots/da_trex_mc_da_ht_blocks_Q_scenario_grid.png)
 
 ---
 
-## Part 4 — Number-of-blocks $M$ sweep ($M \in \{1, 3, 5, 10, 15, 20, 30\}$; $s = M$, $p = 5M$)
+## Part 4 — Number-of-blocks $M$ sweep ($M \in \lbrace1, 3, 5, 10, 15, 20, 30\rbrace$; $s = M$, $p = 5M$)
 
 - The stress dimension: $s = M$ grows while $n=150$ and the amplitude stay fixed. **TPR collapses for
-  $M \gtrsim 15$–$20$** ($\approx 0.15$–$0.24$ at $M=20$, $\leq 0.08$ at $M=30$, where $p = n$),
-  while FDR climbs to $\approx 0.19$–$0.27$ at $M=20$ — TLARS breaches the target there
+  $M \gtrsim 15\text{–}20$** ($\approx 0.15\text{–}0.24$ at $M=20$, $\leq 0.08$ at $M=30$, where $p = n$),
+  while FDR climbs to $\approx 0.19\text{–}0.27$ at $M=20$ — TLARS breaches the target there
   ($0.246$ / $0.274$) and at $M=15$ ($0.266$, Gaussian noise), with TAFS/TOMP grazing it.
 - The $M=1$ corner is degenerate ($p=5$, a single active variable): TAFS selects nothing at all
   (TPR $0.00$) — with one signal there is no occurrence spread for the DA deflation to exploit.
-- The sweet spot sits at $M \approx 5$–$10$, where TOMP holds $\approx 0.75$–$0.92$ TPR at FDR
-  $\approx 0.03$–$0.10$.
+- The sweet spot sits at $M \approx 5\text{–}10$, where TOMP holds $\approx 0.75\text{–}0.92$ TPR at FDR
+  $\approx 0.03\text{–}0.10$.
 
 ![M sweep, Gaussian vs heavy-tailed noise](simulation_results/plots/da_trex_mc_da_ht_blocks_M_scenario_grid.png)
 
 ---
 
-## Part 5 — Target-FDR sweep ($\mathrm{tFDR} \in \{0.05, 0.10, \ldots, 0.50\}$)
+## Part 5 — Target-FDR sweep ($\mathrm{tFDR} \in \lbrace0.05, 0.10, \ldots, 0.50\rbrace$)
 
 Unique to Demos 04–05: sweeping the *target* FDR to check calibration of the realized FDR.
 
 - **Realized FDR increases monotonically with the target**, as it should, but every solver runs
   *below* the identity line here. **TLARS is the least conservative** ($\approx 0.18$ at
   $\mathrm{tFDR}=0.2$, $\approx 0.31$ at $\mathrm{tFDR}=0.5$), **TAFS** sits in between
-  ($\approx 0.11$–$0.12$ at $\mathrm{tFDR}=0.2$, $\approx 0.24$–$0.25$ at $0.5$), and **TOMP is
-  markedly conservative** ($\approx 0.05$–$0.06$ at $\mathrm{tFDR}=0.2$, still only $\approx 0.14$ at
+  ($\approx 0.11\text{–}0.12$ at $\mathrm{tFDR}=0.2$, $\approx 0.24\text{–}0.25$ at $0.5$), and **TOMP is
+  markedly conservative** ($\approx 0.05\text{–}0.06$ at $\mathrm{tFDR}=0.2$, still only $\approx 0.14$ at
   $\mathrm{tFDR}=0.5$).
-- Power rises with the target as expected; TOMP stays high throughout ($\approx 0.85$–$0.97$).
+- Power rises with the target as expected; TOMP stays high throughout ($\approx 0.85\text{–}0.97$).
 
 ![tFDR sweep, Gaussian vs heavy-tailed noise](simulation_results/plots/da_trex_mc_da_ht_blocks_tFDR_scenario_grid.png)
 
@@ -230,8 +230,8 @@ Unique to Demos 04–05: sweeping the *target* FDR to check calibration of the r
 ## Part 6 — HAC linkage sweep (Single / Complete / Average, base parameters)
 
 At the well-correlated base point ($\rho=0.8$) **linkage choice barely matters**: TOMP FDR
-$\approx 0.03$–$0.05$ / TPR $\approx 0.94$–$0.96$, TAFS FDR $\approx 0.08$–$0.11$ / TPR
-$\approx 0.77$–$0.83$, TLARS FDR $\approx 0.12$–$0.18$ / TPR $\approx 0.67$–$0.74$ — Single, Complete
+$\approx 0.03\text{–}0.05$ / TPR $\approx 0.94\text{–}0.96$, TAFS FDR $\approx 0.08\text{–}0.11$ / TPR
+$\approx 0.77\text{–}0.83$, TLARS FDR $\approx 0.12\text{–}0.18$ / TPR $\approx 0.67\text{–}0.74$ — Single, Complete
 and Average land within a few points of one another under both noise scenarios. As Demo 03 shows,
 linkage differences open up mainly at *low* $\rho$ and *large* $Q$, where the correlation signal HAC
 relies on is weak.
@@ -245,8 +245,8 @@ relies on is weak.
 - **Heavy-tailed *predictors* are the dominant stressor, not the noise.** Across every sweep the
   s1_Gauss and s2_Heavy columns are nearly identical: since $X$ is $t(3)$ in both scenarios, adding a
   variance-matched $t(3)$ *noise* on top changes little. The real cost of heavy tails is visible only
-  against the fully-Gaussian Demo 03 — most clearly in TLARS's FDR, which runs $\approx 0.13$–$0.19$
-  on the $Q$ sweep where Demo 03 stayed at $\approx 0.06$–$0.12$.
+  against the fully-Gaussian Demo 03 — most clearly in TLARS's FDR, which runs $\approx 0.13\text{–}0.19$
+  on the $Q$ sweep where Demo 03 stayed at $\approx 0.06\text{–}0.12$.
 - **Solver ranking is consistent** with the other block demos: **TOMP is the most robust** (highest
   TPR *and* lowest FDR in nearly every cell), TAFS sits in between with its high-SNR power decline,
   and **TLARS is the most FDR-fragile** — it breaches the target at $\rho = 0.9$ and in the $M$
@@ -267,7 +267,3 @@ relies on is weak.
   `.../Results_trex_da_06_bt_ar1_pwhiteblock_sweeps.md`.
 - Machkour, J., Muma, M., & Palomar, D. P., "The Terminating-Random Experiments Selector: Fast
   High-Dimensional Variable Selection with False Discovery Rate Control," 2024.
-
----
-
-**Last updated**: 2026-07-26

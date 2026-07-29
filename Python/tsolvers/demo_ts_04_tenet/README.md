@@ -19,9 +19,9 @@ It mirrors `cpp/tsolvers/demo_ts_04_tenet`.
 
 Like the other terminating solvers, T-ENET stops early once a prescribed number $T_{\text{stop}}$ of dummy variables has entered the active set:
 
-$$
+```math
 \hat{\boldsymbol{\beta}}^{(T)} = \mathrm{TENET}(\mathbf{X}, \mathbf{D}, \mathbf{y}; T_{\text{stop}}, \lambda_2).
-$$
+```
 
 In this demo, the solver is constructed with a fixed L2 parameter and then advanced through calls of the form
 
@@ -100,7 +100,3 @@ For the dedicated equivalence check between the Gram-based T-ENET formulation an
 - The thread count is set to 6 via `trex_selector_neo.utils.set_num_threads`, mirroring the cpp OpenMP setup.
 - The serialization example writes a temporary checkpoint file `tenet_checkpoint.bin` into the demo folder and removes it afterward.
 - The memory-mapped example writes `demo_tenet_{X,D,y}.bin` into the demo folder, runs T-ENET on those mapped views, and removes those files at the end.
-
----
-
-**Last updated**: 2026-07-08

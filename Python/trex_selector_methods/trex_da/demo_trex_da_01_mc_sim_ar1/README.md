@@ -26,9 +26,9 @@ Random support: TAFS $0.16$, TOMP $0.14$), where TAFS/TOMP also retain more powe
 
 **Linear model.** Each Monte-Carlo trial draws
 
-$$
+```math
 y = X\beta + \varepsilon, \qquad X \in \mathbb{R}^{n \times p},\; n = 300,\; p = 1000,
-$$
+```
 
 where $\beta$ has $s = 10$ nonzero entries of amplitude $3.0$ on the support (placed by the `CappedSpread` or
 `Random` policy, see the parts below) and $\varepsilon_i \stackrel{\text{iid}}{\sim} \mathcal{N}(0, \sigma^2)$ with
@@ -38,17 +38,17 @@ $\sigma^2 = \widehat{\mathrm{Var}}(X\beta) / \mathrm{SNR}$.
 **Covariance model (AR(1) Toeplitz).** The generator `dgp_ar1_snr` draws the rows of $X$ i.i.d. zero-mean
 Gaussian with autoregressive column dependence,
 
-$$
+```math
 X_{i,1} = \eta_{i,1}, \qquad
 X_{i,j} = \rho\, X_{i,j-1} + \sqrt{1-\rho^2}\; \eta_{i,j}, \qquad
 \eta_{i,j} \stackrel{\text{iid}}{\sim} \mathcal{N}(0,1),
-$$
+```
 
 so that
 
-$$
+```math
 \Sigma_{jk} = \rho^{|j-k|}
-$$
+```
 — neighboring columns are the strongest-correlated, decaying geometrically with index distance.
 
 ![Design-matrix correlation — AR(1) Toeplitz, rho=0.7, leading 150×150 block, natural order (no clustering)](../dgp_corr_plots/da_ar1.png)
@@ -61,9 +61,9 @@ with [`../generate_corr_plots.sh`](../generate_corr_plots.sh) (shared plotter
 [`../../corr_plt_utils.py`](../../corr_plt_utils.py)).
 
 In the following we refer to a linear signal to noise ratio
-$$
+```math
 \mathrm{SNR} = \frac{\mathrm{Var}(X\beta)}{\sigma^2}
-$$
+```
 to assess the performance of the method.
 
 ---
@@ -111,7 +111,7 @@ The `.html` files are not committed to the repository (each embeds a full copy o
 
 ## Part 1 — SNR sweep (at $\rho = 0.7$)
 
-DA-TRex+AR1 vs. base T-Rex over $\mathrm{SNR} \in \{0.1, 0.2, 0.5, 1, 2, 5\}$, CappedSpread vs. Random support:
+DA-TRex+AR1 vs. base T-Rex over $\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 1, 2, 5\rbrace$, CappedSpread vs. Random support:
 
 ![SNR sweep by support placement](simulation_results/plots/da_trex_mc_da_ar1_snr_support_grid.png)
 
@@ -125,7 +125,7 @@ active variables are not kept apart by construction.
 
 ## Part 2 — $\rho$ sweep (at $\mathrm{SNR} = 2$)
 
-DA-TRex+AR1 vs. base T-Rex over $\rho \in \{0.0, 0.1, \dots, 0.9\}$.
+DA-TRex+AR1 vs. base T-Rex over $\rho \in \lbrace0.0, 0.1, \dots, 0.9\rbrace$.
 
 ![rho sweep by support placement](simulation_results/plots/da_trex_mc_da_ar1_rho_support_grid.png)
 
@@ -134,14 +134,14 @@ DA-TRex+AR1 vs. base T-Rex over $\rho \in \{0.0, 0.1, \dots, 0.9\}$.
   everything (TPR $\approx 0$), and the tiny residual FDR values are rare lone-survivor events (binary per-trial
   FDP — hence the large sd in the tables: DA-TLARS $0.195 \pm 0.397$ against $0.005$ for the greedy solvers).
 - **Random support, right column:** most actives stay isolated, so power persists to $\rho = 0.9$
-  (TPR $\approx 0.31$–$0.33$ for the greedy DA solvers) while FDR stays controlled ($0.12$–$0.16$); base T-Rex
+  (TPR $\approx 0.31\text{–}0.33$ for the greedy DA solvers) while FDR stays controlled ($0.12\text{–}0.16$); base T-Rex
   TLARS climbs to $\approx 0.56$.
 
 ---
 
 ## Part 3 — 2D gap × $\rho$ study ($\mathrm{SNR} = 2$)
 
-`CappedSpread(gap)` for gap $\in \{100, 50, 20, 15, 10, 5, 1\}$ plus a Random-support column, over the full $\rho$
+`CappedSpread(gap)` for gap $\in \lbrace100, 50, 20, 15, 10, 5, 1\rbrace$ plus a Random-support column, over the full $\rho$
 grid, per solver. The overlaid $\kappa$-boundary ($\kappa = \lceil \log \varepsilon / \log \rho \rceil$,
 $\varepsilon = 0.02$) marks where active
 variables enter each other's DA correction windows: below it, TPR collapses by construction.
@@ -155,8 +155,8 @@ variables enter each other's DA correction windows: below it, TPR collapses by c
 - **TPR heatmap** — the sharp $\kappa$-boundary cliff (gap $< \kappa \Rightarrow$ TPR $\approx 0$) is a structural
   property of the AR1 correction window, not a solver artifact: at $\rho = 0.9$ the mean TPP drops from
   $\approx 0.65$ (gap $= 50/100$, above the boundary) to $\approx 0.001$ at gap $= 20$.
-- **FDR heatmap** — with the exchangeable-tie fix, the wide-gap / high-$\rho$ corner (gap $= 100/50$, $\rho = 0.9$)
-  stays controlled for TAFS ($0.17$/$0.19$) and TOMP ($0.15$/$0.16$); without it these cells are driven above the
+- **FDR heatmap** — with the exchangeable-tie fix, the wide-gap / $\text{high-}\rho$ corner (gap $= 100/50$, $\rho = 0.9$)
+  stays controlled for TAFS ($0.17/0.19$) and TOMP ($0.15/0.16$); without it these cells are driven above the
   target by collinear shadows (distance-1 neighbors of true actives) that greedy winner-take-all selection lets
   through the DA deflation.
 
@@ -166,7 +166,3 @@ variables enter each other's DA correction windows: below it, TPR collapses by c
 
 - Machkour, J., Muma, M., & Palomar, D. P., "FDR-Controlled Sparse Index Tracking with Autoregressive Stock
   Dependency Models", European Signal Processing Conference (EUSIPCO), 2024, pp. 2662–2666, [DOI link](https://ieeexplore.ieee.org/document/10715329).
-
----
-
-**Last updated:** 2026-07-26

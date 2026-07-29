@@ -21,19 +21,19 @@ design $\boldsymbol{X}$ (independent columns), so the design carries **no
 correlation structure** — the empirical column-correlation matrix is essentially
 the identity:
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta} + \boldsymbol{\epsilon},
 \qquad \boldsymbol{\epsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma^2 \boldsymbol{I}_n).
-$$
+```
 
 ![Design-matrix correlation of the shared i.i.d. Gaussian DGP (natural order, no clustering)](../dgp_corr_plots/trex_gauss.png)
 
 - **Sample size**: $n = 300$, **features**: $p = 1000$ (high-dimensional), $s = 10$
 - **True support**: random subset of size 10, **redrawn per trial**
-  (`block_support=False`); a contiguous block support $\{0, \ldots, s-1\}$ is
+  (`block_support=False`); a contiguous block support $\lbrace0, \ldots, s-1\rbrace$ is
   available via `block_support=True`
 - **True coefficients**: fixed $\beta_j = 1$ (`rnd_coef = False`)
-- **SNR grid**: 21 values — $\{0.1, 0.2, \ldots, 2.0\}$ plus $5.0$
+- **SNR grid**: 21 values — $\lbrace0.1, 0.2, \ldots, 2.0\rbrace$ plus $5.0$
 - **Monte Carlo repetitions**: `num_MC = 200` trials per strategy × SNR
   (`_NUM_MC = 200`, mirroring the C++ reference — the full grid is 3 solvers ×
   8 strategies × 21 SNR)
@@ -56,7 +56,7 @@ permuted per experiment) and **storage** (*stored* vs seed-derived *on-demand*):
    Bit-identical to PERMUTATION for the same seed.
 5. **ONDEMAND** — seed-derived independent dummies; nothing stored.
 6. **SKIPL_5p / SKIPL_10p / SKIPL_20p** — skip the L-loop entirely and use the
-   fixed $L = \text{max\_dummy\_multiplier} \in \{5, 10, 20\} \times p$.
+   fixed $L = \text{max\_dummy\_multiplier} \in \lbrace5, 10, 20\rbrace \times p$.
 
 (The former `DIRECT` / `PERMUTATION_DIRECT` names were renamed to `ONDEMAND` /
 `PERMUTATION_ONDEMAND`; the old names are no longer accepted by the binding.)
@@ -127,7 +127,7 @@ stable effect rather than Monte Carlo noise; numbers read off the fresh
   while the fixed-budget `SKIPL` levels break control in ascending order of
   budget: `SKIPL_5p` stays under (max FDR $\approx 0.074$ near SNR 1.8),
   `SKIPL_10p` grazes the line at SNR 5 ($\approx 0.101$), and `SKIPL_20p` climbs
-  steadily past the line from SNR $\approx 1.7$ (0.106) to **$\approx 0.127$** at
+  steadily past the line from SNR $\approx 1.7$ (0.106) to **≈ 0.127** at
   SNR 5 — a monotone overshoot that tracks a runaway stopping time (`SKIPL_20p`
   Avg T reaches $\approx 147$ vs the true support size $s = 10$; `SKIPL_10p`
   $\approx 89$, `SKIPL_5p` $\approx 23$). Freezing $L$ removes the calibration
@@ -192,8 +192,4 @@ python Python/trex_selector_methods/trex/demo_trex_04_mc_sim_lloop_strategies/de
 The MC loop is parallelized with `ProcessPoolExecutor` using `_NUM_WORKERS = 6`.
 The full sweep is large — with `num_MC = 200` across 3 solvers × 8 strategies ×
 21 SNR, expect a multi-hour/overnight run (the `SKIPL_20p` / `SKIPL_10p` points at
-high SNR dominate under TLARS, where the T-loop runs to $T \approx 80$–$150$).
-
----
-
-**Last updated**: 2026-07-25
+high SNR dominate under TLARS, where the T-loop runs to $T \approx 80\text{–}150$).

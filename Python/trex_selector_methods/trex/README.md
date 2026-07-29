@@ -179,7 +179,3 @@ All CSVs are written with pandas and can be plotted with any tool of choice
   (statistical background, notation, example results)
 - R suite: `R/trex_selector_methods/trex/`
 - Main package: `TRexSelector/Python/TRexSelectorNeo` (TRexSelectorNeo v0.2.0)
-
----
-
-**Last updated**: 2026-07-25

@@ -27,9 +27,9 @@ Let
 
 The synthetic data are generated from a linear model of the form
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta}_{\mathrm{true}} + \boldsymbol{\varepsilon},
-$$
+```
 
 with Gaussian predictors and additive Gaussian noise.
 
@@ -39,7 +39,7 @@ with Gaussian predictors and additive Gaussian noise.
 
 For a fixed penalty value $\lambda$, ridge regression solves
 
-$$
+```math
 \widehat{\boldsymbol{\beta}}(\lambda) =
 \arg\min_{\boldsymbol{\beta} \in \mathbb{R}^p}
 \left
@@ -47,14 +47,14 @@ $$
 +
 \lambda \lVert \boldsymbol{\beta} \rVert_2^2
 \right.
-$$
+```
 
 When $\boldsymbol{X}^\top \boldsymbol{X}$ is used directly, this corresponds to the familiar closed-form expression
 
-$$
+```math
 \widehat{\boldsymbol{\beta}}_{\mathrm{ridge}} =
 (\boldsymbol{X}^\top \boldsymbol{X} + \lambda \boldsymbol{I})^{-1}\boldsymbol{X}^\top \boldsymbol{y}.
-$$
+```
 
 The effect of $\lambda$ is to shrink the coefficients toward zero while improving numerical stability relative to
 unregularized least squares.
@@ -65,9 +65,9 @@ unregularized least squares.
 
 The first scenario uses
 
-$$
+```math
 n = 500, \qquad p = 50, \qquad \lambda = 1.0,
-$$
+```
 
 so the regression problem lies in the $n \ge p$ regime.
 
@@ -86,9 +86,9 @@ adds small Gaussian noise, solves the ridge problem, and reports:
 
 The second scenario uses
 
-$$
+```math
 n = 80, \qquad p = 300, \qquad \lambda = 10.0,
-$$
+```
 
 so the problem lies in the $n < p$ regime.
 
@@ -102,15 +102,15 @@ solver interface is used in a setting where regularization is especially importa
 
 The third scenario fixes a Gaussian regression problem with
 
-$$
+```math
 n = 200, \qquad p = 40,
-$$
+```
 
 and then evaluates the solver over the penalty grid
 
-$$
+```math
 \lambda \in \lbrace10^{-4}, 10^{-2}, 0.1, 1, 10, 100, 1000\rbrace
-$$
+```
 
 For each penalty value, the demo prints both the coefficient error and the residual norm, which lets the reader inspect
 the trade-off between shrinkage and data fit as $\lambda$ increases. As a Python-side addition (not in the C++ demo),
@@ -154,7 +154,3 @@ When reading the output, focus on these points:
   [model_selection](../../model_selection/) demos.
 - RNG seeds match the C++ demo, but NumPy's `default_rng` stream differs from `std::mt19937`, so numbers agree
   qualitatively, not bitwise.
-
----
-
-**Last updated**: 2026-07-21

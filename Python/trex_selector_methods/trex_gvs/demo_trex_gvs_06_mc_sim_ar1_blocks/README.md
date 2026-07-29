@@ -20,10 +20,10 @@ using `trex_selector_neo`'s `TRexGVSSelector`.
 
 We consider again the linear model:
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta} + \boldsymbol{\epsilon},
 \qquad \boldsymbol{\epsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma_{\varepsilon}^2 \boldsymbol{I}_n)
-$$
+```
 
 - $\boldsymbol{y} \in \mathbb{R}^n$ is the response vector.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ is the design matrix.
@@ -35,14 +35,14 @@ $$
 Unlike Demos 01–05, the within-block structure is **not** equicorrelated: each block $k$ follows an AR(1) Toeplitz
  covariance,
 
-$$
+```math
 \Sigma_k(i,j) = \rho^{\lvert i-j \rvert},
-$$
+```
 
 generated as $X_{\text{block}} = Z L^\top$, where $Z \sim \mathcal{N}(0, I_{n \times b_k})$ and $L$ is the
  Cholesky factor of $\Sigma_k$.
 
-- Same 4-block geometry as Demo 03: sizes $\{20, 50, 80, 65\}$ (215 grouped columns in total).
+- Same 4-block geometry as Demo 03: sizes $\lbrace20, 50, 80, 65\rbrace$ (215 grouped columns in total).
 - **Blocks 0–2 are active** ($\beta_j = 3$); **block 3 is an inactive AR(1) trap** ($\beta_j = 0$).
 - Gap columns (between and around the blocks) are i.i.d. $\mathcal{N}(0,1)$.
 - Correlation between two variables in the same block decays with their column distance, so a block no longer
@@ -86,8 +86,8 @@ and `CV_1SE_CCD` for the $\lambda_2$ selection.
 ## The Sweep
 
 A single **2-D SNR $\times$ $\rho$ grid**, over
-$\mathrm{SNR} \in \{0.2, 0.5, 1, 2, 5\}$ and
-$\rho \in \{0.30, 0.50, 0.70, 0.85, 0.90, 0.99\}$, 200 MC trials per cell. Here $\rho$ is the AR(1)
+$\mathrm{SNR} \in \lbrace0.2, 0.5, 1, 2, 5\rbrace$ and
+$\rho \in \lbrace0.30, 0.50, 0.70, 0.85, 0.90, 0.99\rbrace$, 200 MC trials per cell. Here $\rho$ is the AR(1)
 coefficient of the within-block Toeplitz covariance, so it controls how fast correlation decays
 with column distance rather than a uniform within-block correlation level.
 
@@ -134,7 +134,7 @@ up to Monte-Carlo noise — the two ports draw from independent RNG streams.
    means only nearby columns within a block stay strongly correlated, weakening the group-level evidence
    aggregation that HAC clustering relies on — full recovery needs both high $\rho$ and high SNR. At
    $\mathrm{SNR} = 5$, TENET's TPR runs $0.02 / 0.12 / 0.51 / 0.88 / 0.95 / 0.96$ across
-   $\rho \in \{0.3, 0.5, 0.7, 0.85, 0.9, 0.99\}$: the low-$\rho$ columns barely lift off zero.
+   $\rho \in \lbrace0.3, 0.5, 0.7, 0.85, 0.9, 0.99\rbrace$: the $\text{low-}\rho$ columns barely lift off zero.
 - **TIENET_AUG** sits between the near-zero TPR of the equicorrelated Gaussian demos and the TENET-based methods:
    it shows real (though smaller) power gains as SNR increases rather than staying flat (TPR $0.81$ at
    $\rho = 0.9$, $\mathrm{SNR} = 5$) — except in the $\rho = 0.99$ near-collinear column, where its TPR collapses
@@ -162,7 +162,3 @@ FDR cells above the $\mathrm{tFDR} = 0.1$ target would be outlined in cyan.
 3. Zou, H., & Hastie, T. (2005). "Regularization and variable selection via the elastic net." *Journal of the Royal
    Statistical Society: Series B (Statistical Methodology)*, 67(2), pp. 301–320.
    [DOI-Link](https://doi.org/10.1111/j.1467-9868.2005.00503.x)
-
----
-
-**Last updated**: 2026-07-27

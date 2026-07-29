@@ -22,10 +22,10 @@ memory-mapped counterpart.
 
 We consider the linear model:
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta} + \boldsymbol{\epsilon},
 \qquad \boldsymbol{\epsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma_{\varepsilon}^2 \boldsymbol{I}_n)
-$$
+```
 
 - $\boldsymbol{y} \in \mathbb{R}^n$ is the response vector.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ is the design matrix.
@@ -36,9 +36,9 @@ $$
 
 The design matrix has **no correlation structure**:
 
-$$
+```math
 X_{ij} \sim \mathcal{N}(0,1) \quad \text{i.i.d.}
-$$
+```
 
 - The active support is drawn uniformly at random *per Monte Carlo trial*, so the results are not tied to
    one support pattern.
@@ -77,7 +77,7 @@ Note that Screen-TRex has **no target-FDR parameter**: unlike the classical T-Re
 
 Two Screen-TRex thresholding rules [[1]](#references), both using `ScreenTRexMethod.TREX`:
 
-- **Screen-TRex Ordinary: TLARS** — selects $\{ j : \Phi_j > 0.5 \}$, a simple majority vote of the
+- **Screen-TRex Ordinary: TLARS** — selects $\lbrace j : \Phi_j > 0.5 \rbrace$, a simple majority vote of the
    random experiments (`use_bootstrap_CI = False`).
 - **Screen-TRex Bootstrap-CI: TLARS** — builds a bootstrap confidence band around the estimated FDR
    curve (`R_boot = 1000` replicates) and picks its threshold from that band
@@ -91,7 +91,7 @@ Both report an **estimated FDR** alongside the realized FDR/TPR. Each trial cons
 
 ## The Sweep
 
-A single **SNR sweep** over $\mathrm{SNR} \in \{0.01, 0.1, 0.2, 0.5, 0.6, 1, 2, 5\}$, 200 MC trials per
+A single **SNR sweep** over $\mathrm{SNR} \in \lbrace0.01, 0.1, 0.2, 0.5, 0.6, 1, 2, 5\rbrace$, 200 MC trials per
 point, with a fresh design, support, and noise draw in every trial. Per-cell trial seeds follow the C++
 source (`base_seed = 24 + snr_idx * 1000`, trial `mc` uses `base_seed + mc`).
 
@@ -138,7 +138,7 @@ there).
    selection is a false one — a property of thresholding a voting statistic without a target level, not a
    defect of the implementation.
 - **Both rules become reliable once signal is present.** From $\mathrm{SNR} \ge 0.5$ the Ordinary rule's
-   FDR drops to $0.12$ and settles around $0.05$–$0.06$, while its TPR climbs $0.43 \to 1.00$. All ten
+   FDR drops to $0.12$ and settles around $0.05\text{–}0.06$, while its TPR climbs $0.43 \to 1.00$. All ten
    active variables are recovered at $\mathrm{SNR} = 5$.
 - **Bootstrap-CI is the conservative rule: lower FDR, clearly less power.** Its FDR stays at or below
    $0.07$ for $\mathrm{SNR} \ge 0.5$ (roughly half the Ordinary rule's), paid for with TPR $0.91$ vs.
@@ -163,7 +163,3 @@ line is the realized FDR and the dashed line the procedure's own estimated FDR.
    Large-Scale Genomics Biobanks.", IEEE Statistical Signal Processing Workshop (SSP), 2023,
     pp. 666–670, IEEE.
     [DOI-Link](https://doi.org/10.1109/SSP53291.2023.10207957)
-
----
-
-**Last updated**: 2026-07-27

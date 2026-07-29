@@ -74,7 +74,3 @@ ml_methods/
   ├── model_selection/
   └── hac_clustering/
 ```
-
----
-
-**Last updated**: 2026-07-21

@@ -6,7 +6,7 @@ This demo illustrates how to use `MemoryMappedMatrix` from Python.
 
 It mirrors the corresponding C++ example in
 [cpp/memory_mapping/demo_memory_mapping/](../../../cpp/memory_mapping/demo_memory_mapping/)
-(and the R example in `R/memory_mapping/demo_memory_mapping.R`), replacing the
+(and the R example in `R/memory_mapping/demo_memory_mapping/demo_memory_mapping.R`), replacing the
 C++-specific features (RAII cleanup, `Eigen::Map` interoperability, OpenMP
 parallel generation) with their Python equivalents: `try/finally` cleanup,
 zero-copy NumPy views via `to_numpy()`, and deterministic per-column seeding.
@@ -83,7 +83,3 @@ When reading the console output, check the following points:
   matching the Eigen ColMajor storage used by the C++ backend.
 - `to_numpy()` returns a zero-copy view that requires `ReadWrite` mode;
   read-only matrices are accessed element-wise via `mmap[i, j]`.
-
----
-
-**Last updated**: 2026-07-21

@@ -19,10 +19,10 @@ using `trex_selector_neo`'s `TRexGVSSelector`.
 
 We consider again the linear model:
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta} + \boldsymbol{\epsilon},
 \qquad \boldsymbol{\epsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma_{\varepsilon}^2 \boldsymbol{I}_n)
-$$
+```
 
 - $\boldsymbol{y} \in \mathbb{R}^n$ is the response vector.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ is the design matrix.
@@ -33,9 +33,9 @@ $$
 
 The design matrix $\boldsymbol{X}$ is generated from a latent-factor model with three active groups:
 
-$$
+```math
 X_{ij} = Z_{i,\,g(j)} + \sigma_x\, \xi_{ij}, \qquad \xi_{ij} \sim \mathcal{N}(0,1),
-$$
+```
 
 - `n_groups` correlated groups of `group_size` variables each; here 3 groups of 50 variables,
    matching Demo 01's Hastie design.
@@ -82,8 +82,8 @@ and `CV_1SE_CCD` for the $\lambda_2$ selection.
 ## The Sweep
 
 A single **2-D SNR $\times$ $\rho$ grid**, over
-$\mathrm{SNR} \in \{0.2, 0.5, 1, 2, 5\}$ and
-$\rho \in \{0.30, 0.50, 0.70, 0.90, 0.95, 0.99\}$
+$\mathrm{SNR} \in \lbrace0.2, 0.5, 1, 2, 5\rbrace$ and
+$\rho \in \lbrace0.30, 0.50, 0.70, 0.90, 0.95, 0.99\rbrace$
 (with $\sigma_x = \sqrt{(1-\rho)/\rho}$), 200 MC trials per cell.
 
 ---
@@ -123,8 +123,8 @@ The numbers and figure below are this Python run's own results (200 MC trials pe
 up to Monte-Carlo noise — the two ports draw from independent RNG streams.
 
 - **TENET** and **TENET_AUG** are numerically identical here and keep FDR below the $\mathrm{tFDR} = 0.1$ target
-   in every cell ($0.042$–$0.088$, no cyan violation outlines), with TPR $\approx 1$ from $\mathrm{SNR} \ge 1$ for
-   $\rho \ge 0.5$ and $0.87 \to 0.96 \to 0.99$ over $\mathrm{SNR} \in \{1, 2, 5\}$ in the weakest column
+   in every cell ($0.042\text{–}0.088$, no cyan violation outlines), with TPR $\approx 1$ from $\mathrm{SNR} \ge 1$ for
+   $\rho \ge 0.5$ and $0.87 \to 0.96 \to 0.99$ over $\mathrm{SNR} \in \lbrace1, 2, 5\rbrace$ in the weakest column
    $\rho = 0.30$.
 - **TIENET_AUG** is markedly more conservative (FDR $\le 0.027$), and its power collapses in the extreme
    $\rho = 0.99$ column (TPR $\approx 0.02$, flat in SNR) where the within-group columns become nearly collinear.
@@ -156,7 +156,3 @@ FDR cells above the $\mathrm{tFDR} = 0.1$ target would be outlined in cyan.
 3. Zou, H., & Hastie, T. (2005). "Regularization and variable selection via the elastic net." *Journal of the Royal
    Statistical Society: Series B (Statistical Methodology)*, 67(2), pp. 301–320.
    [DOI-Link](https://doi.org/10.1111/j.1467-9868.2005.00503.x)
-
----
-
-**Last updated**: 2026-07-27

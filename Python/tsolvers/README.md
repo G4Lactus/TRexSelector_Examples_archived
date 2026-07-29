@@ -52,22 +52,6 @@ Every demo has the same four parts (mirroring the cpp files):
 
 ---
 
-## Validation
-
-The Python validation programs for the terminating solvers moved to the
-TRexSelector library test suite (`TRexSelector/cpp/tests/validation/tsolvers/`),
-co-located with their R and C++ counterparts:
-
-- `validation_ts_01_tenet_aug_comparison` — equivalence check between Gram-based
-  `TENET_Solver`, augmented-LASSO `TENETAug_Solver`, and a manual lasso_star
-  augmentation solved with `TLASSO_Solver`.
-- `validation_ts_02_tlars_tlasso_rcompare` — path-equivalence gate of the
-  Python-binding solvers against CRAN `tlars` reference dumps on
-  sparse-factor-model data. The frozen reference dumps now live at
-  `TRexSelector/cpp/tests/validation/data/rdump_tlars/`.
-
----
-
 ## Key concepts
 
 ### Terminating principle
@@ -126,7 +110,3 @@ tsolvers/
   ├── demo_ts_11_tools/
   └── demo_ts_12_tafs/
 ```
-
----
-
-**Last updated**: 2026-07-08

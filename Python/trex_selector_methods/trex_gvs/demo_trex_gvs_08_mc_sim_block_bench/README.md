@@ -22,10 +22,10 @@ using `trex_selector_neo`'s `TRexGVSSelector`.
 
 We consider again the linear model:
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta} + \boldsymbol{\epsilon},
 \qquad \boldsymbol{\epsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma_{\varepsilon}^2 \boldsymbol{I}_n)
-$$
+```
 
 - $\boldsymbol{y} \in \mathbb{R}^n$ is the response vector.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ is the design matrix.
@@ -37,10 +37,10 @@ $$
 The design matrix consists of $G = 100$ equal-size blocks of `block_size` $= 5$ variables each, drawn from the
  unit-variance equicorrelated latent-factor model:
 
-$$
+```math
 X_{ij} = \sqrt{\rho}\, Z_{i,g(j)} + \sqrt{1-\rho}\, \xi_{ij},
 \qquad Z_{\cdot,k},\ \xi_{ij} \sim \mathcal{N}(0,1).
-$$
+```
 
 - `n_active_blocks` $= 10$ blocks are chosen at random per trial; each receives a random-sign coefficient
    $\beta = \pm 3$.
@@ -112,16 +112,16 @@ draws from a distinct seed band, and all four methods see identical data within 
 
 ## The Sweep
 
-- **WHOLE**: a 2-D $\rho \times \mathrm{SNR}$ grid over $\rho \in \{0.2, 0.35, 0.5, 0.65, 0.8, 0.9\}$ and
-  $\mathrm{SNR} \in \{0.1, 0.2, 0.5, 1, 2, 5\}$, 200 MC trials per cell. The $\rho$ grid deliberately brackets
+- **WHOLE**: a 2-D $\rho \times \mathrm{SNR}$ grid over $\rho \in \lbrace0.2, 0.35, 0.5, 0.65, 0.8, 0.9\rbrace$ and
+  $\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 1, 2, 5\rbrace$, 200 MC trials per cell. The $\rho$ grid deliberately brackets
   `corr_max` $= 0.5$: single-linkage merges within-block pairs at distance $\approx 1 - \rho$, so for
-  $\rho \le 0.35$ every merge lies above the fixed cut height $1 - $ `corr_max` $= 0.5$ and no group survives
+  $\rho \le 0.35$ every merge lies above the fixed cut height $1 -$ `corr_max` $= 0.5$ and no group survives
   the cut (purity $0$, $M \approx 500$ singletons); $\rho = 0.5$ sits on the boundary;
   $\rho \ge 0.65$ is fully discovered (purity $1.0$, $M = 100$).
   Holding `corr_max` fixed while $\rho$ varies models a **mis-specified discovery threshold** — the practical
   situation where the true correlation level is unknown — not a limitation of the clustering itself, which
   recovers these blocks whenever the cut is set below the within-block correlation.
-- **INDIVIDUAL**: the same SNR grid at the low/high pair $\rho \in \{0.35, 0.9\}$.
+- **INDIVIDUAL**: the same SNR grid at the low/high pair $\rho \in \lbrace0.35, 0.9\rbrace$.
 
 ---
 
@@ -197,14 +197,14 @@ up to Monte-Carlo noise — the two ports draw from independent RNG streams.
    genuine 5-member ties that hurt: the shared group-indicator rows couple each active with its group-aligned
    dummies, and with weak within-group correlation the data block barely separates them, so dummies enter the
    solver path almost as early as actives, the FDP estimate stays high, and the T-loop terminates early
-   ($\overline{T}_{\mathrm{stop}} = 6.3$ vs. $13.1$ for clustered at $\rho = 0.35$, $\mathrm{SNR} = 5$, at the
+   ($`\overline{T}_{\mathrm{stop}} = 6.3`$ vs. $13.1$ for clustered at $\rho = 0.35$, $\mathrm{SNR} = 5$, at the
    *same* CV-chosen $\lambda_2$). Only around the boundary ($\rho = 0.5$, purity $0.58$, $M \approx 179$) does
    the oracle pay off mildly ($0.127$ vs. $0.100$), and from $\rho \ge 0.65$ both IEN variants are numerically
    identical because HAC recovers exactly the true blocks (purity $1.0$, $M = 100$).
 - **IEN is much more conservative than EN throughout** (TPR $\le 0.15$ for $\rho \ge 0.5$ vs. up to $0.90$ for
    EN) — the same conservatism seen across Demos 01–07.
 
-TPR (top) and FDR (bottom) vs. $\rho$, one panel per SNR $\in \{0.5, 2, 5\}$, one line per method; the dashed
+TPR (top) and FDR (bottom) vs. $\rho$, one panel per SNR $\in \lbrace0.5, 2, 5\rbrace$, one line per method; the dashed
 red line marks the $\mathrm{tFDR} = 0.1$ target.
 
 ![Block benchmark — WHOLE, value of prior groups vs rho](simulation_results/plots/gvs_block_bench_whole_vs_rho.png)
@@ -219,8 +219,8 @@ red line marks the $\mathrm{tFDR} = 0.1$ target.
 ### INDIVIDUAL truth — cautionary appendix
 
 - **Coordinate-level FDR control collapses by construction once siblings correlate strongly.** At $\rho = 0.9$
-   the EN methods realize FDR $\approx 0.77$–$0.80$ (target $0.1$) while selecting the active variable's whole
-   block; IEN sits at $0.39$–$0.49$. Oracle and clustered variants are identical here — no amount of correct
+   the EN methods realize FDR $\approx 0.77\text{–}0.80$ (target $0.1$) while selecting the active variable's whole
+   block; IEN sits at $0.39\text{–}0.49$. Oracle and clustered variants are identical here — no amount of correct
    group knowledge identifies *which* exchangeable member is active.
 - At the weaker $\rho = 0.35$ the violation is mild for EN (FDR up to $\approx 0.16$ at high SNR) and, notably,
    the oracle prior *does* rescue IEN's error control (FDR $\le 0.05$ vs. $\approx 0.11$ clustered) — the group
@@ -229,7 +229,7 @@ red line marks the $\mathrm{tFDR} = 0.1$ target.
    $\rho = 0.9$ for EN, $\le 0.02$ for IEN), which is exactly the point: the method still finds the right
    *blocks*, but no guarantee attaches to that number.
 
-TPR (top) and FDR (bottom) vs. SNR, one panel per $\rho \in \{0.35, 0.9\}$; note the different FDR
+TPR (top) and FDR (bottom) vs. SNR, one panel per $\rho \in \lbrace0.35, 0.9\rbrace$; note the different FDR
 axis scales.
 
 ![Block benchmark — INDIVIDUAL](simulation_results/plots/gvs_block_bench_individual.png)
@@ -246,7 +246,3 @@ axis scales.
    FDR Control in Genomics Research.", Workshop on Computational Advances in Multi-Sensor Adaptive Processing (CAMSAP),
     2023, pp. 466–470, IEEE.
     [DOI-Link](https://doi.org/10.1109/CAMSAP58249.2023.10403489)
-
----
-
-**Last updated**: 2026-07-27

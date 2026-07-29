@@ -22,7 +22,7 @@ the shared design family whose column-correlation is essentially the identity):
 
 - **Low-dimensional** ($n > p$): $n = 5000$, $p = 1000$
 - **High-dimensional** ($p > n$): $n = 1000$, $p = 5000$
-- **True support** (0-based): fixed $\mathcal{S}^\ast = \{4, 27, 149, 398, 420\}$ ($s = 5$)
+- **True support** (0-based): fixed $\mathcal{S}^\ast = \lbrace4, 27, 149, 398, 420\rbrace$ ($s = 5$)
 - **True coefficients**: fixed $\beta_j = 1$ (`rnd_coef = False`)
 - SNR $= 1.0$, tFDR $= 0.1$, seed $= 58$
 
@@ -81,7 +81,7 @@ selection `.csv` (`variable_index,phi_prime,selected,true_positive`), in
 
 From the committed recordings (seed $= 58$) — the mmap pipeline recovers the
 support cleanly in both regimes, and the selected set is exactly the true support
-$\{4, 27, 149, 398, 420\}$ in all four cases (storage medium does not change the
+$\lbrace4, 27, 149, 398, 420\rbrace$ in all four cases (storage medium does not change the
 selection):
 
 | Part | Config | Selected | TP | FP | FDP | TPP | Calibration |
@@ -111,7 +111,3 @@ python Python/trex_selector_methods/trex/demo_trex_06_mmap/demo_trex_06_mmap.py
 ```
 
 Single-run demo — no `multiprocessing`.
-
----
-
-**Last updated**: 2026-07-25

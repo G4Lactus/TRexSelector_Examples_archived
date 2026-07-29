@@ -35,13 +35,13 @@ Let
 
 The synthetic data follow the Gaussian linear model
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta}_{\mathrm{true}} + \boldsymbol{\varepsilon},
 \qquad
 \boldsymbol{\varepsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma^2 \boldsymbol{I}_n).
-$$
+```
 
-As in the ridge demo, the true signal is sparse: a fixed number of coefficients in $\boldsymbol{\beta}_{\mathrm{true}}$
+As in the ridge demo, the true signal is sparse: a fixed number of coefficients in $`\boldsymbol{\beta}_{\mathrm{true}}`$
 are set to 1 at evenly spaced positions, while the remaining entries are zero.
 
 ---
@@ -50,7 +50,7 @@ are set to 1 at evenly spaced positions, while the remaining entries are zero.
 
 For fixed $\alpha$ and $\lambda$, the elastic-net estimator solves
 
-$$
+```math
 \widehat{\boldsymbol{\beta}}(\lambda,\alpha) =
 \arg\min_{\boldsymbol{\beta} \in \mathbb{R}^p}
 \left\lbrace
@@ -63,7 +63,7 @@ $$
 \frac{1-\alpha}{2}\lVert \boldsymbol{\beta} \rVert_2^2
 \right]
 \right\rbrace.
-$$
+```
 
 Here the residual sum of squares carries glmnet's $1/(2n)$ normalization, which is the scale on which the demo's lambda
 grid and the `lambda_2_lars = lambda * p / 2` conversion are defined.
@@ -83,18 +83,18 @@ strong rule and early termination logic.
 
 For a fixed value of $\alpha$, `ElasticNet` computes a decreasing path of penalty values
 
-$$
+```math
 \lambda_1 > \lambda_2 > \cdots > \lambda_K,
-$$
+```
 
 and returns the corresponding sequence of fitted coefficient vectors
 
-$$
+```math
 \widehat{\boldsymbol{\beta}}(\lambda_1,\alpha),
 \widehat{\boldsymbol{\beta}}(\lambda_2,\alpha),
 \dots,
 \widehat{\boldsymbol{\beta}}(\lambda_K,\alpha).
-$$
+```
 
 The demo summarizes each path by reporting selected $\lambda$ values together with:
 
@@ -128,9 +128,9 @@ $\lambda_{\min} \le \lambda_{1\mathrm{se}}$.
 The first scenario studies the regularization path in a low-dimensional regime with $n = 300$ and $p = 100$. The
 demo compares three values of the mixing parameter:
 
-$$
+```math
 \alpha \in \lbrace0, 0.5, 1\rbrace.
-$$
+```
 
 This setting is useful for seeing how ridge, intermediate elastic-net shrinkage, and lasso differ in coefficient
 sparsity and path shape when the number of predictors is moderate relative to the sample size.
@@ -142,9 +142,9 @@ sparsity and path shape when the number of predictors is moderate relative to th
 The second scenario studies the path in a high-dimensional regime with $n = 200$ and $p = 500$, so $p > n$. Here
 the demo focuses on ridge and lasso, for which
 
-$$
+```math
 \alpha \in \lbrace0, 1\rbrace.
-$$
+```
 
 This subproblem highlights how the path behaves when the regression problem becomes high-dimensional and regularization
 is essential for stable estimation. It is especially useful for contrasting dense ridge-type shrinkage with sparse
@@ -156,9 +156,9 @@ lasso-type shrinkage.
 
 The third scenario performs 10-fold cross-validation in the low-dimensional setting $n = 300$, $p = 100$ for
 
-$$
+```math
 \alpha \in \lbrace0, 0.5, 1\rbrace.
-$$
+```
 
 The goal is to compare how the selected $\lambda$ values differ across ridge, elastic net, and lasso when the same
 underlying signal and noise structure are used. The output includes the CV-MSE curve, `lambda.min`, `lambda.1se`, and a
@@ -172,18 +172,18 @@ The fourth scenario focuses on the pure-ridge case $\alpha = 0$, which is especi
 workflows. For ridge, the returned cross-validated penalty is on the glmnet-reported scale and is converted internally
 via
 
-$$
+```math
 \lambda_{2,\mathrm{lars}} = \lambda_{1\mathrm{se}} \cdot \frac{p}{2}.
-$$
+```
 
 The demo prints both the `lambda.min` and `lambda.1se` values and then explicitly computes the converted ridge-scale
 quantities
 
-$$
+```math
 \lambda_{2,\mathrm{lars}}^{(\min)} = \lambda_{\min} \cdot \frac{p}{2},
 \qquad
 \lambda_{2,\mathrm{lars}}^{(1\mathrm{se})} = \lambda_{1\mathrm{se}} \cdot \frac{p}{2},
-$$
+```
 
 showing how the CV-selected penalty is mapped into the scale used by TRexGVS.
 
@@ -223,7 +223,3 @@ When reading the console output, focus on the following points:
   not bitwise.
 - The demo is intended to explain path behavior and hyperparameter selection, not to benchmark prediction accuracy
   across many replicated simulations.
-
----
-
-**Last updated**: 2026-07-21

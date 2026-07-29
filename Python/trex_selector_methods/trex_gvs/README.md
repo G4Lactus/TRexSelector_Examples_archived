@@ -220,7 +220,3 @@ depend only on the DGP, not on a simulation run, and are regenerated suite-wide 
 3. Dai, R., & Barber, R. F., "The knockoff filter for FDR control in group-sparse and multitask regression."
    Proceedings of the 33rd International Conference on Machine Learning (ICML), vol. 48, pp. 1851–1859, 2016.
    [DOI-Link](http://proceedings.mlr.press/v48/daia16.pdf)
-
----
-
-**Last updated**: 2026-07-27

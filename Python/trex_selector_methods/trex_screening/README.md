@@ -92,7 +92,7 @@ All demos use the same Gaussian linear model as the classical T-Rex selector:
 
 - $n$: number of observations, $p$: number of variables, $s$: number of truly active variables.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$: design matrix, $\boldsymbol{y} \in \mathbb{R}^n$: response.
-- $\mathcal{A} = \{ j : \beta_j \neq 0 \}$: true active support; $\widehat{\mathcal{A}}$: selected set.
+- $\mathcal{A} = \lbrace j : \beta_j \neq 0 \rbrace$: true active support; $\widehat{\mathcal{A}}$: selected set.
 - $\Phi_j$: dummy-based voting proportion for variable $j$ — the evidence T-Rex accumulates internally.
 - $\rho$: correlation strength (AR(1) lag-1, equicorrelation, or within-block equicorrelation).
 - $\sigma_{\varepsilon}^2$: noise variance, calibrated to a target SNR.
@@ -379,7 +379,3 @@ correlation heatmaps are separate and suite-wide:
    Large-Scale Genomics Biobanks.", IEEE Statistical Signal Processing Workshop (SSP), 2023,
     pp. 666–670, IEEE.
     [DOI-Link](https://doi.org/10.1109/SSP53291.2023.10207957)
-
----
-
-**Last updated**: 2026-07-27

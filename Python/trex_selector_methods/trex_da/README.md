@@ -212,7 +212,7 @@ Every demo ships with real committed data and figures, and the pattern matches
 the C++ reference throughout (independent RNG streams, so cells agree up to
 Monte-Carlo noise): DA-TRex's FDR stays far closer to controlled than the
 classical (no-DA) T-Rex selector on the same correlated data — in Demo 01 at
-$\mathrm{SNR}=2$, DA-TRex realizes $\mathrm{FDR}\approx 0.05$–$0.08$ against
+$\mathrm{SNR}=2$, DA-TRex realizes $\mathrm{FDR}\approx 0.05\text{–}0.08$ against
 base T-Rex TLARS's $\approx 0.27$ — at some cost in TPR, mostly at low SNR and
 under `Random` support. The greedy DA solvers (TAFS/TOMP) are FDR-controlled
 across the full $\rho$ grid and both support placements thanks to the
@@ -242,7 +242,3 @@ Cross-check against the C++ suite (committed reference data and figures) in
 and the R suite in `R/trex_selector_methods/trex_da/`. Note that the R suite
 keeps its own legacy numbering (e.g. the NN demos are `03`/`03b` there), so
 match demos by name, not number.
-
----
-
-**Last updated**: 2026-07-26

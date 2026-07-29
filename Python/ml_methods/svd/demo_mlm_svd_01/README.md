@@ -21,23 +21,23 @@ Fortran-ordered (column-major) NumPy arrays.
 
 For a matrix $\mathbf{X} \in \mathbb{R}^{n \times p}$, the singular value decomposition is
 
-$$
+```math
 \mathbf{X} = \mathbf{U}\boldsymbol{\Sigma}\mathbf{V}^\top.
-$$
+```
 
 If only the top $M$ singular values are retained, the solver returns a truncated decomposition
 
-$$
+```math
 \mathbf{X}_M = \mathbf{U}_M \boldsymbol{\Sigma}_M \mathbf{V}_M^\top,
-$$
+```
 
 where
 
-- $\mathbf{U}_M \in \mathbb{R}^{n \times M}$,
-- $\boldsymbol{\Sigma}_M \in \mathbb{R}^{M \times M}$,
-- $\mathbf{V}_M \in \mathbb{R}^{p \times M}$.
+- $`\mathbf{U}_M \in \mathbb{R}^{n \times M}`$,
+- $`\boldsymbol{\Sigma}_M \in \mathbb{R}^{M \times M}`$,
+- $`\mathbf{V}_M \in \mathbb{R}^{p \times M}`$.
 
-This decomposition gives the best rank-$M$ approximation to $\mathbf{X}$ in the Frobenius norm sense.
+This decomposition gives the best $\text{rank-}M$ approximation to $\mathbf{X}$ in the Frobenius norm sense.
 
 ---
 
@@ -45,18 +45,18 @@ This decomposition gives the best rank-$M$ approximation to $\mathbf{X}$ in the 
 
 The first part of the demo generates a random Gaussian matrix with
 
-$$
+```math
 n = 300, \qquad p = 80, \qquad M = 10,
-$$
+```
 
 and computes a truncated SVD in the regime $n \ge p$.
 
 The script then prints the dimensions of $\mathbf{U}$, $\mathbf{S}$, and $\mathbf{V}$, reports the relative
 reconstruction error
 
-$$
+```math
 \frac{\|\mathbf{X}_M - \mathbf{X}\|_F}{\|\mathbf{X}\|_F},
-$$
+```
 
 and lists the top $M$ singular values. As a Python-side addition (not in the C++ demo), it also verifies that the
 full-rank decomposition ($M = p$) reconstructs $\mathbf{X}$ exactly up to floating-point error.
@@ -67,9 +67,9 @@ full-rank decomposition ($M = p$) reconstructs $\mathbf{X}$ exactly up to floati
 
 The second part studies a wide matrix with
 
-$$
+```math
 n = 100, \qquad p = 500, \qquad M = 8,
-$$
+```
 
 so that $p > 2n$ and the solver routes through the $n \times n$ Gram matrix $\mathbf{X}\mathbf{X}^\top$.
 
@@ -83,17 +83,17 @@ approximation.
 
 The third part tests whether the returned singular vectors are numerically orthonormal. It uses a random matrix with
 
-$$
+```math
 n = 200, \qquad p = 150, \qquad M = 20,
-$$
+```
 
 computes the truncated decomposition, and evaluates
 
-$$
+```math
 \|\mathbf{U}^\top \mathbf{U} - \mathbf{I}\|_F
 \qquad \text{and} \qquad
 \|\mathbf{V}^\top \mathbf{V} - \mathbf{I}\|_F
-$$
+```
 
 If both quantities are sufficiently small, the demo reports that $\mathbf{U}$ and $\mathbf{V}$ are orthonormal up to
 numerical precision.
@@ -134,7 +134,3 @@ When reading the console output, focus on these points:
 - `SVDSolver.compute()` requires a `float64`, Fortran-ordered (column-major) NumPy array (`np.asfortranarray`).
 - RNG seeds match the C++ demo, but NumPy's `default_rng` stream differs from `std::mt19937`, so numbers agree
   qualitatively, not bitwise.
-
----
-
-**Last updated**: 2026-07-21

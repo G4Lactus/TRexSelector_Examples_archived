@@ -19,10 +19,10 @@ using `trex_selector_neo`'s `TRexGVSSelector`.
 
 We consider again the linear model:
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta} + \boldsymbol{\epsilon},
 \qquad \boldsymbol{\epsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma_{\varepsilon}^2 \boldsymbol{I}_n)
-$$
+```
 
 - $\boldsymbol{y} \in \mathbb{R}^n$ is the response vector.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ is the design matrix.
@@ -31,7 +31,7 @@ $$
 - $\sigma_{\varepsilon}^2$ is the noise variance, calibrated to achieve a target linear signal-to-noise ratio (SNR).
 - $n = 200$, $p = 500$, $s = 150$ (the sum of the three active blocks).
 
-The design matrix keeps the 4-block geometry of Demos 03/05/06 (sizes $\{20, 50, 80, 65\}$, 215 grouped columns in
+The design matrix keeps the 4-block geometry of Demos 03/05/06 (sizes $\lbrace20, 50, 80, 65\rbrace$, 215 grouped columns in
  total), but **each block follows a distinct ARMA process**. Every block column is simulated with a 100-step
  burn-in and then standardized to unit empirical variance, matching R's `arima.sim` approach:
 
@@ -82,8 +82,8 @@ and `CV_1SE_CCD` for the $\lambda_2$ selection.
 ## The Sweep
 
 A single **2-D SNR $\times$ `ar_coef` grid**, over
-$\mathrm{SNR} \in \{0.2, 0.5, 1, 2, 5\}$ and
-`ar_coef` $\in \{0.30, 0.50, 0.70, 0.80, 0.90, 0.95\}$
+$\mathrm{SNR} \in \lbrace0.2, 0.5, 1, 2, 5\rbrace$ and
+`ar_coef` $\in \lbrace0.30, 0.50, 0.70, 0.80, 0.90, 0.95\rbrace$
 (the AR coefficient shared by the AR(1) and ARMA(2,1) blocks), 200 MC trials per cell. Because the
 MA(3) block carries no AR component, only three of the four blocks respond to the `ar_coef` axis.
 
@@ -127,7 +127,7 @@ up to Monte-Carlo noise — the two ports draw from independent RNG streams.
    recovery is **uneven across blocks** — the MA(3) block (short-range, decaying-but-bounded correlation) and the
    ARMA(2,1) block behave differently from the pure AR(1) block, so the aggregate TPR blends these per-block
    difficulties and saturates around $0.6$: at $\mathrm{SNR}=5$, TENET's TPR rises steeply over
-   `ar_coef` $\in \{0.3, 0.5, 0.7\}$ ($0.11 \to 0.36 \to 0.59$) and then plateaus, since the MA(3) block never
+   `ar_coef` $\in \lbrace0.3, 0.5, 0.7\rbrace$ ($0.11 \to 0.36 \to 0.59$) and then plateaus, since the MA(3) block never
    responds to the sweep.
 - **TENET** and **TENET_AUG** are numerically identical here and keep FDR below the $\mathrm{tFDR} = 0.1$ target
    in every cell (max $0.080$, no cyan outlines). The trap block (AR(1), same `ar_coef` as the active AR(1) block)
@@ -161,7 +161,3 @@ would be outlined in cyan.
 3. Zou, H., & Hastie, T. (2005). "Regularization and variable selection via the elastic net." *Journal of the Royal
    Statistical Society: Series B (Statistical Methodology)*, 67(2), pp. 301–320.
    [DOI-Link](https://doi.org/10.1111/j.1467-9868.2005.00503.x)
-
----
-
-**Last updated**: 2026-07-27

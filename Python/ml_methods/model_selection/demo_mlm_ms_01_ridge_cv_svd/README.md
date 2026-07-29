@@ -31,13 +31,13 @@ Let
 
 The synthetic data follow the Gaussian linear model
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta}_{\mathrm{true}} + \boldsymbol{\varepsilon},
 \qquad
 \boldsymbol{\varepsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma^2 \boldsymbol{I}_n).
-$$
+```
 
-In the demo, the true coefficient vector is sparse: a fixed number of entries of $\boldsymbol{\beta}_{\mathrm{true}}$
+In the demo, the true coefficient vector is sparse: a fixed number of entries of $`\boldsymbol{\beta}_{\mathrm{true}}`$
 are set to 1, placed at evenly spaced coordinates, while the remaining coefficients are zero.
 
 ---
@@ -67,9 +67,9 @@ partitioned into $K$ folds, the model is fit on $K-1$ folds, and prediction erro
 
 This yields a cross-validated mean squared error curve
 
-$$
+```math
 \mathrm{CV\text{-}MSE}(\lambda),
-$$
+```
 
 from which the demo reports two common choices:
 
@@ -161,7 +161,3 @@ removed successfully at the end.
 - The scratch file is only relevant to the fourth scenario.
 - Data seeds match the C++ demo, but NumPy's PCG64 stream differs from `std::mt19937`, so results match qualitatively,
   not bitwise.
-
----
-
-**Last updated**: 2026-07-21

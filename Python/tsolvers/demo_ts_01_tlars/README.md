@@ -19,9 +19,9 @@ The demo is intended to explain solver behavior and interface usage in isolation
 
 A terminating solver does not compute a full path over all possible steps. Instead, it stops early once a prescribed number $T_{\text{stop}}$ of dummy variables has entered the active set:
 
-$$
+```math
 \hat{\boldsymbol{\beta}}^{(T)} = \mathrm{TLARS}(\mathbf{X}, \mathbf{D}, \mathbf{y}; T_{\text{stop}}).
-$$
+```
 
 In the demo, this is done through calls of the form:
 
@@ -100,7 +100,3 @@ When reading the console output, focus on the following points:
 - The thread count is set to 6 via `trex_selector_neo.utils.set_num_threads`, mirroring the cpp OpenMP setup.
 - The serialization example writes a temporary checkpoint file `tlars_checkpoint.bin` into the demo folder and removes it after the comparison.
 - The memory-mapped example writes `demo_tlars_{X,D,y}.bin` into the demo folder, runs the solver on mapped views, and then removes those files at the end.
-
----
-
-**Last updated**: 2026-07-08

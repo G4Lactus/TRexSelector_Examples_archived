@@ -20,10 +20,10 @@ using `trex_selector_neo`'s `TRexGVSSelector`.
 
 We consider again the linear model:
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta} + \boldsymbol{\epsilon},
 \qquad \boldsymbol{\epsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma_{\varepsilon}^2 \boldsymbol{I}_n)
-$$
+```
 
 - $\boldsymbol{y} \in \mathbb{R}^n$ is the response vector.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ is the design matrix.
@@ -35,9 +35,9 @@ $$
 Each correlated group is built from a shared latent factor, with one half of the group loading **positively** and
  the other half loading **negatively** on it:
 
-$$
+```math
 X_{ij} = \pm Z_{i,\,g(j)} + \sigma_x\, \xi_{ij}, \qquad \xi_{ij} \sim \mathcal{N}(0,1),
-$$
+```
 
 - **Active group $G_1$** (columns 0–99): positive half (0–49) with $\beta_j = +3$; negative half (50–99), loading
    $-Z_1$, with $\beta_j = -3$.
@@ -86,8 +86,8 @@ and `CV_1SE_CCD` for the $\lambda_2$ selection.
 ## The Sweep
 
 A single **2-D SNR $\times$ $\rho$ grid**, over
-$\mathrm{SNR} \in \{0.2, 0.5, 1, 2, 5\}$ and
-$\rho \in \{0.30, 0.50, 0.70, 0.90, 0.95, 0.99\}$
+$\mathrm{SNR} \in \lbrace0.2, 0.5, 1, 2, 5\rbrace$ and
+$\rho \in \lbrace0.30, 0.50, 0.70, 0.90, 0.95, 0.99\rbrace$
 (with $\sigma_x = \sqrt{(1-\rho)/\rho}$), 200 MC trials per cell.
 
 ---
@@ -129,14 +129,14 @@ up to Monte-Carlo noise — the two ports draw from independent RNG streams.
 - **TENET** and **TENET_AUG** are numerically identical here: both recover the active sign-flipped group almost
    completely (TPR $\ge 0.97$ everywhere except the $\mathrm{SNR}=0.2$, $\rho=0.3$ cell at $0.80$) — the two
    inactive traps are excluded rather than falsely selected.
-- FDR sits just below the $\mathrm{tFDR} = 0.1$ target across the grid ($0.077$–$0.099$), with **two cells
+- FDR sits just below the $\mathrm{tFDR} = 0.1$ target across the grid ($0.077\text{–}0.099$), with **two cells
    marginally above it**: $\rho = 0.99$ at $\mathrm{SNR} = 2$ and $5$ realize $0.107$ and $0.112$ (outlined cyan
    in the figure). The Monte-Carlo standard error of those cells is $\approx 0.009$, so both sit within
    $\approx 1.3$ standard errors of the target; the C++ reference peaks at $0.098$ in the same near-collinear
    column. This is MC-scale jitter in the hardest corner of the grid, not a systematic loss of control.
 - The mechanism behind the recovery is that HAC clusters on **unsigned** correlation, so the sign-flipped active
    group is identified as a *single* group rather than split into its positive and negative halves.
-- **TIENET_AUG** is far more conservative (FDR $\le 0.030$ everywhere) and its TPR collapses to $0.03$–$0.08$ in
+- **TIENET_AUG** is far more conservative (FDR $\le 0.030$ everywhere) and its TPR collapses to $0.03\text{–}0.08$ in
    the extreme $\rho = 0.99$ column; elsewhere it reaches TPR $\approx 1$ from $\mathrm{SNR} \ge 0.5$, so the
    sign-flipped halves do not by themselves trigger different informed-EN behavior.
 - The two spatially separated traps are a stronger test of false-group exclusion than a single trap: FDR does not
@@ -163,7 +163,3 @@ FDR cells above the $\mathrm{tFDR} = 0.1$ target are outlined in cyan.
 3. Zou, H., & Hastie, T. (2005). "Regularization and variable selection via the elastic net." *Journal of the Royal
    Statistical Society: Series B (Statistical Methodology)*, 67(2), pp. 301–320.
    [DOI-Link](https://doi.org/10.1111/j.1467-9868.2005.00503.x)
-
----
-
-**Last updated**: 2026-07-27

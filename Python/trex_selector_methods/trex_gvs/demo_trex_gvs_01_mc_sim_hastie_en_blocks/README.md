@@ -20,10 +20,10 @@ using `trex_selector_neo`'s `TRexGVSSelector`.
 
 We consider the linear model:
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta} + \boldsymbol{\epsilon},
 \qquad \boldsymbol{\epsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma_{\varepsilon}^2 \boldsymbol{I}_n)
-$$
+```
 
 - $\boldsymbol{y} \in \mathbb{R}^n$ is the response vector.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ is the design matrix.
@@ -33,11 +33,11 @@ $$
 - $n = 200$, $p = 500$, $s = 150$.
 
 The design matrix $\boldsymbol{X}$ is generated from a latent-factor model with three active groups:
-$$
+```math
 X_{ij} = Z_{i,\,g(j)} + \sigma_x\, \xi_{ij}, \qquad \xi_{ij} \sim \mathcal{N}(0,1).
-$$
+```
 
-- Three latent factors $Z_{\cdot,k} \sim \mathcal{N}(0,1)$ for $k \in \{0,1,2\}$.
+- Three latent factors $Z_{\cdot,k} \sim \mathcal{N}(0,1)$ for $k \in \lbrace0,1,2\rbrace$.
 - **Group 0** (columns 0–49), **Group 1** (columns 50–99), **Group 2** (columns 100–149) — all active, $\beta_j = 3$.
 - **Background** (columns 150–499): i.i.d. $\mathcal{N}(0,1)$, each a singleton group.
 - Within-group correlation $\rho = 1/(1+\sigma_x^2)$; the default $\sigma_x = \sqrt{0.01}$ gives $\rho \approx 0.99$.
@@ -84,10 +84,10 @@ Three T-Rex+GVS solver variants:
 ## Three Parts
 
 1. **2-D SNR $\times$ $\rho$ sweep** — TENET / TENET_AUG / TIENET_AUG over
-   $\mathrm{SNR} \in \{0.2, 0.5, 1, 2, 5\}$ and
-   $\rho \in \{0.30, 0.50, 0.70, 0.90, 0.95, 0.99\}$ (derived via
+   $\mathrm{SNR} \in \lbrace0.2, 0.5, 1, 2, 5\rbrace$ and
+   $\rho \in \lbrace0.30, 0.50, 0.70, 0.90, 0.95, 0.99\rbrace$ (derived via
    $\sigma_x = \sqrt{(1-\rho)/\rho}$), 200 MC trials per cell.
-2. **$\lambda_2$-method comparison** — `CV_1SE_SVD` vs. `CV_1SE_CCD` penalty selection at the
+2. $\lambda_2$**-method comparison** — `CV_1SE_SVD` vs. `CV_1SE_CCD` penalty selection at the
    fixed operating point $\mathrm{SNR}=2$, $\rho=0.7$ (TENET and TIENET_AUG).
 3. **HAC linkage comparison** — Single / Complete / Average / WPGMA linkage at the same fixed
    operating point (TENET and TIENET_AUG).
@@ -135,10 +135,10 @@ up to Monte-Carlo noise — the two ports draw from independent RNG streams (Num
 ### Part 1 — 2-D SNR $\times$ $\rho$ sweep
 
 - FDR stays at or below the $\mathrm{tFDR} = 0.1$ target in every cell (no cyan violation outlines):
-  **TENET** and **TENET_AUG** — numerically identical throughout this demo — realize $0.043$–$0.091$, and
+  **TENET** and **TENET_AUG** — numerically identical throughout this demo — realize $0.043\text{–}0.091$, and
   **TIENET_AUG** never exceeds $0.030$.
 - **TENET / TENET_AUG** reach $\mathrm{TPR} \approx 1$ once $\mathrm{SNR} \gtrsim 1$ for $\rho \ge 0.5$; the
-  weakest column, $\rho = 0.30$, still climbs $0.88 \to 0.96 \to 0.99$ over $\mathrm{SNR} \in \{1, 2, 5\}$.
+  weakest column, $\rho = 0.30$, still climbs $0.88 \to 0.96 \to 0.99$ over $\mathrm{SNR} \in \lbrace1, 2, 5\rbrace$.
 - **TIENET_AUG** is more conservative (very low FDR, TPR that grows more slowly with SNR — e.g. $0.58$ at
   $\mathrm{SNR}=1$, $\rho = 0.3$ vs. $0.88$ for TENET) and its power **collapses in the extreme $\rho = 0.99$
   column** (TPR $\approx 0.02$, flat in SNR), where the within-group columns become nearly collinear. This
@@ -201,7 +201,3 @@ Carlo standard deviation.
 4. Dai, R., & Barber, R. F., "The knockoff filter for FDR control in group-sparse and multitask regression."
    Proceedings of the 33rd International Conference on Machine Learning (ICML), vol. 48, pp. 1851–1859, 2016.
    [DOI-Link](http://proceedings.mlr.press/v48/daia16.pdf)
-
----
-
-**Last updated**: 2026-07-27

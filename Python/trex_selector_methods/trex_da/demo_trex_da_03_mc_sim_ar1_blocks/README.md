@@ -23,16 +23,16 @@ is why the figures label it `TAFS (rho = 0.3)`.
 ## Setup — the DA-TRex+BT selector
 
 The selector deflates each variable's ordinary relative occurrence $\Phi_{T,L}(j)$ by the penalty
-$\Psi^{\mathrm{BT}}_{T,L}(j) \in [1/2, 1]$ built from its most similar competitor within its
+$`\Psi^{\mathrm{BT}}_{T,L}(j) \in [1/2, 1]`$ built from its most similar competitor within its
 variable group,
 
-$$
+```math
 \Phi^{\mathrm{BT}}_{T,L}(j) := \Psi^{\mathrm{BT}}_{T,L}(j) \cdot \Phi_{T,L}(j),
-$$
+```
 
 where the **BT group design** obtains the groups $\mathrm{Gr}(j)$ from a **binary tree**: variables
 are clustered by hierarchical agglomerative clustering (HAC) on the dissimilarity
-$1 - |\mathrm{corr}(\boldsymbol{x}_j, \boldsymbol{x}_{j'})|$ and the dendrogram cut defines disjoint
+$`1 - |\mathrm{corr}(\boldsymbol{x}_j, \boldsymbol{x}_{j'})|`$ and the dendrogram cut defines disjoint
 groups (see [Demo 02](../demo_trex_da_02_mc_sim_ar1_blocks_plus_white/README.md) for the full penalty
 formula). The **linkage method** sets the between-cluster distance during agglomeration —
 **Single** ($\min$, prone to chaining), **Complete** ($\max$, compact clusters), **Average**
@@ -44,15 +44,15 @@ The design consists of $M$ statistically independent AR(1) blocks of size $Q$ �
 unlike Demo 02 there is no white-noise padding, so *every* column belongs to a correlated block and
 $p = M \cdot Q$. The within-block correlation follows the $Q \times Q$ Toeplitz matrix
 
-$$
+```math
 \left[\boldsymbol{\Sigma}_{m}(\rho)\right]_{j,k} = \rho^{|j-k|},
 \qquad m = 1, \ldots, M,
-$$
+```
 
 generated per block via the recursion $z_{j} = \rho\, z_{j-1} + \sqrt{1-\rho^{2}}\,\varepsilon_{j}$
 with $z_1, \varepsilon_j \sim \mathcal{N}(0,1)$, giving the block-diagonal covariance
 
-$$
+```math
 \boldsymbol{\Sigma} =
 \begin{bmatrix}
 \boldsymbol{\Sigma}_1(\rho) & & \\
@@ -60,7 +60,7 @@ $$
 & & \boldsymbol{\Sigma}_M(\rho)
 \end{bmatrix} \in \mathbb{R}^{p \times p},
 \qquad p = M \cdot Q.
-$$
+```
 
 At the base point the problem is *low-dimensional* ($p = 25 \ll n = 150$); the $Q$ sweep pushes it
 past $p > n$ ($p = 250$ at $Q = 50$), and the $M$ sweep reaches $p = n = 150$ at $M = 30$.
@@ -70,13 +70,13 @@ The block core is exactly the one shown in **Demo 02**'s design-correlation heat
 white padding that follows it. The `da_ar1_block` figure in
 [`../dgp_corr_plots/`](../dgp_corr_plots/) renders the same generator at an illustrative
 $p = 1000$ / 5 blocks of 200, where the within-block $\rho^{|j-k|}$ decay makes the blocks all but
-invisible — the small-$Q$ view of Demo 02 is the more informative picture for this demo's base point.
+invisible — the $\text{small-}Q$ view of Demo 02 is the more informative picture for this demo's base point.
 
 **Support (`OnePerBlock`).** Exactly one representative per AR(1) block,
 
-$$
+```math
 \mathcal{S} = \{s_1, \ldots, s_M\}, \qquad s_m \in \{(m-1)Q, \ldots, mQ - 1\},
-$$
+```
 
 (0-based Python indices; the R suite is 1-based) so $s = M$ and every block carries a signal.
 
@@ -123,61 +123,61 @@ the four grids embedded below.
 
 ---
 
-## Part 1 — SNR sweep ($\mathrm{SNR} \in \{0.1, 0.2, 0.5, 0.6, 1, 2, 5\}$)
+## Part 1 — SNR sweep ($\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 0.6, 1, 2, 5\rbrace$)
 
 - **FDR stays under the $\mathrm{tFDR}=0.2$ target at every SNR** (worst cell $0.123$, TLARS at
   $\mathrm{SNR}=0.5$ under Average linkage) — but visibly higher than the white-noise-diluted Demo 02
   ($\leq 0.032$ at the same base point): in an all-block design every false discovery candidate is a
   correlated shadow.
-- TPR: TOMP is the strongest throughout ($0.98$–$1.0$ from $\mathrm{SNR}=2$); TLARS reaches
-  $0.76$–$0.84$; TAFS peaks at $\mathrm{SNR}=1$–$2$ ($0.84$–$0.89$) and then *declines* to
-  $\approx 0.71$–$0.76$ at $\mathrm{SNR}=5$ — the same non-monotonicity seen in Demo 02.
+- TPR: TOMP is the strongest throughout ($0.98\text{–}1.0$ from $\mathrm{SNR}=2$); TLARS reaches
+  $0.76\text{–}0.84$; TAFS peaks at $\mathrm{SNR}=1\text{–}2$ ($0.84\text{–}0.89$) and then *declines* to
+  $\approx 0.71\text{–}0.76$ at $\mathrm{SNR}=5$ — the same non-monotonicity seen in Demo 02.
 - Linkage has only a mild effect here; Complete/Average buy a few TPR points over Single.
 
 ![SNR sweep across HAC linkage](simulation_results/plots/da_trex_mc_da_ar1_blocks_snr_linkage_grid.png)
 
 ---
 
-## Part 2 — $\rho$ sweep ($\rho \in \{0.0, 0.1, \ldots, 0.9\}$)
+## Part 2 — $\rho$ sweep ($\rho \in \lbrace0.0, 0.1, \ldots, 0.9\rbrace$)
 
 - **FDR rises steadily with $\rho$ and TLARS breaks the target at $\rho=0.9$** under Complete and
   Average linkage ($0.273$ / $0.268$; Single stays just under at $0.237$); TAFS remains controlled
-  ($0.12$–$0.15$) and TOMP comfortably so ($0.07$–$0.08$). Strong within-block correlation makes the
-  block shadows progressively harder to deflate — the block-design counterpart of the high-$\rho$
+  ($0.12\text{–}0.15$) and TOMP comfortably so ($0.07\text{–}0.08$). Strong within-block correlation makes the
+  block shadows progressively harder to deflate — the block-design counterpart of the $\text{high-}\rho$
   corner seen in Demos 01 and 07.
-- **Single linkage again loses power at low $\rho$**: TPR $0.38$–$0.41$ at $\rho \leq 0.1$ vs.
-  $0.71$–$0.80$ for Complete/Average — without a clear chain to follow, single-linkage mis-groups
+- **Single linkage again loses power at low $\rho$**: TPR $0.38\text{–}0.41$ at $\rho \leq 0.1$ vs.
+  $0.71\text{–}0.80$ for Complete/Average — without a clear chain to follow, single-linkage mis-groups
   the weakly-correlated blocks. All linkages coincide from $\rho \approx 0.4$.
-- TPR peaks mid-$\rho$ and falls toward $\rho=0.9$ (TOMP $0.75$–$0.79$, TAFS $0.66$–$0.73$,
-  TLARS $0.56$–$0.66$).
+- TPR peaks $\text{mid-}\rho$ and falls toward $\rho=0.9$ (TOMP $0.75\text{–}0.79$, TAFS $0.66\text{–}0.73$,
+  TLARS $0.56\text{–}0.66$).
 
 ![rho sweep across HAC linkage](simulation_results/plots/da_trex_mc_da_ar1_blocks_rho_linkage_grid.png)
 
 ---
 
-## Part 3 — Block-size $Q$ sweep ($Q \in \{5, 10, \ldots, 50\}$; $p = 5Q$ grows to $250 > n$)
+## Part 3 — Block-size $Q$ sweep ($Q \in \lbrace5, 10, \ldots, 50\rbrace$; $p = 5Q$ grows to $250 > n$)
 
 - FDR is comfortably controlled over the whole sweep (max $0.115$, TLARS under Average linkage at
   $Q=10$) even as the design crosses into the high-dimensional regime ($p = 250 > n = 150$ at $Q=50$).
-- Complete/Average linkage handle growing blocks gracefully (TOMP $0.97$–$0.99$, TAFS $0.87$–$0.93$,
-  TLARS $0.82$–$0.89$ throughout); **Single linkage sits a consistent $0.07$–$0.10$ TPR below them**
-  across the sweep (TOMP $0.88$–$0.96$, TLARS $0.73$–$0.79$) — the same fragility as in Demo 02's $Q$
+- Complete/Average linkage handle growing blocks gracefully (TOMP $0.97\text{–}0.99$, TAFS $0.87\text{–}0.93$,
+  TLARS $0.82\text{–}0.89$ throughout); **Single linkage sits a consistent $0.07\text{–}0.10$ TPR below them**
+  across the sweep (TOMP $0.88\text{–}0.96$, TLARS $0.73\text{–}0.79$) — the same fragility as in Demo 02's $Q$
   sweep, though milder without the white pool to merge into.
 
 ![Q sweep across HAC linkage](simulation_results/plots/da_trex_mc_da_ar1_blocks_Q_linkage_grid.png)
 
 ---
 
-## Part 4 — Number-of-blocks $M$ sweep ($M \in \{1, 3, 5, 10, 15, 20, 30\}$; $s = M$, $p = 5M$)
+## Part 4 — Number-of-blocks $M$ sweep ($M \in \lbrace1, 3, 5, 10, 15, 20, 30\rbrace$; $s = M$, $p = 5M$)
 
 - The stress dimension: $s = M$ grows while $n = 150$ and the amplitude stay fixed. **TPR collapses
-  for $M \gtrsim 20$** ($\approx 0.14$–$0.24$ at $M=20$, $\leq 0.06$ at $M=30$, where $p = n$),
+  for $M \gtrsim 20$** ($\approx 0.14\text{–}0.24$ at $M=20$, $\leq 0.06$ at $M=30$, where $p = n$),
   while FDR stays below target throughout (max $0.152$, TLARS at $M=20$) — the selector fails *safe*.
 - The $M=1$ corner is degenerate ($p=5$, one active variable): all solvers are weak
   (TPR $\leq 0.29$) and TAFS selects nothing at all — with a single signal there is no occurrence
   spread for the DA deflation to work with.
-- The sweet spot sits at $M \approx 5$–$10$, where TOMP holds $\approx 0.9$+ TPR with FDR
-  $\approx 0.02$–$0.06$.
+- The sweet spot sits at $M \approx 5\text{–}10$, where TOMP holds $\approx 0.9$+ TPR with FDR
+  $\approx 0.02\text{–}0.06$.
 
 ![M sweep across HAC linkage](simulation_results/plots/da_trex_mc_da_ar1_blocks_M_linkage_grid.png)
 
@@ -195,7 +195,3 @@ the four grids embedded below.
 - Solver ranking on block designs: **TOMP is the most robust** (best TPR *and* lowest FDR in nearly
   every cell), TAFS in between with its high-SNR power decline, TLARS the most FDR-fragile at strong
   within-block correlation.
-
----
-
-**Last updated**: 2026-07-26

@@ -20,19 +20,19 @@ Two core transformations are demonstrated:
 
 ### Z-score scaling
 
-$$
+```math
 \tilde{x}_{ij} = \frac{x_{ij} - \bar{x}_j}{s_j},
-$$
+```
 
-where $\bar{x}_j$ is the column mean and $s_j$ is the column scale.
+where $`\bar{x}_j`$ is the column mean and $s_j$ is the column scale.
 
 ### Lp-norm scaling
 
-$$
+```math
 \tilde{\boldsymbol{x}}_j =
 \frac{\boldsymbol{x}_j - \bar{x}_j \mathbf{1}}
 {\lVert \boldsymbol{x}_j - \bar{x}_j \mathbf{1} \rVert_p},
-$$
+```
 
 when centering is enabled.
 
@@ -59,7 +59,3 @@ python demo_mlm_scaler_01/demo_mlm_scaler_01.py
 This folder was previously named `standardization/` and contained a separate mmap-only script
 (`demo_standardization_02_mmap.py`). The C++ demo covers memory-mapped scaling as Subproblem 4 of
 `demo_mlm_scaler_01`, so the mmap walkthrough was folded into that demo and the standalone mmap variant was retired.
-
----
-
-**Last updated**: 2026-07-21

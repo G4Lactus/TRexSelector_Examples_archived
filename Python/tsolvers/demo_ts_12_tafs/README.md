@@ -19,9 +19,9 @@ It mirrors `cpp/tsolvers/demo_ts_12_tafs`.
 
 Like the other terminating solvers, T-AFS stops early once a prescribed number $T_{\text{stop}}$ of dummy variables has entered the active set:
 
-$$
+```math
 \hat{\boldsymbol{\beta}}^{(T)} = \mathrm{TAFS}(\mathbf{X}, \mathbf{D}, \mathbf{y}; T_{\text{stop}}).
-$$
+```
 
 In the demo, this is done through calls of the form
 
@@ -100,7 +100,3 @@ Conceptually, T-AFS is a useful counterpart to plain T-Stepwise because its adap
 - The thread count is set to 6 via `trex_selector_neo.utils.set_num_threads`, mirroring the cpp OpenMP setup.
 - The serialization example writes a temporary checkpoint file `tafs_checkpoint.bin` into the demo folder and removes it afterward.
 - The memory-mapped example writes `demo_tafs_{X,D,y}.bin` into the demo folder, runs T-AFS on those mapped views, and removes those files at the end.
-
----
-
-**Last updated**: 2026-07-08
