@@ -158,20 +158,20 @@ def demo_kfold_high_dim():
 
 
 # ==============================================================================
-# Demo 3: Very high-dimensional scenario (n=300, p=1000, p >> n, 10-fold)
+# Demo 3: Very high-dimensional scenario (n=300, p=1000, p >> n, 5-fold)
 # ==============================================================================
 
 def demo_kfold_very_high_dim():
     print_section_header(
-        "Demo MS-01 | ridge_cv_svd | Very High-Dimensional (n=300, p=1000, 10-fold)")
+        "Demo MS-01 | ridge_cv_svd | Very High-Dimensional (n=300, p=1000, 5-fold)")
 
-    n, p, sigma, n_folds = 300, 1_000, 1.0, 10
+    n, p, sigma, n_folds = 300, 1_000, 1.0, 5
 
     X, y, beta_true = generate_regression_data(n, p, sigma, seed=333)
 
     print(f"Data: n={n}, p={p}, folds={n_folds}, "
           f"active coefs={int(np.sum(beta_true != 0))}")
-    print("  Note: 10 folds used to ensure each fold's training set is large "
+    print("  Note: 5 folds used to ensure each fold's training set is large "
           "enough relative to n.\n")
 
     fit_and_report(X, y, n_folds, seed=333)
