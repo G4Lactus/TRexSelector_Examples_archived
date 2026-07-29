@@ -1,58 +1,95 @@
-# PCA — R Demos
+# PCA: Demonstration Suite
 
-## Purpose
+## Overview
 
-Demonstrates the **Principal Component Analysis (PCA)** R6 class of the
-**TRexSelectorNeo** package: fitting a truncated PC decomposition on Gaussian
-data, inspecting explained variance, verifying the in-place restore
-round-trip, and projecting new data into a fitted PC space.
+This folder contains R examples for the **Principal Component Analysis (PCA)** R6 class of the **TRexSelectorNeo**
+package.
+
+The demos illustrate how a data matrix can be projected onto a lower-dimensional orthogonal basis while retaining as
+much variance as possible. In the TRexSelector project, PCA can be useful as a dimensionality-reduction and
+preprocessing step when working with high-dimensional data.
+
+The main goals of this folder are:
+
+1. to demonstrate how PCA is fit from R,
+2. to show how training data and new data are transformed into principal-component scores,
+3. to illustrate how explained variance is inspected after fitting,
+4. to verify that temporary in-place preprocessing can be safely reversed.
+
+Equivalent PCA demos are available in the C++ and Python packages; see
+[cpp/ml_methods/pca/](../../../cpp/ml_methods/pca/README.md) and
+[Python/ml_methods/pca/](../../../Python/ml_methods/pca/README.md) for the corresponding walkthroughs.
 
 ---
 
-## Demos
+## What this folder covers
 
-| File | Description |
-|---|---|
-| [demo_pca_01_in_memory.R](demo_pca_01_in_memory.R) | Basic PCA fit (score/loading dimensions, explained-variance profile), restore round-trip accuracy after in-place preprocessing, and transformation of new test data via `$transform()` |
+Given a data matrix
 
-The demo encodes its expected properties as `stopifnot()` checks
-(non-increasing explained variance, exact restore round-trip, `transform()`
-reproducing the fit scores).
+```math
+\boldsymbol{X} \in \mathbb{R}^{n \times p},
+```
 
-### APIs used
+PCA seeks a low-dimensional representation using $M$ principal directions with $M \le p$.
 
-- `PCA$new(X, M, center = TRUE, normalize = TRUE)` with `$fit()`,
-  `$transform(X_new)`, `$restore()`, `$get_scores()`, `$get_loadings()`,
-  `$get_explained_variance()`, `$get_means()`, `$get_norms()`.
+The demo in this folder focuses on:
 
-### In-place (zero-copy) design
+- **basic PCA fitting**, including score and loading dimensions,
+- **explained variance inspection**, for the retained components,
+- **restore and transform behavior**, for both training data and new data.
 
-`PCA$new(X, ...)` maps the memory of the R matrix `X` directly — the same
-`Eigen::Map` interface that serves both in-memory and memory-mapped data.
-This is deliberate: the library targets data volumes that can exceed RAM, so
-it never takes hidden copies of `X`. `$fit()` therefore standardizes `X`
-**in place** and `$restore()` reverses the preprocessing exactly. Where a
-pristine copy is needed, take an explicit deep copy with `X_orig <- X + 0`
-(a plain alias shares the same buffer).
+---
+
+## Start here
+
+If you are new to this folder, begin with:
+
+1. **`demo_mlm_pca_01/`**
+   A self-contained PCA demo covering fit, restore, and transform workflows.
+
+---
+
+## Demo overview
+
+| Folder | Purpose |
+| ------ | ------- |
+| [demo_mlm_pca_01/](demo_mlm_pca_01/README.md) | Demonstrates PCA fitting, explained variance, restore round-trip checks, and transformation of new data |
 
 ---
 
 ## Running
 
 ```bash
-Rscript R/ml_methods/pca/demo_pca_01_in_memory.R
+Rscript R/ml_methods/pca/demo_mlm_pca_01/demo_mlm_pca_01.R
 ```
 
 Console output only.
 
 ---
 
-## Counterparts
+## APIs used
 
-- C++: [cpp/ml_methods/pca/](../../../cpp/ml_methods/pca/)
-  — `demo_mlm_pca_01` (PCA fit, explained variance, restore round-trip,
-  transform of new data).
+- `PCA$new(X, M, center = TRUE, normalize = TRUE)` with `$fit()`, `$transform(X_new)`, `$restore()`, `$get_scores()`,
+  `$get_loadings()`, `$get_explained_variance()`, `$get_means()`, `$get_norms()`.
 
 ---
 
-**Last updated**: 2026-07-06
+## Folder contents
+
+```txt
+pca/
+  ├── README.md
+  └── demo_mlm_pca_01/
+      ├── demo_mlm_pca_01.R
+      └── README.md
+```
+
+---
+
+## Notes for new users
+
+- This folder currently contains one introductory PCA demo.
+- The demo prints its diagnostics to the console.
+- `PCA$new(X, ...)` maps the memory of `X` directly, so `$fit()` standardizes `X` **in place**; take an explicit deep
+  copy with `X + 0` where the original values are needed afterwards (a plain alias shares the same buffer).
+- The demo is intended to explain PCA usage and interface behavior rather than to benchmark large-scale performance.

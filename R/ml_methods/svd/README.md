@@ -1,47 +1,72 @@
-# SVD — R Demos
+# SVD: Demonstration Suite
 
-## Purpose
+## Overview
 
-Demonstrates the **SVDSolver** R6 class of the **TRexSelectorNeo** package:
-truncated rank-M singular value decomposition `X_M = U_M diag(S_M) V_M^T` on
-Gaussian data, covering both internal computational paths and the standard
-numerical sanity checks.
+This folder contains R examples for the **singular value decomposition (SVD)** solver of the **TRexSelectorNeo**
+package (`SVDSolver`).
+
+SVD is used in this project for stable matrix decompositions, dimensionality reduction, and regression-related
+computations. In particular, it is relevant for PCA and for numerically stable ridge-regression workflows.
+
+Equivalent SVD demos are available in the C++ and Python packages; see
+[cpp/ml_methods/svd/](../../../cpp/ml_methods/svd/README.md) and
+[Python/ml_methods/svd/](../../../Python/ml_methods/svd/README.md) for the corresponding walkthroughs.
 
 ---
 
-## Demos
+## Key concept
 
-| File | Description |
-|---|---|
-| [demo_svd_01_in_memory.R](demo_svd_01_in_memory.R) | Truncated SVD on a tall matrix (direct path, n >= p) with full-rank reconstruction check, on a wide matrix (Gram/kernel path, p > 2n), and orthonormality checks `\|U^T U - I\|_F` / `\|V^T V - I\|_F` |
+Given a matrix $\mathbf{X} \in \mathbb{R}^{n \times p}$, the singular value decomposition is
 
-The demo encodes its expected properties as `stopifnot()` checks
-(non-increasing singular values, near-zero full-rank reconstruction error,
-orthonormal singular-vector blocks).
+```math
+\mathbf{X} = \mathbf{U}\boldsymbol{\Sigma}\mathbf{V}^\top,
+```
 
-### APIs used
+where
 
-- `SVDSolver$new()` with `$compute(X, M)`, returning a list with elements
-  `U` (n x M), `S` (length M), and `V` (p x M).
+- $\mathbf{U}$ contains left singular vectors,
+- $\boldsymbol{\Sigma}$ contains singular values,
+- $\mathbf{V}$ contains right singular vectors.
+
+A truncated $\textrm{rank-}M$ approximation uses only the leading $M$ singular components:
+
+```math
+\mathbf{X}_M = \mathbf{U}_M \boldsymbol{\Sigma}_M \mathbf{V}_M^\top.
+```
+
+---
+
+## Start here
+
+| Folder | Purpose |
+| ------ | ------- |
+| [demo_mlm_svd_01/](demo_mlm_svd_01/README.md) | Demonstrates basic `SVDSolver` usage, truncated reconstruction, and orthogonality checks |
 
 ---
 
 ## Running
 
 ```bash
-Rscript R/ml_methods/svd/demo_svd_01_in_memory.R
+Rscript R/ml_methods/svd/demo_mlm_svd_01/demo_mlm_svd_01.R
 ```
 
 Console output only.
 
 ---
 
-## Counterparts
+## APIs used
 
-- C++: [cpp/ml_methods/svd/](../../../cpp/ml_methods/svd/)
-  — `demo_mlm_svd_01` (direct and Gram paths, truncated reconstruction,
-  orthogonality checks).
+- `SVDSolver$new()` with `$compute(X, M)`, returning a list with elements `U` ($n \times M$), `S` ($M$), and `V`
+  ($p \times M$).
 
 ---
 
-**Last updated**: 2026-07-06
+## Folder contents
+
+```txt
+svd/
+  ├── README.md
+  └── demo_mlm_svd_01/
+      ├── demo_mlm_svd_01.R
+      └── README.md
+```
