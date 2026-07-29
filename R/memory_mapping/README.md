@@ -1,60 +1,98 @@
-# Memory Mapping — R Demo
+# Memory-Mapped Matrix Utilities: Demonstration Suite
 
-## Purpose
+## Overview
 
-Demonstrates the memory-mapping functionality of the **TRexSelectorNeo**
-package. Memory-mapped matrices allow handling large datasets without loading
-the entire matrix into R's active memory: the R object seamlessly passes a
-pointer to the disk-backed data through to the C++ backend.
+This folder contains R examples for the **memory-mapped matrix** utility of the **TRexSelectorNeo** package
+(`mmap_matrix()` / `convert_to_memory_mapped()`).
+
+The utility provides a disk-backed matrix interface that behaves like an ordinary R matrix, making it useful when
+matrices are too large to keep entirely in RAM. In the TRexSelector project, this is especially relevant for large
+design matrices and dummy matrices that exceed available RAM in solver and selector workflows — the R object passes a
+pointer to the disk-backed data straight through to the C++ backend.
+
+The main goals of this folder are:
+
+1. to show how memory-mapped matrices are created and accessed from R,
+2. to demonstrate out-of-core workflows for large matrices,
+3. to illustrate safe file lifetime management with `on.exit()`.
+
+The C++ demo suite additionally showcases C++-specific features such as RAII and OpenMP-based parallel generation; see
+[cpp/memory_mapping/](../../cpp/memory_mapping/) and [Python/memory_mapping/](../../Python/memory_mapping/) for the
+corresponding walkthroughs.
 
 ---
 
-## Demo
+## What this folder covers
 
-| File | Description |
-|---|---|
-| [demo_memory_mapping.R](demo_memory_mapping.R) | Create, access, fill, and clean up memory-mapped matrices via `convert_to_memory_mapped()` / `mmap_matrix()` |
+A memory-mapped matrix stores its entries in a file on disk and exposes them through a matrix-like interface:
 
-The script walks through nine numbered sections:
+```math
+\boldsymbol{X}_{\mathrm{mmap}} \in \mathbb{R}^{n \times p}.
+```
 
-1. Create a sample 100 x 50 in-memory matrix.
-2. Define a temporary binary file path (auto-cleaned via `on.exit()`).
-3. Convert the matrix to a `MemoryMappedMatrix` with `convert_to_memory_mapped()`.
-4. Explore the `mmap_matrix` object via its S3 methods (`print`, `dim`).
-5. Extract a 3 x 3 block with the `[` operator and verify against the original.
-6. Read the full matrix back into an ordinary R matrix and verify equality.
-7. Re-open the existing binary file in `"readonly"` mode with `mmap_matrix()`.
-8. Out-of-core generation: create the file on disk and fill it column-by-column
-   (streaming to disk instead of building the matrix in RAM first).
-9. Element-wise access via `[` (read) and `[<-` (write), 1-based indices:
-   scalar read (returns a plain double), scalar write, block write with
-   round-trip check, and the write-guard error on a read-only matrix.
+Conceptually, the matrix behaves like a regular numeric matrix, but its storage is file-backed rather than purely
+in-memory. The R binding maps `double` matrices.
 
-Memory-mapped files in this demo are written to a temporary directory and
-removed when the R session ends.
+This is useful for:
+
+- **large matrices**, when RAM is limited,
+- **persistent intermediate data**, when matrix contents should survive beyond a single object lifetime,
+- **solver interoperability**, because the mapped data is consumed by the C++ solvers and selectors through a pointer,
+  without a copy.
+
+---
+
+## Start here
+
+If you are new to memory mapping in TRexSelector, begin with:
+
+1. **`demo_memory_mapping/`** — a self-contained demo covering matrix creation, read/write access, serial out-of-core
+   generation, deterministic per-column seeding, and safe cleanup.
+
+---
+
+## Demo overview
+
+| Folder | Purpose |
+| ------ | ------- |
+| [demo_memory_mapping/](demo_memory_mapping/README.md) | Demonstrates basic mmap usage, out-of-core writes, deterministic per-column seeded filling, and element-wise access checks |
 
 ---
 
 ## Running
 
 ```bash
-Rscript R/memory_mapping/demo_memory_mapping.R
+Rscript R/memory_mapping/demo_memory_mapping/demo_memory_mapping.R
 ```
 
-Output goes to the console only; no `simulation_results/` folder is produced.
+---
+
+## Folder contents
+
+```txt
+memory_mapping/
+  ├── README.md
+  └── demo_memory_mapping/
+      ├── demo_memory_mapping.R
+      └── README.md
+```
 
 ---
 
-## Counterparts
+## Notes for new users
 
-- C++: [cpp/memory_mapping/](../../cpp/memory_mapping/) — `demo_memory_mapping`
-  (POSIX `mmap` + `Eigen::Map`, including OpenMP parallel filling).
-- The same R mmap interface is exercised downstream by
-  [../ml_methods/hac_clustering/demo_agg_hac_02_mmap.R](../ml_methods/hac_clustering/demo_agg_hac_02_mmap.R),
-  [../ml_methods/standardization/demo_standardization_02_mmap.R](../ml_methods/standardization/demo_standardization_02_mmap.R),
-  and the T-Rex demos 05–07 in
-  [../trex_selector_methods/trex/](../trex_selector_methods/trex/README.md).
+- This demo prints results to the console and does not write simulation summary files.
+- Temporary backing files are created in the R session's temporary directory and removed automatically.
+- All indices are 1-based; `[` / `[<-` support contiguous index ranges only.
+- The demo is intended to explain the memory-mapping utility itself, not to benchmark maximum scale production
+  performance.
 
 ---
 
-**Last updated**: 2026-07-06
+## Downstream users of the same interface
+
+The R mmap interface is exercised further by
+[../ml_methods/hac_clustering/demo_mlm_hac_02_mmap/](../ml_methods/hac_clustering/demo_mlm_hac_02_mmap/),
+[../ml_methods/scaler_methods/demo_mlm_scaler_01/](../ml_methods/scaler_methods/demo_mlm_scaler_01/),
+[../ml_methods/model_selection/demo_mlm_ms_01_ridge_cv_svd/](../ml_methods/model_selection/demo_mlm_ms_01_ridge_cv_svd/),
+and the T-Rex demos in [../trex_selector_methods/trex/](../trex_selector_methods/trex/README.md).
