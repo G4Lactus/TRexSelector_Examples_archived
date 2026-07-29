@@ -16,10 +16,10 @@ Evaluate T-Rex+GVS on a more realistic grouped design: four contiguous equicorre
 
 We consider again the linear model:
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta} + \boldsymbol{\epsilon},
 \qquad \boldsymbol{\epsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma_{\varepsilon}^2 \boldsymbol{I}_n)
-$$
+```
 
 - $\boldsymbol{y} \in \mathbb{R}^n$ is the response vector.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ is the design matrix.
@@ -30,11 +30,11 @@ $$
 
 Each block of the design matrix $\boldsymbol{X}$ follows the equicorrelated latent-factor model:
 
-$$
+```math
 X_{ij} = Z_{i,\,g(j)} + \sigma_x\, \xi_{ij}, \qquad \xi_{ij} \sim \mathcal{N}(0,1),
-$$
+```
 
-- Four contiguous blocks of sizes $\{20, 50, 80, 65\}$ (215 grouped columns in total).
+- Four contiguous blocks of sizes $\lbrace20, 50, 80, 65\rbrace$ (215 grouped columns in total).
 - **Blocks 0–2 are active** ($\beta_j = 3$); **block 3 is an inactive trap** ($\beta_j = 0$) carrying the same
    equicorrelated structure as the active blocks.
 - Blocks are placed in a **random order** with **random-width noise gaps** (5 gap slots: before, between, and after
@@ -68,8 +68,8 @@ and `CV_1SE_CCD` for the $\lambda_2$ selection.
 ## The Sweep
 
 A single **2-D SNR $\times$ $\rho$ grid**, over
-$\mathrm{SNR} \in \{0.2, 0.5, 1, 2, 5\}$ and
-$\rho \in \{0.30, 0.50, 0.70, 0.85, 0.90, 0.95, 0.99\}$
+$\mathrm{SNR} \in \lbrace0.2, 0.5, 1, 2, 5\rbrace$ and
+$\rho \in \lbrace0.30, 0.50, 0.70, 0.85, 0.90, 0.95, 0.99\rbrace$
 (with $\sigma_x = \sqrt{(1-\rho)/\rho}$), 200 MC trials per cell. The seven $\rho$ levels span
 weak to near-collinear within-block correlation.
 
@@ -96,7 +96,7 @@ Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_p
 
 ## Simulation Results
 
-- **TENET** and **TENET_AUG** track each other closely and keep FDR controlled (roughly $0.05$–$0.08$, everywhere
+- **TENET** and **TENET_AUG** track each other closely and keep FDR controlled (roughly $0.05\text{–}0.08$, everywhere
    below target) — the inactive equicorrelated trap block does **not** inflate FDR, since its group is identified
    as null and excluded.
 - **TIENET_AUG** is far more conservative (FDR near $0$, lower TPR), with a TPR collapse in the extreme
@@ -127,7 +127,3 @@ FDR cells above the $\mathrm{tFDR} = 0.1$ target are outlined in cyan.
 3. Zou, H., & Hastie, T. (2005). "Regularization and variable selection via the elastic net." *Journal of the Royal
    Statistical Society: Series B (Statistical Methodology)*, 67(2), pp. 301–320.
    [DOI-Link](https://doi.org/10.1111/j.1467-9868.2005.00503.x)
-
----
-
-**Last updated**: 2026-07-19

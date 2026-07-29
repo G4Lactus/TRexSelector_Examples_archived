@@ -52,9 +52,9 @@ The demos in this folder are designed to help users understand:
 - $\boldsymbol{V} \in \mathbb{R}^{p \times M}$: sparse loading matrix; each column carries exactly $p_1$
    nonzero entries of value $0.9$, drawn without replacement from a shared candidate pool of size
    `overlap_pool_size`.
-- $\sigma_m$: amplitude of factor $m$, decreasing over $\{5, 3, 1\}$ (falling back to $1$ for $M > 3$), so
+- $\sigma_m$: amplitude of factor $m$, decreasing over $\lbrace5, 3, 1\rbrace$ (falling back to $1$ for $M > 3$), so
    the components are ordered by strength.
-- $\mathcal{S}_1$: PC1's true active loading support; $\widehat{\mathcal{S}}_1$ its estimated counterpart.
+- $`\mathcal{S}_1`$: PC1's true active loading support; $`\widehat{\mathcal{S}}_1`$ its estimated counterpart.
 - $\boldsymbol{E}$: i.i.d. Gaussian noise, scaled to hit the target SNR.
 
 ### Signal-to-noise ratio in decibels
@@ -95,10 +95,10 @@ Classically the explained variance is the plain EV of the estimated components,
 
 *What one divides it by* is then what decides what the number means, and this suite reports **both** choices.
 
-**The straightforward reading**, $\mathrm{PEV}_{\mathrm{total}} = \mathrm{EV}_{\mathrm{adj}} /
- \mathrm{Var}(\boldsymbol{X})$, divides by the variance of the whole data matrix. It answers "how much of what
- is in front of us did the $M$ components reproduce", and it is **bounded by 1** by construction — no set of
- $M$ components can explain more variance than $\boldsymbol{X}$ contains.
+**The straightforward reading**, $`\mathrm{PEV}_{\mathrm{total}} = \mathrm{EV}_{\mathrm{adj}} / \mathrm{Var}(\boldsymbol{X})`$,
+ divides by the variance of the whole data matrix. It answers "how much of what is in front of us did the $M$
+ components reproduce", and it is **bounded by 1** by construction — no set of $M$ components can explain more
+ variance than $\boldsymbol{X}$ contains.
 
 **The reference paper's reading** (Definition 1 of [[1]](#references)) divides by the **Signal + Mixed EV of
  the data**: the variance carried by the true active variables, with
@@ -131,7 +131,7 @@ The consequence is the whole point of the metric: it is **not capped**. A method
  below) $100\%$: the gap to $100\%$ is the noise variance sitting on the active columns that $M$ components
  do not capture.
 
-A third reading, $\mathrm{PEV}_{\mathrm{sigmix}}$, reports a method's *own* Signal + Mixed part — its raw EV
+A third reading, $`\mathrm{PEV}_{\mathrm{sigmix}}`$, reports a method's *own* Signal + Mixed part — its raw EV
  minus the Null EV of its loadings, split by variable — over the same shared denominator. Read for ordinary
  PCA it is the paper's **"Ordinary PCA (Sig + Mix)"** reference curve: it saturates near $100\%$ once all
  components are extracted, while plain ordinary PCA keeps climbing on Null EV.
@@ -144,7 +144,7 @@ Keeping all readings is what makes the trade-off legible: the first prices the s
 ## T-Rex SPCA specific concepts
 
 - **Plug-in supervision (and the scope of the FDR guarantee)** — each component's selector regresses on
-   the *plug-in* ordinary PC $\boldsymbol{z}_m = \boldsymbol{X}\boldsymbol{v}_m$, a one-shot construction
+   the *plug-in* ordinary PC $`\boldsymbol{z}_m = \boldsymbol{X}\boldsymbol{v}_m`$, a one-shot construction
    rather than the iterative refinement most sparse-PCA methods use. The FDR guarantee is therefore
    **conditional on the plug-in PC being a faithful proxy for its factor**: the selector always controls
    the FDR of the regression it is handed, and that transfers to the factor model only where the proxy is
@@ -262,7 +262,3 @@ suites, but the axis stays in dB either way.
 3. Zou, H., Hastie, T., & Tibshirani, R., "Sparse Principal Component Analysis.", Journal of Computational
    and Graphical Statistics, vol. 15, no. 2, 2006, pp. 265–286, Taylor & Francis.
    [DOI-Link](https://doi.org/10.1198/106186006X113430)
-
----
-
-**Last updated**: 2026-07-21

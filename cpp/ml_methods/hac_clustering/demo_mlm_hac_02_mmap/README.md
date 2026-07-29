@@ -28,9 +28,9 @@ Let
 
 In this demo, the dimensions are
 
-$$
+```math
 n = 100000, \qquad p = 400000, \qquad K = 10.
-$$
+```
 
 The quality of the recovered clustering is assessed with the Adjusted Rand Index (ARI), where $\mathrm{ARI} = 1$
 indicates perfect recovery of the true block structure.
@@ -42,7 +42,7 @@ indicates perfect recovery of the true block structure.
 The synthetic variables are generated from a blockwise latent-factor model. For each variable $j$ in block $b(j)$, the
 entries of $\boldsymbol{X}$ are generated according to
 
-$$
+```math
 X_{ij} =
 \mu_{b(j)}
 +
@@ -50,7 +50,7 @@ X_{ij} =
 \left[
 \alpha L_{i,b(j)} + \gamma \varepsilon_{ij}
 \right],
-$$
+```
 
 where
 
@@ -61,11 +61,11 @@ where
 
 In the implementation, the within-block signal and noise weights are fixed to
 
-$$
+```math
 \alpha = 0.85,
 \qquad
 \gamma = 0.15,
-$$
+```
 
 which produces strongly correlated variable blocks while preserving some within-block heterogeneity.
 
@@ -79,9 +79,9 @@ the HAC stage begins.
 The full matrix is not assembled in RAM. Instead, the entries of $\boldsymbol{X}$ are written column by column into a
 memory-mapped file, while only the latent signal matrix
 
-$$
+```math
 \boldsymbol{L} \in \mathbb{R}^{n \times K}
-$$
+```
 
 is held in memory.
 
@@ -95,11 +95,11 @@ matrix occupies only a small RAM budget relative to the full design matrix.
 
 Before correlation-based clustering, each variable is standardized in place by
 
-$$
+```math
 \widetilde{\boldsymbol{x}}_j =
 \frac{\boldsymbol{x}_j - \bar{x}_j \mathbf{1}}
 {\lVert \boldsymbol{x}_j - \bar{x}_j \mathbf{1} \rVert_2}.
-$$
+```
 
 This preprocessing step is required for correlation-based distance calculations and is performed directly on the
 memory-mapped matrix rather than on a copied in-memory version.
@@ -110,11 +110,11 @@ memory-mapped matrix rather than on a copied in-memory version.
 
 After standardization, the demo clusters variables under the **LSH correlation approximation**,
 
-$$
+```math
 d_{\mathrm{LSH}}(j,\ell)
 \approx
 1 - \left| \mathrm{corr}(\boldsymbol{x}_j, \boldsymbol{x}_\ell) \right|.
-$$
+```
 
 The source describes this as a pure $O(1)$ SimHash-based correlation approximation, used to avoid repeatedly evaluating
 full high-dimensional exact correlations at this scale.
@@ -170,8 +170,8 @@ You can compare the large-scale behavior with the in-memory HAC examples in
 [demo_mlm_hac_01](../demo_mlm_hac_01/README.md).
 
 The same memory-mapped clustering technique is demonstrated at a smaller, illustrative scale in
-[Python](../../../../Python/ml_methods/hac_clustering/demo_agg_hac_02_mmap.py) and
-[R](../../../../R/ml_methods/hac_clustering/demo_agg_hac_02_mmap.R).
+[Python](../../../../Python/ml_methods/hac_clustering/demo_mlm_hac_02_mmap/) and
+[R](../../../../R/ml_methods/hac_clustering/demo_mlm_hac_02_mmap/).
 
 ---
 
@@ -184,7 +184,3 @@ The same memory-mapped clustering technique is demonstrated at a smaller, illust
   is written, a run that is interrupted mid-generation can leave behind a same-sized but incomplete file that this
   check cannot distinguish from a valid one.
 - Cleanup is handled automatically on normal exit by unmapping first and then removing the backing file.
-
----
-
-**Last updated**: 2026-07-09

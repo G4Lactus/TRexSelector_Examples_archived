@@ -18,9 +18,9 @@ Equivalent SVD demos are also available in the Python and R packages; see
 
 Given a matrix $\mathbf{X} \in \mathbb{R}^{n \times p}$, the singular value decomposition is
 
-$$
+```math
 \mathbf{X} = \mathbf{U}\boldsymbol{\Sigma}\mathbf{V}^\top,
-$$
+```
 
 where
 
@@ -30,9 +30,9 @@ where
 
 A truncated $\textrm{rank-}M$ approximation uses only the leading $M$ singular components:
 
-$$
+```math
 \mathbf{X}_M = \mathbf{U}_M \boldsymbol{\Sigma}_M \mathbf{V}_M^\top.
-$$
+```
 
 ---
 
@@ -49,7 +49,3 @@ $$
 ```bash
 ./build/debug/bin/ml_methods/svd/demo_mlm_svd_01/demo_mlm_svd_01
 ```
-
----
-
-**Last updated**: 2026-07-09

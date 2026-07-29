@@ -17,9 +17,9 @@ T-MP is the simplest pursuit-style greedy method in this group: it repeatedly se
 
 Like the other terminating solvers, T-MP stops early once a prescribed number $T_{\text{stop}}$ of dummy variables has entered the active set:
 
-$$
+```math
 \hat{\boldsymbol{\beta}}^{(T)} = \mathrm{TMP}(\mathbf{X}, \mathbf{D}, \mathbf{y}; T_{\text{stop}}).
-$$
+```
 
 In the demo, this is done through calls of the form
 
@@ -88,7 +88,3 @@ Compared with T-OMP, T-MP does not perform a full orthogonal refit on the active
 - The synthetic data are generated with known support and coefficients, so the selected path can be compared against ground truth.
 - The serialization example writes a temporary checkpoint file named `tmp_checkpoint.bin` and removes it afterward.
 - The memory-mapped example writes temporary files for $X$, $D$, and $y$, runs T-MP on those mapped views, and removes those files at the end.
-
----
-
-**Last updated**: 2026-07-08

@@ -37,11 +37,11 @@ The main statistical goal is to recover the active variables while controlling t
 
 We work with the classical Gaussian linear model
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta} + \boldsymbol{\varepsilon},
 \qquad
 \boldsymbol{\varepsilon} \sim \mathcal{N}(0, \sigma^2 \boldsymbol{I}_n).
-$$
+```
 
 ### Notation
 
@@ -52,7 +52,7 @@ $$
 - $\boldsymbol{\beta} \in \mathbb{R}^p$: Regression coefficient vector, $\beta_{j}$ denotes the $j$-th coefficient.
 - $\boldsymbol{\varepsilon} \in \mathbb{R}^n$: Gaussian noise vector.
 - $s = |\mathcal{A}|$: Number of truly active variables.
-- $\mathcal{A} = \{j : \beta_j \neq 0\}$: True support set.
+- $\mathcal{A} = \lbrace j : \beta_j \neq 0\rbrace$: True support set.
 - $\widehat{\mathcal{A}}$: Estimated support set returned by the selector.
 
 ### Data-generating variations
@@ -67,18 +67,18 @@ Depending on the demo, the simulation setup may use:
 
 The linear signal-to-noise ratio is defined as
 
-$$
+```math
 \mathrm{SNR} = \frac{\mathrm{Var}(\boldsymbol{X}\boldsymbol{\beta})}{\mathrm{Var}(\boldsymbol{\varepsilon})}.
-$$
+```
 
 For a fixed design matrix $\boldsymbol{X}$ and coefficient vector $\boldsymbol{\beta}$,
  the noise variance $\sigma^2$ is adjusted to match a desired target SNR.
 
 Typical SNR values used in the demos are
 
-$$
+```math
 \left\lbrace 0.1, 0.5, 1, 2, 5 \right\rbrace,
-$$
+```
 
 which range from weak to strong signal settings.
 
@@ -165,13 +165,13 @@ each demo self-contained and easier to inspect independently.
 
 | # | Name | Purpose | Setting | Main parameters |
 |---|------|---------|---------|-----------------|
-| **01** | Single Run | Demonstrates basic T-Rex usage | One low-dimensional and one high-dimensional scenario | $n \in \{150, 5000\}$, $p \in \{300, 1000\}$, $s = 6$, SNR = 1.0, tFDR = 0.1 |
-| **02** | MC: Fixed Support | Studies FDR/TPR over an SNR range for 14 base solvers | Moderate dimension, fixed random support | $n = 300$, $p = 1000$, $s = 10$ (fixed, random indices, seed 24), SNR $ \in \{0.1, 0.5, 1, 2, 5\} $, tFDR = 0.1, MC = 200 |
-| **03** | MC: Variable Support | Studies FDR/TPR/L/T when support indices are redrawn per trial | Moderate dimension, variable support indices | $n = 300$, $p = 1000$, $s = 10$ (cardinality fixed, indices vary per trial), 21-point SNR grid $\{0.1,\ldots,2.0, 5.0\}$, tFDR = 0.1, MC = 10 |
+| **01** | Single Run | Demonstrates basic T-Rex usage | One low-dimensional and one high-dimensional scenario | $n \in \lbrace150, 5000\rbrace$, $p \in \lbrace300, 1000\rbrace$, $s = 6$, SNR = 1.0, tFDR = 0.1 |
+| **02** | MC: Fixed Support | Studies FDR/TPR over an SNR range for 14 base solvers | Moderate dimension, fixed random support | $n = 300$, $p = 1000$, $s = 10$ (fixed, random indices, seed 24), SNR $\in \lbrace0.1, 0.5, 1, 2, 5\rbrace$, tFDR = 0.1, MC = 200 |
+| **03** | MC: Variable Support | Studies FDR/TPR/L/T when support indices are redrawn per trial | Moderate dimension, variable support indices | $n = 300$, $p = 1000$, $s = 10$ (cardinality fixed, indices vary per trial), 21-point SNR grid $\lbrace0.1,\ldots,2.0, 5.0\rbrace$, tFDR = 0.1, MC = 10 |
 | **04** | MC: L-loop Strategies | Compares the 6 L-loop strategy types (TLARS fixed) | Moderate dimension, random support | $n = 300$, $p = 1000$, $s = 10$, 21-point SNR grid, tFDR = 0.1, MC = 10, 8 strategy rows (incl. SKIPL 5p/10p/20p) |
 | **05** | MC: Dummy Distributions | Compares dummy distribution shapes across 3 base solvers (TLARS/TOMP/TAFS, STANDARD L-loop fixed) | Moderate dimension, random support | $n = 300$, $p = 1000$, $s = 10$, 21-point SNR grid, tFDR = 0.1, MC = 10, 12 distribution rows (Normal … UnifSphere_d5) × 3 solvers (one file pair each) |
 | **06** | Memory-Mapped Single Run | Demonstrates memory-mapped workflows | Larger data and reduced RAM usage | Two scenarios ($n=5000,p=1000$ and $n=1000,p=5000$): in-memory X + D mmap, and full X+D mmap pipeline |
-| **07** | MC: Memory-Mapped | Studies FDR/TPR under memory-mapped execution (TLARS) | Moderate dimension, mmap pipeline | $n = 300$, $p = 1000$, $s = 10$, SNR $\in \{0.1,0.5,1,2,5\}$, MC = 10 (Demo C) / 500 (Demo D), mmap storage on disk |
+| **07** | MC: Memory-Mapped | Studies FDR/TPR under memory-mapped execution (TLARS) | Moderate dimension, mmap pipeline | $n = 300$, $p = 1000$, $s = 10$, SNR $\in \lbrace0.1,0.5,1,2,5\rbrace$, MC = 10 (Demo C) / 500 (Demo D), mmap storage on disk |
 | **08** | MC: Scalability | Reserved for future scalability experiments | Placeholder | To be completed |
 
 ---
@@ -334,7 +334,3 @@ Each demo's `simulation_results/` folder holds machine-generated artifacts only:
 
 - The main T-Rex Selector implementation and methodological background are documented in the parent project.
 - See [TRexSelector/README.md](../../../README.md) for architecture, dependencies, and package-level information.
-
----
-
-**Last updated**: 2026-07-11

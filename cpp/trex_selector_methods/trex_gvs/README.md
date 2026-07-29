@@ -61,11 +61,11 @@ We work with the same Gaussian linear model as the classical T-Rex selector, but
 - $n$: Number of observations, $p$: Number of variables.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$: Design matrix, $\boldsymbol{y} \in \mathbb{R}^n$: Response vector.
 - $\boldsymbol{\beta} \in \mathbb{R}^p$: Regression coefficient vector.
-- $g(j) \in \{1, \dots, G\}$: Group assignment of variable $j$ (the `prior_groups` vector); background/i.i.d. variables
+- $g(j) \in \lbrace1, \dots, G\rbrace$: Group assignment of variable $j$ (the `prior_groups` vector); background/i.i.d. variables
    each receive a unique singleton group ID.
 - $G$ (or $M$): Number of groups.
-- $\mathcal{A} = \{ j : \beta_j \neq 0 \}$: True active-variable support; the corresponding set of **active groups** is
-   $\{ g(j) : j \in \mathcal{A} \}$.
+- $\mathcal{A} = \lbrace j : \beta_j \neq 0 \rbrace$: True active-variable support; the corresponding set of **active groups** is
+   $\lbrace g(j) : j \in \mathcal{A} \rbrace$.
 - $\rho$: Within-group correlation (equicorrelated DGPs), induced through a shared latent factor per group.
 - $Z_{\cdot,k}$: Latent factor shared by group $k$; $\xi_{ij}$: idiosyncratic per-entry term of the design matrix.
 - $\sigma_x$: Idiosyncratic scale in the latent-factor design; $\sigma_{\varepsilon}^2$: noise variance.
@@ -84,7 +84,7 @@ We work with the same Gaussian linear model as the classical T-Rex selector, but
 - **Heterogeneous ARMA** (Demo 07): each block follows a different ARMA specification (AR(1), MA(3), ARMA(2,1)),
   swept over an AR coefficient `ar_coef` instead of $\rho$.
 - **Heavy-tailed** (Demo 05): the same latent-factor construction as the equicorrelated model, but with
-  Student-t(3)/$\sqrt{3}$ (unit-variance) latent factors and noise.
+  $\text{Student-}t(3)/\sqrt{3}$ (unit-variance) latent factors and noise.
 
 ### Signal-to-noise ratio
 
@@ -240,7 +240,3 @@ benchmark as TPR/FDR line plots (vs. SNR or, via `--vs rho`, vs. the within-bloc
 3. Dai, R., & Barber, R. F., "The knockoff filter for FDR control in group-sparse and multitask regression."
    Proceedings of the 33rd International Conference on Machine Learning (ICML), vol. 48, pp. 1851–1859, 2016.
    [DOI-Link](http://proceedings.mlr.press/v48/daia16.pdf)
-
----
-
-**Last updated**: 2026-07-19

@@ -19,10 +19,10 @@ The demo repeats the **Biobank Screen-TRex workflow** ("Algorithm 1") of demo 04
 
 We consider the linear model:
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta} + \boldsymbol{\epsilon},
 \qquad \boldsymbol{\epsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma_{\varepsilon}^2 \boldsymbol{I}_n)
-$$
+```
 
 - $\boldsymbol{y} \in \mathbb{R}^n$ is the response vector.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ is the design matrix.
@@ -33,9 +33,9 @@ $$
 
 The design matrix has **no correlation structure**:
 
-$$
+```math
 X_{ij} \sim \mathcal{N}(0,1) \quad \text{i.i.d.}
-$$
+```
 
 - The active support is drawn uniformly at random *per Monte Carlo trial*, so the results are not tied to
    one support pattern.
@@ -86,7 +86,7 @@ All reported FDR and TPR values are **conditional on routing**: they average onl
 ## The Two Parts
 
 - **Part 1 — single phenotype.** One response per trial, $s = 10$ active variables, SNR sweep over
-   $\{0.1, 0.5, 1, 2, 5\}$, 200 MC trials per grid point.
+   $\lbrace0.1, 0.5, 1, 2, 5\rbrace$, 200 MC trials per grid point.
 - **Part 2 — $q = 5$ phenotypes sharing one $\boldsymbol{X}$.** $s = 5$ active variables per phenotype, the
    same SNR grid and 200 MC trials, hence $5 \times 200 = 1000$ phenotype screenings per SNR level.
 
@@ -125,16 +125,16 @@ Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_p
    screenings with the fallback never invoked.
 - **Conditional error control on the screening routes is good once signal is present.** For
    $\mathrm{SNR} \ge 1$ the realized FDR is $0.074 \to 0.069$ for Ordinary and $0.061 \to 0.050$ for
-   Bootstrap-CI, with TPR reaching $1.000$ for both at $\mathrm{SNR} = 5$. As in demo 04, $\mathrm{SNR} =
-   0.5$ is the weak point: the accepted screenings realize an FDR of $0.196$ (Ordinary) and $0.153$
-   (Bootstrap-CI).
+   Bootstrap-CI, with TPR reaching $1.000$ for both at $\mathrm{SNR} = 5$. As in demo 04,
+   $\mathrm{SNR} = 0.5$ is the weak point: the accepted screenings realize an FDR of $0.196$ (Ordinary) and
+   $0.153$ (Bootstrap-CI).
 - **The fallback's TPR of $0.000$ at $\mathrm{SNR} = 2$ and $5$ is not a failure.** Its usage is $0.0\%$ at
    those points — nothing is routed to it, so the conditional average is over an empty set and prints as
    zero. Where it is used it is the conservative option: at $\mathrm{SNR} = 1$ its realized FDR is $0.015$
    against a target of $0.10$, with a TPR of $0.526$.
-- **The estimates err on the safe side.** Ordinary's estimate settles at $0.095$–$0.120$ against a realized
-   $0.069$–$0.074$ for $\mathrm{SNR} \ge 1$, and Bootstrap-CI's at $0.054$–$0.084$ against a realized
-   $0.050$–$0.061$.
+- **The estimates err on the safe side.** Ordinary's estimate settles at $0.095\text{–}0.120$ against a realized
+   $0.069\text{–}0.074$ for $\mathrm{SNR} \ge 1$, and Bootstrap-CI's at $0.054\text{–}0.084$ against a realized
+   $0.050\text{–}0.061$.
 
 TPR (conditional on routing), FDR (solid = realized, dashed = the procedure's own estimate, with the
 $\lbrack 0.05, 0.15\rbrack$ routing window shaded), and per-method Usage % vs. SNR.
@@ -144,15 +144,15 @@ $\lbrack 0.05, 0.15\rbrack$ routing window shaded), and per-method Usage % vs. S
 ### Part 2 — Five Phenotypes Sharing One Design ($q = 5$, $s = 5$)
 
 - **The fallback dominates, and more signal does not change that.** The classical T-Rex selector handles
-   $85.4\%$–$100.0\%$ of all screenings ($100.0\%$ at $\mathrm{SNR} = 0.1$, $85.7\%$ at $\mathrm{SNR} = 5$),
-   with Ordinary at $2.7\%$–$3.8\%$ and Bootstrap-CI at $8.0\%$–$11.7\%$ for $\mathrm{SNR} \ge 0.5$.
+   $85.4\%\text{–}100.0\%$ of all screenings ($100.0\%$ at $\mathrm{SNR} = 0.1$, $85.7\%$ at $\mathrm{SNR} = 5$),
+   with Ordinary at $2.7\%\text{–}3.8\%$ and Bootstrap-CI at $8.0\%\text{–}11.7\%$ for $\mathrm{SNR} \ge 0.5$.
 - **The rarely-used screening routes are poorly calibrated.** For $\mathrm{SNR} \ge 0.5$ the realized FDR of
-   the accepted screening results is $0.303$–$0.327$ (Ordinary) and $0.309$–$0.314$ (Bootstrap-CI), roughly
-   twice the upper edge of the routing window, against estimates of only $0.179$–$0.195$ and
-   $0.146$–$0.161$. With just $s = 5$ active variables per phenotype a single false selection moves the FDP
+   the accepted screening results is $0.303\text{–}0.327$ (Ordinary) and $0.309\text{–}0.314$ (Bootstrap-CI), roughly
+   twice the upper edge of the routing window, against estimates of only $0.179\text{–}0.195$ and
+   $0.146\text{–}0.161$. With just $s = 5$ active variables per phenotype a single false selection moves the FDP
    a long way, and the estimate does not track it — even though TPR is $1.000$ for both rules from
    $\mathrm{SNR} = 1$ onward.
-- **The fallback remains reliable on the bulk of the traffic.** Its realized FDR is $0.011$–$0.022$ against
+- **The fallback remains reliable on the bulk of the traffic.** Its realized FDR is $0.011\text{–}0.022$ against
    a target of $0.10$, with TPR rising $0.015 \to 1.000$ across the sweep.
 - **Memory mapping changes the footprint, not the statistics.** The Part 2 Ordinary route here reads
    Usage $0.0/3.8/2.7/3.2/2.8\%$, FDR $0.000/0.315/0.326/0.302/0.319$ and estimate
@@ -174,7 +174,3 @@ $\lbrack 0.05, 0.15\rbrack$ routing window shaded), and per-method Usage % vs. S
    Large-Scale Genomics Biobanks.", IEEE Statistical Signal Processing Workshop (SSP), 2023,
     pp. 666–670, IEEE.
     [DOI-Link](https://doi.org/10.1109/SSP53291.2023.10207957)
-
----
-
-**Last updated**: 2026-07-20

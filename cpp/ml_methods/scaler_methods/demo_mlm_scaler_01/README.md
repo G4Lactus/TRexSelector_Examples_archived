@@ -15,28 +15,28 @@ parameters, and scaling on a memory-mapped matrix.
 ## Mathematical setup
 
 Let $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ denote a data matrix with columns
-$\boldsymbol{x}_1, \dots, \boldsymbol{x}_p$.
+$`\boldsymbol{x}_1, \dots, \boldsymbol{x}_p`$.
 
 ### Z-score scaling
 
 For each column $j$, the transformed column is
 
-$$
+```math
 \tilde{\boldsymbol{x}}_j =
 \frac{\boldsymbol{x}_j - \bar{x}_j \mathbf{1}}{s_j},
-$$
+```
 
-where $\bar{x}_j$ is the sample mean and $s_j$ is the stored scale parameter.
+where $`\bar{x}_j`$ is the sample mean and $s_j$ is the stored scale parameter.
 
 ### Lp-norm scaling
 
 With centering enabled, the transformed column is
 
-$$
+```math
 \tilde{\boldsymbol{x}}_j =
 \frac{\boldsymbol{x}_j - \bar{x}_j \mathbf{1}}
 {\lVert \boldsymbol{x}_j - \bar{x}_j \mathbf{1} \rVert_p}.
-$$
+```
 
 The demo explicitly uses both $p =2$ and $p =1$ in memory, and uses the $L_2$ version again in the memory-mapped
 example.
@@ -47,9 +47,9 @@ example.
 
 The first part of the demo generates a dense random matrix with
 
-$$
+```math
 n = 2000, \qquad p = 10000,
-$$
+```
 
 fits three scalers on the same data, and then applies them to separate working copies:
 
@@ -66,9 +66,9 @@ This section is mainly about showing how the scaler interfaces are fit once and 
 The second part tests whether scaling can be numerically reversed after an in-place transform. It generates a random
 matrix with
 
-$$
+```math
 n = 1000, \qquad p = 5000,
-$$
+```
 
 then applies `fit()`, `transform_inplace()`, and `inverse_transform_inplace()` for both `ZScoreScaler` and the
 $L_2$-based `LpNormScaler`.
@@ -82,9 +82,9 @@ interface correctness and numerical reversibility rather than downstream modelin
 
 The third part demonstrates persistence of a fitted scaler. A `ZScoreScaler` is fit on synthetic data with
 
-$$
+```math
 n = 1000, \qquad p = 500,
-$$
+```
 
 saved to disk, loaded back into a fresh scaler object, and then compared through the norms of the differences in stored
 means and scales.
@@ -98,9 +98,9 @@ when training and deployment happen in separate stages.
 
 The fourth part applies scaling to a memory-mapped matrix with
 
-$$
+```math
 n = 20000, \qquad p = 100000.
-$$
+```
 
 The source creates a writable mapped matrix, fills it deterministically, fits an $L_2$-based `LpNormScaler`, performs
 in-place transform and inverse transform operations, and then removes the backing file.
@@ -140,7 +140,3 @@ When reading the console output, focus on these points:
 - The mapped-matrix example uses `LpNormScaler` with $L_2$-norm rather than `ZScoreScaler`.
 - The fallback filenames in the current source are `scaler_test.bin` for serialization and `mmap_matrix.bin` for the
   mapped matrix, unless overridden by compile-time macros such as `TREX_DEMO_SCALER_SER_PATH` and `TREX_DEMO_MMAP_PATH`.
-
----
-
-**Last updated**: 2026-07-08

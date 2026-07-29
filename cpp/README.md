@@ -165,7 +165,3 @@ memory-mapped screening, correlated designs, and biobank-scale pipelines
 #### `trex_spca/`
 
 Sparse PCA with T-Rex. Monte Carlo simulation demo (1 demo).
-
----
-
-Last updated: 2026-07-08

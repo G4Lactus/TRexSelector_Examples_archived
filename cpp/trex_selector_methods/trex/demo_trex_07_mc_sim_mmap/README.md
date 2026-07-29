@@ -12,9 +12,9 @@ Both scenarios use the same high-dimensional configuration:
 
 - **Sample size**: $n = 300$
 - **Number of features**: $p = 1000$
-- **True support**: a set of **10 unique random indices** drawn once from `std::mt19937 rng(24)` (uniform over $\{0, \ldots, p-1\}$), fixed across all MC trials
+- **True support**: a set of **10 unique random indices** drawn once from `std::mt19937 rng(24)` (uniform over $\lbrace0, \ldots, p-1\rbrace$), fixed across all MC trials
 - **True coefficients**: fixed $\beta_j = 1$ (`rnd_coef = false`)
-- **SNR range**: $\{0.1, 0.5, 1.0, 2.0, 5.0\}$
+- **SNR range**: $\lbrace0.1, 0.5, 1.0, 2.0, 5.0\rbrace$
 - **Monte Carlo repetitions**: `num_MC = 200` for both scenarios — the two runs are directly comparable
 - **Base solver**: TLARS only
 - **DGP**: $\mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\epsilon}$, $\boldsymbol{\epsilon} \sim N(0, \sigma^2 I_n)$
@@ -102,7 +102,7 @@ storage pipelines, peaking at only $0.046$ (C) / $0.043$ (D) at $\mathrm{SNR}=1$
 indistinguishable — TPR climbs from $\approx 0.004$ at $\mathrm{SNR}=0.1$ to full recovery ($1.000$ in both) by
 $\mathrm{SNR}=5$.
 
-The two pipelines agree to within **$0.005$ (FDR)** and **$0.009$ (TPR)** at every grid point — the scale of Monte
+The two pipelines agree to within **0.005 (FDR)** and **0.009 (TPR)** at every grid point — the scale of Monte
 Carlo noise at $\mathrm{MC}=200$, not of a systematic effect. This is the result the demo exists to show: memory
 mapping $\mathbf{X}$ and $\mathbf{D}$ is transparent to the selector, so it buys its memory savings without moving
 the statistics. Note the curves are *not* expected to coincide exactly — the two scenarios drive different data
@@ -181,7 +181,3 @@ temporary file, so `simulation_results/data/` keeps only what the demo binary wr
 **Comparison with Demo 06 (single-run mmap):**
 - Demo 06 validates basic mmap correctness (one run per scenario).
 - Demo 07 validates robustness and FDR guarantees over many MC trials.
-
----
-
-**Last updated**: 2026-07-17

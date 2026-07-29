@@ -33,7 +33,7 @@ The sparse $M$-factor model of [demo 01](../demo_trex_spca_01_mc_sim/README.md#d
 \boldsymbol{X} = \boldsymbol{Z}\boldsymbol{V}^\top + \boldsymbol{E}
 ```
 
-- $n = 50$, $p = 100$, $M = 3$ true factors, $\sigma_m \in \{5, 3, 1\}$.
+- $n = 50$, $p = 100$, $M = 3$ true factors, $\sigma_m \in \lbrace5, 3, 1\rbrace$.
 - $p_1 = 10$ active loadings of value $0.9$ per factor, drawn without replacement from a **shared pool** of
    `overlap_pool_size` $= 30$ candidates, so factor supports partially coincide.
 - All methods see the same **center-only** $\boldsymbol{X}$ (covariance-PCA footing).
@@ -77,10 +77,10 @@ Each part varies **one** axis and holds the rest at their defaults (#PCs $= 3$, 
 
 | Part | Axis | Grid |
 | --- | --- | --- |
-| 1 | Number of **extracted** PCs | $\{1, 3, 5, 10, 20, 30, 40, 49\}$ |
-| 2 | SNR (dB) | $\{-10, -7, -5, -3, 0, 3, 5, 7, 10\}$ |
-| 3 | Number of true active loadings $p_1$ | $\{1, 5, 10, 15, 20, 25, 30\}$ |
-| 4 | Target FDR | $\{0.01, 0.05, 0.10, 0.15, \ldots, 0.50\}$ |
+| 1 | Number of **extracted** PCs | $\lbrace1, 3, 5, 10, 20, 30, 40, 49\rbrace$ |
+| 2 | SNR (dB) | $\lbrace-10, -7, -5, -3, 0, 3, 5, 7, 10\rbrace$ |
+| 3 | Number of true active loadings $p_1$ | $\lbrace1, 5, 10, 15, 20, 25, 30\rbrace$ |
+| 4 | Target FDR | $\lbrace0.01, 0.05, 0.10, 0.15, \ldots, 0.50\rbrace$ |
 | 5 | Realized FDR / TPR **heatmaps** over the full target-FDR $\times$ SNR grid | $11 \times 9$ points, PC1 support, two selector responses |
 
 Notes on the grids:
@@ -88,10 +88,10 @@ Notes on the grids:
 - **Part 1 varies only how many components are *extracted*.** The data keeps its $M = 3$ true factors
    throughout, so every component beyond the third is null by construction and can contribute nothing but
    Null EV. That is exactly what makes the panel diagnostic.
-- **Part 1 stops at 49, not at 50.** $\boldsymbol{X}$ is centered, so $\operatorname{rank}(\boldsymbol{X})
-   \leq n - 1 = 49$ and a 50th component carries no variance at all — asking the per-PC selector to regress
-   on that null direction throws outright, because its response vector is constant. 49 is the largest
-   attainable PC count on an $n = 50$ design, not a safety margin.
+- **Part 1 stops at 49, not at 50.** $\boldsymbol{X}$ is centered, so
+   $\operatorname{rank}(\boldsymbol{X}) \leq n - 1 = 49$ and a 50th component carries no variance at all —
+   asking the per-PC selector to regress on that null direction throws outright, because its response vector
+   is constant. 49 is the largest attainable PC count on an $n = 50$ design, not a safety margin.
 - **Part 3 is bounded above by the overlap pool.** Each factor draws its support from a shared pool of 30
    candidates, so $p_1 \leq 30$.
 - **Only the T-Rex variants respond to Part 4.** The two PCA baselines never see `tFDR`; they are reported
@@ -159,15 +159,15 @@ trial, so Part 1 alone costs several times what the other parts cost together.
    Its dashed Sig + Mix decomposition saturates at $107.8\%$ — everything between the solid and dashed
    curves is Null EV. OraclePCA reaches $117.4\%$ and even overtakes the dashed reference (crossover
    between 10 and 20 PCs): it is an oracle only about the support *size* $p_1$, so on the noise directions
-   beyond PC3 its top-$p_1$ thresholding selects mostly null variables ($\approx 26$ of $100$ are active)
+   beyond PC3 its $\text{top-}p_1$ thresholding selects mostly null variables ($\approx 26$ of $100$ are active)
    and the renormalization hands them full weight — the $\approx 10$-point gap above the dashed curve is
    its accumulated Null EV. Knowing the cardinality does not protect against thresholding noise; only the
    FDR-controlled selection, which may return (near-)empty supports on noise components, stays flat: the
-   four T-Rex variants flatten out by three-to-five PCs and stay there ($79.6$–$80.0\%$ `ActiveSet`,
-   $85.5$–$85.7\%$ `Thresholded` at 49), declining to claim variance that is not theirs even when handed
+   four T-Rex variants flatten out by three-to-five PCs and stay there ($79.6\text{–}80.0\%$ `ActiveSet`,
+   $85.5\text{–}85.7\%$ `Thresholded` at 49), declining to claim variance that is not theirs even when handed
    46 components they do not need.
 - **Panel (b) rises with SNR, as in the published Fig. 3(b).** At $-10$ dB the true active columns are
-   dominated by noise that no 3-component method can capture, so everything sits low: $40.6$–$45.8\%$ for
+   dominated by noise that no 3-component method can capture, so everything sits low: $40.6\text{–}45.8\%$ for
    the T-Rex variants, $48.1\%$ for OraclePCA, $72.1\%$ for ordinary PCA — whose head start is exactly its
    Null EV, as the dashed Sig + Mix curve at $51.8\%$ shows. With rising SNR the `Thresholded` variants and
    OraclePCA converge toward the line ($93.0\%$ and $94.5\%$ at $+10$ dB), the `ActiveSet` variants level
@@ -175,7 +175,7 @@ trial, so Part 1 alone costs several times what the other parts cost together.
    curves merge at $98.8\%$ — at high SNR there is hardly any null variance left to harvest.
 - **Panel (c) is non-monotone, and both ends are easy for the wrong reason.** All methods start near
    $100\%$ at $p_1 = 1$ (ordinary PCA at $106.8\%$, again split by its dashed curve at $103.6\%$), sag to a
-   minimum around $p_1 = 15$–$20$ ($74.4\%$ `ActiveSet`, $78.5\%$ `Thresholded`, $80.0\%$ OraclePCA,
+   minimum around $p_1 = 15\text{–}20$ ($74.4\%$ `ActiveSet`, $78.5\%$ `Thresholded`, $80.0\%$ OraclePCA,
    $85.7\%$ ordinary), and recover toward $p_1 = 30$, where the true support fills the entire overlap pool
    and there are few null variables left to miss. The middle of the range is where support selection
    actually matters.
@@ -195,7 +195,7 @@ Read through the conventional denominator, the ranking inverts and the story bec
 variance":
 
 - In panel (a) ordinary PCA rises to exactly $100.0\%$ at 49 PCs — with $n - 1 = 49$ components it spans the
-   whole centered row space and reproduces the data completely. The T-Rex variants saturate at $48$–$52\%$
+   whole centered row space and reproduces the data completely. The T-Rex variants saturate at $48\text{–}52\%$
    after about five components and then stop, which is the same flatness as before seen from the other side:
    they are not adding anything after the true factors are covered.
 - The gap between the two figures at $p_1 = 10$, 49 PCs is the whole argument in two numbers: ordinary PCA
@@ -233,14 +233,14 @@ Part 5 maps the realized FDR and TPR of PC1's support over the **full** (target 
 What the grid shows:
 
 - **Plug-in response: control holds up to the targets this suite actually uses, then breaks everywhere.**
-   At $\mathrm{tFDR} = 0.05$ the realized FDR is $0.04$–$0.10$; at $0.10$ it is $0.08$–$0.16$ (fraying
+   At $\mathrm{tFDR} = 0.05$ the realized FDR is $0.04\text{–}0.10$; at $0.10$ it is $0.08\text{–}0.16$ (fraying
    mildly above target from $+5$ dB up). From $\mathrm{tFDR} = 0.15$ the exceedance is systematic at every
-   SNR — $+0.06$ to $+0.09$ at $0.15$, growing to $+0.12$ to $+0.18$ at $0.50$ (realized $0.62$–$0.68$).
-   The pattern is nearly SNR-independent: this is not a noise effect (SE $\approx 0.02$–$0.03$ per cell).
+   SNR — $+0.06$ to $+0.09$ at $0.15$, growing to $+0.12$ to $+0.18$ at $0.50$ (realized $0.62\text{–}0.68$).
+   The pattern is nearly SNR-independent: this is not a noise effect (SE $\approx 0.02\text{–}0.03$ per cell).
 - **Oracle response: the overshoot largely vanishes — the mechanism is confirmed.** With the true factor
    as response, the realized FDR stays **at or below target through $\mathrm{tFDR} \approx 0.30$ at every
-   SNR** (e.g. $0.06$–$0.10$ against $0.15$, $0.14$–$0.18$ against $0.20$), and even at the loosest targets
-   the residual exceedance is only $+0.03$–$0.04$ ($0.53$–$0.54$ against $0.50$). The bulk of the plug-in
+   SNR** (e.g. $0.06\text{–}0.10$ against $0.15$, $0.14\text{–}0.18$ against $0.20$), and even at the loosest targets
+   the residual exceedance is only $+0.03\text{–}0.04$ ($0.53\text{–}0.54$ against $0.50$). The bulk of the plug-in
    overshoot is therefore a property of the **evaluation mismatch** — a dense-truth regression scored
    against a sparse truth — not of the selector. A small selector-level residual remains at very loose
    targets.
@@ -251,7 +251,7 @@ What the grid shows:
 **Consequences**: At this suite's default $\mathrm{tFDR} = 0.10$ the pipeline is safe across the whole
    SNR range. Loosening the target is a poor trade under factor-model scoring: from $0.10$ to $0.50$ it
    buys about six PEV points (panel (d), `ActiveSet`) while the realized factor-model FDR climbs roughly
-   linearly to $\approx 0.62$–$0.68$.
+   linearly to $\approx 0.62\text{–}0.68$.
 The general lesson is the conditional nature of the guarantee:
  **T-Rex SPCA controls the FDR of the regression it is handed, and that transfers to the factor model
  only insofar as the plug-in PC is a faithful proxy for the factor** (see also demo 01's union-FDR
@@ -272,7 +272,3 @@ The general lesson is the conditional nature of the guarantee:
 3. Zou, H., Hastie, T., & Tibshirani, R., "Sparse Principal Component Analysis.", Journal of Computational
    and Graphical Statistics, vol. 15, no. 2, 2006, pp. 265–286, Taylor & Francis.
    [DOI-Link](https://doi.org/10.1198/106186006X113430)
-
----
-
-**Last updated**: 2026-07-21

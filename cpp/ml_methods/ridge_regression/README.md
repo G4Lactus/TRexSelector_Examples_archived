@@ -19,7 +19,7 @@ Equivalent ridge regression demos are also available in the Python and R package
 Given a design matrix $\boldsymbol{X} \in \mathbb{R}^{n \times p}$, response vector $\boldsymbol{y} \in \mathbb{R}^n$,
 and penalty parameter $\lambda \ge 0$, ridge regression estimates
 
-$$
+```math
 \widehat{\boldsymbol{\beta}}_{\mathrm{ridge}} =
 \arg\min_{\boldsymbol{\beta} \in \mathbb{R}^p}
 \left
@@ -27,7 +27,7 @@ $$
 +
 \lambda \lVert \boldsymbol{\beta} \rVert_2^2
 \right.
-$$
+```
 
 ---
 
@@ -44,7 +44,3 @@ $$
 ```bash
 ./build/debug/bin/ml_methods/ridge_regression/demo_mlm_ridge_01/demo_mlm_ridge_01
 ```
-
----
-
-**Last updated**: 2026-07-01

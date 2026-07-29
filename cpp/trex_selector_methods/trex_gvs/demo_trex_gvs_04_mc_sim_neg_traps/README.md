@@ -16,10 +16,10 @@ Test whether T-Rex+GVS can correctly recover an **active group with negative wit
 
 We consider again the linear model:
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta} + \boldsymbol{\epsilon},
 \qquad \boldsymbol{\epsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma_{\varepsilon}^2 \boldsymbol{I}_n)
-$$
+```
 
 - $\boldsymbol{y} \in \mathbb{R}^n$ is the response vector.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ is the design matrix.
@@ -31,9 +31,9 @@ $$
 Each correlated group is built from a shared latent factor, with one half of the group loading **positively** and
  the other half loading **negatively** on it:
 
-$$
+```math
 X_{ij} = \pm Z_{i,\,g(j)} + \sigma_x\, \xi_{ij}, \qquad \xi_{ij} \sim \mathcal{N}(0,1),
-$$
+```
 
 - **Active group $G_1$** (columns 0–99): positive half (0–49) with $\beta_j = +3$; negative half (50–99), loading
    $-Z_1$, with $\beta_j = -3$.
@@ -71,8 +71,8 @@ and `CV_1SE_CCD` for the $\lambda_2$ selection.
 ## The Sweep
 
 A single **2-D SNR $\times$ $\rho$ grid**, over
-$\mathrm{SNR} \in \{0.2, 0.5, 1, 2, 5\}$ and
-$\rho \in \{0.30, 0.50, 0.70, 0.90, 0.95, 0.99\}$
+$\mathrm{SNR} \in \lbrace0.2, 0.5, 1, 2, 5\rbrace$ and
+$\rho \in \lbrace0.30, 0.50, 0.70, 0.90, 0.95, 0.99\rbrace$
 (with $\sigma_x = \sqrt{(1-\rho)/\rho}$), 200 MC trials per cell.
 
 ---
@@ -129,7 +129,3 @@ FDR cells above the $\mathrm{tFDR} = 0.1$ target are outlined in cyan.
 3. Zou, H., & Hastie, T. (2005). "Regularization and variable selection via the elastic net." *Journal of the Royal
    Statistical Society: Series B (Statistical Methodology)*, 67(2), pp. 301–320.
    [DOI-Link](https://doi.org/10.1111/j.1467-9868.2005.00503.x)
-
----
-
-**Last updated**: 2026-07-19

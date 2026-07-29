@@ -1,12 +1,12 @@
-# T-Solvers: Demos and Validation
+# T-Solvers: Demos
 
 ## Overview
 
-This folder contains demos and validation programs for the **terminating solvers** in `tsolvers/`.
+This folder contains demos for the **terminating solvers** in `tsolvers/`.
 
 These are variable-selection algorithms designed for high-dimensional linear-model problems inside the T-Rex framework. Each solver follows a different path-following, greedy, or pursuit-style strategy, but all share the same terminating principle: instead of computing a full regularization path, they stop early once a prescribed number $T_{\text{stop}}$ of dummy variables has entered the active set.
 
-The demos in this folder run each solver in a standalone way, outside the full T-Rex calibration workflow, so that solver behavior, normalization choices, and serialization can be inspected in isolation.
+The demos run each solver in a standalone way, outside the full T-Rex calibration workflow, so that solver behavior, normalization choices, and serialization can be inspected in isolation.
 
 ---
 
@@ -26,17 +26,6 @@ The demos in this folder run each solver in a standalone way, outside the full T
 | 10 | **T-NCGMP** | [demo_ts_10_tncgmp/](demo_ts_10_tncgmp/README.md) | Norm-corrective generalized matching pursuit |
 | 11 | **T-OLS** | [demo_ts_11_tools/](demo_ts_11_tools/README.md) | Orthogonal least squares |
 | 12 | **T-AFS** | [demo_ts_12_tafs/](demo_ts_12_tafs/README.md) | Adaptive forward stepwise |
-
----
-
-## Validation
-
-In addition to solver demos, this folder also contains heavier validation programs that compare selected C++ solvers against alternative formulations or external reference implementations.
-
-| Folder | Purpose |
-|--------|---------|
-| [validation/validation_ts_01_tenet_aug_comparison/](validation/validation_ts_01_tenet_aug_comparison/README.md) | Equivalence check between Gram-based `TENET_Solver` and augmented-LASSO `TENETAug_Solver` |
-| [validation/validation_ts_02_tlars_tlasso_rcompare/](validation/validation_ts_02_tlars_tlasso_rcompare/README.md) | Cross-language comparison against CRAN `tlars` on sparse-factor-model data |
 
 ---
 
@@ -73,13 +62,11 @@ cmake --build build/debug
 
 ## Running
 
-Run any demo or validation executable from the build tree. For example:
+Run any demo from the build tree. For example:
 
 ```bash
 ./build/debug/bin/tsolvers/demo_ts_01_tlars/demo_ts_01_tlars
 ```
-
-For validation executables, see the corresponding README files for any required reference-data inputs.
 
 ---
 
@@ -100,10 +87,5 @@ tsolvers/
   ├── demo_ts_09_tmp/
   ├── demo_ts_10_tncgmp/
   ├── demo_ts_11_tools/
-  ├── demo_ts_12_tafs/
-  └── validation/
+  └── demo_ts_12_tafs/
 ```
-
----
-
-**Last updated**: 2026-07-08

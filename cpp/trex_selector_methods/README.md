@@ -75,7 +75,3 @@ trex_selector_methods/
   ├── trex_spca/
   └── validation/
 ```
-
----
-
-**Last updated**: 2026-07-21

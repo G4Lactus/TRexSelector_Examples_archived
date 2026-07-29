@@ -10,9 +10,9 @@ Compare the **dummy distributions** of the T-Rex Selector — the distribution f
 
 - **Sample size**: $n = 300$
 - **Number of features**: $p = 1000$
-- **True support**: a random subset of size $s = 10$, **redrawn per trial** (`block_support = false`) by shuffling $\{0, \ldots, p-1\}$ with `std::mt19937(seed + 500000)`, keeping 10 indices and sorting them. A contiguous block support $\{0, \ldots, s-1\}$ is available via the `block_support = true` call, which is compiled but guarded by `if (false)`.
+- **True support**: a random subset of size $s = 10$, **redrawn per trial** (`block_support = false`) by shuffling $\lbrace0, \ldots, p-1\rbrace$ with `std::mt19937(seed + 500000)`, keeping 10 indices and sorting them. A contiguous block support $\lbrace0, \ldots, s-1\rbrace$ is available via the `block_support = true` call, which is compiled but guarded by `if (false)`.
 - **True coefficients**: fixed $\beta_j = 1$ (`rnd_coef = false`)
-- **SNR grid**: 21 values — $\{0.1, 0.2, \ldots, 2.0\}$ plus $5.0$
+- **SNR grid**: 21 values — $\lbrace0.1, 0.2, \ldots, 2.0\rbrace$ plus $5.0$
 - **Monte Carlo repetitions**: `num_MC = 10` trials per solver × distribution × SNR level
 - **DGP**: $\mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\epsilon}$, $\boldsymbol{\epsilon} \sim N(0, \sigma^2 I_n)$, Normal predictors and Normal noise
 - **Base solvers** (outer sweep, one result file pair each):
@@ -31,7 +31,7 @@ Compare the **dummy distributions** of the T-Rex Selector — the distribution f
 
 1. **Normal** — $N(0, 1)$; the reference choice.
 2. **Uniform** — $U(-\sqrt{3}, \sqrt{3})$; bounded, light tails.
-3. **Rademacher** — $\{-1, +1\}$ equiprobable; discrete two-point.
+3. **Rademacher** — $\lbrace-1, +1\rbrace$ equiprobable; discrete two-point.
 4. **StudentT_df3** — heavy tails (df = 3, unit-variance scaled).
 5. **StudentT_df5** — moderately heavy tails (df = 5, unit-variance scaled).
 6. **Laplace** — double exponential; heavier-than-normal tails.
@@ -201,7 +201,3 @@ three per-solver sets plus the comparison grid:
 - Systematic deviations for the dependent UnifSphere rows would illustrate why the exchangeability requirement in `utils_dummygen.hpp` matters.
 
 **Recorded results** (`simulation_results/`, 2026-07-11, num_MC = 10, TLARS + TOMP + TAFS): the FDR-equivalence pattern replicates across all three solver families. For every solver, all twelve distribution rows behave equivalently — the per-distribution mean FDR spread is tiny (TLARS 0.046–0.057, TOMP 0.025–0.035, TAFS 0.024–0.038), TPR curves are statistically indistinguishable and reach 1.0 at SNR 5.0, and even the dependent UnifSphere_d5 rows show no systematic deviation (they yield the *lowest* mean FDR under TOMP) — at this ($n$, $p$, dim) the within-group sphere dependence is too weak to break the calibration after L2 normalization. Isolated FDR exceedances up to ≈0.2 at SNR = 0.2 are 10-trial MC noise on near-empty selections and appear for all rows alike (mirroring Demo 04); from SNR ≥ 0.3 the greedy solvers stay ≤ 0.07 and TLARS ≤ 0.12. The greedy TOMP/TAFS runs (stagnation stop enabled) are systematically more conservative than TLARS (mean FDR ≈ 0.03 vs ≈ 0.05) with a tighter stopping-time range (Avg T ∈ [4, 9] vs [2, 23]).
-
----
-
-**Last updated**: 2026-07-14

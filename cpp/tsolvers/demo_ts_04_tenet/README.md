@@ -17,9 +17,9 @@ T-ENET combines L1-style sparsity with an additional L2 component, making it use
 
 Like the other terminating solvers, T-ENET stops early once a prescribed number $T_{\text{stop}}$ of dummy variables has entered the active set:
 
-$$
+```math
 \hat{\boldsymbol{\beta}}^{(T)} = \mathrm{TENET}(\mathbf{X}, \mathbf{D}, \mathbf{y}; T_{\text{stop}}, \lambda_2).
-$$
+```
 
 In this demo, the solver is constructed with a fixed L2 parameter and then advanced through calls of the form
 
@@ -81,7 +81,7 @@ When reading the console output, focus on the following points:
 - whether the reported cycling ratio stays well behaved,
 - whether the memory-mapped workflow completes successfully and cleans up its temporary files.
 
-For the dedicated equivalence check between the Gram-based T-ENET formulation and the augmented-LASSO formulation, see [validation_ts_01_tenet_aug_comparison](../validation/validation_ts_01_tenet_aug_comparison/README.md).
+For the dedicated equivalence check between the Gram-based T-ENET formulation and the augmented-LASSO formulation, see `validation_ts_01_tenet_aug_comparison` in the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/tsolvers/`).
 
 ---
 
@@ -90,7 +90,3 @@ For the dedicated equivalence check between the Gram-based T-ENET formulation an
 - The examples in this demo use a fixed elastic-net L2 parameter `lambda2 = 0.5`.
 - The serialization example writes a temporary checkpoint file named `tenet_checkpoint.bin` and removes it afterward.
 - The memory-mapped example writes temporary files for $X$, $D$, and $y$, runs T-ENET on those mapped views, and removes those files at the end.
-
----
-
-**Last updated**: 2026-07-08

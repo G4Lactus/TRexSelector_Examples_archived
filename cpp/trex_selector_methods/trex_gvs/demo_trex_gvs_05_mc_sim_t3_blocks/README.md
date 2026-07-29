@@ -15,10 +15,10 @@ Stress-test T-Rex+GVS on non-Gaussian data.
 
 We consider again the linear model, but with heavy-tailed rather than Gaussian noise:
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta} + \sigma_{\varepsilon}\, \boldsymbol{\epsilon},
 \qquad \epsilon_i \sim t(3)/\sqrt{3}
-$$
+```
 
 - $\boldsymbol{y} \in \mathbb{R}^n$ is the response vector.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ is the design matrix.
@@ -31,12 +31,12 @@ $$
 Unlike Demos 01–04, the design matrix uses the **unit-variance** equicorrelated form, parameterized directly by
  $\rho$ rather than through $\sigma_x$:
 
-$$
+```math
 X_{ij} = \sqrt{\rho}\, Z_{i,\,g(j)} + \sqrt{1-\rho}\, \xi_{ij},
 \qquad Z_{\cdot,k},\, \xi_{ij} \sim t(3)/\sqrt{3},
-$$
+```
 
-- Same 4-block geometry as Demo 03: sizes $\{20, 50, 80, 65\}$ (215 grouped columns in total).
+- Same 4-block geometry as Demo 03: sizes $\lbrace20, 50, 80, 65\rbrace$ (215 grouped columns in total).
 - **Blocks 0–2 are active** ($\beta_j = 3$); **block 3 is an inactive heavy-tailed trap** ($\beta_j = 0$).
 - Both the latent factors $Z_{\cdot,k}$ and the within-block perturbations $\xi_{ij}$ are $t(3)/\sqrt{3}$, so the
    heavy tails enter the design matrix as well as the response.
@@ -68,8 +68,8 @@ and `CV_1SE_CCD` for the $\lambda_2$ selection.
 ## The Sweep
 
 A single **2-D SNR $\times$ $\rho$ grid**, over
-$\mathrm{SNR} \in \{0.2, 0.5, 1, 2, 5\}$ and
-$\rho \in \{0.30, 0.50, 0.70, 0.85, 0.90, 0.99\}$, 200 MC trials per cell. Here $\rho$ enters the
+$\mathrm{SNR} \in \lbrace0.2, 0.5, 1, 2, 5\rbrace$ and
+$\rho \in \lbrace0.30, 0.50, 0.70, 0.85, 0.90, 0.99\rbrace$, 200 MC trials per cell. Here $\rho$ enters the
 DGP directly (no $\sigma_x$ reparameterization).
 
 ---
@@ -96,12 +96,12 @@ Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_p
 ## Simulation Results
 
 - Despite the $t(3)$ noise, FDR control holds throughout: **TENET** and **TENET_AUG** (identical here) stay in the
-   $0.07$–$0.09$ band, just under the $\mathrm{tFDR} = 0.1$ target in every cell, with TPR rising from $0.37$ to
+   $0.07\text{–}0.09$ band, just under the $\mathrm{tFDR} = 0.1$ target in every cell, with TPR rising from $0.37$ to
    $0.95$.
 - The heavy tails cost the TENET variants a little power relative to the equivalent Gaussian case (Demo 03) at
    comparable SNR — occasional large outliers make exact group boundaries noisier to detect — but they do not
    compromise FDR control. That is the headline result: heavy tails buy lower TPR, not FDR drift.
-- **TIENET_AUG** is the most conservative of the three within this demo (FDR $0.00$–$0.06$, peak TPR $0.83$ rather
+- **TIENET_AUG** is the most conservative of the three within this demo (FDR $0.00\text{–}0.06$, peak TPR $0.83$ rather
    than $0.95$), and its power collapses entirely in the extreme $\rho = 0.99$ column (TPR $\approx 0.008$, flat in
    SNR), where the within-block columns become nearly collinear.
 - Judged against *its own* behavior on the Gaussian equicorrelated designs (Demos 01–03), though, TIENET_AUG is far
@@ -128,7 +128,3 @@ FDR cells above the $\mathrm{tFDR} = 0.1$ target would be outlined in cyan (none
 3. Zou, H., & Hastie, T. (2005). "Regularization and variable selection via the elastic net." *Journal of the Royal
    Statistical Society: Series B (Statistical Methodology)*, 67(2), pp. 301–320.
    [DOI-Link](https://doi.org/10.1111/j.1467-9868.2005.00503.x)
-
----
-
-**Last updated**: 2026-07-19

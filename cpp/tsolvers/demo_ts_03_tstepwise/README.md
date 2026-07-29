@@ -17,9 +17,9 @@ T-Stepwise is a greedy variable-selection method that, at each step, adds the va
 
 Like the other terminating solvers, T-Stepwise stops early once a prescribed number $T_{\text{stop}}$ of dummy variables has entered the active set:
 
-$$
+```math
 \hat{\boldsymbol{\beta}}^{(T)} = \mathrm{TStepwise}(\mathbf{X}, \mathbf{D}, \mathbf{y}; T_{\text{stop}}).
-$$
+```
 
 In the demo, this is done through calls of the form
 
@@ -89,7 +89,3 @@ Because T-Stepwise uses a greedy residual-correlation rule rather than an equian
 - The first demo uses a lower signal-to-noise ratio and a slightly different default coefficient pattern than the external-normalization and memory-mapped examples, so behavior across sections is not meant to be numerically identical.
 - The serialization example writes a temporary checkpoint file named `tstepwise_checkpoint.bin` and removes it afterward.
 - The memory-mapped example writes temporary files for $X$, $D$, and $y$, runs T-Stepwise on those mapped views, and removes those files at the end.
-
----
-
-**Last updated**: 2026-07-08

@@ -22,9 +22,9 @@ both use fixed $+1$ coefficients (`rnd_coef = false`).
 
 Both scenarios consider the linear model
 
-$$
+```math
 \mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\epsilon}, \quad \boldsymbol{\epsilon} \sim N(0, \sigma^2 I_n)
-$$
+```
 
 and share the same true support and coefficients; only the dimensions differ.
 
@@ -32,7 +32,7 @@ and share the same true support and coefficients; only the dimensions differ.
 
 - $n = 150$ observations
 - $p = 300$ features
-- True support: $\mathcal{S}^* = \{27, 149, 43, 128, 42, 4\}$ ($s = 6$ true actives)
+- True support: $\mathcal{S}^* = \lbrace27, 149, 43, 128, 42, 4\rbrace$ ($s = 6$ true actives)
 - True coefficients: fixed $\beta_j = 1$ for all active variables
 - SNR (linear): $1.0$
 
@@ -47,7 +47,7 @@ and share the same true support and coefficients; only the dimensions differ.
 Both scenarios share a deterministic data seed: `42`, used for a reproducible example.
 
 **Coefficient note**: the `rnd_coef` code path does **not** draw from a uniform distribution — instead it selects
-a fixed hardcoded vector $\{-0.4, -0.25, -0.8, 1.1, 2.5, -1.2\}$ which mimics randomly drawn coefficients.
+a fixed hardcoded vector $\lbrace-0.4, -0.25, -0.8, 1.1, 2.5, -1.2\rbrace$ which mimics randomly drawn coefficients.
 Both runs in `main()` use `rnd_coef = false`, i.e. all coefficients equal $1$.
 
 ---
@@ -131,7 +131,7 @@ Output appears on the console and is simultaneously written to the files above.
 - **FDP** is well controlled: the committed high-dimensional run reports $\text{FDP} = 0.0$ (no false selections).
 - **TPP** at SNR $= 1.0$ is partial in the harder high-dimensional case (the committed run recovers 3 of the 6 actives,
    $\text{TPP} = 0.5$); the easier low-dimensional case recovers more.
-- The **voting grid** spans $\{0.5, 0.55, \ldots, 0.95\}$ and the **R** / **FDP_hat** matrices show how the
+- The **voting grid** spans $\lbrace0.5, 0.55, \ldots, 0.95\rbrace$ and the **R** / **FDP_hat** matrices show how the
    relative-occurrence threshold and dummy multiplier $L$ evolve across the T-loop.
 
 ---
@@ -143,7 +143,3 @@ Output appears on the console and is simultaneously written to the files above.
 - This demo is NOT a Monte Carlo study; results are from a single random seed and should not be interpreted as
    population averages.
 - Compare FDR/TPR with Demos 02–04 for empirical performance over many repetitions.
-
----
-
-**Last updated**: 2026-07-11

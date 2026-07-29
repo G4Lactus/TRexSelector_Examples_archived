@@ -26,9 +26,9 @@ Equivalent memory-mapping functionality is also available in the Python and R pa
 
 A memory-mapped matrix stores its entries in a file on disk and exposes them through a matrix-like interface:
 
-$$
+```math
 \boldsymbol{X}_{\mathrm{mmap}} \in \mathbb{R}^{n \times p}.
-$$
+```
 
 Conceptually, the matrix behaves like a regular numeric matrix, but its storage is file-backed rather than purely
 in-memory. The underlying `MemoryMappedMatrix<Scalar>` template supports any fixed-size scalar type — including real
@@ -103,7 +103,3 @@ memory_mapping/
 - Temporary backing files are created in the system temporary directory and removed automatically.
 - The demo is intended to explain the memory-mapping utility itself, not to benchmark maximum scale production
   performance.
-
----
-
-**Last updated**: 2026-07-09

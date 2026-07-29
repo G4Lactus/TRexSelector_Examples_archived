@@ -87,7 +87,3 @@ hac_clustering/
 - Both demos print their main results to the console.
 - Cross-language correctness checks against R references live in the TRexSelector library test suite
   (`cpp/tests/validation/`), run on demand rather than shipped with these examples.
-
----
-
-**Last updated**: 2026-07-09

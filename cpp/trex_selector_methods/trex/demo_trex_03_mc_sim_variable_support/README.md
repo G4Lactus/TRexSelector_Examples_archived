@@ -10,9 +10,9 @@ Investigate T-Rex selector performance (FDR, TPR, average dummy multiplier $L$, 
 
 - **Sample size**: $n = 300$
 - **Number of features**: $p = 1000$
-- **True support cardinality**: fixed at $s = 10$ on every trial. The support **size does not vary**; only the **indices** change — each trial shuffles $\{0, \ldots, p-1\}$ with `std::mt19937(seed + 500000)`, keeps the first 10, and sorts them.
+- **True support cardinality**: fixed at $s = 10$ on every trial. The support **size does not vary**; only the **indices** change — each trial shuffles $\lbrace0, \ldots, p-1\rbrace$ with `std::mt19937(seed + 500000)`, keeps the first 10, and sorts them.
 - **True coefficients**: fixed $\beta_j = 1$ (`rnd_coef = false`)
-- **SNR grid**: a **21-point grid** — $\{0.1, 0.2, \ldots, 2.0\}$ (step $0.1$) plus $5.0$
+- **SNR grid**: a **21-point grid** — $\lbrace0.1, 0.2, \ldots, 2.0\rbrace$ (step $0.1$) plus $5.0$
 - **Monte Carlo repetitions**: `num_MC = 10` trials per solver × SNR level
 - **DGP**: $\mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\epsilon}$, $\boldsymbol{\epsilon} \sim N(0, \sigma^2 I_n)$, Normal predictors and Normal noise
 
@@ -171,7 +171,3 @@ Upstream this has been reclassified from an unconditional `logWarning` to a verb
 **Comparison with Demo 02:**
 - Demo 02 (fixed support indices) is the baseline.
 - Demo 03 (support indices redrawn per trial, fixed cardinality) tests robustness to support location. Note the smaller MC count (`num_MC = 10`) — averages are noisier than Demo 02's 200 trials.
-
----
-
-**Last updated**: 2026-07-14

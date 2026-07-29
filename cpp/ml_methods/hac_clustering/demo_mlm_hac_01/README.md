@@ -32,11 +32,11 @@ Let
 
 The recovered clustering is evaluated with the Adjusted Rand Index
 
-$$
+```math
 \mathrm{ARI} :=
 \frac{\mathrm{Index} - \mathbb{E}\lbrack\mathrm{Index}\rbrack}
 {\mathrm{MaxIndex} - \mathbb{E}\lbrack\mathrm{Index}\rbrack},
-$$
+```
 
 where $\mathrm{ARI} = 1$ indicates perfect agreement between true and predicted labels.
 
@@ -48,21 +48,21 @@ where $\mathrm{ARI} = 1$ indicates perfect agreement between true and predicted 
 
 In the sample-clustering scenario, each row belongs to one of $K$ clusters and is generated according to
 
-$$
+```math
 X_{ij} = \mu_{z_i} + \sigma_{z_i} \varepsilon_{ij},
 \qquad
 \varepsilon_{ij} \sim \mathcal{N}(0,1).
-$$
+```
 
 Here, $\mu_{z_i}$ is the cluster-specific mean and $\sigma_{z_i}$ is the cluster-specific scale.
 
 ### SP1 Mathematical approach
 
-The goal is to cluster the rows $\boldsymbol{x}_1, \dots, \boldsymbol{x}_n$ using Euclidean distance,
+The goal is to cluster the rows $`\boldsymbol{x}_1, \dots, \boldsymbol{x}_n`$ using Euclidean distance,
 
-$$
+```math
 d(i,i') = \lVert \boldsymbol{x}_i - \boldsymbol{x}_{i'} \rVert_2 .
-$$
+```
 
 A **single-linkage** dendrogram is built with the SLINK algorithm. The dendrogram is then cut to recover $K$ clusters,
 and the predicted labels are compared with the true sample labels using ARI.
@@ -76,14 +76,14 @@ and the predicted labels are compared with the true sample labels using ARI.
 In the variable-clustering scenario, variables are generated in correlated blocks.
 Each variable $j$ belongs to a block $b(j)$, and the entries follow a latent-factor model of the form
 
-$$
+```math
 X_{ij} =
 \mu_{b(j)} +
 \sigma_{b(j)}
 \left(
 \alpha L_{i,b(j)} + \gamma \varepsilon_{ij}
 \right)
-$$
+```
 
 where
 
@@ -98,11 +98,11 @@ This creates blockwise collinearity among variables.
 
 Before correlation-based clustering, each column is standardized by
 
-$$
+```math
 \widetilde{\boldsymbol{x}}_j =
 \frac{\boldsymbol{x}_j - \bar{x}_j \mathbf{1}}
 {\lVert \boldsymbol{x}_j - \bar{x}_j \mathbf{1} \rVert_2}
-$$
+```
 
 so that variables are mean-centered and scaled to unit $\ell_2$-norm.
 
@@ -110,9 +110,9 @@ so that variables are mean-centered and scaled to unit $\ell_2$-norm.
 
 After standardization, variables are clustered using the correlation distance
 
-$$
+```math
 d(j,\ell) = 1 - \left| \mathrm{corr}(\boldsymbol{x}_j, \boldsymbol{x}_\ell) \right|.
-$$
+```
 
 Thus, variables with either strong positive or strong negative correlation are treated as close. The demo applies SLINK
 to this distance structure, builds a single-linkage dendrogram on the variables, and cuts the tree into $K$ groups. The
@@ -138,11 +138,11 @@ This subproblem compares three correlation-based strategies:
 Conceptually, the LSH approximation replaces expensive high-dimensional similarity comparisons by fast hash-based
 surrogates:
 
-$$
+```math
 \mathrm{corr}(\boldsymbol{x}_j, \boldsymbol{x}_\ell)
 \approx
 \widehat{\mathrm{corr}}_{\mathrm{LSH}}(\boldsymbol{x}_j, \boldsymbol{x}_\ell).
-$$
+```
 
 The purpose is to study whether the block structure is still recovered accurately when correlation distances are
 approximated rather than computed exactly.
@@ -170,9 +170,9 @@ principles, including:
 
 In abstract form, HAC iteratively merges two clusters $A$ and $B$ minimizing a linkage criterion
 
-$$
+```math
 d(A,B),
-$$
+```
 
 where the definition of $d(A,B)$ depends on the chosen linkage rule. This subproblem studies how that choice affects
 both accuracy and computational behavior on the same synthetic structure. The comparison here is run under the **exact**
@@ -194,11 +194,11 @@ favorable for approximate hashing.
 The comparison repeats the linkage study of Subproblem 4, but replaces the exact correlation distance with the pure
 $O(1)$ SimHash-style LSH approximation
 
-$$
+```math
 d_{\mathrm{LSH}}(j,\ell)
 \approx
 1 - \left| \mathrm{corr}(\boldsymbol{x}_j, \boldsymbol{x}_\ell) \right|.
-$$
+```
 
 Single (SLINK), complete, average (UPGMA), and weighted average (WPGMA) linkage are each run under this approximation.
 The purpose is to show that, when the block geometry is well separated, the approximate distance still recovers the
@@ -212,17 +212,17 @@ correct structure at a substantially reduced per-distance cost.
 
 Here the variables are generated with a **block-diagonal AR(1) Toeplitz** correlation structure. Each block $k$ is built
 by the stationary recursion
-$\boldsymbol{x}_{j} = \rho_{k}\,\boldsymbol{x}_{j-1} + \sqrt{1 - \rho_{k}^{2}}\,\boldsymbol{\varepsilon}_{j}$ with
-$\boldsymbol{\varepsilon}_{j}$ standard normal, which leaves every column at unit variance. The correlation therefore
+$`\boldsymbol{x}_{j} = \rho_{k}\,\boldsymbol{x}_{j-1} + \sqrt{1 - \rho_{k}^{2}}\,\boldsymbol{\varepsilon}_{j}`$ with
+$`\boldsymbol{\varepsilon}_{j}`$ standard normal, which leaves every column at unit variance. The correlation therefore
 decays *exactly* with the index separation inside a block, and vanishes between blocks:
 
-$$
+```math
 \mathrm{corr}(\boldsymbol{x}_{j}, \boldsymbol{x}_{j + m}) =
 \begin{cases}
 \rho_{k}^{m}, & b(j) = b(j+m) = k, \\
 0, & \text{otherwise},
 \end{cases}
-$$
+```
 
 so a variable is strongly correlated with its immediate neighbors but nearly uncorrelated with distant variables in the
 same block. Each block carries its own decay rate — $\rho_{k} = 0.95,\, 0.90,\, 0.85,\, 0.80,\, 0.75$ — so even the
@@ -257,8 +257,8 @@ When reading the output, focus on the following points:
 - how the linkage rule changes both runtime and clustering agreement.
 
 The same scenarios are also implemented in
-[Python](../../../../Python/ml_methods/hac_clustering/demo_agg_hac_01_in_memory.py) and
-[R](../../../../R/ml_methods/hac_clustering/demo_agg_hac_01_in_memory.R).
+[Python](../../../../Python/ml_methods/hac_clustering/demo_mlm_hac_01/) and
+[R](../../../../R/ml_methods/hac_clustering/demo_mlm_hac_01/).
 
 ---
 
@@ -270,7 +270,3 @@ The same scenarios are also implemented in
   and/or pure $O(1)$ LSH approximation.
 - The synthetic dimensions vary per subproblem (for example, $p$ ranges up to $100{,}000$ variables), so runtimes and
   memory footprints differ across the six parts.
-
----
-
-**Last updated**: 2026-07-09

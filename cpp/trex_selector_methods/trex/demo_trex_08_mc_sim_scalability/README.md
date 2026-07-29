@@ -6,16 +6,16 @@ Characterize **T-Rex selector runtime and memory usage** as $n$ and $p$ scale to
 large sizes, and demonstrate that the selector goes **high-dimensional and
 out-of-core** — into design volumes that exceed physical RAM. Everything runs on
 the **fully memory-mapped pipeline**: every Monte Carlo trial generates its
-$\mathbf{X}$/$\mathbf{y}$ into memory-mapped backing files
+$\mathbf{X}/\mathbf{y}$ into memory-mapped backing files
 (`SyntheticDataMapped` over `memmap::MemoryMappedMatrix`, $\mathbf{X}$ never
 materialized in RAM), and `use_memory_mapping = true` additionally memory-maps the
 internal dummy matrices $\mathbf{D}$ and serializes solver warm-start state to
 disk. The benchmark reports:
 
 - **Runtime scaling** — wall-clock per phase (data generation, `select()`,
-  per-$T$-iteration) as a function of $n$ and $p$
+  $\text{per-}T\text{-iteration}$) as a function of $n$ and $p$
 - **Memory scaling** — resident set size (RSS) after selection, process peak RSS,
-  physical footprint, and the $\mathbf{X}$/$\mathbf{y}$ backing sizes on disk
+  physical footprint, and the $\mathbf{X}/\mathbf{y}$ backing sizes on disk
 - **Solver comparison** — TLARS vs. TOMP vs. TAFS at scale
 - **Selection quality at scale** — FDR, TPR, average $L$, average $T$ as a sanity check
 
@@ -23,11 +23,10 @@ disk. The benchmark reports:
 
 ## The Grid
 
-A 2-D sweep over $n$ and $p$, `num_MC` sequential trials per $(n, p,
-\text{solver})$ (default 10; CLI-settable):
+A 2-D sweep over $n$ and $p$, `num_MC` sequential trials per $(n, p, \text{solver})$ (default 10; CLI-settable):
 
-- $n \in \{1000, 1500, 2000, 5000\}$
-- $p \in \{1000, 5000, 10\,000, 20\,000, 50\,000, 100\,000, 150\,000, 200\,000\}$
+- $n \in \lbrace1000, 1500, 2000, 5000\rbrace$
+- $p \in \lbrace1000, 5000, 10\,000, 20\,000, 50\,000, 100\,000, 150\,000, 200\,000\rbrace$
 
 $\Rightarrow$ 32 grid points × 3 solvers. The logical design volume is
 $[\mathbf{X}\,|\,\mathbf{D}] = n \times (1 + L) \times p \times 8$ bytes with
@@ -47,12 +46,12 @@ the output table.
 SNR is fixed at $1.0$ — it is deliberately **not** a scaling axis here (sweeping
 it only burns time); that sweep belongs to Demos 02–07.
 
-A tiny smoke grid ($n \in \{150, 200\}$, $p \in \{500, 1000\}$) is available via
+A tiny smoke grid ($n \in \lbrace150, 200\rbrace$, $p \in \lbrace500, 1000\rbrace$) is available via
 the `smoke` argument for end-to-end pipeline verification.
 
 ### Memory behaviour
 
-The whole pipeline is memory-mapped, so $\mathbf{X}$/$\mathbf{y}$ live on disk,
+The whole pipeline is memory-mapped, so $\mathbf{X}/\mathbf{y}$ live on disk,
 the dummy matrices $\mathbf{D}$ are mmap-backed, and solver warm-start state is
 serialized between T-loop iterations. The **resident** memory therefore stays
 bounded even at the largest points: measured max RSS is a few GiB while the
@@ -60,9 +59,9 @@ $\mathbf{X}$ backing at the corner is ~8 GiB, most of it reclaimable page cache 
 the touched mmap regions.
 
 The **physical footprint** is a different story, and is why the `Foot_MiB` column
-exists: the per-experiment coefficient-path matrices ($(p + L \cdot p) \times
-\text{path-steps}$, allocated per experiment per T-iteration and never touched
-again) accumulate as cold anonymous heap. At the largest scales this reaches tens
+exists: the per-experiment coefficient-path matrices
+($(p + L \cdot p) \times \text{path-steps}$, allocated per experiment per T-iteration
+and never touched again) accumulate as cold anonymous heap. At the largest scales this reaches tens
 of GiB — macOS's memory compressor swaps it out, so the process does **not** OOM,
 but on systems without generous swap/compression this allocation pattern is the
 scalability limit. It is the main upstream optimization opportunity this benchmark
@@ -84,7 +83,7 @@ The DGP mirrors **Demo 03** (variable support): Normal predictors and Normal noi
   500000)`)
 - **True coefficients**: fixed $\beta_j = 1$ (`rnd_coef = false`)
 - **SNR**: fixed at $1.0$
-- Every trial writes its own mmap-backed $\mathbf{X}$/$\mathbf{y}$
+- Every trial writes its own mmap-backed $\mathbf{X}/\mathbf{y}$
   (`SyntheticDataMapped`), fed to the selector through `Eigen::Map` views and
   removed at end of scope by an RAII `MmapFileGuard` (declared before the data
   object so the mmap handles close before the files are deleted — exception-safe).
@@ -147,7 +146,7 @@ Per $(n, p)$ × solver, averaged/aggregated over the cached trials:
 | `PeakRSS_MiB` | Process peak RSS (running maximum) |
 | `RSS_MiB` | Post-`select()` resident set size |
 | `Foot_MiB` | Physical footprint (anonymous heap incl. compressed/swapped pages) |
-| `X+y_MiB` | $\mathbf{X}$/$\mathbf{y}$ mmap backing-file sizes on disk |
+| `X+y_MiB` | $\mathbf{X}/\mathbf{y}$ mmap backing-file sizes on disk |
 | `FDR` / `TPR` / `Avg_L` / `Avg_T` | Selection-quality sanity metrics |
 
 RSS is read via `mach task_info(MACH_TASK_BASIC_INFO)` (macOS) / `/proc/self/statm`
@@ -241,7 +240,3 @@ summaries are re-derived from the cache after each point. The benchmark sweeps i
 own memory-mapped orphans (`demo08_scalability_*`, `trex_memmap_*`) at startup and
 on exit / SIGINT / SIGTERM (SIGKILL cannot be trapped; the next startup sweep
 reclaims it).
-
----
-
-**Last updated**: 2026-07-23

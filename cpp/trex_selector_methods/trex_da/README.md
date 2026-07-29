@@ -25,11 +25,11 @@ A correctness diagnostic comparing the BT clustering pipeline step-by-step again
 
 DA-TRex uses the same Gaussian linear model as the classical T-Rex selector,
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta} + \boldsymbol{\varepsilon},
 \qquad
 \boldsymbol{\varepsilon} \sim \mathcal{N}(0, \sigma^2 \boldsymbol{I}_n),
-$$
+```
 
 but $\boldsymbol{X}$'s columns are no longer (close to) exchangeable — they follow one of several explicit dependency structures:
 
@@ -58,7 +58,7 @@ Signal-to-noise ratio follows the same convention as elsewhere: $\mathrm{SNR} = 
 
 Same FDR/TPR definitions as throughout this project:
 
-$$
+```math
 \mathrm{FDR}
 =
 \mathbb{E}
@@ -74,7 +74,7 @@ $$
 \frac{|\mathcal{A} \cap \widehat{\mathcal{A}}|}
 {\max\{1, |\mathcal{A}|\}}
 \right].
-$$
+```
 
 See [../validation/trex_da/](../validation/trex_da/README.md) for a **correctness diagnostic** — not a statistical-power study — that compares C++ and R dendrogram heights, group memberships, and selection results on one identical dataset to check they agree, rather than measuring FDR/TPR over many trials.
 
@@ -93,14 +93,14 @@ See [../validation/trex_da/](../validation/trex_da/README.md) for a **correctnes
 
 | # | Name | DA Method | DGP | Key parameters | Status |
 |---|------|-----------|-----|-----------------|--------|
-| **01** | AR(1) | `AR1` | `dgp_ar1` | $n=300,p=1000,s=10,\rho=0.7$; SNR & $\rho$ sweeps + 2D gap×$\rho$ | Real data |
-| **02** | BT + white noise | `BT` | `dgp_ar1_block_white` | $n=300,p_{\text{total}}=1000,M=5,Q=5(p_{ar}=25),\rho=0.7$; linkage×{SNR,$\rho$,Q,M} sweeps | Real data |
-| **03** | BT | `BT` | `dgp_ar1_block` | $n=150,M=5,Q=5(p=25,s=5),\rho=0.7$; linkage×{SNR,$\rho$,Q,M} sweeps | Real data |
-| **04** | BT, heavy-tailed | `BT` | `dgp_block_toeplitz_hvt` | $n=150,M=5,Q=5,\rho=0.8,\nu=3$; Gauss/Heavy × linkage × {SNR,$\rho$,Q,M,tFDR} | Real data |
-| **05** | BT, heavy-tailed + white | `BT` | `dgp_ht_block_white` | $n=150,p_{\text{total}}=500,M=5,Q=5,\rho=0.8,\nu=3$; Gauss/Heavy × linkage × {SNR,$\rho$,Q,M,tFDR} | Real data |
-| **06** | Prior groups (AKG) | `PRIOR_GROUPS` (a priori known groups) | `dgp_groups_toeplitz_leaf` | $n=300,p=1000,s=10$; 3-level groups $\{10,50,250\}$, $\rho=\{0.55,0.25,0.10\}$, $\phi=0.5$ | Real data |
-| **07** | NN + mismatch test | `NN` | `dgp_nn`, `dgp_ar1` | $n=300,p=1000,\kappa=3,\rho=0.7$; SNR sweep + 2D $\kappa\times\rho$ + 2D SNR×$\rho$ on AR(1) data (NN misspecified) | Real data |
-| **08** | Equi | `EQUI` | `dgp_equi` | $n=300,p=1000,s=10$; $\rho$ sweep × SNR $\in\{0.5,1,2,5\}$ | Real data |
+| **01** | AR(1) | `AR1` | `dgp_ar1` | $n=300,p=1000,s=10,\rho=0.7$; SNR & $\rho$ sweeps + 2D gap × $\rho$ | Real data |
+| **02** | BT + white noise | `BT` | `dgp_ar1_block_white` | $n=300,p_{\text{total}}=1000,M=5,Q=5(p_{ar}=25),\rho=0.7$; linkage × {SNR, $\rho$,Q,M} sweeps | Real data |
+| **03** | BT | `BT` | `dgp_ar1_block` | $n=150,M=5,Q=5(p=25,s=5),\rho=0.7$; linkage × {SNR, $\rho$,Q,M} sweeps | Real data |
+| **04** | BT, heavy-tailed | `BT` | `dgp_block_toeplitz_hvt` | $n=150,M=5,Q=5,\rho=0.8,\nu=3$; Gauss/Heavy × linkage × {SNR, $\rho$, Q, M,tFDR} | Real data |
+| **05** | BT, heavy-tailed + white | `BT` | `dgp_ht_block_white` | $n=150,p_{\text{total}}=500,M=5,Q=5,\rho=0.8,\nu=3$; Gauss/Heavy × linkage × {SNR, $\rho$, Q, M,tFDR} | Real data |
+| **06** | Prior groups (AKG) | `PRIOR_GROUPS` (a priori known groups) | `dgp_groups_toeplitz_leaf` | $n=300,p=1000,s=10$; 3-level groups $\lbrace10,50,250\rbrace$, $\rho=\lbrace0.55,0.25,0.10\rbrace$, $\phi=0.5$ | Real data |
+| **07** | NN + mismatch test | `NN` | `dgp_nn`, `dgp_ar1` | $n=300,p=1000,\kappa=3,\rho=0.7$; SNR sweep + 2D $\kappa\times\rho$ + 2D SNR × $\rho$ on AR(1) data (NN misspecified) | Real data |
+| **08** | Equi | `EQUI` | `dgp_equi` | $n=300,p=1000,s=10$; $\rho$ sweep × SNR $\in\lbrace0.5,1,2,5\rbrace$ | Real data |
 
 (A correctness diagnostic previously numbered Demo 09 now lives in [../validation/trex_da/validation_trex_da_01_bt_dendro_diag/](../validation/trex_da/validation_trex_da_01_bt_dendro_diag/README.md).)
 
@@ -214,7 +214,3 @@ matching x-axis. It offers three figure patterns:
 
 - See [../README.md](../README.md) for the category overview of all T-Rex selector variants.
 - See [../trex/README.md](../trex/README.md) for the classical (non-DA) T-Rex selector and shared statistical background.
-
----
-
-**Last updated**: 2026-07-16

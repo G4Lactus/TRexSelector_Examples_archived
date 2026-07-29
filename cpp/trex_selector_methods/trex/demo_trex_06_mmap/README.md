@@ -12,8 +12,8 @@ Each demo function runs twice — once low-dimensional and once high-dimensional
 
 - **Low-dimensional** ($n > p$): $n = 5000$, $p = 1000$
 - **High-dimensional** ($p > n$): $n = 1000$, $p = 5000$
-- **True support**: fixed index set $\mathcal{S}^* = \{27, 149, 398, 420, 4\}$ ($s = 5$)
-- **True coefficients**: fixed $\beta_j = 1$ (`rnd_coef = false`; the `rnd_coef` path uses a fixed hardcoded vector $\{-0.4, -0.25, -0.8, 1.1, 2.5\}$, not a random draw)
+- **True support**: fixed index set $\mathcal{S}^* = \lbrace27, 149, 398, 420, 4\rbrace$ ($s = 5$)
+- **True coefficients**: fixed $\beta_j = 1$ (`rnd_coef = false`; the `rnd_coef` path uses a fixed hardcoded vector $\lbrace-0.4, -0.25, -0.8, 1.1, 2.5\rbrace$, not a random draw)
 - **SNR**: $1.0$
 - **tFDR**: $0.1$
 - Data seed: `58`
@@ -101,7 +101,3 @@ Note: the Demo B mmap backing files `X_mmap.dat` / `y_mmap.dat` are created in t
 **Practical guidance:**
 - Enable mmap when the dummy/solver working set (or $\mathbf{X}$ itself) does not fit comfortably in RAM.
 - Prefer an SSD for the backing files to reduce page-fault latency.
-
----
-
-**Last updated**: 2026-07-08

@@ -78,7 +78,3 @@ Typical usage: `trex_selector_neo.TRexSelector(X, y, tFDR=0.1, trex_control=ctrl
 The C++ library `TRexSelector` is consumed via CMake (`find_package(TRexSelector REQUIRED)`).
 The [cpp/](cpp/) folder is a standalone CMake project; build it with the provided presets
 (see [cpp/README.md](cpp/README.md)) and run the demo executables from `bin/`.
-
----
-
-**Last updated**: 2026-07-27

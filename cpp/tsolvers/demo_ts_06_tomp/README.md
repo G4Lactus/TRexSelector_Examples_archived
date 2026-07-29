@@ -17,9 +17,9 @@ T-OMP is a greedy variable-selection method that repeatedly selects the variable
 
 Like the other terminating solvers, T-OMP stops early once a prescribed number $T_{\text{stop}}$ of dummy variables has entered the active set:
 
-$$
+```math
 \hat{\boldsymbol{\beta}}^{(T)} = \mathrm{TOMP}(\mathbf{X}, \mathbf{D}, \mathbf{y}; T_{\text{stop}}).
-$$
+```
 
 In the demo, this is done through calls of the form
 
@@ -88,7 +88,3 @@ Compared with plain matching pursuit, T-OMP re-orthogonalizes through a least-sq
 - The synthetic data are generated with known support and coefficients, so the selected path can be compared against ground truth.
 - The serialization example writes a temporary checkpoint file named `tomp_checkpoint.bin` and removes it afterward.
 - The memory-mapped example writes temporary files for $X$, $D$, and $y$, runs T-OMP on those mapped views, and removes those files at the end.
-
----
-
-**Last updated**: 2026-07-08

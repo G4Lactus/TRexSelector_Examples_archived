@@ -27,13 +27,13 @@ Let
 
 The synthetic data follow the Gaussian linear model
 
-$$
+```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta}_{\mathrm{true}} + \boldsymbol{\varepsilon},
 \qquad
 \boldsymbol{\varepsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma^2 \boldsymbol{I}_n).
-$$
+```
 
-In the demo, the true coefficient vector is sparse: a fixed number of entries of $\boldsymbol{\beta}_{\mathrm{true}}$
+In the demo, the true coefficient vector is sparse: a fixed number of entries of $`\boldsymbol{\beta}_{\mathrm{true}}`$
 are set to 1, placed at evenly spaced coordinates, while the remaining coefficients are zero.
 
 ---
@@ -63,9 +63,9 @@ partitioned into $K$ folds, the model is fit on $K-1$ folds, and prediction erro
 
 This yields a cross-validated mean squared error curve
 
-$$
+```math
 \mathrm{CV\text{-}MSE}(\lambda),
-$$
+```
 
 from which the demo reports two common choices:
 
@@ -143,8 +143,8 @@ In the memory-mapped scenario, also check that the temporary backing file is cre
 and removed successfully at the end.
 
 The same ridge CV workflow is also implemented in
-[Python](../../../../Python/ml_methods/model_selection/demo_ridge_cv_01.py) and
-[R](../../../../R/ml_methods/model_selection/demo_ridge_cv_01.R).
+[Python](../../../../Python/ml_methods/model_selection/demo_mlm_ms_01_ridge_cv_svd/) and
+[R](../../../../R/ml_methods/model_selection/demo_mlm_ms_01_ridge_cv_svd/).
 
 ---
 
@@ -156,7 +156,3 @@ The same ridge CV workflow is also implemented in
 - The memory-mapped file path is injected through `TREX_DEMO_MMAP_PATH` when provided, with a relative fallback filename
   otherwise.
 - The scratch file is only relevant to the fourth scenario.
-
----
-
-**Last updated**: 2026-07-17

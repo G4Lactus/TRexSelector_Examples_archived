@@ -17,9 +17,9 @@ T-ACGP is a pursuit-style variable-selection method that uses a conjugate-gradie
 
 Like the other terminating solvers, T-ACGP stops early once a prescribed number $T_{\text{stop}}$ of dummy variables has entered the active set:
 
-$$
+```math
 \hat{\boldsymbol{\beta}}^{(T)} = \mathrm{TACGP}(\mathbf{X}, \mathbf{D}, \mathbf{y}; T_{\text{stop}}).
-$$
+```
 
 In the demo, this is done through calls of the form
 
@@ -88,7 +88,3 @@ Conceptually, T-ACGP sits between T-GP and T-OMP: it aims to approximate the ort
 - The synthetic data are generated with known support and coefficients, so the selected path can be compared against ground truth.
 - The serialization example writes a temporary checkpoint file named `tacgp_checkpoint.bin` and removes it afterward.
 - The memory-mapped example writes temporary files for $X$, $D$, and $y$, runs T-ACGP on those mapped views, and removes those files at the end.
-
----
-
-**Last updated**: 2026-07-08

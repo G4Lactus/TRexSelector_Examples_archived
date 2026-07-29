@@ -17,9 +17,9 @@ T-AFS is a forward-selection method with an adaptive decision rule that adjusts 
 
 Like the other terminating solvers, T-AFS stops early once a prescribed number $T_{\text{stop}}$ of dummy variables has entered the active set:
 
-$$
+```math
 \hat{\boldsymbol{\beta}}^{(T)} = \mathrm{TAFS}(\mathbf{X}, \mathbf{D}, \mathbf{y}; T_{\text{stop}}).
-$$
+```
 
 In the demo, this is done through calls of the form
 
@@ -88,7 +88,3 @@ Conceptually, T-AFS is a useful counterpart to plain T-Stepwise because its adap
 - The synthetic data are generated with known support and coefficients, so the selected path can be compared against ground truth.
 - The serialization example writes a temporary checkpoint file and removes it afterward.
 - The memory-mapped example writes temporary files for $X$, $D$, and $y$, runs T-AFS on those mapped views, and removes those files at the end.
-
----
-
-**Last updated**: 2026-07-08

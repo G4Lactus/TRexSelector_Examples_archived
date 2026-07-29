@@ -10,9 +10,9 @@ Compare the **L-loop strategies** of the T-Rex Selector — the different mechan
 
 - **Sample size**: $n = 300$
 - **Number of features**: $p = 1000$
-- **True support**: a random subset of size $s = 10$, **redrawn per trial** (`block_support = false`) by shuffling $\{0, \ldots, p-1\}$ with `std::mt19937(seed + 500000)`, keeping 10 indices and sorting them. A contiguous block support $\{0, \ldots, s-1\}$ is available via the `block_support = true` call, which is compiled but guarded by `if (false)`.
+- **True support**: a random subset of size $s = 10$, **redrawn per trial** (`block_support = false`) by shuffling $\lbrace0, \ldots, p-1\rbrace$ with `std::mt19937(seed + 500000)`, keeping 10 indices and sorting them. A contiguous block support $\lbrace0, \ldots, s-1\rbrace$ is available via the `block_support = true` call, which is compiled but guarded by `if (false)`.
 - **True coefficients**: fixed $\beta_j = 1$ (`rnd_coef = false`)
-- **SNR grid**: 21 values — $\{0.1, 0.2, \ldots, 2.0\}$ plus $5.0$
+- **SNR grid**: 21 values — $\lbrace0.1, 0.2, \ldots, 2.0\rbrace$ plus $5.0$
 - **Monte Carlo repetitions**: `num_MC = 200` trials per strategy × SNR level
 - **DGP**: $\mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\epsilon}$, $\boldsymbol{\epsilon} \sim N(0, \sigma^2 I_n)$, Normal predictors and Normal noise
 - **Base solvers** (outer sweep, one result-file pair each): **TLARS** (equiangular LARS path; stagnation stop AUTO-resolves to *disabled*), **TOMP** (greedy orthogonal matching pursuit; stagnation stop *enabled*), **TAFS** (greedy adaptive forward selection, `rho_afs = 0.3`; stagnation stop *enabled*) — the same three families as demo 05. TAFS is the only one with a non-zero `rho_afs`, so the figures label it `TAFS (rho = 0.3)`
@@ -239,7 +239,3 @@ multi-hour/overnight run. Once the three CSVs exist, render every figure with
 - SKIPL trades adaptivity for a fixed, larger dummy budget — and, as this demo shows, an over-large fixed budget can break FDR control. It is a convenience/speed knob, not a drop-in replacement for the calibrated L-loop.
 
 This C++ demo is based on `R/trex_selector_methods/trex/demo_trex_04_mc_sim_lloop_strategies.R`, and extends it: the R version fixes the base solver at TLARS, whereas the C++ version sweeps TLARS / TOMP / TAFS to test the LARS-specificity of the SKIPL overshoot.
-
----
-
-**Last updated**: 2026-07-14

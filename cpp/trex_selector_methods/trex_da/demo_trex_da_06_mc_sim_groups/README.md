@@ -8,7 +8,7 @@ The data-generating process is a three-level nested latent-factor model with a n
 Toeplitz leaf layer.
 Common setup: $n=300$, $p=1000$, $s=10$, `Random` support, $\mathrm{tFDR}=0.2$, $K=20$ random
 experiments, $\mathrm{MC}=200$ per grid point; solvers TLARS / TAFS / TOMP; SNR sweep
-$\mathrm{SNR} \in \{0.1, 0.2, 0.5, 1, 2, 5\}$.
+$\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 1, 2, 5\rbrace$.
 The greedy solvers use *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for TAFS/TOMP, `0` for
 TLARS); see `Exchangeable_Tie_Breaking_DA_TRex.md` in the TRex_Research documentation.
 TAFS additionally runs with its AFS correlation parameter `rho_afs = 0.3` (`0` for TLARS/TOMP), which
@@ -54,11 +54,11 @@ power, not a different failure mode. The figures label the method `TREX-DA+AKG: 
 
 Each predictor is a sum of nested latent factors plus a correlated leaf term,
 
-$$
+```math
 X_{i,j} = \sum_{x=1}^{L-1} \sqrt{\rho_x - \rho_{x+1}}\; f_{g_x(j)}
         + \sqrt{\rho_0 - \rho_1}\; u_{g_0(j),\,j}
         + \sqrt{1-\rho_0}\;\eta_{i,j},
-$$
+```
 
 where the coarser levels $x \geq 1$ use one standard-normal latent factor per group, and the finest
 level ($x = 0$) uses a **Toeplitz-correlated leaf block** — within each finest group the leaf
@@ -67,7 +67,7 @@ so even the members of a finest-level group are *not* exchangeable.
 
 - **Three nested grouping levels** over $p = 1000$: level 1 = groups of $10$ ($100$ groups),
   level 2 = groups of $50$ ($20$ groups), level 3 = groups of $250$ ($4$ groups).
-- **Cumulative correlation masses** (fine → coarse): $\rho = \{0.55, 0.25, 0.10\}$ — a variable
+- **Cumulative correlation masses** (fine → coarse): $\rho = \lbrace0.55, 0.25, 0.10\rbrace$ — a variable
   shares $55\%$ of its variance with its group of 10, $25\%$ with its group of 50, $10\%$ with its
   group of 250.
 - Support: $s = 10$ active variables drawn by the `Random` policy per trial, amplitude from the
@@ -102,9 +102,9 @@ The figure (PNG/PDF + interactive Plotly HTML) goes to `simulation_results/plots
   (dropping to $\approx 0.06$ at high SNR) with TPR up to $0.988$; TAFS — which violated at
   $\mathrm{SNR}=0.5$ under the old raw-group deflation ($0.211$) — is now controlled at every grid
   point (max $0.181$) with TPR up to $0.966$.
-- **TLARS remains the outlier of the suite**: FDR $\approx 0.37$–$0.40$ from $\mathrm{SNR}=0.5$ on
+- **TLARS remains the outlier of the suite**: FDR $\approx 0.37\text{–}0.40$ from $\mathrm{SNR}=0.5$ on
   (vs. the $\mathrm{tFDR}=0.2$ target), with TPR $\approx 0.84$. Both axes moved *up* relative to
-  the old raw-group deflation (FDR $0.33$–$0.35$, TPR capped at $0.80$): the tight neighbourhoods
+  the old raw-group deflation (FDR $0.33\text{–}0.35$, TPR capped at $0.80$): the tight neighbourhoods
   deflate actives less, which buys power but also stops masking part of the LARS shadow leak.
 - The BT reference run (see Setup) shows the same TLARS FDR on this DGP with *less* power — the
   residual violation is a property of the shared BT deflation machinery under LARS-type occurrence
@@ -119,9 +119,9 @@ The figure (PNG/PDF + interactive Plotly HTML) goes to `simulation_results/plots
 With the constrained sub-clustering, the deflation operates on tight, data-driven neighbourhoods
 inside the true groups — the structure the nearest-partner penalty
 
-$$
+```math
 \Psi_j = \frac{1}{2 - \min_{j' \in \mathrm{Gr}(j)} |\Phi_j - \Phi_{j'}|}
-$$
+```
 
 was designed for. What it *cannot* repair is the penalty's **pairwise symmetry**: it deflates a
 shadow and its nearest neighbour (typically the true active) by the same factor, leaving their
@@ -150,7 +150,3 @@ nearest-partner) — the one §7 candidate the constrained sub-clustering does n
 (b) sweep $\rho_1$ toward $0.9$ — TLARS should *recover* as the fine groups approach
 exchangeability and mutual deflation kicks in; (c) log per-trial occurrence histograms per solver
 to verify the "intermediate shadow occurrence" picture directly.
-
----
-
-**Last updated**: 2026-07-17

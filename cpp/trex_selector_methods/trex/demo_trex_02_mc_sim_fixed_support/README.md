@@ -13,10 +13,10 @@ This is the foundational empirical validation demo for the classical T-Rex algor
 - **Sample size**: $n = 300$
 - **Number of features**: $p = 1000$
 - **True support**: a set of **10 unique random indices** drawn once (before the MC loop) from
-  `std::mt19937 rng(24)` via a uniform distribution over $\{0, \ldots, p-1\}$; the same support
+  `std::mt19937 rng(24)` via a uniform distribution over $\lbrace0, \ldots, p-1\rbrace$; the same support
    is reused across every solver, SNR level, and MC trial. It is **not** the first 10 features.
 - **True coefficients**: fixed $\beta_j = 1$ (`rnd_coef = false`)
-- **SNR range**: $\{0.1, 0.5, 1.0, 2.0, 5.0\}$
+- **SNR range**: $\lbrace0.1, 0.5, 1.0, 2.0, 5.0\rbrace$
 - **Monte Carlo repetitions**: `num_MC = 200` trials per solver × SNR level
 - **DGP**:
   $\mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\epsilon}$, $\boldsymbol{\epsilon} \sim N(0, \sigma^2 I_n)$
@@ -223,7 +223,3 @@ The MC loop runs 200 trials × 5 SNR levels × 14 solvers, so wall-clock time de
 - Baseline validation of the algorithm implementation.
 - Comparison of base solvers within the T-Rex framework.
 - Parameter tuning (varying tFDR, K, stagnation window).
-
----
-
-**Last updated**: 2026-07-11
