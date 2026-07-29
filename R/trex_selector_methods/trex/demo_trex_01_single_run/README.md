@@ -39,5 +39,3 @@ Rscript R/trex_selector_methods/trex/demo_trex_01_single_run/demo_trex_01_single
 
 Output is console-only (no result files are written). The script sources the shared
 `../../support_generators.R` and `../trex_sim_utils.R`.
-
-**Last updated**: 2026-07-08

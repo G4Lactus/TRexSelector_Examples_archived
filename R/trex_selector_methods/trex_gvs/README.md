@@ -115,7 +115,3 @@ The optional first argument sets the number of parallel worker cores (default 6)
 The `run_part_*` flags at the top of each file enable or disable individual
 parts. These are full Monte Carlo simulations (200–500 trials on n = 200,
 p = 500); reduce `num_MC` / grid sizes for a quick smoke run.
-
----
-
-**Last updated**: 2026-07-08

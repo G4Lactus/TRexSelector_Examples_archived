@@ -45,5 +45,3 @@ the shared `../../simulation_utils.R` + `../../support_generators.R`.
 - This directly tests robustness to model misspecification: NN assumes correlation vanishes beyond kappa columns, while AR(1) correlation decays but never truly reaches zero, so some residual correlation should leak through as extra false discoveries relative to Demo 01's matched AR1-on-AR1 results.
 - Read side-by-side with Demo 01 (same DGP, correctly-specified AR1) and Demo 03 (correctly-specified NN, different DGP) to gauge how much of the benefit comes from having exactly the right dependency model vs. an approximately reasonable one.
 - If DA-NN performs nearly as well as DA-AR1 here, the method is reasonably robust to this mismatch; a large gap would indicate sensitivity to matching the true dependency structure.
-
-**Last updated**: 2026-07-08

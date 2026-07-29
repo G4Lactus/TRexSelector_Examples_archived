@@ -45,5 +45,3 @@ Output is console-only (no result files are written); the `run_part_*` flags at 
 - EN and EN+AUG should track each other closely with FDP near the `tFDR = 0.1` target and TPP reaching near-complete recovery at moderate SNR — the sign-flipped active group is still identified as one group via the (unsigned) correlation-based HAC step, and both traps should be excluded.
 - IEN is expected to stay conservative here (low FDP, slowly rising TPP), similar to the uniformly-positive-correlation scenarios; the sign flips alone do not change IEN behavior much.
 - The two spatially separated traps are a stronger test of false-group exclusion than a single trap — watch the FP autopsy and whether FDP creeps up with SNR.
-
-**Last updated**: 2026-07-08

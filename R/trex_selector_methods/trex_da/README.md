@@ -103,7 +103,3 @@ Rscript R/trex_selector_methods/trex_da/demo_trex_da_01_ar1/demo_trex_da_01_ar1.
 Scripts resolve their own directory, so they run from any working directory.
 Several demos gate individual parts behind `if (FALSE)` / run flags — open the
 file and enable the parts you want. Each demo folder has its own `README.md`.
-
----
-
-**Last updated**: 2026-07-08

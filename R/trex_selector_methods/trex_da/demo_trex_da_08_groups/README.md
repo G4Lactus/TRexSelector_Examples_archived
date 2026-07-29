@@ -44,5 +44,3 @@ the shared `../../simulation_utils.R` + `../../support_generators.R`.
 - The three-level nested dependency structure is genuinely harder for DA-TRex to control than the single-level structures in Demos 01-07, so realized FDR can overshoot the tFDR=0.2 target more than elsewhere in this suite.
 - Because prior groups are supplied directly rather than HAC-discovered, any residual FDR inflation reflects genuine difficulty in the underlying multi-level correction, not a clustering-quality confound — which differentiates Demo 08 from the BT-based Demos 04-07.
 - The demo currently exercises only the SNR sweep; extending it with rho-level or group-size sweeps (analogous to Demos 04-07's Q/M sweeps) would help clarify which aspect of the nested structure drives the elevated FDR.
-
-**Last updated**: 2026-07-08

@@ -38,5 +38,3 @@ and a tidy `.csv` (header `solver,metric,snr,value`, with `FDR`/`TPR`/`AvgL`/`Av
 rows), stem `demo_trex_03_mc_sim_variable_support_results_n300_p1000_stagnation_window_5`.
 The script sources `../../support_generators.R`, `../../simulation_utils.R`, and
 `../trex_sim_utils.R`.
-
-**Last updated**: 2026-07-08

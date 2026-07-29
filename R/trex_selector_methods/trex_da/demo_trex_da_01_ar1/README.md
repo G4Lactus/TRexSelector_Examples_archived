@@ -43,5 +43,3 @@ the shared `../../simulation_utils.R` + `../../support_generators.R`.
 - The AR1 correction substantially reduces FDR relative to the classical (no-DA) T-Rex on the same correlated data, at a real TPR cost as SNR grows since some correlated neighbors of true positives are actively excluded.
 - The 2D gap x rho study is the key diagnostic: once active variables sit closer together than the kappa-boundary implied by rho, they fall inside each other's correction windows and TPP collapses. This is a structural property, not a bug.
 - Comparing CappedSpread vs Random support shows whether deterministic even spacing behaves differently from random placement at the same nominal spacing.
-
-**Last updated**: 2026-07-08

@@ -45,5 +45,3 @@ the shared `../../simulation_utils.R` + `../../support_generators.R`.
 - FDR stays broadly near the tFDR=0.2 target while TPR climbs to a plateau (rather than reaching ~1.0 as in the unblocked AR(1) case), reflecting that recovering every one of the M active blocks consistently is harder than recovering isolated active variables.
 - The Q and M sweeps are the most novel diagnostics: as block size Q or block count M grows the problem becomes harder, so check whether TPR degrades gracefully or drops sharply beyond some threshold.
 - The linkage sweep answers a practical question for BT users: does single/complete/average linkage materially change FDR/TPR here, or is performance robust to that choice?
-
-**Last updated**: 2026-07-08

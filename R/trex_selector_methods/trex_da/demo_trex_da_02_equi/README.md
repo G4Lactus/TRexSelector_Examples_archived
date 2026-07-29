@@ -42,5 +42,3 @@ the shared `../../simulation_utils.R` + `../../support_generators.R`.
 - Because equicorrelation ties every column to one shared factor, expect DA-EQUI to behave qualitatively like the AR(1) case (Demo 01): reduced FDR vs. base T-Rex at some TPR cost, but the effect should be more uniform across variables.
 - The rho sweep isolates how the strength of the shared factor drives selection difficulty: at rho=0 the design is effectively independent, and the correction has little to do.
 - The SNR sweep shows the usual pattern of TPR rising toward a plateau while the DA correction keeps FDR near the tFDR=0.2 target.
-
-**Last updated**: 2026-07-08

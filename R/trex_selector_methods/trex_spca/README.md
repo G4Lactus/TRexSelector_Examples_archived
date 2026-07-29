@@ -17,17 +17,18 @@ The single demo in this folder compares T-Rex SPCA against two PCA baselines on 
 
 ## Statistical model and notation
 
-$$
+```math
 \boldsymbol{X} = \boldsymbol{Z}\boldsymbol{V}^\top + \boldsymbol{E},
-$$
+```
 
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$: centered observation matrix.
-- $\boldsymbol{Z} \in \mathbb{R}^{n \times M}$: true latent factor scores, column $m$ drawn $\mathcal{N}(0, \sigma_m^2)$ with decreasing factor strength $\sigma_m \in \{5, 3, 1\}$ (falling back to $1$ for $M > 3$).
+- $\boldsymbol{Z} \in \mathbb{R}^{n \times M}$: true latent factor scores, column $m$ drawn $\mathcal{N}(0, \sigma_m^2)$ with decreasing factor strength $\sigma_m \in \lbrace5, 3, 1\rbrace$ (falling back to $1$ for $M > 3$).
 - $\boldsymbol{V} \in \mathbb{R}^{p \times M}$: true sparse loading matrix; each column has exactly `p1` nonzero entries (value $0.9$), drawn without replacement from a shared candidate pool of size `overlap_pool_size` — so different factors' active sets can overlap.
 - $\boldsymbol{E} \in \mathbb{R}^{n \times p}$: i.i.d. Gaussian noise, scaled so that the realized signal-to-noise ratio matches a target value **in decibels**,
-  $$
-  \mathrm{SNR}_{\mathrm{dB}} = 10 \log_{10}\!\left(\frac{\mathrm{Var}(\boldsymbol{Z}\boldsymbol{V}^\top)}{\mathrm{Var}(\boldsymbol{E})}\right).
-  $$
+
+```math
+\mathrm{SNR}_{\mathrm{dB}} = 10 \log_{10}\!\left(\frac{\mathrm{Var}(\boldsymbol{Z}\boldsymbol{V}^\top)}{\mathrm{Var}(\boldsymbol{E})}\right).
+```
 
 All methods are evaluated on the same $\boldsymbol{X}$ after a shared **center-only** preprocessing step (mean subtraction, no column scaling — a covariance-PCA footing), so that OrdPCA, OraclePCA, and T-Rex SPCA are compared on equal preprocessing. The column scales must **not** be normalized: in this factor model the amplitude signal lives in the column variances, and z-scoring the columns (correlation PCA) destroys it — measured effect at $-10$ dB: T-Rex SPCA FDR degrades from $\approx 0.13$ to $\approx 0.53$ (see the C++ `validation_trex_spca_06_handrolled_comparison`).
 
@@ -47,7 +48,7 @@ All methods are evaluated on the same $\boldsymbol{X}$ after a shared **center-o
 
 ## Statistical targets
 
-$$
+```math
 \mathrm{FDR}
 =
 \mathbb{E}
@@ -63,9 +64,9 @@ $$
 \frac{|\mathcal{S}_1 \cap \widehat{\mathcal{S}}_1|}
 {\max\{1, |\mathcal{S}_1|\}}
 \right],
-$$
+```
 
-where $\mathcal{S}_1$ is PC1's true active loading support and $\widehat{\mathcal{S}}_1$ its estimated counterpart (both **1-based** in R). **Ordinary PCA** trivially achieves $\mathrm{TPR}=1$ and $\mathrm{FDR}\approx(p-p_1)/p$ since it retains all $p$ loadings — it is a non-sparse reference point, not a genuine competitor on these two metrics. **Oracle PCA** (knows the true support cardinality $p_1$) provides an upper bound on what any data-driven sparse method could achieve.
+where $`\mathcal{S}_1`$ is PC1's true active loading support and $`\widehat{\mathcal{S}}_1`$ its estimated counterpart (both **1-based** in R). **Ordinary PCA** trivially achieves $\mathrm{TPR}=1$ and $\mathrm{FDR}\approx(p-p_1)/p$ since it retains all $p$ loadings — it is a non-sparse reference point, not a genuine competitor on these two metrics. **Oracle PCA** (knows the true support cardinality $p_1$) provides an upper bound on what any data-driven sparse method could achieve.
 
 ---
 
@@ -119,9 +120,9 @@ The demo has **real committed output** — a single SNR point ($-10$ dB), `num_M
 
 - **OrdPCA**'s FDR $\approx 0.95$ is the expected trivial artifact of selecting all $p=100$ loadings (true support is only $p_1=5$) — not a meaningful comparison point.
 - **OraclePCA** achieves near-perfect recovery (it is told the true support size); its PEV ($0.123$) is the reference for how much variance the true sparse signal explains, independent of any selection procedure.
-- All four **T-Rex SPCA** variants recover PC1's support almost perfectly (TPR $\approx 1.0$) with FDR close to the $\mathrm{tFDR}=0.10$ target. The realized FDR ($\approx 0.13$–$0.14$) sits $\approx 0.03$ above the target and the legacy CRAN R reference ($0.100$ at this point) — the long-known residual gap between the C++ core and the CRAN R implementation, investigated by the cross-check programs in the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/trex_selector_methods/trex_spca/`); the C++ `validation_trex_spca_06_handrolled_comparison` confirms it is not a `TRexSPCASelector` artifact.
+- All four **T-Rex SPCA** variants recover PC1's support almost perfectly (TPR $\approx 1.0$) with FDR close to the $\mathrm{tFDR}=0.10$ target. The realized FDR ($\approx 0.13\text{–}0.14$) sits $\approx 0.03$ above the target and the legacy CRAN R reference ($0.100$ at this point) — the long-known residual gap between the C++ core and the CRAN R implementation, investigated by the cross-check programs in the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/trex_selector_methods/trex_spca/`); the C++ `validation_trex_spca_06_handrolled_comparison` confirms it is not a `TRexSPCASelector` artifact.
 - The four T-Rex variants are statistically indistinguishable from each other at this one data point; no solver/mode conclusion should be drawn from a single SNR level. The Thresholded variants' slightly higher PEV is the one systematic difference.
-- The C++ counterpart's committed table (same configuration, C++ RNG streams) agrees within Monte Carlo noise: OrdPCA 0.9500/1.0000/0.2021, OraclePCA 0.0060/0.9940/0.1241, T-Rex FDR $\approx 0.123$–$0.131$, TPR $\approx 0.996$–$0.997$; likewise Python (T-Rex FDR $\approx 0.132$–$0.136$). Exact numbers cannot match across languages because the data RNG streams differ.
+- The C++ counterpart's committed table (same configuration, C++ RNG streams) agrees within Monte Carlo noise: OrdPCA 0.9500/1.0000/0.2021, OraclePCA 0.0060/0.9940/0.1241, T-Rex FDR $\approx 0.123\text{–}0.131$, TPR $\approx 0.996\text{–}0.997$; likewise Python (T-Rex FDR $\approx 0.132\text{–}0.136$). Exact numbers cannot match across languages because the data RNG streams differ.
 
 > **History note (z-scoring episode, fixed 2026-07-08)**: an earlier version of this pipeline z-score-standardized $\boldsymbol{X}$, which destroyed the factor amplitude signal and inflated the measured T-Rex FDR to $\approx 0.53$ at this same nominal SNR; the C++ `validation_trex_spca_06_handrolled_comparison` isolated the cause and the pipeline is back to center-only. Like the C++ `main()`, the R demo currently exercises a single SNR value ($-10$ dB, "TEMP fast-validation") with `num_MC = 200`. Trial-for-trial reproduction is intentionally impossible: each trial's **data** is drawn from a deterministic seed, but the per-trial dummies use hardware entropy (selector `seed = -1L`), as required for a valid Monte Carlo FDR estimate; re-runs reproduce the table to within MC noise. See the demo's own [README.md](demo_trex_spca_01_mc_sim/README.md) for detail.
 
@@ -157,7 +158,3 @@ The R↔C++ cross-check material that used to live in this folder — `demo_trex
 
 - See [../README.md](../README.md) for the category overview of all T-Rex selector variants.
 - See [../trex_gvs/README.md](../trex_gvs/README.md) for the shared T-Rex+GVS elastic-net background (`gvs_type`, `en_solver`, `lambda2_method`).
-
----
-
-**Last updated**: 2026-07-08

@@ -44,5 +44,3 @@ the shared `../../simulation_utils.R` + `../../support_generators.R`.
 - Because NN correlation has a hard cutoff at distance kappa, DA-NN's correction is most effective when active variables are spaced further apart than kappa, analogous to Demo 01's gap-vs-kappa story but with a sharp rather than decaying profile.
 - The kappa sweep (Part 4) and 2D kappa x rho sweep (Part 5) are the most informative views: as kappa grows the effective correlation neighborhood widens, and DA-NN needs progressively wider correction windows with a corresponding TPR cost.
 - The SNR x rho sweep (Part 6) probes whether stronger signal can rescue the selector when the correlation geometry is unfavourable (high rho, densely packed actives).
-
-**Last updated**: 2026-07-08

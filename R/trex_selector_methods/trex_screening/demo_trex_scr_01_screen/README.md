@@ -37,5 +37,3 @@ Runs from any working directory; the `run_part_*` flags at the top toggle indivi
 - The single runs sanity-check that Screen-TRex runs end-to-end and returns a sensible selection at a comfortable SNR of 5 before looking at aggregate MC behavior.
 - In the recorded 60-run sweep, Ordinary FDR falls from ~0.47 at SNR 0.01 to ~0.06 for SNR >= 1, with TPR rising from near zero to 1.00 at SNR 5; the Estimated FDR tracks the realized FDR reasonably, sitting somewhat above it at high SNR (~0.09 vs. ~0.06).
 - Bootstrap-CI is the more conservative rule throughout: lower FDR (~0.03–0.05 at SNR >= 1) but a clear TPR cost (0.40 at SNR 1 and 0.88 at SNR 5, vs. 0.81 and 1.00 for Ordinary). It is also slower per run due to the bootstrap replicates.
-
-**Last updated**: 2026-07-08

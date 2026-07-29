@@ -40,5 +40,3 @@ Results are written to this demo's own `simulation_results/` folder as a `.txt` 
 and a tidy `.csv` (header `solver,metric,snr,value`), stem
 `demo_trex_02_mc_sim_fixed_support_results_n300_p1000_stagnation_window_7`. The script
 sources `../../support_generators.R`, `../../simulation_utils.R`, and `../trex_sim_utils.R`.
-
-**Last updated**: 2026-07-08

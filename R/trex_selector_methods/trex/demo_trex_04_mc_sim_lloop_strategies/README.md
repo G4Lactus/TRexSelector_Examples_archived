@@ -47,5 +47,3 @@ Results are written to this demo's own `simulation_results/data/` folder as a `.
 and a tidy `.csv` (the "solver" column holds the strategy name), stem
 `demo_trex_04_lloop_strategies_results_n300_p1000_random_support`. The script sources
 `../../support_generators.R`, `../../simulation_utils.R`, and `../trex_sim_utils.R`.
-
-**Last updated**: 2026-07-11

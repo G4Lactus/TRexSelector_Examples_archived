@@ -48,5 +48,3 @@ Rscript R/trex_selector_methods/trex/demo_trex_08_mc_sim_scalability/demo_trex_0
 Results are written to this demo's own `simulation_results/` folder as
 `d04_scalability_benchmark.csv` (columns `scenario,n,p,type,time_sec,mem_mb,status`) and
 printed to the console. The script sources `../trex_sim_utils.R`.
-
-**Last updated**: 2026-07-08

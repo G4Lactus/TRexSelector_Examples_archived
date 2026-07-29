@@ -71,13 +71,13 @@ explicitly where fixed supports are mirrored from C++.
 
 | Area | Status | What it covers | cpp counterpart |
 |---|---|---|---|
-| [memory_mapping/](memory_mapping/README.md) | NEW (TRexSelectorNeo) | `mmap_matrix` / `convert_to_memory_mapped` walkthrough, out-of-core fill, element access | [cpp/memory_mapping/](../cpp/memory_mapping/) |
-| [ml_methods/hac_clustering/](ml_methods/hac_clustering/README.md) | NEW (TRexSelectorNeo) | Agglomerative hierarchical clustering (in-memory + mmap), ARI evaluation | [cpp/ml_methods/hac_clustering/](../cpp/ml_methods/hac_clustering/) |
-| [ml_methods/standardization/](ml_methods/standardization/README.md) | NEW (TRexSelectorNeo) | `ZScoreScaler` / `LpNormScaler` (in-memory + mmap) | [cpp/ml_methods/scaler_methods/](../cpp/ml_methods/scaler_methods/) |
+| [memory_mapping/](memory_mapping/README.md) | NEW (TRexSelectorNeo) | `mmap_matrix` / `convert_to_memory_mapped` walkthrough: basics, out-of-core streaming, per-column seeded fill, element access (folder-per-demo) | [cpp/memory_mapping/](../cpp/memory_mapping/) |
+| [ml_methods/hac_clustering/](ml_methods/hac_clustering/README.md) | NEW (TRexSelectorNeo) | Agglomerative hierarchical clustering: six in-memory scenarios (`demo_mlm_hac_01`) plus the out-of-core LSH linkage comparison (`demo_mlm_hac_02_mmap`), ARI evaluation | [cpp/ml_methods/hac_clustering/](../cpp/ml_methods/hac_clustering/) |
+| [ml_methods/scaler_methods/](ml_methods/scaler_methods/README.md) | NEW (TRexSelectorNeo) | `ZScoreScaler` / `LpNormScaler`: center/scale switches, inverse transform, serialization, mmap-backed scaling | [cpp/ml_methods/scaler_methods/](../cpp/ml_methods/scaler_methods/) |
 | [ml_methods/pca/](ml_methods/pca/README.md) | NEW (TRexSelectorNeo) | `PCA` R6 class: fit, restore round-trip, out-of-sample transform | [cpp/ml_methods/pca/](../cpp/ml_methods/pca/) |
 | [ml_methods/svd/](ml_methods/svd/README.md) | NEW (TRexSelectorNeo) | Truncated SVD via `SVDSolver` | [cpp/ml_methods/svd/](../cpp/ml_methods/svd/) |
 | [ml_methods/ridge_regression/](ml_methods/ridge_regression/README.md) | NEW (TRexSelectorNeo) | L2-penalized least squares via `RidgeSolver` | [cpp/ml_methods/ridge_regression/](../cpp/ml_methods/ridge_regression/) |
-| [ml_methods/model_selection/](ml_methods/model_selection/README.md) | NEW (TRexSelectorNeo) + cross-check (glmnet) | K-fold CV ridge via `RidgeCV` (lambda.min / lambda.1se); glmnet reference dumps for the C++ CCD elastic net | [cpp/ml_methods/model_selection/](../cpp/ml_methods/model_selection/) |
+| [ml_methods/model_selection/](ml_methods/model_selection/README.md) | NEW (TRexSelectorNeo) | K-fold CV ridge via `RidgeCV` incl. a memory-mapped design matrix, plus elastic-net path fitting and CV via `ElasticNet` / `ElasticNetCV` | [cpp/ml_methods/model_selection/](../cpp/ml_methods/model_selection/) |
 | [trex_selector_methods/trex/](trex_selector_methods/trex/README.md) | NEW (TRexSelectorNeo) | Classical T-Rex: single runs, MC studies, l-loop strategies, mmap, scalability (demos 00–07) | [cpp/trex_selector_methods/trex/](../cpp/trex_selector_methods/trex/) |
 | [trex_selector_methods/trex_da/](trex_selector_methods/trex_da/README.md) | NEW (TRexSelectorNeo) | Dependency-Aware T-Rex: AR(1), equi, NN, BT-block, heavy-tailed DGPs (demos 01–08); NN demos skip until the R binding exposes `da_method="NN"` | [cpp/trex_selector_methods/trex_da/](../cpp/trex_selector_methods/trex_da/) |
 | [trex_selector_methods/trex_gvs/](trex_selector_methods/trex_gvs/README.md) | NEW (TRexSelectorNeo) | Grouped Variable Selection T-Rex: EN vs IEN over grouped DGPs (demos 01–08) | [cpp/trex_selector_methods/trex_gvs/](../cpp/trex_selector_methods/trex_gvs/) |
@@ -105,12 +105,13 @@ gaps relative to [cpp/](../cpp/README.md) remain:
   (`validation_ts_01_tenet_aug_comparison` and the CRAN tlars cross-comparison
   generator `validation_ts_02_tlars_tlasso_rcompare`) moved to the TRexSelector
   library test suite (`TRexSelector/cpp/tests/validation/tsolvers/`).
-- **ml_methods** is fully mirrored (hac_clustering, standardization, pca, svd,
-  ridge_regression, model_selection); pca / svd / ridge are covered there. The
-  R elastic-net demo covers K-fold CV (`ElasticNetCV`) only; the standalone
-  elastic-net *path* fit from `demo_mlm_ms_02_enet_cv_ccd` has no R class and is
-  shown in the Python port instead.
-
----
-
-**Last updated**: 2026-07-08
+- **ml_methods** is fully mirrored, folder-per-demo, under the C++ demo names
+  (`scaler_methods/demo_mlm_scaler_01`, `pca/demo_mlm_pca_01`,
+  `svd/demo_mlm_svd_01`, `ridge_regression/demo_mlm_ridge_01`,
+  `model_selection/demo_mlm_ms_01_ridge_cv_svd` and `…_ms_02_enet_cv_ccd`,
+  `hac_clustering/demo_mlm_hac_01` and `…_hac_02_mmap`). Both parts of the C++
+  elastic-net demo are covered: the standalone path fit via `ElasticNet` and
+  K-fold CV via `ElasticNetCV`. The memory-mapped subproblems bind the mapped
+  buffer zero-copy exactly as in C++: the scalers and `RidgeCV` accept
+  `mmap_matrix` handles directly (scalers need `"readwrite"` mode, `RidgeCV`
+  also fits from `"readonly"` handles).

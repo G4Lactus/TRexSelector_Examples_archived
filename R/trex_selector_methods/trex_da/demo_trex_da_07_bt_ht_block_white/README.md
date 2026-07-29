@@ -51,5 +51,3 @@ consolidated `../trex_da_dgps.R` and the shared `../../simulation_utils.R` +
 - Unlike Demo 06 (heavy-tailed blocks without white-noise dilution), FDR here tends to decrease as SNR increases and end up quite low, closer to Demo 05's white-noise-diluted pattern — the large white-noise padding helps FDR control even under heavy tails.
 - TPR typically reaches higher levels than Demo 06's plateau at the same nominal SNR, again consistent with the white-noise dilution making the true AR(1) blocks comparatively easier to isolate than in Demo 06's smaller all-block design.
 - Read as the combined-effects check: compare against Demo 04 (Gaussian, no white noise), Demo 05 (Gaussian, with white noise), and Demo 06 (heavy-tailed, no white noise) to decompose how heavy tails and white-noise dilution each contribute; the tFDR sweep (Part 5) checks target tracking on this diluted design.
-
-**Last updated**: 2026-07-08

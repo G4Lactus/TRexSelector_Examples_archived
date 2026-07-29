@@ -45,5 +45,3 @@ Output is console-only (no result files are written); the `run_part_*` flags at 
 - INDIVIDUAL is expected to be hardest (only 1 of 5 correlated variables per block is truly active, so a discovered group can "win" on a correlated null neighbor); WHOLE should be easiest.
 - Comparing `rho = 0.5` vs `rho = 0.9` shows how within-block correlation strength helps group discovery but can hurt localizing signal within a block in INDIVIDUAL/REPRESENTATIVE.
 - EN vs IEN at matched group-source shows whether the iterative elastic net changes the HAC-vs-oracle gap itself or only the overall detection level.
-
-**Last updated**: 2026-07-08

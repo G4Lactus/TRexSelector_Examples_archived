@@ -37,5 +37,3 @@ Each run writes a per-variable selection **CSV** (no `.txt`) to this demo's own
 `simulation_results/` folder — header `variable_index,phi_prime,selected,true_positive`,
 stems `d02_trex_mmap_demo_a_n{n}_p{p}.csv` and `d02_trex_mmap_demo_b_n{n}_p{p}.csv`. The
 script sources `../../simulation_utils.R` and `../trex_sim_utils.R`.
-
-**Last updated**: 2026-07-08

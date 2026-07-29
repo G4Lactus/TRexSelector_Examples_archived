@@ -37,5 +37,3 @@ Output is console-only (no result files are written); the `run_part_*` flags at 
 - Because HAC-based grouping clusters columns by **correlation**, not by column adjacency, scattering group members is expected to leave FDP/TPP patterns very close to Demo 01's contiguous-block results.
 - Best read side-by-side with Demo 01: similar results confirm that group discovery depends on correlation structure rather than spatial layout; a noticeable divergence would point to a layout-sensitive bug or clustering limitation.
 - As in Demo 01, expect IEN to remain conservative (very low FDP and TPP) on this all-active-groups design.
-
-**Last updated**: 2026-07-08

@@ -37,5 +37,3 @@ Output is console-only (no result files are written); the `run_part_*` flags at 
 - FDP should stay low (often well below `tFDR = 0.1`) across the SNR grid for all three methods, but TPP should recover much more slowly with SNR than in the equicorrelated Hastie/Mixed-Blocks demos — AR(1) decay means only nearby columns are strongly correlated, weakening group-level evidence aggregation.
 - IEN is expected to sit between its near-zero TPP on the equicorrelated Gaussian demos and the EN-based methods, showing real (if smaller) power gains as SNR increases.
 - The rho sweep is the most informative view: watch how quickly recovery degrades as `rho` decreases and the AR(1) decay steepens.
-
-**Last updated**: 2026-07-08

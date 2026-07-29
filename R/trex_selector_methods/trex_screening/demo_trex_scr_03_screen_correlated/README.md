@@ -54,5 +54,3 @@ The script sources the shared `../trex_scr_sim_utils.R`; the `run_single_parts` 
 - Bootstrap-CI (without DA) is the middle comparison: in the recorded runs it lowers FDR but at a substantial TPR cost, suggesting the DA pre-grouping, not bootstrap thresholding, does the real work; Boot+DA combinations are very conservative (near-zero FDR, low TPR).
 - The equicorrelated rho sweep (Part 8) is the hardest recorded setting: all four methods show high realized FDR at moderate-to-high rho with Estimated FDR far below it — plausibly because the R binding cannot pass `rho_thr_DA` / `n_blocks`, so DA grouping runs on internal defaults. Treat these curves as a binding-limitation illustration rather than the method's C++-tuned behavior.
 - With only 10 MC repetitions per grid point, individual cells are noisy (see e.g. the Bootstrap dip at `rho = 0.6` in Part 7); trends across the grid are meaningful, single values are not.
-
-**Last updated**: 2026-07-08

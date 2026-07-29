@@ -45,5 +45,3 @@ the shared `../../simulation_utils.R` + `../../support_generators.R`.
 - FDR is typically very tightly controlled here (well below the lower tFDR=0.1 target) and lower than Demo 04's block-only design: the many uncorrelated white-noise columns dilute the design, leaving much less correlated, false-positive-prone structure to latch onto.
 - TPR reaches a strong plateau similar to Demo 04, suggesting the added white-noise columns do not meaningfully hurt detection of the true AR(1) blocks, consistent with T-Rex's robustness to null variables.
 - Compare directly against Demo 04 (no white noise, same block core) to isolate the effect of a larger, mostly-null p; the Q/M/linkage sweeps remain the key diagnostics for block size, block count, and linkage choice.
-
-**Last updated**: 2026-07-08

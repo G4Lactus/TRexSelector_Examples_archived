@@ -50,5 +50,3 @@ consolidated `../trex_da_dgps.R` and the shared `../../simulation_utils.R` +
 - Under heavy-tailed data, FDR tends to hover around or somewhat above the tFDR=0.2 target — less tightly controlled than the Gaussian block demos (04-05) — reflecting the added estimation difficulty from occasional large t(3) outliers.
 - TPR typically plateaus lower than Demo 04's Gaussian block-AR(1) plateau, consistent with heavy tails making the true signal harder to separate from noise even at high nominal SNR.
 - Compare the Gaussian-noise vs. heavy-noise scenarios directly to isolate the cost of heavy tails; the dedicated linkage sweep (Part 6) matters more here since correlation estimates feeding HAC clustering are noisier, and the tFDR sweep (Part 5) checks whether realized FDR tracks the target across levels.
-
-**Last updated**: 2026-07-08

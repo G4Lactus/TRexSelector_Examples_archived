@@ -44,5 +44,3 @@ Output is console-only (no result files are written); the `run_part_*` flags at 
 - Because the three active blocks have genuinely different correlation structures (AR(1), MA(3), ARMA(2,1)), recovery is expected to be uneven across blocks — aggregate TPP is a blend of these different per-block difficulties.
 - FDP should stay reasonably controlled near or below `tFDR = 0.1`; the trap block (AR(1), same `ar_coef` as the active AR(1) block) is structurally similar to an active block and is the main test of false-group exclusion.
 - Compare against Demo 06 (uniform AR(1) blocks) to see whether cross-block heterogeneity costs additional power beyond what AR(1) decay alone costs.
-
-**Last updated**: 2026-07-08

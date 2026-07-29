@@ -68,5 +68,3 @@ Results are written to this demo's own `simulation_results/data/` folder as a `.
 and a tidy `.csv` (the "solver" column holds the distribution name), stems
 `demo_trex_05_dummy_distributions_results_n300_p1000_{tlars,tomp,tafs}_random_support`. The script sources
 `../../support_generators.R`, `../../simulation_utils.R`, and `../trex_sim_utils.R`.
-
-**Last updated**: 2026-07-11

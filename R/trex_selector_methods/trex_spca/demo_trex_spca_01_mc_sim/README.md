@@ -8,11 +8,11 @@ Compare **T-Rex SPCA** (4 solver/mode combinations) against **ordinary PCA** and
 
 ## Data Generation Parameters (`generate_sparse_factor_model()`)
 
-$$
+```math
 \boldsymbol{X} = \boldsymbol{Z}\boldsymbol{V}^\top + \boldsymbol{E}.
-$$
+```
 
-- $\boldsymbol{Z}$ ($n \times M$): factor columns $\mathcal{N}(0, \sigma_m^2)$ with $\sigma_m \in \{5, 3, 1\}$ for $m=1,2,3$.
+- $\boldsymbol{Z}$ ($n \times M$): factor columns $\mathcal{N}(0, \sigma_m^2)$ with $\sigma_m \in \lbrace5, 3, 1\rbrace$ for $m=1,2,3$.
 - $\boldsymbol{V}$ ($p \times M$): each column has exactly `p1` nonzero entries (value $0.9$), drawn without replacement from a shared candidate pool of size `overlap_pool_size` — factor supports can partially overlap.
 - $\boldsymbol{E}$: i.i.d. Gaussian, scaled to hit a target SNR in dB.
 - $n=50$, $p=100$, $p_1=5$, $M=3$, `overlap_pool_size=30`.
@@ -41,7 +41,7 @@ The selector itself runs with `seed = -1L` (hardware entropy for the dummies) �
 | Method | Sparsity mechanism | `mode` | `en_solver` |
 |---|---|---|---|
 | **OrdPCA** | None (all $p$ loadings retained) | — | — |
-| **OraclePCA** | Top-$p_1$ by magnitude (true support size known) | — | — |
+| **OraclePCA** | $\text{Top-}p_1$ by magnitude (true support size known) | — | — |
 | **TRexSPCA-EN-Act** | T-Rex+GVS selection | `"ActiveSet"` | `"TENET"` |
 | **TRexSPCA-ENaug-Act** | T-Rex+GVS selection | `"ActiveSet"` | `"TENET_AUG"` |
 | **TRexSPCA-EN-Thr** | T-Rex+GVS selection | `"Thresholded"` | `"TENET"` |
@@ -108,7 +108,7 @@ Dependencies: `TRexSelectorNeo` and base-R `parallel` only. The Monte Carlo tria
 | TRexSPCA-EN-Thr | 0.1355 | 1.0000 | 0.1328 |
 | TRexSPCA-ENaug-Thr | 0.1345 | 0.9990 | 0.1331 |
 
-Reference points: the legacy CRAN R implementation reports FDR $0.100$ / TPR $\approx 1.0$ at this same operating point. The C++ counterpart's committed table (same configuration, C++ RNG streams): OrdPCA 0.9500/1.0000/0.2021; OraclePCA 0.0060/0.9940/0.1241; T-Rex FDR $\approx 0.123$–$0.131$, TPR $\approx 0.996$–$0.997$; Python: OraclePCA 0.0080/0.9920, T-Rex FDR $\approx 0.132$–$0.136$, TPR $\approx 0.997$–$0.998$. All within Monte Carlo noise of the R table — exact numbers cannot match because the data RNG streams differ across languages. Trial-for-trial reproduction of the R table itself is also intentionally impossible: the per-trial **data** is deterministic in `base_seed`, but the dummies use hardware entropy (selector `seed = -1L`); re-runs reproduce the table to within MC noise ($\approx \pm 0.01$ at 200 trials).
+Reference points: the legacy CRAN R implementation reports FDR $0.100$ / TPR $\approx 1.0$ at this same operating point. The C++ counterpart's committed table (same configuration, C++ RNG streams): OrdPCA 0.9500/1.0000/0.2021; OraclePCA 0.0060/0.9940/0.1241; T-Rex FDR $\approx 0.123\text{–}0.131$, TPR $\approx 0.996\text{–}0.997$; Python: OraclePCA 0.0080/0.9920, T-Rex FDR $\approx 0.132\text{–}0.136$, TPR $\approx 0.997\text{–}0.998$. All within Monte Carlo noise of the R table — exact numbers cannot match because the data RNG streams differ across languages. Trial-for-trial reproduction of the R table itself is also intentionally impossible: the per-trial **data** is deterministic in `base_seed`, but the dummies use hardware entropy (selector `seed = -1L`); re-runs reproduce the table to within MC noise ($\approx \pm 0.01$ at 200 trials).
 
 > **History note (z-scoring episode, fixed 2026-07-08)**: an earlier version of this pipeline z-score-standardized $\boldsymbol{X}$, which converts the covariance PCA into a correlation PCA and destroys the factor amplitude signal — the measured T-Rex FDR inflated to $\approx 0.53$ and OraclePCA TPR dropped to $\approx 0.84$ at this same nominal SNR. The C++ validation program `validation_trex_spca_06_handrolled_comparison` isolated the cause (the `TRexSPCA` class and a hand-rolled pipeline replicating the legacy R recipe agree within MC noise; only the preprocessing differed), and the pipeline is back to center-only.
 
@@ -119,9 +119,5 @@ Reference points: the legacy CRAN R implementation reports FDR $0.100$ / TPR $\a
 - **OrdPCA**'s $\mathrm{FDR}\approx0.95$ and $\mathrm{TPR}=1.0$ are trivial artifacts of retaining all $p=100$ loadings (true support is $p_1=5$) — not a genuine comparison point, only a non-sparse reference.
 - **OraclePCA** achieves near-perfect PC1 recovery (it is told the true support size); its PEV ($0.123$) is the useful reference value here — how much variance the true sparse signal explains, independent of any estimation procedure.
 - All four **T-Rex SPCA** variants recover PC1's support almost perfectly (TPR $\approx 1.0$) with FDR close to the $\mathrm{tFDR}=0.10$ target — even though $-10$ dB sounds like a very weak signal, the strong first factor (std $5$) dominates PC1 recovery on the covariance-PCA footing.
-- The realized FDR ($\approx 0.13$–$0.14$) sits $\approx 0.03$ above the target and the legacy CRAN R reference ($0.100$). This is the long-known residual gap between the C++ core and the CRAN R implementation, investigated by the programs now in the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/trex_selector_methods/trex_spca/`) (suspects: the internal CD-ridge λ₂ CV vs. R's `cv.glmnet`, and dummy-generation details); `validation_trex_spca_06` confirms it is **not** a `TRexSPCASelector` artifact.
+- The realized FDR ($\approx 0.13\text{–}0.14$) sits $\approx 0.03$ above the target and the legacy CRAN R reference ($0.100$). This is the long-known residual gap between the C++ core and the CRAN R implementation, investigated by the programs now in the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/trex_selector_methods/trex_spca/`) (suspects: the internal CD-ridge λ₂ CV vs. R's `cv.glmnet`, and dummy-generation details); `validation_trex_spca_06` confirms it is **not** a `TRexSPCASelector` artifact.
 - The four T-Rex variants are statistically indistinguishable from each other at this single SNR point; no solver (`TENET` vs. `TENET_AUG`) or mode (`ActiveSet` vs. `Thresholded`) conclusion should be drawn from it. The **Thresholded** variants' slightly higher PEV ($\approx 0.133$ vs. $\approx 0.121$) is the one systematic difference: they rebuild loadings from the full ordinary-PCA solution on the selected support, which preserves more explained variance than the active-set coefficients.
-
----
-
-**Last updated**: 2026-07-08

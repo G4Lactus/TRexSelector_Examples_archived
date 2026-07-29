@@ -39,5 +39,3 @@ Each part writes a `.txt` table and a tidy `.csv` (header `solver,metric,snr,val
 this demo's own `simulation_results/` folder, stems `d03_trex_mmap_demo_c_n300_p1000_sw7`
 and `d03_trex_mmap_demo_d_n300_p1000_sw7`. The script sources `../../support_generators.R`,
 `../../simulation_utils.R`, and `../trex_sim_utils.R`.
-
-**Last updated**: 2026-07-08

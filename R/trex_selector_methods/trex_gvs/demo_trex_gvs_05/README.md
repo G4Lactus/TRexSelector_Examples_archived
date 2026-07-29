@@ -37,5 +37,3 @@ Output is console-only (no result files are written); the `run_part_*` flags at 
 - EN and EN+AUG should remain reasonably FDP-controlled with TPP rising toward the mid-0.9s as SNR grows, though slightly below the Gaussian equicorrelated case (Demo 03) at matched SNR — heavy tails inject occasional large outliers that blur group boundaries.
 - Unlike the Gaussian equicorrelated demos, IEN is expected to be much less conservative here: FDP tightening below target as SNR grows while TPP climbs into the 0.7–0.8 range — a more competitive pattern.
 - Key question over the SNR sweep: does heavy-tailed noise mainly cost power (lower TPP), or also compromise FDP control (drifting above 0.1)?
-
-**Last updated**: 2026-07-08

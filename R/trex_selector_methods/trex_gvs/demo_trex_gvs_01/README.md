@@ -40,5 +40,3 @@ Output is console-only (no result files are written); the `run_part_*` flags at 
 - IEN is expected to behave much more conservatively on this all-active design (very low FDP, slowly rising TPP); this pattern recurs across the other equicorrelated-block demos.
 - The rho sweep should be fairly stable across correlation levels, since HAC-based grouping aggregates evidence across strongly correlated columns.
 - Parts 5–6 check that the qualitative conclusions are not sensitive to the `lambda2` selection rule or the HAC linkage choice.
-
-**Last updated**: 2026-07-08

@@ -39,5 +39,3 @@ Output is console-only (no result files are written); the `run_part_*` flags at 
 - TPP should climb with SNR; the random gaps and block order mainly test that the grouping logic is invariant to block placement rather than materially changing detection power.
 - Comparing the default preset (`rho ~ 0.99`) against Rho075 (`rho = 0.75`) shows how performance degrades as within-block correlation decreases, all else equal.
 - As in Demos 01–02, expect IEN to be substantially more conservative than the EN-based methods.
-
-**Last updated**: 2026-07-08

@@ -169,7 +169,3 @@ write into each demo's own `simulation_results/` subfolder:
 
 The single-run parts (and the biobank single/multi-phenotype tables) print to
 the console only.
-
----
-
-**Last updated**: 2026-07-08

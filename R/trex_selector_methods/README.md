@@ -49,7 +49,3 @@ The da / gvs MC suites additionally require `plotly` (correlation heatmaps)
 and use `parallel` for the MC loops. The trex_spca cross-check programs (which
 additionally require `glmnet`) moved to the TRexSelector library test suite
 (`TRexSelector/cpp/tests/validation/trex_selector_methods/trex_spca/`).
-
----
-
-**Last updated**: 2026-07-08

@@ -149,7 +149,3 @@ the C++ suite convention):
 
 Demos 02–08 persist result tables (`.csv`/`.txt`, or the mmap selection/
 benchmark CSVs); only demo 01 (single run) is console-only.
-
----
-
-**Last updated**: 2026-07-11
