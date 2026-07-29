@@ -116,7 +116,7 @@ demo_with_external_normalizer <- function(high_dim, rnd_coef, T_stop) {
 # ==============================================================================
 
 demo_serialization <- function() {
-  print_section_header("Demo 3: T-Stepwise Serialization & Warm Start")
+  print_section_header("Demo 3: T-Stepwise Serialization & Path Consistency")
 
   n <- 100L
   p <- 50L

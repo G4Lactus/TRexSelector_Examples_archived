@@ -11,7 +11,7 @@ It shows how T-LASSO is used in four settings:
 3. serialization and warm-start continuation,
 4. operation on memory-mapped data.
 
-In addition to the standard selection diagnostics, the demo also reports T-LASSO-specific path diagnostics, namely the number of variable removals along the path.
+In addition to the standard selection diagnostics, the demo also reports T-LASSO-specific path diagnostics such as variable removals and cycling behavior. It mirrors `cpp/tsolvers/demo_ts_02_tlasso`.
 
 ---
 
@@ -19,9 +19,9 @@ In addition to the standard selection diagnostics, the demo also reports T-LASSO
 
 Like the other terminating solvers, T-LASSO stops early once a prescribed number $T_{\text{stop}}$ of dummy variables has entered the active set, rather than tracing a full path:
 
-$$
+```math
 \hat{\boldsymbol{\beta}}^{(T)} = \mathrm{TLASSO}(\mathbf{X}, \mathbf{D}, \mathbf{y}; T_{\text{stop}}).
-$$
+```
 
 In the demo, the solver is an R6 class from the TRexSelectorNeo package, and early stopping is triggered through calls of the form
 
@@ -40,13 +40,13 @@ where `T_stop` is the number of dummy variables that must enter the active set b
 
 The first part runs T-LASSO with **internal normalization** and an intercept on synthetic data. It is executed in both a high-dimensional regime $(p > n)$ and a low-dimensional regime $(n > p)$.
 
-After execution, the demo prints the selected variables, selection-quality diagnostics, and a T-LASSO-specific diagnostics line with the number of removals (`solver$get_num_removals()`). Unlike the cpp demo, no cycling ratio is reported, because the R binding does not expose the cycling ratio for T-LASSO.
+After execution, the demo prints the selected variables, selection-quality diagnostics, and a T-LASSO-specific diagnostics block with the number of removals and the cycling ratio (`solver$get_num_removals()` / `solver$get_cycling_ratio()`).
 
 ### 2. External normalization
 
 The second part applies external L2 normalization via `LpNormScaler` to both the signal matrix and the dummy matrix, centers the response manually, and then runs T-LASSO with `normalize = FALSE` and `intercept = FALSE`.
 
-This section demonstrates the externally normalized workflow and again reports the resulting selection path, selection quality, and removal count.
+This section demonstrates the externally normalized workflow and again reports the resulting selection path, selection quality, removals, and cycling statistics.
 
 ### 3. Serialization and path consistency
 
@@ -54,7 +54,7 @@ The third part runs a reference fit to a final stopping level, then separately r
 
 Unlike the cpp version, which uses a static `load(filename, X, D)` factory, the R binding hydrates an existing solver instance: a fresh solver is constructed with the same `X`, `D`, and `y`, and the checkpoint is loaded via `solver$load(path)`.
 
-The reloaded path is compared against the reference run using the final number of steps, the final RSS difference, the final $R^2$ difference, equality of the recorded action path, and the removal count. The checkpoint file is removed afterward.
+The reloaded path is compared against the reference run using the final number of steps, the final RSS difference, the final $R^2$ difference, equality of the recorded action path, and the T-LASSO-specific removal and cycling diagnostics. The checkpoint file is removed afterward.
 
 ### 4. Memory-mapped data
 
@@ -72,7 +72,7 @@ Run from the repository root:
 Rscript R/tsolvers/demo_ts_02_tlasso/demo_ts_02_tlasso.R
 ```
 
-The demo requires the TRexSelectorNeo R package. It prints its diagnostics to the console, including configuration summaries, selected variables, path-quality measures, removal counts, serialization checks, and memory-mapped execution status messages.
+The demo requires the TRexSelectorNeo R package. It prints its diagnostics to the console, including configuration summaries, selected variables, path-quality measures, removal counts, cycling ratios, serialization checks, and memory-mapped execution status messages.
 
 ---
 
@@ -85,6 +85,7 @@ When reading the console output, focus on the following points:
 - whether externally normalized and internally normalized workflows both execute successfully,
 - whether the serialized solver state can be reloaded and continued without changing the final path,
 - how many active-set removals occur,
+- whether the reported cycling ratio stays well behaved,
 - whether the memory-mapped workflow completes successfully and cleans up its temporary files.
 
 ---
@@ -97,7 +98,3 @@ When reading the console output, focus on the following points:
 - The serialization example writes a temporary checkpoint file named `tlasso_checkpoint.bin` and removes it afterward.
 - The memory-mapped example writes a temporary file for $X$ only, runs T-LASSO on the mapped view, and removes the file at the end.
 - For a dedicated cross-check against related LARS/LASSO reference behavior, see `validation_ts_02_tlars_tlasso_rcompare` in the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/tsolvers/`).
-
----
-
-**Last updated**: 2026-07-08

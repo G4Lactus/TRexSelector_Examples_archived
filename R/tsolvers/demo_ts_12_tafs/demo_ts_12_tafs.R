@@ -39,7 +39,7 @@ source(file.path(this_dir_, "..", "ts_demo_utils.R"))
 # Demo 1: Basic T-AFS with Early Stopping
 # ==============================================================================
 
-demo_early_stopping <- function(high_dim, rnd_coef, T_stop) {
+demo_early_stopping <- function(high_dim, rnd_coef, T_stop, rho) {
   print_section_header("Demo 1: Basic T-AFS with Early Stopping")
 
   n <- if (high_dim) 1000L else 5000L
@@ -50,7 +50,6 @@ demo_early_stopping <- function(high_dim, rnd_coef, T_stop) {
   true_support <- c(28L, 150L, 399L, 421L, 5L)
   true_coefs <- if (rnd_coef) c(-0.4, -0.2, -0.8, 1.1, 2.5) else rep(1, 5)
   snr <- 1.0
-  rho <- 1.0
 
   cat(if (high_dim) "High-dimensional (p > n)\n" else "Low-dimensional (n > p)\n")
   print_demo_config(n, p, num_dummies, T_stop, true_support, true_coefs, snr)
@@ -72,7 +71,7 @@ demo_early_stopping <- function(high_dim, rnd_coef, T_stop) {
 # Demo 2: External Normalization (LpNormScaler)
 # ==============================================================================
 
-demo_with_external_normalizer <- function(high_dim, rnd_coef, T_stop) {
+demo_with_external_normalizer <- function(high_dim, rnd_coef, T_stop, rho) {
   print_section_header("Demo 2: T-AFS with External Normalization")
 
   n <- if (high_dim) 1000L else 5000L
@@ -81,9 +80,8 @@ demo_with_external_normalizer <- function(high_dim, rnd_coef, T_stop) {
 
   # cpp true_support is 0-based {4, 27, 149, 398, 420} -> 1-based here
   true_support <- c(5L, 28L, 150L, 399L, 421L)
-  true_coefs <- if (rnd_coef) c(2.5, -0.4, -0.2, -0.8, 1.1) else rep(1, 5)
+  true_coefs <- if (rnd_coef) c(-0.4, -0.2, -0.8, 1.1, 2.5) else rep(1, 5)
   snr <- 1.0
-  rho <- 1.0
 
   cat(if (high_dim) "High-dimensional (p > n)\n" else "Low-dimensional (n > p)\n")
   print_demo_config(n, p, num_dummies, T_stop, true_support, true_coefs, snr)
@@ -117,7 +115,7 @@ demo_with_external_normalizer <- function(high_dim, rnd_coef, T_stop) {
 # Demo 3: Serialization & Warm Start
 # ==============================================================================
 
-demo_serialization <- function() {
+demo_serialization <- function(rho) {
   print_section_header("Demo 3: T-AFS Serialization & Warm Start")
 
   n <- 100L
@@ -130,7 +128,6 @@ demo_serialization <- function() {
   # cpp true_support is 0-based {10, 25, 40} -> 1-based here
   true_support <- c(11L, 26L, 41L)
   true_coefs <- c(2.5, -1.8, 3.2)
-  rho <- 1.0
 
   print_demo_config(n, p, num_dummies, T_stop_final, true_support,
                     true_coefs, snr)
@@ -185,7 +182,7 @@ demo_serialization <- function() {
 # Demo 4: Memory-Mapped Data
 # ==============================================================================
 
-demo_memory_mapped <- function(high_dim, rnd_coef, T_stop) {
+demo_memory_mapped <- function(high_dim, rnd_coef, T_stop, rho) {
   print_section_header("Demo 4: T-AFS with Memory-Mapped Data")
 
   n <- if (high_dim) 1000L else 5000L
@@ -196,7 +193,6 @@ demo_memory_mapped <- function(high_dim, rnd_coef, T_stop) {
   # cpp true_support is 0-based {4, 27, 149, 398, 420} -> 1-based here
   true_support <- c(5L, 28L, 150L, 399L, 421L)
   true_coefs <- if (rnd_coef) c(2.5, -0.4, -0.2, -0.8, 1.1) else rep(1, 5)
-  rho <- 1.0
 
   print_demo_config(n, p, num_dummies, T_stop, true_support, true_coefs, snr)
 
@@ -237,17 +233,17 @@ demo_memory_mapped <- function(high_dim, rnd_coef, T_stop) {
 print_section_header("T-AFS Demo Suite")
 
 # Demo 1: Basic usage with internal normalization
-demo_early_stopping(high_dim = TRUE, rnd_coef = FALSE, T_stop = 10L)
-demo_early_stopping(high_dim = FALSE, rnd_coef = FALSE, T_stop = 10L)
+demo_early_stopping(high_dim = TRUE, rnd_coef = FALSE, T_stop = 10L, rho = 1.0)
+demo_early_stopping(high_dim = FALSE, rnd_coef = FALSE, T_stop = 10L, rho = 1.0)
 
 # Demo 2: External normalization
-demo_with_external_normalizer(high_dim = FALSE, rnd_coef = FALSE, T_stop = 10L)
-demo_with_external_normalizer(high_dim = TRUE, rnd_coef = FALSE, T_stop = 10L)
+demo_with_external_normalizer(high_dim = FALSE, rnd_coef = FALSE, T_stop = 10L, rho = 1.0)
+demo_with_external_normalizer(high_dim = TRUE, rnd_coef = FALSE, T_stop = 10L, rho = 1.0)
 
 # Demo 3: Serialization
-demo_serialization()
+demo_serialization(rho = 1.0)
 
 # Demo 4: Memory-mapped
-demo_memory_mapped(high_dim = TRUE, rnd_coef = FALSE, T_stop = 10L)
+demo_memory_mapped(high_dim = TRUE, rnd_coef = FALSE, T_stop = 10L, rho = 1.0)
 
 print_section_header("\u2713 All demos completed successfully")

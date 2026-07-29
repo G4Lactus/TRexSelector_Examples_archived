@@ -63,8 +63,9 @@ demo_early_stopping <- function(high_dim, rnd_coef, T_stop) {
 
   print_selection(solver, true_support, p)
   print_selection_quality(solver, true_support, p)
-  cat(sprintf("Diagnostics: removals = %d, cycling ratio = %.4f\n",
-              solver$get_num_removals(), solver$get_cycling_ratio()))
+  cat("\nT-Stagewise Diagnostics:\n")
+  cat(sprintf("  Removals: %d\n", solver$get_num_removals()))
+  cat(sprintf("  Cycling ratio: %.4f\n", solver$get_cycling_ratio()))
   cat("\n\n")
 }
 
@@ -82,7 +83,7 @@ demo_with_external_normalizer <- function(high_dim, rnd_coef, T_stop) {
 
   # cpp true_support is 0-based {4, 27, 149, 398, 420} -> 1-based here
   true_support <- c(5L, 28L, 150L, 399L, 421L)
-  true_coefs <- if (rnd_coef) c(2.5, -0.4, -0.2, -0.8, 1.1) else rep(1, 5)
+  true_coefs <- if (rnd_coef) c(-0.4, -0.2, -0.8, 1.1, 2.5) else rep(1, 5)
   snr <- 1.0
 
   cat(if (high_dim) "High-dimensional (p > n)\n" else "Low-dimensional (n > p)\n")
@@ -109,8 +110,9 @@ demo_with_external_normalizer <- function(high_dim, rnd_coef, T_stop) {
 
   print_selection(solver, true_support, p)
   print_selection_quality(solver, true_support, p)
-  cat(sprintf("Diagnostics: removals = %d, cycling ratio = %.4f\n",
-              solver$get_num_removals(), solver$get_cycling_ratio()))
+  cat("\nT-Stagewise Diagnostics:\n")
+  cat(sprintf("  Removals: %d\n", solver$get_num_removals()))
+  cat(sprintf("  Cycling ratio: %.4f\n", solver$get_cycling_ratio()))
   cat("\n\n")
 }
 
@@ -227,8 +229,9 @@ demo_memory_mapped <- function(high_dim, rnd_coef, T_stop) {
 
   print_selection(solver, true_support, p)
   print_selection_quality(solver, true_support, p)
-  cat(sprintf("Diagnostics: removals = %d, cycling ratio = %.4f\n",
-              solver$get_num_removals(), solver$get_cycling_ratio()))
+  cat("\nT-Stagewise Diagnostics:\n")
+  cat(sprintf("  Removals: %d\n", solver$get_num_removals()))
+  cat(sprintf("  Cycling ratio: %.4f\n", solver$get_cycling_ratio()))
 }
 
 

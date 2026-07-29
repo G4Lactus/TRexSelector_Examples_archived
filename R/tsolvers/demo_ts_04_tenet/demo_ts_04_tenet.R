@@ -2,12 +2,12 @@
 # demo_ts_04_tenet.R
 # ==============================================================================
 #
-# Demonstration of the T-ENET (Terminating Elastic Net) solver.
+# Demonstration of the T-Elastic Net (Terminating Elastic Net) solver.
 #
 # Mirrors cpp/tsolvers/demo_ts_04_tenet/demo_ts_04_tenet.cpp.
 #
 # Parts:
-#   Demo 1: Basic T-ENET with early stopping (internal normalization),
+#   Demo 1: Basic T-Elastic Net with early stopping (internal normalization),
 #           high-dimensional (p > n) and low-dimensional (n > p) regimes.
 #   Demo 2: External L2 normalization (LpNormScaler) + centered y,
 #           solver run with normalize = FALSE, intercept = FALSE.
@@ -36,11 +36,11 @@ source(file.path(this_dir_, "..", "ts_demo_utils.R"))
 
 
 # ==============================================================================
-# Demo 1: Basic T-ENET with Early Stopping
+# Demo 1: Basic T-Elastic Net with Early Stopping
 # ==============================================================================
 
 demo_early_stopping <- function(high_dim, rnd_coef, T_stop) {
-  print_section_header("Demo 1: Basic T-ENET with Early Stopping")
+  print_section_header("Demo 1: Basic T-Elastic Net with Early Stopping")
 
   n <- if (high_dim) 1000L else 5000L
   p <- if (high_dim) 5000L else 1000L
@@ -64,8 +64,9 @@ demo_early_stopping <- function(high_dim, rnd_coef, T_stop) {
 
   print_selection(solver, true_support, p)
   print_selection_quality(solver, true_support, p)
-  cat(sprintf("Diagnostics: removals = %d, cycling ratio = %.4f\n",
-              solver$get_num_removals(), solver$get_cycling_ratio()))
+  cat("\nT-Elastic Net Diagnostics:\n")
+  cat(sprintf("  Removals: %d\n", solver$get_num_removals()))
+  cat(sprintf("  Cycling ratio: %.4f\n", solver$get_cycling_ratio()))
   cat("\n\n")
 }
 
@@ -75,7 +76,7 @@ demo_early_stopping <- function(high_dim, rnd_coef, T_stop) {
 # ==============================================================================
 
 demo_with_external_normalizer <- function(high_dim, rnd_coef, T_stop) {
-  print_section_header("Demo 2: T-ENET with External Normalization")
+  print_section_header("Demo 2: T-Elastic Net with External Normalization")
 
   n <- if (high_dim) 1000L else 5000L
   p <- if (high_dim) 5000L else 1000L
@@ -111,8 +112,9 @@ demo_with_external_normalizer <- function(high_dim, rnd_coef, T_stop) {
 
   print_selection(solver, true_support, p)
   print_selection_quality(solver, true_support, p)
-  cat(sprintf("Diagnostics: removals = %d, cycling ratio = %.4f\n",
-              solver$get_num_removals(), solver$get_cycling_ratio()))
+  cat("\nT-Elastic Net Diagnostics:\n")
+  cat(sprintf("  Removals: %d\n", solver$get_num_removals()))
+  cat(sprintf("  Cycling ratio: %.4f\n", solver$get_cycling_ratio()))
   cat("\n\n")
 }
 
@@ -122,7 +124,7 @@ demo_with_external_normalizer <- function(high_dim, rnd_coef, T_stop) {
 # ==============================================================================
 
 demo_serialization <- function() {
-  print_section_header("Demo 3: T-ENET Serialization & Warm Start")
+  print_section_header("Demo 3: T-Elastic Net Serialization & Path Consistency")
 
   n <- 100L
   p <- 50L
@@ -179,8 +181,9 @@ demo_serialization <- function() {
                            unlist(solver2$get_actions()))
   cat(if (paths_match) "\u2713 Paths match\n" else "\u2717 Paths differ!\n")
 
-  cat(sprintf("Diagnostics: removals = %d, cycling ratio = %.4f\n",
-              solver2$get_num_removals(), solver2$get_cycling_ratio()))
+  cat("\nT-Elastic Net Diagnostics:\n")
+  cat(sprintf("  Removals: %d\n", solver2$get_num_removals()))
+  cat(sprintf("  Cycling ratio: %.4f\n", solver2$get_cycling_ratio()))
 
   file.remove(filename)
   cat("\u2713 Checkpoint file removed\n")
@@ -193,7 +196,7 @@ demo_serialization <- function() {
 # ==============================================================================
 
 demo_memory_mapped <- function(high_dim, rnd_coef, T_stop) {
-  print_section_header("Demo 4: T-ENET with Memory-Mapped Data")
+  print_section_header("Demo 4: T-Elastic Net with Memory-Mapped Data")
 
   n <- if (high_dim) 1000L else 5000L
   p <- if (high_dim) 5000L else 1000L  # cpp: 500,000 on disk; scaled here
@@ -226,16 +229,17 @@ demo_memory_mapped <- function(high_dim, rnd_coef, T_stop) {
   dat$X <- NULL
   cat("\u2713 Data generated on disk\n\n")
 
-  cat("Running T-ENET on memory-mapped data...\n")
+  cat("Running T-Elastic Net on memory-mapped data...\n")
   solver <- TENET_Solver$new(X_mmap, dat$D, dat$y, lambda2, normalize = TRUE,
                              intercept = TRUE, verbose = TRUE)
   solver$execute_step(T_stop, early_stop = TRUE)
-  cat("\u2713 T-ENET completed\n\n")
+  cat("\u2713 T-Elastic Net completed\n\n")
 
   print_selection(solver, true_support, p)
   print_selection_quality(solver, true_support, p)
-  cat(sprintf("Diagnostics: removals = %d, cycling ratio = %.4f\n",
-              solver$get_num_removals(), solver$get_cycling_ratio()))
+  cat("\nT-Elastic Net Diagnostics:\n")
+  cat(sprintf("  Removals: %d\n", solver$get_num_removals()))
+  cat(sprintf("  Cycling ratio: %.4f\n", solver$get_cycling_ratio()))
 }
 
 

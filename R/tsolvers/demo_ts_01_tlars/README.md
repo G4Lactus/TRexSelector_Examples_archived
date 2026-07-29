@@ -11,7 +11,7 @@ It shows how T-LARS is used in four settings:
 3. serialization and warm-start continuation,
 4. operation on memory-mapped data.
 
-The demo is intended to explain solver behavior and interface usage in isolation, outside the full T-Rex calibration loops.
+The demo is intended to explain solver behavior and interface usage in isolation, outside the full T-Rex calibration loops. It mirrors `cpp/tsolvers/demo_ts_01_tlars`.
 
 ---
 
@@ -19,9 +19,9 @@ The demo is intended to explain solver behavior and interface usage in isolation
 
 A terminating solver does not compute a full path over all possible steps. Instead, it stops early once a prescribed number $T_{\text{stop}}$ of dummy variables has entered the active set:
 
-$$
+```math
 \hat{\boldsymbol{\beta}}^{(T)} = \mathrm{TLARS}(\mathbf{X}, \mathbf{D}, \mathbf{y}; T_{\text{stop}}).
-$$
+```
 
 In the demo, the solver is an R6 class from the TRexSelectorNeo package, and early stopping is triggered through calls of the form:
 
@@ -40,7 +40,7 @@ where `T_stop` is the number of dummy variables that must enter the active set b
 
 The first part runs T-LARS with **internal normalization** and an intercept on synthetic data, and it is executed in both a high-dimensional regime $(p > n)$ and a low-dimensional regime $(n > p)$.
 
-After execution, the demo prints the selected variables and selection-quality diagnostics relative to the known true support (1-based indices $\{28, 150, 399, 421, 5\}$).
+After execution, the demo prints the selected variables and selection-quality diagnostics relative to the known true support (1-based indices $\lbrace28, 150, 399, 421, 5\rbrace$).
 
 ### 2. External normalization
 
@@ -94,7 +94,3 @@ When reading the console output, focus on the following points:
 - Selection diagnostics come from `print_selection` / `print_selection_quality`, which compute TPP/FDP/precision/recall/F1 via the TRexSelectorNeo `compute_*` helpers. The active-dummy count is reconstructed from the signed action path because the R binding's `get_actives()` returns predictors only.
 - The serialization example writes a temporary checkpoint file and removes it after the comparison.
 - The memory-mapped example writes a temporary file for $X$ only, runs the solver on the mapped view, and then removes the file at the end.
-
----
-
-**Last updated**: 2026-07-08

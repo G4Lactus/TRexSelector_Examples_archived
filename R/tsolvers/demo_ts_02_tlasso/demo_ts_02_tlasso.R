@@ -63,7 +63,9 @@ demo_early_stopping <- function(high_dim, rnd_coef, T_stop) {
 
   print_selection(solver, true_support, p)
   print_selection_quality(solver, true_support, p)
-  cat(sprintf("Diagnostics: removals = %d\n", solver$get_num_removals()))
+  cat("\nT-LASSO Diagnostics:\n")
+  cat(sprintf("  Removals: %d\n", solver$get_num_removals()))
+  cat(sprintf("  Cycling ratio: %.4f\n", solver$get_cycling_ratio()))
   cat("\n\n")
 }
 
@@ -108,7 +110,9 @@ demo_with_external_normalizer <- function(high_dim, rnd_coef, T_stop) {
 
   print_selection(solver, true_support, p)
   print_selection_quality(solver, true_support, p)
-  cat(sprintf("Diagnostics: removals = %d\n", solver$get_num_removals()))
+  cat("\nT-LASSO Diagnostics:\n")
+  cat(sprintf("  Removals: %d\n", solver$get_num_removals()))
+  cat(sprintf("  Cycling ratio: %.4f\n", solver$get_cycling_ratio()))
   cat("\n\n")
 }
 
@@ -118,7 +122,7 @@ demo_with_external_normalizer <- function(high_dim, rnd_coef, T_stop) {
 # ==============================================================================
 
 demo_serialization <- function() {
-  print_section_header("Demo 3: T-LASSO Serialization & Warm Start")
+  print_section_header("Demo 3: T-LASSO Serialization & Path Consistency")
 
   n <- 100L
   p <- 50L
@@ -174,7 +178,9 @@ demo_serialization <- function() {
                            unlist(solver2$get_actions()))
   cat(if (paths_match) "\u2713 Paths match\n" else "\u2717 Paths differ!\n")
 
-  cat(sprintf("Diagnostics: removals = %d\n", solver2$get_num_removals()))
+  cat("\nT-LASSO Diagnostics:\n")
+  cat(sprintf("  Removals: %d\n", solver2$get_num_removals()))
+  cat(sprintf("  Cycling ratio: %.4f\n", solver2$get_cycling_ratio()))
 
   file.remove(filename)
   cat("\u2713 Checkpoint file removed\n")
@@ -227,7 +233,9 @@ demo_memory_mapped <- function(high_dim, rnd_coef, T_stop) {
 
   print_selection(solver, true_support, p)
   print_selection_quality(solver, true_support, p)
-  cat(sprintf("Diagnostics: removals = %d\n", solver$get_num_removals()))
+  cat("\nT-LASSO Diagnostics:\n")
+  cat(sprintf("  Removals: %d\n", solver$get_num_removals()))
+  cat(sprintf("  Cycling ratio: %.4f\n", solver$get_cycling_ratio()))
 }
 
 

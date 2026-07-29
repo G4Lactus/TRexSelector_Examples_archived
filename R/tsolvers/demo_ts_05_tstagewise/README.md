@@ -11,15 +11,17 @@ T-Stagewise proceeds through small incremental updates in directions chosen from
 3. serialization and warm-start continuation,
 4. operation on memory-mapped data.
 
+It mirrors `cpp/tsolvers/demo_ts_05_tstagewise`.
+
 ---
 
 ## Key idea
 
 Like the other terminating solvers, T-Stagewise stops early once a prescribed number $T_{\text{stop}}$ of dummy variables has entered the active set:
 
-$$
+```math
 \hat{\boldsymbol{\beta}}^{(T)} = \mathrm{TStagewise}(\mathbf{X}, \mathbf{D}, \mathbf{y}; T_{\text{stop}}).
-$$
+```
 
 In the demo, the solver is an R6 class from the TRexSelectorNeo package, and early stopping is triggered through calls of the form
 
@@ -97,7 +99,3 @@ Because T-Stagewise uses incremental updates, it may require more steps to build
 - The removals and cycling-ratio diagnostics line is printed after parts 1, 2, and 4 (not after the serialization part).
 - The serialization example writes a temporary checkpoint file named `tstagewise_checkpoint.bin` and removes it afterward.
 - The memory-mapped example writes a temporary file for $X$ only, runs T-Stagewise on the mapped view, and removes the file at the end.
-
----
-
-**Last updated**: 2026-07-08

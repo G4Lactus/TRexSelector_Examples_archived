@@ -11,15 +11,17 @@ T-Stepwise is a greedy variable-selection method that, at each step, adds the va
 3. serialization and warm-start continuation,
 4. operation on memory-mapped data.
 
+It mirrors `cpp/tsolvers/demo_ts_03_tstepwise`.
+
 ---
 
 ## Key idea
 
 Like the other terminating solvers, T-Stepwise stops early once a prescribed number $T_{\text{stop}}$ of dummy variables has entered the active set:
 
-$$
+```math
 \hat{\boldsymbol{\beta}}^{(T)} = \mathrm{TStepwise}(\mathbf{X}, \mathbf{D}, \mathbf{y}; T_{\text{stop}}).
-$$
+```
 
 In the demo, the solver is an R6 class from the TRexSelectorNeo package, and early stopping is triggered through calls of the form
 
@@ -97,7 +99,3 @@ Because T-Stepwise uses a greedy residual-correlation rule rather than an equian
 - The first demo uses a lower signal-to-noise ratio (`snr = 0.1`) and a slightly different default coefficient pattern than the external-normalization and memory-mapped examples, so behavior across sections is not meant to be numerically identical.
 - The serialization example writes a temporary checkpoint file named `tstepwise_checkpoint.bin` and removes it afterward.
 - The memory-mapped example writes a temporary file for $X$ only, runs T-Stepwise on the mapped view, and removes the file at the end.
-
----
-
-**Last updated**: 2026-07-08

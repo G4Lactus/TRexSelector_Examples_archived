@@ -80,7 +80,7 @@ demo_with_external_normalizer <- function(high_dim, rnd_coef, T_stop) {
 
   # cpp true_support is 0-based {4, 27, 149, 398, 420} -> 1-based here
   true_support <- c(5L, 28L, 150L, 399L, 421L)
-  true_coefs <- if (rnd_coef) c(2.5, -0.4, -0.2, -0.8, 1.1) else rep(1, 5)
+  true_coefs <- if (rnd_coef) c(-0.4, -0.2, -0.8, 1.1, 2.5) else rep(1, 5)
   snr <- 1.0
 
   cat(if (high_dim) "High-dimensional (p > n)\n" else "Low-dimensional (n > p)\n")

@@ -11,15 +11,17 @@ T-AFS is a forward-selection method with an adaptive decision rule that adjusts 
 3. serialization and warm-start continuation,
 4. operation on memory-mapped data.
 
+It mirrors `cpp/tsolvers/demo_ts_12_tafs`.
+
 ---
 
 ## Key idea
 
 Like the other terminating solvers, T-AFS stops early once a prescribed number $T_{\text{stop}}$ of dummy variables has entered the active set:
 
-$$
+```math
 \hat{\boldsymbol{\beta}}^{(T)} = \mathrm{TAFS}(\mathbf{X}, \mathbf{D}, \mathbf{y}; T_{\text{stop}}).
-$$
+```
 
 In the demo, the solver is an R6 class from the TRexSelectorNeo package, constructed with the adaptivity parameter `rho = 1.0` and advanced through calls of the form
 
@@ -95,7 +97,3 @@ Conceptually, T-AFS is a useful counterpart to plain T-Stepwise because its adap
 - Selection diagnostics come from `print_selection` / `print_selection_quality`, which compute TPP/FDP/precision/recall/F1 via the TRexSelectorNeo `compute_*` helpers. The active-dummy count is reconstructed from the signed action path because the R binding's `get_actives()` returns predictors only.
 - The serialization example writes a temporary checkpoint file named `tafs_checkpoint.bin` and removes it afterward.
 - The memory-mapped example writes a temporary file for $X$ only, runs T-AFS on the mapped view, and removes the file at the end.
-
----
-
-**Last updated**: 2026-07-08

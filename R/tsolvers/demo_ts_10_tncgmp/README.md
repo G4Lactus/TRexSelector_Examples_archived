@@ -11,15 +11,17 @@ T-NCGMP is a pursuit-style greedy method that augments matching-pursuit-style up
 3. serialization and warm-start continuation,
 4. operation on memory-mapped data.
 
+It mirrors `cpp/tsolvers/demo_ts_10_tncgmp`.
+
 ---
 
 ## Key idea
 
 Like the other terminating solvers, T-NCGMP stops early once a prescribed number $T_{\text{stop}}$ of dummy variables has entered the active set:
 
-$$
+```math
 \hat{\boldsymbol{\beta}}^{(T)} = \mathrm{TNCGMP}(\mathbf{X}, \mathbf{D}, \mathbf{y}; T_{\text{stop}}).
-$$
+```
 
 In the demo, the solver is an R6 class from the TRexSelectorNeo package, constructed with the `"line_search"` variant and advanced through calls of the form
 
@@ -96,7 +98,3 @@ Conceptually, T-NCGMP extends the simpler pursuit variants with a norm-correctiv
 - Selection diagnostics come from `print_selection` / `print_selection_quality`, which compute TPP/FDP/precision/recall/F1 via the TRexSelectorNeo `compute_*` helpers. The active-dummy count is reconstructed from the signed action path because the R binding's `get_actives()` returns predictors only.
 - The serialization example writes a temporary checkpoint file named `tncgmp_checkpoint.bin` and removes it afterward.
 - The memory-mapped example writes a temporary file for $X$ only, runs T-NCGMP on the mapped view, and removes the file at the end.
-
----
-
-**Last updated**: 2026-07-08
