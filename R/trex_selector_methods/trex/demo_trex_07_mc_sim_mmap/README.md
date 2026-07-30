@@ -13,18 +13,20 @@ lifecycle is exception-safe.
 High-dimensional config: `n = 300`, `p = 1000`, `s = 10`, `tFDR = 0.1`. The true
 support is drawn once and shared across all trials via
 `make_support_random(s, p, seed = 24)`; coefficients fixed `beta_j = 1`. SNR sweep
-`{0.1, 0.5, 1.0, 2.0, 5.0}`, TLARS only. `num_MC = 500` for both parts (the C++ demo
-uses `num_MC = 10` for Part C and `500` for Part D). Control via
-`make_mmap_trex_ctrl(solver = "TLARS", tloop_max_stagnant_steps = 7, opt_threshold = 0.75)`.
+`{0.1, 0.5, 1.0, 2.0, 5.0}`, TLARS only. `num_MC = 200` for both parts. Control via
+`make_mmap_trex_ctrl(solver = "TLARS", tloop_max_stagnant_steps = 7,
+use_openmp = FALSE, opt_threshold = 0.75)`.
 
 ## Parts
 
 - Part A (`run_part_a`, header "Part C") — MC with in-memory `X` + `use_memory_mapping = TRUE`:
   verifies the D-mmap + solver-serialization pipeline yields stable FDR/TPR over many runs.
 - Part B (`run_part_b`, header "Part D") — MC with memory-mapped `X` + `use_memory_mapping = TRUE`:
-  each trial writes its own temporary mmap-backed `X` via `execute_with_temp_mmap`; because
-  `mclapply` forks, each trial runs in its own address space with no cross-trial file
-  conflicts (mirrors the C++ RAII `MmapFileGuard`).
+  `.run_mc_trex_full_mmap` writes each trial's `X` to its own temporary mmap file and
+  runs the selector **inside** the `execute_with_temp_mmap` callback (the backing file
+  is unlinked on return, so the view must not escape); because `mclapply` forks, each
+  trial runs in its own address space with no cross-trial file conflicts (mirrors the
+  C++ RAII `MmapFileGuard`).
 
 Both report averaged FDR, TPR, Avg L, Avg T per SNR (`track_L_T = TRUE`). MC trials run
 in parallel over a hardcoded `num_cores <- 6L` (set at the top of the file).

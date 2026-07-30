@@ -95,7 +95,12 @@ trx_02_mc_sim_fixed_support <- function(num_MC = NUM_MC, high_dim = TRUE) {
   rownames(fdr_mat) <- rownames(tpr_mat) <- vapply(SOLVERS_DEFAULT, `[[`, "", "name")
   colnames(fdr_mat) <- colnames(tpr_mat) <- as.character(snr_values)
 
-  # Simulation loop: iterate over solvers, then SNR values
+  stem <- sprintf("demo_trex_02_mc_sim_fixed_support_trex_results_n%d_p%d_stagnation_window_%d",
+                  n, p, stagnant_sw)
+
+  # Simulation loop: iterate over solvers, then SNR values. Results are
+  # re-saved after each solver (growing file), so an abort mid-run keeps the
+  # solvers already finished.
   for (si in seq_along(SOLVERS_DEFAULT)) {
     solver <- SOLVERS_DEFAULT[[si]]
     ctrl   <- .make_trex_ctrl(solver, base_ctrl)
@@ -119,12 +124,13 @@ trx_02_mc_sim_fixed_support <- function(num_MC = NUM_MC, high_dim = TRUE) {
       tpr_mat[si, snr_idx] <- result$mean_TPR
     }
     cat("\n")
-  }
 
-  # Save results
-  stem <- sprintf("demo_trex_02_mc_sim_fixed_support_results_n%d_p%d_stagnation_window_%d",
-                  n, p, stagnant_sw)
-  .save_and_print_mc(OUT_DIR, stem, num_MC, rownames(fdr_mat), snr_values, fdr_mat, tpr_mat)
+    # Incremental save over the solvers completed so far (abort-safe).
+    .save_and_print_mc(OUT_DIR, stem, num_MC,
+                       rownames(fdr_mat)[seq_len(si)], snr_values,
+                       fdr_mat[seq_len(si), , drop = FALSE],
+                       tpr_mat[seq_len(si), , drop = FALSE])
+  }
   cat("\n")
 }
 

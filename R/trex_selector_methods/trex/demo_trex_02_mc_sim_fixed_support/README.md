@@ -38,5 +38,7 @@ Rscript R/trex_selector_methods/trex/demo_trex_02_mc_sim_fixed_support/demo_trex
 
 Results are written to this demo's own `simulation_results/` folder as a `.txt` table
 and a tidy `.csv` (header `solver,metric,snr,value`), stem
-`demo_trex_02_mc_sim_fixed_support_results_n300_p1000_stagnation_window_7`. The script
+`demo_trex_02_mc_sim_fixed_support_trex_results_n300_p1000_stagnation_window_7`.
+Both files are re-saved after each completed solver (growing file), so an abort
+mid-run keeps the solvers already finished. The script
 sources `../../support_generators.R`, `../../simulation_utils.R`, and `../trex_sim_utils.R`.

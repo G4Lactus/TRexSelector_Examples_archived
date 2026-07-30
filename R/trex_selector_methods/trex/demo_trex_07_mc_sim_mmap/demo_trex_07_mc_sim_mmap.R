@@ -20,14 +20,17 @@
 #
 #  Part B: MC — Memory-mapped X + use_memory_mapping = TRUE.
 #            Mirrors C++ Demo B.
-#            Each MC trial creates a temporary mmap-backed X/y file and
-#            removes it via on.exit() (exception-safe RAII equivalent).
+#            Each MC trial writes X to a per-trial temporary mmap file and
+#            runs the selector INSIDE the execute_with_temp_mmap() callback
+#            (the backing file is unlinked on return — exception-safe RAII
+#            equivalent; a view escaping the callback would dangle).
 #
 # Both parts use:
 #   - only the TLARS solver is demonstrated here
 #   - Fixed true support (drawn once with seed 24)
 #   - SNR sweep: {0.1, 0.5, 1.0, 2.0, 5.0}
 #   - tloop_max_stagnant_steps = 7,  opt_threshold = 0.75
+#   - num_MC = 200
 #
 # ==============================================================================
 
@@ -57,7 +60,7 @@ OUT_DIR <- file.path(this_dir_, "simulation_results", "data")
 dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
 
 num_cores <- 6L
-NUM_MC <- 500L
+NUM_MC <- 200L
 
 # Run flags
 run_part_a <- TRUE
@@ -139,11 +142,14 @@ trex_06_part_a <- function(num_MC = NUM_MC, high_dim = TRUE) {
 # ==============================================================================
 # Part B: MC — Memory-mapped X + use_memory_mapping = TRUE
 # ==============================================================================
-# Mirrors demo_TRexSelector_full_mmap_MonteCarlo() in C++.
+# Mirrors demo_TRexSelector_full_mmap_MonteCarlo() in C++ and Python's
+# run_mc_trex_full_mmap().
 #
-# Each MC trial writes X to a per-trial temporary mmap file and removes it
-# via on.exit() inside the factory lambda — mirroring the C++ RAII MmapFileGuard
-# declared before SyntheticDataMapped (LIFO cleanup, exception-safe).
+# .run_mc_trex_full_mmap() writes each trial's X to a per-trial temporary mmap
+# file and runs the selector INSIDE the execute_with_temp_mmap() callback —
+# mirroring the C++ RAII MmapFileGuard declared before SyntheticDataMapped
+# (LIFO cleanup, exception-safe). The mmap view never escapes the callback
+# (its backing file is unlinked on return).
 #
 # NOTE: mclapply forks child processes, so each trial runs in its own address
 # space; no cross-trial file conflicts are possible when using tempfile().
@@ -185,23 +191,19 @@ trex_06_part_b <- function(num_MC = NUM_MC, high_dim = TRUE) {
     snr       <- snr_values[[snr_idx]]
     base_seed <- 24L + (snr_idx - 1L) * 1000L
 
-    # Factory: generates X in memory, writes to mmap file, creates
-    # MemoryMappedMatrix, runs selector, removes file on exit.
-    # Mirrors C++ make_data_mmap lambda with MmapFileGuard + SyntheticDataMapped.
-    make_data_mmap <- function(mc, trial_seed) {
-      dat    <- dgp_gauss_snr(n, p, true_support, coefs = true_coefs, snr = snr,
-                              seed = trial_seed)
-
-      # execute_with_temp_mmap safely handles the temporary file lifecycle
-      X_mmap <- execute_with_temp_mmap(dat$X, function(x) x)
-
-      # Return a list where X is the mmap object; y and true_support are copies
-      list(X = X_mmap, y = dat$y, true_support = dat$true_support)
+    # Factory: generates the trial data in memory. .run_mc_trex_full_mmap()
+    # then writes X to a per-trial temp mmap file and runs the selector inside
+    # the execute_with_temp_mmap() callback (the previous pattern of returning
+    # the mmap view from the callback left it backed by an already-unlinked
+    # file).
+    make_data <- function(mc, trial_seed) {
+      dgp_gauss_snr(n, p, true_support, coefs = true_coefs, snr = snr,
+                    seed = trial_seed)
     }
 
     lbl    <- sprintf("SNR=%.2f [TLARS/mmap-XD]", snr)
-    result <- .run_mc_trex(make_data_mmap, ctrl, tFDR, base_seed, num_MC,
-                           num_cores, track_L_T = TRUE, label = lbl)
+    result <- .run_mc_trex_full_mmap(make_data, ctrl, tFDR, base_seed, num_MC,
+                                     num_cores, track_L_T = TRUE, label = lbl)
 
     fdr_vec[[snr_idx]]   <- result$mean_FDR
     tpr_vec[[snr_idx]]   <- result$mean_TPR

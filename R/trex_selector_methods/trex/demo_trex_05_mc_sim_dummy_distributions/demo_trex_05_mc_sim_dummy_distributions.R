@@ -8,9 +8,10 @@
 #
 # Base solvers compared (one result file pair per solver):
 #   TLARS — equiangular LARS path (stagnation stop AUTO-resolves to disabled).
-#   TOMP  — greedy orthogonal matching pursuit (stagnation stop enabled).
-#   TAFS  — greedy adaptive forward selection, rho_afs = 1.0 (stagnation stop
-#           enabled).
+#   TOMP  — greedy orthogonal matching pursuit (stagnation stop AUTO-resolves
+#           to enabled).
+#   TAFS  — greedy adaptive forward selection, rho_afs = 0.3 (stagnation stop
+#           AUTO-resolves to enabled).
 #
 # Mirrors:
 # cpp/trex_selector_methods/trex/demo_trex_05_mc_sim_dummy_distributions.cpp
@@ -45,7 +46,8 @@
 #  Scenario:
 #  ----------
 #  High-dimensional  (n = 300, p = 1000, s = 10).
-#  SNR sweep: {0.1, 0.2, ..., 2.0, 5.0}  (21 values).
+#  SNR sweep: {0.1, 0.2, 0.5, 0.6, 1.0, 2.0, 5.0}  (7 values, mirrors the
+#  current C++ grid and its committed results).
 #
 #  Two support scenarios:
 #    random support  — redrawn per trial;
@@ -83,17 +85,20 @@ OUT_DIR <- file.path(this_dir_, "simulation_results", "data")
 dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
 
 num_cores <- 6L
-NUM_MC <- 10L
+NUM_MC <- 200L
 run_trex_05 <- TRUE
 
 # ==============================================================================
-# Base solvers to compare (outer sweep; rho_afs only used by TAFS)
+# Base solvers to compare (outer sweep; rho_afs only meaningful for TAFS)
 # ==============================================================================
 
 SOLVERS <- list(
-  list(name = "TLARS", solver = "TLARS", rho_afs = NULL),
-  list(name = "TOMP",  solver = "TOMP",  rho_afs = NULL),
-  list(name = "TAFS",  solver = "TAFS",  rho_afs = 1.0)
+  list(name = "TLARS", solver = "TLARS", lambda2 = 0.0, rho_afs = 0.0,
+       ncgmp_variant = 0L),
+  list(name = "TOMP",  solver = "TOMP",  lambda2 = 0.0, rho_afs = 0.0,
+       ncgmp_variant = 0L),
+  list(name = "TAFS",  solver = "TAFS",  lambda2 = 0.0, rho_afs = 0.3,
+       ncgmp_variant = 0L)
 )
 
 
@@ -138,10 +143,10 @@ trx_05_dummy_distributions <- function(num_MC = NUM_MC, rnd_coef = FALSE,
   p    <- 1000L
   s    <- 10L
   tFDR <- 0.10
-  snr_values <- c(seq(0.1, 2.0, by = 0.1), 5.0)
+  snr_values <- c(0.1, 0.2, 0.5, 0.6, 1.0, 2.0, 5.0)  # mirrors current C++ grid
 
   cat("\n", strrep("=", 70L), "\n", sep = "")
-  cat("MC Simulation \xe2\x80\x94 Dummy Distribution Comparison  |  TLARS\n")
+  cat("MC Simulation \xe2\x80\x94 Dummy Distribution Comparison  |  TLARS / TOMP / TAFS\n")
   cat("  High-dimensional (p > n)\n")
   cat(sprintf("  n = %d,  p = %d,  s = %d,  num_MC = %d  [%s support]\n\n",
               n, p, s, num_MC, if (block_support) "block" else "random"))
@@ -153,70 +158,80 @@ trx_05_dummy_distributions <- function(num_MC = NUM_MC, rnd_coef = FALSE,
   # Solver sweep — one result file pair (txt + csv) per solver
   for (solver_entry in SOLVERS) {
 
-  # Result containers: distribution x SNR (reset per solver)
-  fdr_mat   <- matrix(0.0, nrow = n_dist, ncol = n_snr)
-  tpr_mat   <- matrix(0.0, nrow = n_dist, ncol = n_snr)
-  avg_L_mat <- matrix(0.0, nrow = n_dist, ncol = n_snr)
-  avg_T_mat <- matrix(0.0, nrow = n_dist, ncol = n_snr)
-  rownames(fdr_mat) <- rownames(tpr_mat) <-
-    rownames(avg_L_mat) <- rownames(avg_T_mat) <- dist_names
-  colnames(fdr_mat) <- colnames(tpr_mat) <-
-    colnames(avg_L_mat) <- colnames(avg_T_mat) <- as.character(snr_values)
+    # Result containers: distribution x SNR (reset per solver)
+    fdr_mat   <- matrix(0.0, nrow = n_dist, ncol = n_snr)
+    tpr_mat   <- matrix(0.0, nrow = n_dist, ncol = n_snr)
+    avg_L_mat <- matrix(0.0, nrow = n_dist, ncol = n_snr)
+    avg_T_mat <- matrix(0.0, nrow = n_dist, ncol = n_snr)
+    rownames(fdr_mat) <- rownames(tpr_mat) <-
+      rownames(avg_L_mat) <- rownames(avg_T_mat) <- dist_names
+    colnames(fdr_mat) <- colnames(tpr_mat) <-
+      colnames(avg_L_mat) <- colnames(avg_T_mat) <- as.character(snr_values)
 
 
-  # Simulation sweep: iterate over dummy distributions and SNR values
-  for (di in seq_along(DISTRIBUTIONS)) {
-    dist_entry <- DISTRIBUTIONS[[di]]
+    # Simulation sweep: iterate over dummy distributions and SNR values
+    for (di in seq_along(DISTRIBUTIONS)) {
+      dist_entry <- DISTRIBUTIONS[[di]]
 
-    ctrl_args <- list(
-      solver               = solver_entry$solver,
-      K                    = 20L,
-      max_dummy_multiplier = 10L,
-      use_max_T_stop       = TRUE,
-      lloop_strategy       = "STANDARD",
-      dummy_distribution   = dist_entry$dist
-    )
-    if (!is.null(solver_entry$rho_afs)) ctrl_args$rho_afs <- solver_entry$rho_afs
-    ctrl <- do.call(TRexSelectorNeo::trex_control, ctrl_args)
+      # Per-distribution ctrl — only dummy_distribution varies. Values taken
+      # from the C++ reference (demo_trex_05_mc_sim_dummy_distributions.cpp)
+      # — every option explicit. tloop_stagnation_stop is left unset (NULL =
+      # AUTO, C++ nullopt): resolved per solver family (disabled for TLARS,
+      # enabled for the greedy TOMP/TAFS).
+      ctrl <- TRexSelectorNeo::trex_control(
+        solver                   = solver_entry$solver,
+        lambda2                  = solver_entry$lambda2,
+        rho_afs                  = solver_entry$rho_afs,
+        ncgmp_variant            = solver_entry$ncgmp_variant,
+        K                        = 20L,
+        max_dummy_multiplier     = 10L,
+        use_max_T_stop           = TRUE,
+        opt_threshold            = 0.75,
+        lloop_strategy           = "STANDARD",
+        dummy_distribution       = dist_entry$dist,
+        tloop_max_stagnant_steps = 5L,
+        use_openmp               = FALSE,
+        use_memory_mapping       = FALSE
+      )
 
-    cat(sprintf("%s\nSolver: %s  |  Dummy distribution: %s\n%s\n\n",
-                strrep("=", 50L), solver_entry$name, dist_entry$name,
-                strrep("=", 50L)))
+      cat(sprintf("%s\nSolver: %s  |  Dummy distribution: %s\n%s\n\n",
+                  strrep("=", 50L), solver_entry$name, dist_entry$name,
+                  strrep("=", 50L)))
 
-    for (snr_idx in seq_along(snr_values)) {
-      snr       <- snr_values[[snr_idx]]
-      base_seed <- 24L + (snr_idx - 1L) * 1000L
+      for (snr_idx in seq_along(snr_values)) {
+        snr       <- snr_values[[snr_idx]]
+        base_seed <- 24L + (snr_idx - 1L) * 1000L
 
-      make_data <- local({
-        current_snr <- snr
-        use_block   <- block_support
-        function(mc, trial_seed) {
-          trial_support <- if (use_block) seq_len(s) else
-            make_support_random(s, p, seed = trial_seed)
-          trial_coefs <- rep(1.0, s)
-          dgp_gauss_snr(n, p, trial_support, coefs = trial_coefs,
-                        snr = current_snr, seed = trial_seed)
-        }
-      })
+        make_data <- local({
+          current_snr <- snr
+          use_block   <- block_support
+          function(mc, trial_seed) {
+            trial_support <- if (use_block) seq_len(s) else
+              make_support_random(s, p, seed = trial_seed)
+            trial_coefs <- rep(1.0, s)
+            dgp_gauss_snr(n, p, trial_support, coefs = trial_coefs,
+                          snr = current_snr, seed = trial_seed)
+          }
+        })
 
-      lbl    <- sprintf("SNR=%.2f [%s/%s]", snr, solver_entry$name, dist_entry$name)
-      result <- .run_mc_trex(make_data, ctrl, tFDR, base_seed, num_MC, num_cores,
-                             track_L_T = TRUE, label = lbl)
+        lbl    <- sprintf("SNR=%.2f [%s/%s]", snr, solver_entry$name, dist_entry$name)
+        result <- .run_mc_trex(make_data, ctrl, tFDR, base_seed, num_MC, num_cores,
+                               track_L_T = TRUE, label = lbl)
 
-      fdr_mat[di, snr_idx]   <- result$mean_FDR
-      tpr_mat[di, snr_idx]   <- result$mean_TPR
-      avg_L_mat[di, snr_idx] <- result$mean_L
-      avg_T_mat[di, snr_idx] <- result$mean_T
+        fdr_mat[di, snr_idx]   <- result$mean_FDR
+        tpr_mat[di, snr_idx]   <- result$mean_TPR
+        avg_L_mat[di, snr_idx] <- result$mean_L
+        avg_T_mat[di, snr_idx] <- result$mean_T
+      }
+      cat("\n")
     }
-    cat("\n")
-  }
 
-  stem <- sprintf("demo_trex_05_dummy_distributions_results_n%d_p%d_%s_%s",
-                  n, p, tolower(solver_entry$name),
-                  if (block_support) "block_support" else "random_support")
-  .save_and_print_mc(OUT_DIR, stem, num_MC, dist_names, snr_values,
-                     fdr_mat, tpr_mat, avg_L_mat, avg_T_mat)
-  cat("\n")
+    stem <- sprintf("demo_trex_05_dummy_distributions_results_n%d_p%d_%s_%s",
+                    n, p, tolower(solver_entry$name),
+                    if (block_support) "block_support" else "random_support")
+    .save_and_print_mc(OUT_DIR, stem, num_MC, dist_names, snr_values,
+                       fdr_mat, tpr_mat, avg_L_mat, avg_T_mat)
+    cat("\n")
 
   }  # end solver sweep
 }

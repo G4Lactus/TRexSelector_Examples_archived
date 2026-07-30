@@ -25,7 +25,9 @@ then high-dimensional `n = 1000, p = 5000`. Control via `make_mmap_trex_ctrl(sol
   requires writing the generated matrix to disk first (C++ uses `SyntheticDataMapped`,
   where `X` is never fully in RAM).
 
-`.print_and_save_d02` prints selected indices, FDP, TPP, `T_stop`, and `L`.
+`.print_and_save_d02` prints (dual console + file) the selected indices, FDP, TPP,
+the sparse `Phi_prime` / `Phi` structures, the dense `FDP_hat` / `R` matrices, the
+voting grid, and `T_stop` / `L`.
 
 ## Running
 
@@ -33,7 +35,8 @@ then high-dimensional `n = 1000, p = 5000`. Control via `make_mmap_trex_ctrl(sol
 Rscript R/trex_selector_methods/trex/demo_trex_06_mmap/demo_trex_06_mmap.R
 ```
 
-Each run writes a per-variable selection **CSV** (no `.txt`) to this demo's own
-`simulation_results/` folder — header `variable_index,phi_prime,selected,true_positive`,
-stems `d02_trex_mmap_demo_a_n{n}_p{p}.csv` and `d02_trex_mmap_demo_b_n{n}_p{p}.csv`. The
+Each run writes a `.txt` result block (dual console + file, with the sparse
+`Phi_prime`/`Phi` section) and a per-variable selection **CSV** to this demo's own
+`simulation_results/` folder — CSV header `variable_index,phi_prime,selected,true_positive`,
+stems `d02_trex_mmap_demo_a_n{n}_p{p}` and `d02_trex_mmap_demo_b_n{n}_p{p}`. The
 script sources `../../simulation_utils.R` and `../trex_sim_utils.R`.
