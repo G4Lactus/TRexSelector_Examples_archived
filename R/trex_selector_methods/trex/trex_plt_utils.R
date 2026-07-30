@@ -388,7 +388,7 @@ plot_fdr_tpr_vs_snr_grouped <- function(df, title, tfdr = DEFAULT_TFDR,
                      shapes[groups[[gi]]], tfdr, legend_title, xscale,
                      snr_values, fdr_top,
                      panel_title = if (ri == 1L)
-                       sprintf("%s %d–%d", legend_title,
+                       sprintf("%s %d-%d", legend_title,
                                starts[gi], ends[gi]) else NULL,
                      show_ylab = gi == 1L,
                      show_xlab = ri == length(METRICS))

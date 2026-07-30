@@ -65,8 +65,15 @@ save_figure <- function(plot, outdir, stem, formats = c("png", "pdf"),
   dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
   for (ext in formats) {
     path <- file.path(outdir, paste0(stem, ".", ext))
-    ggsave(path, plot = plot, width = width, height = height,
-           dpi = 300, bg = "white")
+    if (ext == "pdf" && isTRUE(capabilities("cairo"))) {
+      # cairo_pdf embeds UTF-8 (the em dashes in the demo titles); the base
+      # pdf device would substitute '-' for them.
+      ggsave(path, plot = plot, width = width, height = height,
+             dpi = 300, bg = "white", device = grDevices::cairo_pdf)
+    } else {
+      ggsave(path, plot = plot, width = width, height = height,
+             dpi = 300, bg = "white")
+    }
     cat(sprintf("Wrote: %s\n", path))
   }
 }
@@ -176,15 +183,17 @@ load_csv <- function(path) {
 
 #' Solid line + hollow markers per method for one metric (TPR / Usage panels).
 .lines_panel <- function(df, sweep, methods, metric, panel_title,
-                         xs, xscale, ylim = NULL, percent = FALSE) {
+                         xs, xscale, ylim = NULL, percent = FALSE,
+                         method_legend = TRUE) {
   sub <- .metric_df(df, sweep, methods, metric)
   if (percent) sub$value <- 100 * sub$value
+  guide <- if (method_legend) guide_legend(order = 1) else "none"
   p <- ggplot(sub, aes(x = .data[[sweep]], y = value,
                        color = method, shape = method)) +
     geom_line(linewidth = 0.6) +
     geom_point(size = 2.4, fill = NA, stroke = 0.9) +
     .method_scales(methods) +
-    guides(color = guide_legend(order = 1), shape = guide_legend(order = 1)) +
+    guides(color = guide, shape = guide) +
     labs(title = panel_title, x = .axis_label(sweep), y = NULL) +
     .sweep_x_scale(xs, xscale) +
     .panel_theme()
@@ -244,7 +253,10 @@ load_csv <- function(path) {
         order = 2,
         override.aes = list(color = lt_colors, shape = NA))) +
     .method_scales(methods) +
-    guides(color = guide_legend(order = 1), shape = guide_legend(order = 1)) +
+    # The method legend is carried by the TPR panel alone so patchwork's
+    # guide collection shows exactly ONE Method box (this panel's colour
+    # keys carry linetype info and would not dedupe against it).
+    guides(color = "none", shape = "none") +
     labs(title = "FDR: realized (solid) vs. estimated (dashed)",
          x = .axis_label(sweep), y = NULL) +
     .sweep_x_scale(xs, xscale) +
@@ -293,7 +305,8 @@ plot_biobank <- function(df, title, xscale = "linear") {
                       routing_window = ROUTING_FDR_WINDOW)
   p_use <- .lines_panel(df, sweep, methods, "Usage",
                         "Usage (% of screenings routed)", xs, xscale,
-                        ylim = c(0, 105), percent = TRUE)
+                        ylim = c(0, 105), percent = TRUE,
+                        method_legend = FALSE)
   .collect(p_tpr | p_fdr | p_use, title)
 }
 
