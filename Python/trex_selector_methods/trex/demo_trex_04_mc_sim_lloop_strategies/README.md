@@ -52,14 +52,14 @@ permuted per experiment) and **storage** (*stored* vs seed-derived *on-demand*):
    (conservative default, matches the CRAN R reference).
 2. **HCONCAT** — stored; horizontally expand (concatenate) dummy columns; prefix-stable.
 3. **PERMUTATION** — stored base dummy matrix, re-used via deterministic row permutations.
-4. **PERMUTATION_ONDEMAND** — seed-derived base + row permutations; nothing stored.
+4. **PERMUTATION_SEEDED** — seed-derived base + row permutations; nothing stored.
    Bit-identical to PERMUTATION for the same seed.
-5. **ONDEMAND** — seed-derived independent dummies; nothing stored.
+5. **SEEDED** — seed-derived independent dummies; nothing stored.
 6. **SKIPL_5p / SKIPL_10p / SKIPL_20p** — skip the L-loop entirely and use the
    fixed $L = \text{max\_dummy\_multiplier} \in \lbrace5, 10, 20\rbrace \times p$.
 
-(The former `DIRECT` / `PERMUTATION_DIRECT` names were renamed to `ONDEMAND` /
-`PERMUTATION_ONDEMAND`; the old names are no longer accepted by the binding.)
+(The former `DIRECT` / `PERMUTATION_DIRECT` names were renamed to `SEEDED` /
+`PERMUTATION_SEEDED`; the old names are no longer accepted by the binding.)
 
 ---
 
@@ -122,7 +122,7 @@ stable effect rather than Monte Carlo noise; numbers read off the fresh
 `..._{tlars,tomp,tafs}_random_support.txt`):
 
 - Under **TLARS** the adaptive strategies (STANDARD, HCONCAT, PERMUTATION,
-  PERMUTATION_ONDEMAND, ONDEMAND) hold FDR near or below the target tFDR $= 0.1$
+  PERMUTATION_SEEDED, SEEDED) hold FDR near or below the target tFDR $= 0.1$
   across the grid — STANDARD even trends *down* to $\approx 0.030$ at SNR 5 —
   while the fixed-budget `SKIPL` levels break control in ascending order of
   budget: `SKIPL_5p` stays under (max FDR $\approx 0.074$ near SNR 1.8),
@@ -146,7 +146,7 @@ stable effect rather than Monte Carlo noise; numbers read off the fresh
   path, not of `SKIPL` in general. See the C++ demo's
   [discussion](../../../../cpp/trex_selector_methods/trex/demo_trex_04_mc_sim_lloop_strategies/README.md#results-visualization).
 
-**Practical note**: the seed-based ONDEMAND / PERMUTATION_ONDEMAND strategies
+**Practical note**: the seed-based SEEDED / PERMUTATION_SEEDED strategies
 hold no dummy matrix in memory — the preferred choice at scale; SKIPL is a
 speed/convenience knob, not a drop-in replacement for the calibrated L-loop.
 

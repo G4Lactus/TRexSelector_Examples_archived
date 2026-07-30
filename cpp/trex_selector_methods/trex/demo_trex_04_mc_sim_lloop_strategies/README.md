@@ -29,14 +29,14 @@ The strategies span two orthogonal axes: **dummy source** (fresh independent dra
 1. **STANDARD** — stored; fresh i.i.d. dummy matrices at each L-loop iteration (conservative default, matches the CRAN R reference).
 2. **HCONCAT** — stored; horizontally expand (concatenate) dummy columns; prefix-stable.
 3. **PERMUTATION** — stored base dummy matrix, re-used via deterministic **row permutations** per experiment.
-4. **PERMUTATION_ONDEMAND** — seed-derived base + row permutations per experiment; nothing stored. Bit-identical to PERMUTATION for the same seed.
-5. **ONDEMAND** — seed-derived independent dummies per experiment; nothing stored.
+4. **PERMUTATION_SEEDED** — seed-derived base + row permutations per experiment; nothing stored. Bit-identical to PERMUTATION for the same seed.
+5. **SEEDED** — seed-derived independent dummies per experiment; nothing stored.
 6. **SKIPL** — skip the L-loop entirely and use $L = \text{max\_dummy\_multiplier}$, evaluated at:
    - **SKIPL_5p** ($L = 5p$)
    - **SKIPL_10p** ($L = 10p$)
    - **SKIPL_20p** ($L = 20p$)
 
-The library enum has **no** "Doubling" or "Fixed" strategy. (The former `DIRECT` / `PERMUTATION_DIRECT` names were renamed to `ONDEMAND` / `PERMUTATION_ONDEMAND`; the old names no longer exist.)
+The library enum has **no** "Doubling" or "Fixed" strategy. (The former `DIRECT` / `PERMUTATION_DIRECT` names were renamed to `SEEDED` / `PERMUTATION_SEEDED`; the old names no longer exist.)
 
 ---
 
@@ -66,7 +66,7 @@ All files are written to `simulation_results/data/`. One `.txt` + `.csv` pair is
 ### Main Result Files
 **`demo_trex_04_lloop_strategies_results_n300_p1000_{tlars,tomp,tafs}_random_support.txt`**
 
-Aligned table (written by the shared `save_and_print_mc_results`) with four metric rows — FDR, TPR, Avg L, Avg T — per strategy across the 21 SNR columns. The row label is the strategy name (STANDARD, HCONCAT, PERMUTATION, PERMUTATION_ONDEMAND, ONDEMAND, SKIPL_5p, SKIPL_10p, SKIPL_20p):
+Aligned table (written by the shared `save_and_print_mc_results`) with four metric rows — FDR, TPR, Avg L, Avg T — per strategy across the 21 SNR columns. The row label is the strategy name (STANDARD, HCONCAT, PERMUTATION, PERMUTATION_SEEDED, SEEDED, SKIPL_5p, SKIPL_10p, SKIPL_20p):
 
 ```
 ======================================================================
@@ -122,7 +122,7 @@ shared scale.
 
 Under **TLARS** (established, `num_MC = 200`, so a stable effect and not Monte
 Carlo noise), the adaptive strategies (STANDARD, HCONCAT, PERMUTATION,
-PERMUTATION_ONDEMAND, ONDEMAND) hold FDR near or below target — STANDARD even
+PERMUTATION_SEEDED, SEEDED) hold FDR near or below target — STANDARD even
 trends *down* to ≈0.037 at SNR 5 — while the fixed-budget `SKIPL` levels break FDR
 control in ascending order of budget: `SKIPL_5p` stays under target (max FDR
 ≈0.078), `SKIPL_10p` crosses only at the very top of the grid (max ≈0.112), and
@@ -234,8 +234,8 @@ multi-hour/overnight run. Once the three CSVs exist, render every figure with
 - **Avg L / Avg T**: how each strategy calibrates the dummy structure and when the T-loop stops; note the runaway `Avg T` under the larger SKIPL budgets.
 
 **Practical significance:**
-- The seed-based ONDEMAND / PERMUTATION_ONDEMAND strategies avoid holding any dummy matrix in memory — the preferred choice at scale.
-- PERMUTATION and PERMUTATION_ONDEMAND produce bit-identical selections for the same seed; they differ only in memory footprint.
+- The seed-based SEEDED / PERMUTATION_SEEDED strategies avoid holding any dummy matrix in memory — the preferred choice at scale.
+- PERMUTATION and PERMUTATION_SEEDED produce bit-identical selections for the same seed; they differ only in memory footprint.
 - SKIPL trades adaptivity for a fixed, larger dummy budget — and, as this demo shows, an over-large fixed budget can break FDR control. It is a convenience/speed knob, not a drop-in replacement for the calibrated L-loop.
 
 This C++ demo is based on `R/trex_selector_methods/trex/demo_trex_04_mc_sim_lloop_strategies.R`, and extends it: the R version fixes the base solver at TLARS, whereas the C++ version sweeps TLARS / TOMP / TAFS to test the LARS-specificity of the SKIPL overshoot.
