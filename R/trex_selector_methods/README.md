@@ -28,7 +28,7 @@ comparison probes) moved to the TRexSelector library test suite
 | File | Status | Description |
 |---|---|---|
 | [support_generators.R](support_generators.R) | Shared | Support-index construction helpers, sourced by demos across all variants: `make_support_capped_spread()` (deterministic evenly-spaced support with capped gap), `make_support_random()` (uniformly random support; internally uses `set.seed(seed + 500000L)`), `make_support_bt_one_per_block()` (one active predictor per BT block). All return 1-based R indices and mirror the C++ helpers. |
-| [simulation_utils.R](simulation_utils.R) | NEW — migrated to the TRexSelectorNeo R6 API (`TRexDASelector` / `TRexGVSSelector` + `compute_fdp()` / `compute_tpp()`) | Shared MC engine for the trex_da and trex_gvs demos: `plot_cormat()` (Plotly heatmap), table printers, the generic parallel MC runner `.run_mc()`, and per-DGP wrappers (`.run_mc_ar1()`, `.run_mc_nn()`, `.run_mc_equi()`, `.run_mc_bt()`, the block-sweep wrappers, and the GVS wrappers `.run_mc_hastie()` … `.run_mc_arma_blocks()` comparing EN / EN+AUG / IEN, plus the `.gvs_select()` adapter). |
+| [simulation_utils.R](simulation_utils.R) | NEW — migrated to the TRexSelectorNeo R6 API (`TRexGVSSelector` + `compute_fdp()` / `compute_tpp()`) | Shared MC engine for the trex_gvs demos plus generic output helpers: `plot_cormat()` (Plotly heatmap), table printers, and the GVS wrappers `.run_mc_hastie()` … `.run_mc_arma_blocks()` comparing EN / EN+AUG / IEN, plus the `.gvs_select()` adapter. (The DA-TRex MC engine lives in [trex_da/da_sim_common.R](trex_da/da_sim_common.R), sourced by the trex_da demos directly.) |
 
 The NEW-API trex demos additionally use their own utility file,
 [trex/trex_sim_utils.R](trex/trex_sim_utils.R) (see the
@@ -42,10 +42,10 @@ All demos run from any working directory, e.g.
 
 ```bash
 Rscript R/trex_selector_methods/trex/demo_trex_02_mc_sim_fixed_support/demo_trex_02_mc_sim_fixed_support.R
-Rscript R/trex_selector_methods/trex_da/demo_trex_da_01_ar1/demo_trex_da_01_ar1.R
+Rscript R/trex_selector_methods/trex_da/demo_trex_da_01_mc_sim_ar1/demo_trex_da_01_mc_sim_ar1.R
 ```
 
-The da / gvs MC suites additionally require `plotly` (correlation heatmaps)
-and use `parallel` for the MC loops. The trex_spca cross-check programs (which
+The gvs MC suite additionally requires `plotly` (correlation heatmaps); the
+da / gvs MC suites use `parallel` for the MC loops. The trex_spca cross-check programs (which
 additionally require `glmnet`) moved to the TRexSelector library test suite
 (`TRexSelector/cpp/tests/validation/trex_selector_methods/trex_spca/`).
