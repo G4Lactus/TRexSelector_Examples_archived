@@ -2,26 +2,33 @@
 # trex_scr_sim_utils.R
 # ==============================================================================
 #
-# Shared infrastructure for the Screen-TRex R demonstration suite.
+# Shared Monte Carlo infrastructure for the Screen-TRex R demonstration suite.
 #
-# Mirrors the two C++ demo-internal headers:
-#   cpp/trex_selector_methods/trex_screening/demo_trex_scr_common.hpp
-#   cpp/trex_selector_methods/trex_screening/demo_trex_scr_bb_common.hpp
+# Mirrors the Python suite modules
+#   Python/trex_selector_methods/trex_screening/trex_scr_common.py
+#   Python/trex_selector_methods/trex_screening/trex_scr_bb_common.py
+# and, through them, the C++ demo-internal headers
+#   cpp/trex_selector_methods/trex_screening/trex_screening_dgps.hpp
+#   cpp/trex_selector_methods/trex_screening/trex_screening_simulation_utils.hpp
 #
 # Provides:
 #   Section 1 — data-generating processes (i.i.d., AR(1), equi, block-equi),
 #   Section 2 — Screen-TRex control-parameter factories,
-#   Section 3 — single-run result printer,
-#   Section 4 — Monte Carlo runner + dual TXT/CSV table output (Screen-TRex),
-#   Section 5 — Biobank (Algorithm 1) helpers + MC table output.
+#   Section 3 — parallel Monte Carlo runner + dual TXT/CSV table output,
+#   Section 4 — Biobank (Algorithm 1) MC helpers + table output.
 #
-# NOTE on reproducibility: the C++ demos draw with std::mt19937; R uses its own
-# RNG stream. Seeds are mirrored as *labels*, but the realised random draws
-# differ, so R results are statistically comparable to the C++ reference — not
-# bit-identical.
+# Parallelism follows the suite convention: Monte Carlo trials run through
+# parallel::mclapply with mc.preschedule = FALSE, so every trial executes in
+# its own forked child process (deterministic teardown of the C++ selector
+# state, and set.seed() inside the trial is process-local).
+#
+# NOTE on reproducibility: the C++ demos draw with std::mt19937 and the Python
+# suite with NumPy's Generator; R uses its own RNG stream. Seeds are mirrored
+# as *labels*, but the realised random draws differ, so R results are
+# statistically comparable to the C++/Python reference — not bit-identical.
 #
 # Support sets and selected indices are 1-BASED throughout (R convention); the
-# C++ sources are 0-based.
+# C++/Python sources are 0-based.
 # ==============================================================================
 
 library(TRexSelectorNeo)
@@ -31,9 +38,9 @@ library(TRexSelectorNeo)
 # Section 1 — Data-generating processes
 # ==============================================================================
 
-#' Evenly-spaced sparse beta vector (mirrors make_beta() in demo 03).
+#' Evenly-spaced sparse beta vector (mirrors make_beta() in the cpp DGPs).
 #'
-#' Active indices are placed at round((i)*p/(p1+2)) for i = 1..p1 (0-based in
+#' Active indices are placed at round(i*p/(p1+2)) for i = 1..p1 (0-based in
 #' C++), converted to 1-based R indices.
 #'
 #' @param p        Total number of predictors.
@@ -67,7 +74,7 @@ make_beta <- function(p, p1, beta_val) {
   sweep(X, 2L, sds, "/")
 }
 
-#' i.i.d. Gaussian DGP (mirrors datagen::SyntheticData used in demos 01/02/06).
+#' i.i.d. Gaussian DGP (mirrors make_iid_dgp / datagen::SyntheticData).
 #'
 #' X ~ N(0, 1) i.i.d.; y = X beta + eps with SNR-calibrated noise.
 #'
@@ -86,7 +93,7 @@ dgp_iid_snr <- function(n, p, true_support, coefs, snr, seed) {
   list(X = X, y = y, true_support = sort(true_support))
 }
 
-#' AR(1) column-correlated DGP (mirrors dgp_ar1 in demo 03).
+#' AR(1) column-correlated DGP (mirrors make_ar1_dgp).
 dgp_ar1 <- function(n, p, p1, rho, snr, beta_val, seed) {
   set.seed(seed)
   innov_sd <- sqrt(1 - rho^2)
@@ -99,7 +106,7 @@ dgp_ar1 <- function(n, p, p1, rho, snr, beta_val, seed) {
   list(X = X, y = y, true_support = which(beta != 0))
 }
 
-#' Equicorrelated DGP (mirrors dgp_equi in demo 03).
+#' Equicorrelated DGP (mirrors make_equi_dgp).
 #' x_j = sqrt(rho) * f + sqrt(1 - rho) * w_j, shared factor f per observation.
 dgp_equi <- function(n, p, p1, rho, snr, beta_val, seed) {
   set.seed(seed)
@@ -113,7 +120,7 @@ dgp_equi <- function(n, p, p1, rho, snr, beta_val, seed) {
   list(X = X, y = y, true_support = which(beta != 0))
 }
 
-#' Block-equicorrelated DGP (mirrors dgp_block_equi in demo 03).
+#' Block-equicorrelated DGP (mirrors make_block_equi_dgp).
 #' Contiguous blocks, each with its own shared factor.
 dgp_block_equi <- function(n, p, p1, rho, n_blocks, snr, beta_val, seed) {
   set.seed(seed)
@@ -161,52 +168,38 @@ make_scr_trex_ctrl <- function(solver = "TLARS",
 }
 
 #' Screen-TRex method descriptors for the Ordinary-vs-Bootstrap comparison
-#' (mirrors default_methods()).
+#' (mirrors default_scr_methods() in trex_scr_common.py).
 default_scr_methods <- function() {
   list(
-    list(name = "Screen-TRex Ordinary",  trex_method = "TREX", bootstrap = FALSE),
-    list(name = "Screen-TRex Bootstrap", trex_method = "TREX", bootstrap = TRUE)
+    list(name = "Screen-TRex Ordinary: TLARS",     trex_method = "TREX", bootstrap = FALSE),
+    list(name = "Screen-TRex Bootstrap-CI: TLARS", trex_method = "TREX", bootstrap = TRUE)
   )
 }
 
 
 # ==============================================================================
-# Section 3 — Single-run result printer
+# Section 3 — Parallel Monte Carlo runner + table output (Screen-TRex)
 # ==============================================================================
 
-#' Print a single Screen-TRex selection block (mirrors print_screen_result()).
+#' Internal: run one_trial over mc = 0..num_MC-1 in parallel (fork per trial).
 #'
-#' @param sel          A selected TRexScreeningSelector object.
-#' @param true_support 1-based ground-truth active indices.
-.print_scr_result <- function(sel, true_support) {
-  selected <- sel$selected_indices
-  cat(sprintf("\n  Estimated FDR:  %.4f\n", sel$estimated_FDR))
-  if (!is.null(sel$estimated_correlation) &&
-      abs(sel$estimated_correlation) > 0) {
-    cat(sprintf("  Estimated rho:  %.4f\n", sel$estimated_correlation))
-  }
-  if (isTRUE(sel$used_bootstrap)) {
-    cat("  Bootstrap:      yes\n")
-    cat(sprintf("  Conf. level:    %.4f\n", sel$confidence_level))
-  }
-  cat(sprintf("  Selected (%d):  %s\n",
-              length(selected), paste(sort(selected), collapse = " ")))
-  fdp <- compute_fdp(selected, true_support)
-  tpp <- compute_tpp(selected, true_support)
-  cat(sprintf("  FDP: %.4f  |  TPP: %.4f\n", fdp, tpp))
-  cat(sprintf("  True support:   %s\n\n", paste(sort(true_support), collapse = " ")))
-  invisible(list(fdp = fdp, tpp = tpp))
+#' mc.preschedule = FALSE: each trial runs in its own forked child process, so
+#' the OS reclaims all memory (R heap + C++ heap) deterministically when the
+#' child exits, and per-trial set.seed() calls never interleave.
+.mc_map <- function(num_MC, one_trial, num_cores) {
+  # mc index runs 0..num_MC-1 (matches the cpp/Python seed bands)
+  res_list <- parallel::mclapply(0:(num_MC - 1L), one_trial,
+                                 mc.cores = num_cores, mc.preschedule = FALSE)
+  errs <- vapply(res_list, inherits, logical(1), what = "try-error")
+  if (any(errs)) stop("MC trial failed: ", res_list[[which(errs)[1]]])
+  res_list
 }
 
-
-# ==============================================================================
-# Section 4 — Monte Carlo runner + table output (Screen-TRex)
-# ==============================================================================
-
-#' Run num_MC Screen-TRex trials for one grid point.
+#' Run num_MC Screen-TRex trials for one grid point in parallel.
 #'
-#' Each trial uses the DGP factory with seed = base_seed + mc - 1 and a
-#' selector seed of -1 (hardware entropy per trial, mirroring the C++ MC loop).
+#' Mirrors run_mc_screen() in trex_scr_common.py: trial mc uses seed
+#' base_seed + mc (mc = 0..num_MC-1) and a selector seed of -1 (hardware
+#' entropy per trial, as in the cpp MC loop).
 #'
 #' @param num_MC       Monte Carlo trials.
 #' @param label        Progress label.
@@ -214,40 +207,74 @@ default_scr_methods <- function() {
 #' @param trex_ctrl    trex_control() object (constant across trials).
 #' @param screen_args  named list of trex_screen_control() arguments.
 #' @param base_seed    Trial seed base.
-#' @return list(avg_fdr, avg_tpr, avg_est_fdr).
+#' @param num_cores    Worker processes for mclapply.
+#' @return list(avg_fdr, avg_tpr, avg_est_fdr, sd_fdr, sd_tpr).
 run_mc_screen <- function(num_MC, label, make_data, trex_ctrl,
-                          screen_args, base_seed) {
-  fdp <- tpp <- est <- numeric(num_MC)
-  for (mc in seq_len(num_MC)) {
-    dat <- make_data(base_seed + mc - 1L)
+                          screen_args, base_seed, num_cores = 1L) {
+  one_trial <- function(mc) {
+    dat <- make_data(base_seed + mc)
     sc  <- TRexScreeningSelector$new(
       dat$X, dat$y, seed = -1L, verbose = FALSE,
       screen_control = do.call(trex_screen_control, screen_args),
       control        = trex_ctrl
     )
     sc$select()
-    sel      <- sc$selected_indices
-    fdp[mc]  <- compute_fdp(sel, dat$true_support)
-    tpp[mc]  <- compute_tpp(sel, dat$true_support)
-    est[mc]  <- sc$estimated_FDR
+    sel <- sc$selected_indices
+    c(fdp = compute_fdp(sel, dat$true_support),
+      tpp = compute_tpp(sel, dat$true_support),
+      est = sc$estimated_FDR)
   }
-  cat(sprintf("  %s -- done.  TPR=%.4f  FDR=%.4f  Est.FDR=%.4f\n",
-              label, mean(tpp), mean(fdp), mean(est)))
-  list(avg_fdr = mean(fdp), avg_tpr = mean(tpp), avg_est_fdr = mean(est))
+  res_mat <- do.call(rbind, .mc_map(num_MC, one_trial, num_cores))
+  out <- list(
+    avg_fdr     = mean(res_mat[, "fdp"]),
+    avg_tpr     = mean(res_mat[, "tpp"]),
+    avg_est_fdr = mean(res_mat[, "est"]),
+    sd_fdr      = if (num_MC > 1L) stats::sd(res_mat[, "fdp"]) else 0.0,
+    sd_tpr      = if (num_MC > 1L) stats::sd(res_mat[, "tpp"]) else 0.0
+  )
+  cat(sprintf("  %s - done.  TPR=%.4f  FDR=%.4f  Est.FDR=%.4f\n",
+              label, out$avg_tpr, out$avg_fdr, out$avg_est_fdr))
+  out
 }
 
-# Internal: format one right-aligned numeric row of a sweep table.
-.fmt_row <- function(name, metric, vec, name_w = 31, metric_w = 10,
-                     sweep_w = 10, col_w = 10) {
-  s <- paste0(formatC(name, width = -name_w, flag = "-"),
-              formatC(metric, width = -metric_w, flag = "-"),
-              strrep(" ", sweep_w))
-  s <- paste0(s, paste(formatC(sprintf("%.4f", vec), width = col_w), collapse = ""))
-  s
+# ------------------------------------------------------------------------------
+# Table layout (mirrors trex_scr_common.py / save_and_print_mc_results():
+# method name on its own line, metric rows indented beneath it, sweep values
+# right-aligned so the columns stay put regardless of name length).
+# ------------------------------------------------------------------------------
+.SCR_INDENT_W <- 2L
+.SCR_METRIC_W <- 23L
+.SCR_COL_W    <- 10L
+
+# Internal: one indented, right-aligned numeric row of a sweep table.
+.scr_metric_row <- function(label, vec, dp = 4L) {
+  paste0(strrep(" ", .SCR_INDENT_W),
+         formatC(label, width = -.SCR_METRIC_W, flag = "-"),
+         paste(formatC(sprintf(paste0("%.", dp, "f"), vec),
+                       width = .SCR_COL_W), collapse = ""))
+}
+
+# Internal: sweep-grid header row + separator width.
+.scr_header <- function(sweep_label, x_values) {
+  paste0(strrep(" ", .SCR_INDENT_W),
+         formatC(sweep_label, width = -.SCR_METRIC_W, flag = "-"),
+         paste(formatC(sprintf("%.2f", x_values), width = .SCR_COL_W),
+               collapse = ""))
+}
+
+# Internal: write a tidy long-format CSV (method, metric, <axis>, value) with
+# axis and value formatted at %.6f (mirrors the Python float handling).
+.scr_write_csv <- function(rows, axis_label, csv_path) {
+  csv_df <- do.call(rbind, rows)
+  csv_df[[3L]] <- sprintf("%.6f", csv_df[[3L]])
+  csv_df$value <- sprintf("%.6f", csv_df$value)
+  names(csv_df)[3L] <- axis_label
+  utils::write.csv(csv_df, csv_path, row.names = FALSE, quote = FALSE)
 }
 
 #' Save + print a sweep-variable Screen-TRex MC table (mirrors
-#' save_and_print_mc_results()). Writes TXT + tidy CSV and echoes to console.
+#' save_and_print_scr_mc() in trex_scr_common.py). Writes a human-readable TXT
+#' table (also echoed to console) and a tidy long-format CSV.
 #'
 #' @param num_MC       Monte Carlo trials.
 #' @param out_dir      Output directory.
@@ -269,27 +296,23 @@ save_and_print_scr_mc <- function(num_MC, out_dir, file_stem, x_values,
   add(strrep("=", 70L))
   add("")
 
-  hdr <- paste0(formatC("Method", width = -31, flag = "-"),
-                formatC("Metric", width = -10, flag = "-"),
-                formatC(sweep_label, width = -10, flag = "-"),
-                paste(formatC(sprintf("%.2f", x_values), width = 10), collapse = ""))
-  add(hdr)
-  add(strrep("-", nchar(hdr)))
+  add(.scr_header(sweep_label, x_values))
+  add(strrep("-", .SCR_INDENT_W + .SCR_METRIC_W + .SCR_COL_W * length(x_values)))
 
   for (nm in method_names) {
-    add(.fmt_row(nm, "FDR",      fdr_map[[nm]]))
-    add(.fmt_row("", "TPR",      tpr_map[[nm]]))
-    add(.fmt_row("", "Est. FDR", est_fdr_map[[nm]]))
     add("")
+    add(nm)                                # method name on its own line
+    add(.scr_metric_row("FDR",      fdr_map[[nm]]))
+    add(.scr_metric_row("TPR",      tpr_map[[nm]]))
+    add(.scr_metric_row("Est. FDR", est_fdr_map[[nm]]))
   }
+  add("")
 
-  txt <- paste(lines, collapse = "\n")
-  cat(txt, "\n")
+  cat(paste0(paste(lines, collapse = "\n"), "\n"))
   txt_path <- file.path(out_dir, paste0(file_stem, ".txt"))
   writeLines(lines, txt_path)
   cat(sprintf("[Info] TXT results saved to: %s\n", txt_path))
 
-  # tidy long CSV
   rows <- list()
   for (nm in method_names) {
     for (i in seq_along(x_values)) {
@@ -301,90 +324,168 @@ save_and_print_scr_mc <- function(num_MC, out_dir, file_stem, x_values,
         method = nm, metric = "Est. FDR", x = x_values[i], value = est_fdr_map[[nm]][i])
     }
   }
-  csv_df <- do.call(rbind, rows)
-  names(csv_df)[3L] <- sweep_label
   csv_path <- file.path(out_dir, paste0(file_stem, ".csv"))
-  utils::write.csv(csv_df, csv_path, row.names = FALSE, quote = FALSE)
+  .scr_write_csv(rows, sweep_label, csv_path)
   cat(sprintf("[Info] CSV results saved to: %s\n\n", csv_path))
 }
 
 
 # ==============================================================================
-# Section 5 — Biobank (Algorithm 1) helpers
+# Section 4 — Biobank (Algorithm 1) MC helpers
+# ==============================================================================
+#
+# Mirrors trex_scr_bb_common.py. The biobank workflow ("Algorithm 1") screens
+# MANY phenotypes against ONE shared design matrix X. Per phenotype it routes
+# adaptively:
+#   1. Screen-TRex Ordinary; accept if its estimated FDR lands in the window
+#      [lower_bound_FDR, upper_bound_FDR];
+#   2. else Screen-TRex Bootstrap-CI;
+#   3. else fall back to the classical T-Rex selector at tFDR.
+# The fraction of phenotypes routed to each method is the "Usage %". FDR/TPR
+# are accumulated conditionally on which method handled a phenotype; the
+# estimated-FDR series are unconditional.
 # ==============================================================================
 
-# Canonical method-name keys returned in the `method_used` column.
+# Canonical method-name keys returned in each record's `method_used` field.
 BIOBANK_METHODS <- c("Screen-TRex (ordinary)",
                      "Screen-TRex (bootstrap-CI)",
                      "T-Rex (fallback)")
 
-#' Print a single-phenotype biobank result (mirrors print_biobank_single_result()).
+# Display names used in the saved tables (mirror the Python/cpp display names).
+BIOBANK_DISPLAY <- c("Screen-TRex Ordinary: TLARS",
+                     "Screen-TRex Bootstrap-CI: TLARS",
+                     "T-Rex fallback: TLARS")
+
+#' Internal: build and run a biobank selector (mirrors makeBiobankControl()).
 #'
-#' @param rec          A single biobank record: the return value of
-#'                     selector$select() for a vector y (one BiobankScreenTRex
-#'                     record, with fields method_used, estimated_FDR,
-#'                     selected_indices, ...).
-#' @param true_support 1-based ground-truth active indices.
-.print_biobank_single <- function(rec, true_support) {
+#' @param X,Y                Design matrix and phenotype vector/matrix.
+#' @param use_memory_mapping Back the dummy matrices by on-disk files.
+#' @param R_boot             Bootstrap replicates for the CI rule.
+#' @param tFDR               Target FDR of the classical T-Rex fallback.
+#' @param seed               Selector seed (-1 = hardware entropy).
+#' @return select() result: one record (vector y) or a list of records (matrix Y).
+.run_biobank_selector <- function(X, Y, use_memory_mapping = FALSE,
+                                  R_boot = 1000L, tFDR = 0.10, seed = -1L) {
+  sel <- TRexBiobankScreeningSelector$new(
+    X, Y, tFDR = tFDR, seed = seed, verbose = FALSE,
+    biobank_control = trex_biobank_control(lower_bound_FDR = 0.05,
+                                           upper_bound_FDR = 0.15),
+    screen_control  = trex_screen_control(R_boot = R_boot),
+    control         = make_scr_trex_ctrl(use_memory_mapping = use_memory_mapping)
+  )
+  sel$select()
+}
+
+#' Internal: one per-phenotype record (mirrors _record() in trex_scr_bb_common.py).
+.biobank_record <- function(rec, true_support) {
   sel <- rec$selected_indices
-  cat(sprintf("\n  Method used:       %s\n", rec$method_used))
-  cat(sprintf("  Estimated FDR:     %.4f\n", rec$estimated_FDR))
-  cat(sprintf("  alpha_hat (ord):   %.4f\n", rec$estimated_FDR_screen_ordinary))
-  cat(sprintf("  alpha_hat_C (boot):%.4f\n", rec$estimated_FDR_screen_bootstrap))
-  cat(sprintf("  Selected (%d):  %s\n", length(sel), paste(sort(sel), collapse = " ")))
-  cat(sprintf("  FDP: %.4f  |  TPP: %.4f\n",
-              compute_fdp(sel, true_support), compute_tpp(sel, true_support)))
-  cat(sprintf("  True support:   %s\n\n", paste(sort(true_support), collapse = " ")))
+  list(method_used   = rec$method_used,
+       fdp           = compute_fdp(sel, true_support),
+       tpp           = compute_tpp(sel, true_support),
+       est_ordinary  = rec$estimated_FDR_screen_ordinary,
+       est_bootstrap = rec$estimated_FDR_screen_bootstrap)
 }
 
-#' Print a per-phenotype biobank table (mirrors print_biobank_phenotype_table()).
+#' One single-phenotype Algorithm-1 trial (mirrors _biobank_single_worker()).
 #'
-#' @param res           A list of biobank records (selector$select() for a
-#'                      matrix Y), one record per phenotype.
-#' @param true_supports Ground-truth supports (one entry per phenotype).
-.print_biobank_table <- function(res, true_supports) {
-  cat("\n", strrep("=", 80L), "\n", sep = "")
-  cat("=== Results by Phenotype ===\n")
-  cat(strrep("=", 80L), "\n\n", sep = "")
-  cat(sprintf("%6s  %-26s%10s%10s%10s%10s\n",
-              "Pheno", "Method", "Est.FDR", "Selected", "FDP", "TPP"))
-  cat(strrep("-", 80L), "\n", sep = "")
-  for (i in seq_along(true_supports)) {
-    rec <- res[[i]]
-    sel <- rec$selected_indices
-    cat(sprintf("%6d  %-26s%10.4f%10d%10.4f%10.4f\n",
-                i, rec$method_used, rec$estimated_FDR, length(sel),
-                compute_fdp(sel, true_supports[[i]]),
-                compute_tpp(sel, true_supports[[i]])))
+#' Support drawn from an RNG stream offset from the trial seed (by 500000),
+#' matching the cpp isolation of the support draw from design/noise.
+#'
+#' @return List of one per-phenotype record.
+biobank_single_trial <- function(n, p, support_size, snr, seed,
+                                 use_memory_mapping = FALSE, R_boot = 1000L,
+                                 tFDR = 0.10) {
+  set.seed(seed + 500000L)                 # isolated support RNG
+  sup <- sample.int(p, support_size)
+  dat <- dgp_iid_snr(n, p, sup, rep(1, support_size), snr, seed = seed)
+  rec <- .run_biobank_selector(dat$X, dat$y, use_memory_mapping, R_boot, tFDR)
+  list(.biobank_record(rec, dat$true_support))
+}
+
+#' One multi-phenotype Algorithm-1 trial (mirrors _biobank_multi_worker()).
+#'
+#' All q phenotypes share the design matrix X drawn with x_seed; phenotype k
+#' draws its own support and noise from seed sup_seed_base + k - 1 (0-based k
+#' in the Python reference).
+#'
+#' @return List of q per-phenotype records.
+biobank_multi_trial <- function(n, p, q, support_size, snr, x_seed,
+                                sup_seed_base, use_memory_mapping = FALSE,
+                                R_boot = 1000L, tFDR = 0.10) {
+  set.seed(x_seed)
+  X <- matrix(rnorm(n * p), n, p)          # shared design matrix
+  true_supports <- vector("list", q)
+  Y <- matrix(0, n, q)
+  for (k in seq_len(q)) {
+    set.seed(sup_seed_base + (k - 1L))
+    sup <- sort(sample.int(p, support_size))
+    true_supports[[k]] <- sup
+    beta <- numeric(p); beta[sup] <- 1
+    Y[, k] <- .make_response(X, beta, snr)
   }
-  cat("\n")
+  res <- .run_biobank_selector(X, Y, use_memory_mapping, R_boot, tFDR)
+  lapply(seq_len(q), function(k) .biobank_record(res[[k]], true_supports[[k]]))
 }
 
-#' Print a multi-phenotype biobank summary (mirrors print_biobank_summary()).
+#' Run num_MC biobank trials in parallel; return the flat list of records.
 #'
-#' @param res A list of biobank records (selector$select() for a matrix Y).
-.print_biobank_summary <- function(res) {
-  method_used <- vapply(res, function(r) r$method_used, character(1))
-  est_fdr     <- vapply(res, function(r) r$estimated_FDR, numeric(1))
-  n_sel       <- vapply(res, function(r) length(r$selected_indices), integer(1))
-  cat(strrep("=", 70L), "\n", sep = "")
-  cat("=== Summary ===\n")
-  cat(strrep("=", 70L), "\n", sep = "")
-  cat(sprintf("  Total phenotypes:        %d\n", length(res)))
-  cat(sprintf("  Screen-TRex (ordinary):  %d\n",
-              sum(method_used == "Screen-TRex (ordinary)")))
-  cat(sprintf("  Screen-TRex (bootstrap): %d\n",
-              sum(method_used == "Screen-TRex (bootstrap-CI)")))
-  cat(sprintf("  T-Rex (fallback):        %d\n",
-              sum(method_used == "T-Rex (fallback)")))
-  cat(sprintf("  Avg estimated FDR:       %.4f\n", mean(est_fdr)))
-  cat(sprintf("  Avg selected count:      %.2f\n\n", mean(n_sel)))
+#' Mirrors run_mc_biobank() in trex_scr_bb_common.py. trial_fn(mc) (with
+#' mc = 0..num_MC-1) returns a list of per-phenotype records (length 1 for a
+#' single-phenotype trial, q for a multi-phenotype trial).
+#'
+#' @param num_MC    Monte Carlo trials.
+#' @param trial_fn  function(mc) -> list of per-phenotype records.
+#' @param num_cores Worker processes for mclapply.
+run_mc_biobank <- function(num_MC, trial_fn, num_cores = 1L) {
+  chunks <- .mc_map(num_MC, trial_fn, num_cores)
+  do.call(c, chunks)
+}
+
+#' Aggregate one SNR level's records into per-method statistics
+#' (mirrors accumulate_snr() in trex_scr_bb_common.py).
+#'
+#' FDR/TPR are conditional on which method a phenotype was routed to; the
+#' estimated-FDR series are unconditional. Normalization is over the total
+#' number of phenotype screenings (q * num_MC for multi-phenotype trials).
+#'
+#' @param records         Flat list of per-phenotype records.
+#' @param target_FDR_trex Target FDR of the classical T-Rex fallback.
+#' @return Named list keyed by BIOBANK_METHODS with fields
+#'   usage (fraction in [0,1]), fdp, tpp, est.
+accumulate_snr <- function(records, target_FDR_trex) {
+  total <- length(records)
+  z <- setNames(numeric(length(BIOBANK_METHODS)), BIOBANK_METHODS)
+  cnt <- z; fdp <- z; tpp <- z; est <- z
+
+  for (r in records) {
+    m <- r$method_used
+    cnt[[m]] <- cnt[[m]] + 1
+    fdp[[m]] <- fdp[[m]] + r$fdp
+    tpp[[m]] <- tpp[[m]] + r$tpp
+    est[["Screen-TRex (ordinary)"]]     <- est[["Screen-TRex (ordinary)"]]     + r$est_ordinary
+    est[["Screen-TRex (bootstrap-CI)"]] <- est[["Screen-TRex (bootstrap-CI)"]] + r$est_bootstrap
+    est[["T-Rex (fallback)"]]           <- est[["T-Rex (fallback)"]]           + target_FDR_trex
+  }
+
+  out <- list()
+  for (m in BIOBANK_METHODS) {
+    out[[m]] <- list(
+      usage = if (total > 0) cnt[[m]] / total else 0.0,
+      fdp   = if (cnt[[m]] > 0) fdp[[m]] / cnt[[m]] else 0.0,   # conditional mean
+      tpp   = if (cnt[[m]] > 0) tpp[[m]] / cnt[[m]] else 0.0,   # conditional mean
+      est   = if (total > 0) est[[m]] / total else 0.0          # unconditional mean
+    )
+  }
+  out
 }
 
 #' Save + print a Biobank MC table with per-method Usage (%) rows
-#' (mirrors save_and_print_biobank_mc_results()).
+#' (mirrors save_and_print_biobank_mc() in trex_scr_bb_common.py).
+#'
+#' fdp_map/tpp_map/est_fdr_map/usage_map are keyed by display_names; each
+#' value is a per-SNR numeric vector. Usage is printed to 1 dp, the rest to 4.
 save_and_print_biobank_mc <- function(num_MC, out_dir, file_stem, snr_values,
-                                      method_names, fdp_map, tpp_map,
+                                      display_names, fdp_map, tpp_map,
                                       est_fdr_map, usage_map) {
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
   lines <- character(0)
@@ -397,35 +498,26 @@ save_and_print_biobank_mc <- function(num_MC, out_dir, file_stem, snr_values,
   add(strrep("=", 70L))
   add("")
 
-  hdr <- paste0(formatC("Method", width = -31, flag = "-"),
-                formatC("Metric", width = -12, flag = "-"),
-                formatC("SNR", width = -10, flag = "-"),
-                paste(formatC(sprintf("%.2f", snr_values), width = 10), collapse = ""))
-  add(hdr)
-  add(strrep("-", nchar(hdr)))
+  add(.scr_header("SNR", snr_values))
+  add(strrep("-", .SCR_INDENT_W + .SCR_METRIC_W + .SCR_COL_W * length(snr_values)))
 
-  row <- function(name, metric, vec, dp) {
-    paste0(formatC(name, width = -31, flag = "-"),
-           formatC(metric, width = -12, flag = "-"),
-           strrep(" ", 10L),
-           paste(formatC(sprintf(paste0("%.", dp, "f"), vec), width = 10),
-                 collapse = ""))
-  }
-  for (nm in method_names) {
-    add(row(nm, "Usage (%)", usage_map[[nm]] * 100, 1))
-    add(row("", "FDR",       fdp_map[[nm]],         4))
-    add(row("", "TPR",       tpp_map[[nm]],         4))
-    add(row("", "Est. FDR",  est_fdr_map[[nm]],     4))
+  for (nm in display_names) {
     add("")
+    add(nm)                                # method name on its own line
+    add(.scr_metric_row("Usage (%)", usage_map[[nm]] * 100, dp = 1L))
+    add(.scr_metric_row("FDR",       fdp_map[[nm]]))
+    add(.scr_metric_row("TPR",       tpp_map[[nm]]))
+    add(.scr_metric_row("Est. FDR",  est_fdr_map[[nm]]))
   }
+  add("")
 
-  cat(paste(lines, collapse = "\n"), "\n")
+  cat(paste0(paste(lines, collapse = "\n"), "\n"))
   txt_path <- file.path(out_dir, paste0(file_stem, ".txt"))
   writeLines(lines, txt_path)
   cat(sprintf("[Info] TXT results saved to: %s\n", txt_path))
 
   rows <- list()
-  for (nm in method_names) {
+  for (nm in display_names) {
     for (i in seq_along(snr_values)) {
       rows[[length(rows) + 1L]] <- data.frame(method = nm, metric = "Usage",
         snr = snr_values[i], value = usage_map[[nm]][i])
@@ -438,7 +530,7 @@ save_and_print_biobank_mc <- function(num_MC, out_dir, file_stem, snr_values,
     }
   }
   csv_path <- file.path(out_dir, paste0(file_stem, ".csv"))
-  utils::write.csv(do.call(rbind, rows), csv_path, row.names = FALSE, quote = FALSE)
+  .scr_write_csv(rows, "snr", csv_path)
   cat(sprintf("[Info] CSV results saved to: %s\n\n", csv_path))
 }
 
