@@ -10,30 +10,27 @@ Test whether spatially **scattering** the members of a correlated group across t
 
 ## Methods compared
 
-- **EN** — `GVS_type = "EN"`, `en_solver = "TENET"`
-- **EN+AUG** — `GVS_type = "EN"`, `en_solver = "TENET_AUG"`
-- **IEN** — `GVS_type = "IEN"`, `en_solver = "TENET"`
+- **TENET** — `GVS_type = "EN"`, `en_solver = "TENET"`
+- **TENET_AUG** — `GVS_type = "EN"`, `en_solver = "TENET_AUG"`
+- **TIENET_AUG** — `GVS_type = "IEN"` (`en_solver` not applicable; left at the library default)
 
-Shared controls: `K = 20`, `tFDR = 0.1`, `corr_max = 0.98`, `hc_dist = "single"`, `num_MC = 200`, `seed = 2026`.
+Shared controls: `K = 20`, `tFDR = 0.1`, `corr_max = 0.98`, `hc_dist = "Single"`, `num_MC = 200`, `seed = 2026`.
 
 ## Parts
 
-- **Part 1** — Single-run demo: correlation heatmap (scattered off-diagonal structure) + one EN / EN+AUG / IEN run.
-- **Part 2** — SNR sweep at fixed `sd_x = sqrt(0.01)` (`rho ~ 0.99`); `SNR in {0.1, 0.2, 0.5, 1.0, 2.0, 5.0}`.
-- **Part 3** — rho sweep at fixed `SNR = 2.0`; `rho in {0.10, 0.20, 0.30, 0.50, 0.70, 0.80, 0.90, 0.95, 0.99}` (`sd_x` derived from rho).
-- **Part 4** — 2-D SNR x rho grid (5 SNR x 6 rho).
+- **Part 1** — 2-D SNR x rho grid (5 SNR x 6 rho): `SNR in {0.2, 0.5, 1.0, 2.0, 5.0}`, `rho in {0.30, 0.50, 0.70, 0.90, 0.95, 0.99}` (`sd_x` derived from rho).
 
 ## Running
 
 ```bash
-Rscript R/trex_selector_methods/trex_gvs/demo_trex_gvs_02/demo_trex_gvs_02.R      # all parts
-Rscript R/trex_selector_methods/trex_gvs/demo_trex_gvs_02/demo_trex_gvs_02.R 8    # 8 worker cores
+Rscript R/trex_selector_methods/trex_gvs/demo_trex_gvs_02_mc_sim_scattered_blocks/demo_trex_gvs_02_mc_sim_scattered_blocks.R      # all parts
+Rscript R/trex_selector_methods/trex_gvs/demo_trex_gvs_02_mc_sim_scattered_blocks/demo_trex_gvs_02_mc_sim_scattered_blocks.R 8    # 8 worker cores
 ```
 
-Output is console-only (no result files are written); the `run_part_*` flags at the top toggle individual parts; the script sources the shared `../trex_gvs_dgps.R` and `../../simulation_utils.R`.
+Results are written to `simulation_results/data/` (`gvs_scattered_grouped_2d.txt` + `.csv`); the script sources the shared `../trex_gvs_dgps.R`, `../trex_gvs_sim_common.R`, and `../../simulation_utils.R`.
 
 ## Interpretation
 
 - Because HAC-based grouping clusters columns by **correlation**, not by column adjacency, scattering group members is expected to leave FDP/TPP patterns very close to Demo 01's contiguous-block results.
 - Best read side-by-side with Demo 01: similar results confirm that group discovery depends on correlation structure rather than spatial layout; a noticeable divergence would point to a layout-sensitive bug or clustering limitation.
-- As in Demo 01, expect IEN to remain conservative (very low FDP and TPP) on this all-active-groups design.
+- As in Demo 01, expect TIENET_AUG to remain conservative (very low FDP and TPP) on this all-active-groups design.

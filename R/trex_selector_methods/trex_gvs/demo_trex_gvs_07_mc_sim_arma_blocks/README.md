@@ -17,27 +17,24 @@ The swept correlation knob is `ar_coef` (shared by the AR/ARMA blocks) — **not
 
 ## Methods compared
 
-- **EN** — `GVS_type = "EN"`, `en_solver = "TENET"`
-- **EN+AUG** — `GVS_type = "EN"`, `en_solver = "TENET_AUG"`
-- **IEN** — `GVS_type = "IEN"`, `en_solver = "TENET"`
+- **TENET** — `GVS_type = "EN"`, `en_solver = "TENET"`
+- **TENET_AUG** — `GVS_type = "EN"`, `en_solver = "TENET_AUG"`
+- **TIENET_AUG** — `GVS_type = "IEN"` (`en_solver` not applicable; left at the library default)
 
-Shared controls: `K = 20`, `tFDR = 0.1`, `corr_max = 0.98`, `hc_dist = "single"`, `num_MC = 200`, `seed = 2026`.
+Shared controls: `K = 20`, `tFDR = 0.1`, `corr_max = 0.98`, `hc_dist = "Single"`, `num_MC = 200`, `seed = 2026`.
 
 ## Parts
 
-- **Part 1** — Single-run demo: block layout (with per-block model types), MA(3) lag-structure check (lag-1 correlation > 0, lag-4 ~ 0), and one EN / EN+AUG / IEN run.
-- **Part 2** — SNR sweep at fixed `ar_coef = 0.8`; `SNR in {0.1, 0.2, 0.5, 1.0, 2.0, 5.0}`.
-- **Part 3** — `ar_coef` sweep at fixed `SNR = 2.0`; `ar_coef in {0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.95}`.
-- **Part 4** — 2-D SNR x `ar_coef` grid (5 SNR x 6 ar_coef, ar_coef axis `{0.30, 0.50, 0.70, 0.80, 0.90, 0.95}`).
+- **Part 1** — 2-D SNR x `ar_coef` grid (5 SNR x 6 ar_coef): `SNR in {0.2, 0.5, 1.0, 2.0, 5.0}`, `ar_coef in {0.30, 0.50, 0.70, 0.80, 0.90, 0.95}` (labeled `ac=` in the result tables).
 
 ## Running
 
 ```bash
-Rscript R/trex_selector_methods/trex_gvs/demo_trex_gvs_07/demo_trex_gvs_07.R      # all parts
-Rscript R/trex_selector_methods/trex_gvs/demo_trex_gvs_07/demo_trex_gvs_07.R 8    # 8 worker cores
+Rscript R/trex_selector_methods/trex_gvs/demo_trex_gvs_07_mc_sim_arma_blocks/demo_trex_gvs_07_mc_sim_arma_blocks.R      # all parts
+Rscript R/trex_selector_methods/trex_gvs/demo_trex_gvs_07_mc_sim_arma_blocks/demo_trex_gvs_07_mc_sim_arma_blocks.R 8    # 8 worker cores
 ```
 
-Output is console-only (no result files are written); the `run_part_*` flags at the top toggle individual parts; the script sources the shared `../trex_gvs_dgps.R` and `../../simulation_utils.R`.
+Results are written to `simulation_results/data/` (`gvs_arma_blocks_2d.txt` + `.csv`); the script sources the shared `../trex_gvs_dgps.R`, `../trex_gvs_sim_common.R`, and `../../simulation_utils.R`.
 
 ## Interpretation
 

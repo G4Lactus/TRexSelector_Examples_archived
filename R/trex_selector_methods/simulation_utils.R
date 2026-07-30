@@ -259,25 +259,37 @@ cap_hc <- function(hc_dist) {
 #' @param groups         Optional oracle group labels: a length-p integer vector
 #'                       of contiguous 1-based cluster IDs (1..M). NULL (default)
 #'                       means groups are discovered from the data via HAC.
+#' @param seed           Selector seed; the MC loops pass the trial seed
+#'                       (mirrors the cpp/Python convention selector seed =
+#'                       cv_seed = trial seed). -1 = hardware entropy.
+#' @param cv_seed        CV fold-permutation seed; -1 derives it from `seed`.
 #'
 #' @return The TRexGVSSelector object after `$select()` has been called.
 .gvs_select <- function(X, y, tFDR, K, GVS_type, corr_max,
                         hc_dist        = "single",
                         en_solver      = "TENET",
                         lambda2_method = "CV_1SE_CCD",
-                        groups         = NULL) {
+                        groups         = NULL,
+                        seed           = -1L,
+                        cv_seed        = -1L) {
   gvs_args <- list(
     gvs_type       = GVS_type,
     corr_max       = corr_max,
     hc_linkage     = cap_hc(hc_dist),
     en_solver      = en_solver,
-    lambda2_method = lambda2_method)
+    lambda2_method = lambda2_method,
+    cv_seed        = cv_seed)
   if (!is.null(groups)) gvs_args$groups <- groups
 
+  # The TIENET_AUG-labeled rows run the augmented IEN solver, matching the
+  # cpp/Python reference; with the plain "TLARS" base solver the current
+  # library would silently route the IEN path to the native TIENET instead.
+  base_solver <- if (identical(GVS_type, "IEN")) "TIENET_AUG" else "TLARS"
+
   sel <- TRexSelectorNeo::TRexGVSSelector$new(
-    X, y, tFDR = tFDR, seed = -1L, verbose = FALSE,
+    X, y, tFDR = tFDR, seed = as.integer(seed), verbose = FALSE,
     gvs_control = do.call(TRexSelectorNeo::trex_gvs_control, gvs_args),
-    control     = TRexSelectorNeo::trex_control(solver = "TLARS", K = K))
+    control     = TRexSelectorNeo::trex_control(solver = base_solver, K = K))
   sel$select()
   sel
 }
@@ -857,7 +869,8 @@ cap_hc <- function(hc_dist) {
     dat <- dgp_hastie_snr(n = n, p = p, snr = snr, sd_x = sd_x,
                           seed = trial_seed)
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
-                       hc_dist, en_solver, lambda2_method)
+                       hc_dist, en_solver, lambda2_method,
+                       seed = trial_seed, cv_seed = trial_seed)
     ts <- which(dat$beta != 0)
     c(FDP = TRexSelectorNeo::compute_fdp(sel$selected_indices, ts),
       TPP = TRexSelectorNeo::compute_tpp(sel$selected_indices, ts))
@@ -946,7 +959,8 @@ cap_hc <- function(hc_dist) {
       seed       = trial_seed
     )
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
-                       hc_dist, en_solver, lambda2_method)
+                       hc_dist, en_solver, lambda2_method,
+                       seed = trial_seed, cv_seed = trial_seed)
     ts <- which(dat$beta != 0)
     c(FDP = TRexSelectorNeo::compute_fdp(sel$selected_indices, ts),
       TPP = TRexSelectorNeo::compute_tpp(sel$selected_indices, ts))
@@ -1018,7 +1032,8 @@ cap_hc <- function(hc_dist) {
     dat <- dgp_mixed_blocks_snr(n = n, p = p, snr = snr, sd_x = sd_x,
                                 seed = trial_seed)
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
-                       hc_dist, en_solver, lambda2_method)
+                       hc_dist, en_solver, lambda2_method,
+                       seed = trial_seed, cv_seed = trial_seed)
     ts <- which(dat$beta != 0)
     c(FDP = TRexSelectorNeo::compute_fdp(sel$selected_indices, ts),
       TPP = TRexSelectorNeo::compute_tpp(sel$selected_indices, ts))
@@ -1089,7 +1104,8 @@ cap_hc <- function(hc_dist) {
     dat <- dgp_neg_traps_snr(n = n, p = p, snr = snr, sd_x = sd_x,
                              seed = trial_seed)
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
-                       hc_dist, en_solver, lambda2_method)
+                       hc_dist, en_solver, lambda2_method,
+                       seed = trial_seed, cv_seed = trial_seed)
     ts <- which(dat$beta != 0)
     c(FDP = TRexSelectorNeo::compute_fdp(sel$selected_indices, ts),
       TPP = TRexSelectorNeo::compute_tpp(sel$selected_indices, ts))
@@ -1164,7 +1180,8 @@ cap_hc <- function(hc_dist) {
     dat <- dgp_t3_equi_blocks_snr(n = n, p = p, snr = snr, rho = rho,
                                    df = df, seed = trial_seed)
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
-                       hc_dist, en_solver, lambda2_method)
+                       hc_dist, en_solver, lambda2_method,
+                       seed = trial_seed, cv_seed = trial_seed)
     ts <- which(dat$beta != 0)
     c(FDP = TRexSelectorNeo::compute_fdp(sel$selected_indices, ts),
       TPP = TRexSelectorNeo::compute_tpp(sel$selected_indices, ts))
@@ -1236,7 +1253,8 @@ cap_hc <- function(hc_dist) {
     dat <- dgp_ar1_blocks_snr(n = n, p = p, snr = snr, rho = rho,
                               seed = trial_seed)
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
-                       hc_dist, en_solver, lambda2_method)
+                       hc_dist, en_solver, lambda2_method,
+                       seed = trial_seed, cv_seed = trial_seed)
     ts <- which(dat$beta != 0)
     c(FDP = TRexSelectorNeo::compute_fdp(sel$selected_indices, ts),
       TPP = TRexSelectorNeo::compute_tpp(sel$selected_indices, ts))
@@ -1315,7 +1333,8 @@ cap_hc <- function(hc_dist) {
     dat <- dgp_arma_blocks_snr(n = n, p = p, snr = snr, ar_coef = ar_coef,
                                seed = trial_seed)
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
-                       hc_dist, en_solver, lambda2_method)
+                       hc_dist, en_solver, lambda2_method,
+                       seed = trial_seed, cv_seed = trial_seed)
     ts <- which(dat$beta != 0)
     c(FDP = TRexSelectorNeo::compute_fdp(sel$selected_indices, ts),
       TPP = TRexSelectorNeo::compute_tpp(sel$selected_indices, ts))
