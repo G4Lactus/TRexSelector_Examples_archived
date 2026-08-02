@@ -98,9 +98,9 @@ trx_02_mc_sim_fixed_support <- function(num_MC = NUM_MC, high_dim = TRUE) {
   stem <- sprintf("demo_trex_02_mc_sim_fixed_support_trex_results_n%d_p%d_stagnation_window_%d",
                   n, p, stagnant_sw)
 
-  # Simulation loop: iterate over solvers, then SNR values. Results are
-  # re-saved after each solver (growing file), so an abort mid-run keeps the
-  # solvers already finished.
+  # Simulation loop: iterate over solvers, then SNR values.
+  # Results are re-saved after each solver (growing file).
+  # An abort mid-run keeps the solvers already finished.
   for (si in seq_along(SOLVERS_DEFAULT)) {
     solver <- SOLVERS_DEFAULT[[si]]
     ctrl   <- .make_trex_ctrl(solver, base_ctrl)

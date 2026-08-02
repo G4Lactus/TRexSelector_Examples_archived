@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Overnight: (re)generate the classical T-Rex suite's result data.
+# Overnight: (re)generate the classical T-Rex suite's result data with the R suite.
 #
 # Command:
 #   ./run_overnight.sh              # run everything (default)
