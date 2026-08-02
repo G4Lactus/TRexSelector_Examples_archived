@@ -15,6 +15,12 @@ C++ 0-based `{27, 149, 398, 420, 4}`, `s = 5`), coefficients `beta_j = 1`, `SNR 
 `tFDR = 0.1`, `seed = 58`. Each part runs twice: low-dimensional `n = 5000, p = 1000`
 then high-dimensional `n = 1000, p = 5000`. Control via `make_mmap_trex_ctrl(solver = "TLARS")`.
 
+The design belongs to the suite's shared i.i.d. Gaussian family — independent
+columns, so the empirical column-correlation matrix is essentially the identity
+at every `(n, p)` this demo runs:
+
+![Design-matrix correlation of the shared i.i.d. Gaussian DGP (shown at n=300, p=1000; natural order, no clustering)](../dgp_corr_plots/trex_gauss.png)
+
 ## Parts
 
 - Part A (`run_part_a`) — in-memory `X` + `use_memory_mapping = TRUE`: activates D-mmap

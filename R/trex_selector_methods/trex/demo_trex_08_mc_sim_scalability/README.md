@@ -26,6 +26,12 @@ Per-trial seeds are a stable function of `(n, p, mc)` —
 identical to the C++/Python demos, so cache reuse and reproducibility survive
 reordering or extending the grid.
 
+The design family is the suite's shared one — independent columns, so the
+empirical column-correlation matrix is essentially the identity at every grid
+point; `n` and `p` scale, the correlation structure does not:
+
+![Design-matrix correlation of the shared i.i.d. Gaussian DGP (shown at n=300, p=1000; natural order, no clustering)](../dgp_corr_plots/trex_gauss.png)
+
 Note (thread pinning): the C++/Python demos pin the selector's inner OpenMP pool
 to 6 threads; the R package exports no equivalent, so the library defaults apply
 — a documented divergence.
@@ -104,3 +110,9 @@ Rscript "$demo" smoke 3    # smoke grid, num_MC = 3
 The `smoke` / integer arguments are order-independent; the smoke grid is
 `(n, p) in {(150, 500), (200, 1000)}`. The script sources
 `../../support_generators.R` and `../trex_sim_utils.R`.
+
+Unlike the other demos in this suite, this one is **run manually** (it is not part
+of the overnight runner) — no data or figures are committed here. Run the script
+first, then `./generate_plots.sh` to render the scalability dashboard (runtime /
+memory / FDR versus problem size) from the wide summary CSV via the shared
+[`../trex_plt_utils.R`](../trex_plt_utils.R) into `simulation_results/plots/`.

@@ -17,6 +17,12 @@ via `make_support_random(s, p, seed = trial_seed)` (the `block_support = TRUE`
 contiguous-block variant is available but its call is commented out). SNR grid
 `seq(0.1, 2.0, by = 0.1)` plus `5.0` (21 values), `num_MC = 200` per strategy x SNR.
 
+The design is the suite's shared one — independent columns, so the empirical
+column-correlation matrix is essentially the identity, and every effect below is
+attributable to the dummy machinery rather than to design correlation:
+
+![Design-matrix correlation of the shared i.i.d. Gaussian DGP (natural order, no clustering)](../dgp_corr_plots/trex_gauss.png)
+
 ## Strategies compared
 
 `L_STRATEGIES` — **8 rows** (matches the 8-row reference study):
@@ -54,14 +60,43 @@ stopping time, `Avg L` the realized dummy multiplier:
 | Strategy | `L` | TLARS `T` | TLARS FDR | TOMP `T` | TOMP FDR | TAFS `T` | TAFS FDR |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | STANDARD (adaptive) | 1p | 5.0 | 0.027 | 5.6 | 0.024 | 5.0 | 0.026 |
-| SKIPL_5p | 5p | 26.2 | 0.066 | 6.2 | 0.028 | 6.4 | 0.044 |
-| SKIPL_10p | 10p | 85.2 | 0.101 | 6.0 | 0.019 | 6.2 | 0.028 |
+| SKIPL_5p | 5p | 26.2 | 0.066 | 6.2 | 0.028 | 6.4 | 0.043 |
+| SKIPL_10p | 10p | 85.2 | 0.101 | 6.0 | 0.018 | 6.2 | 0.028 |
 | SKIPL_20p | 20p | 146.5 | **0.131** | 6.0 | 0.008 | 6.1 | 0.015 |
 
 TPR is 1.0 everywhere at this SNR, so the differences are pure false-discovery
 cost. Only **TLARS** breaches `tFDR = 0.1`, and only once the L-loop is skipped
 with a large fixed budget. Under TOMP and TAFS the same budgets are *more*
 conservative, not less.
+
+The cross-solver grid renders the same conclusion over the full SNR sweep — a 2x3
+layout, rows = metric (FDR / TPR), columns = base solver (TLARS / TOMP / TAFS),
+with all eight L-loop strategies drawn in every panel. Colours are keyed to the
+strategy, so a strategy can be tracked across solvers; the three FDR panels share
+one y-scale and the three TPR panels share `[0, 1]`, so the columns are directly
+comparable:
+
+![FDR/TPR per base solver per L-loop strategy, 2x3 comparison grid](simulation_results/plots/demo_trex_04_lloop_strategies_grid.png)
+
+Reading the FDR row left to right: only the **TLARS** panel has curves that reach
+the `tFDR = 0.1` line at all. There the five adaptive strategies (STANDARD,
+HCONCAT, PERMUTATION, PERMUTATION_SEEDED, SEEDED) form a single tight band that
+humps at SNR 0.7 (0.057–0.066) and then falls away to 0.027–0.032 at SNR 5.0,
+while the three `SKIPL` levels fan out in ascending order of budget: `SKIPL_5p`
+stays under the line throughout (maximum 0.070 at SNR 1.4), `SKIPL_10p` tracks
+just above the adaptive band until it grazes the line at SNR 5.0 (0.101), and
+`SKIPL_20p` crosses it first at SNR 1.8 (0.101) and climbs to 0.131. In the
+**TOMP** and **TAFS** panels the eight curves stay bunched near the bottom —
+nothing exceeds 0.032 (TOMP, HCONCAT at SNR 1.8) or 0.048 (TAFS, `SKIPL_5p` at
+SNR 1.8) anywhere on the grid — and the budget ordering *reverses*: at SNR 5.0 a
+larger fixed `L` gives a *lower* FDR (TOMP 0.028 / 0.018 / 0.008 and TAFS
+0.043 / 0.028 / 0.015 for 5p / 10p / 20p). The TPR row shows why the FDR
+differences are the whole story at high SNR: every strategy under every solver
+reaches 1.0 by SNR 5.0, and the only visible power cost is `SKIPL_20p` lagging
+the field through the mid-SNR range under the two greedy solvers (at SNR 0.9,
+TOMP 0.640 and TAFS 0.726 against ≈ 0.77–0.81 for the adaptive strategies) —
+under TLARS the same budget is instead slightly *ahead* on power, which is the
+same deeper path that costs it the FDR control.
 
 ### Mechanism 1 — a larger dummy budget lets the T-loop run deeper
 
@@ -136,6 +171,37 @@ path shallow and the estimator inside the regime where per-experiment
 exchangeability also governs the vote. Over-provisioning dummies does not buy
 safety — it removes the brake. `SKIPL` remains a legitimate (and cheaper)
 shortcut for the greedy solvers, but with LARS a fixed budget must stay small.
+
+### Per-solver figure sets
+
+`./generate_plots.sh` also renders, for each base solver, the standard overview
+(all eight strategies on one FDR | TPR pair, log-scaled x-axis) and a
+de-cluttered grouped 2x2 view that splits the strategies across two columns. The
+CSV's "solver" column holds the strategy name, so the strategies are the legend.
+All figures go to `simulation_results/plots/` as PNG + PDF (this port renders no
+interactive HTML).
+
+**TLARS** — the only panel where the mechanism above is visible. The five
+adaptive strategies overlap almost exactly; the three `SKIPL` levels peel off
+upwards in budget order and keep rising with SNR instead of decaying:
+
+![TLARS: FDR and TPR versus SNR for all 8 L-loop strategies](simulation_results/plots/demo_trex_04_lloop_strategies_results_n300_p1000_tlars_random_support_fdr_tpr_vs_snr.png)
+
+![TLARS: FDR and TPR versus SNR, strategies split across a 2x2 grid](simulation_results/plots/demo_trex_04_lloop_strategies_results_n300_p1000_tlars_random_support_fdr_tpr_vs_snr_grouped.png)
+
+**TOMP** — all eight strategies collapse onto one band below 0.033, and the two
+larger `SKIPL` levels sit at the *bottom* of it rather than the top:
+
+![TOMP: FDR and TPR versus SNR for all 8 L-loop strategies](simulation_results/plots/demo_trex_04_lloop_strategies_results_n300_p1000_tomp_random_support_fdr_tpr_vs_snr.png)
+
+![TOMP: FDR and TPR versus SNR, strategies split across a 2x2 grid](simulation_results/plots/demo_trex_04_lloop_strategies_results_n300_p1000_tomp_random_support_fdr_tpr_vs_snr_grouped.png)
+
+**TAFS** (`rho_afs = 0.3`) — the same picture as TOMP, with `SKIPL_5p` the one
+mildly elevated row (maximum 0.048 at SNR 1.8, still half the target):
+
+![TAFS: FDR and TPR versus SNR for all 8 L-loop strategies](simulation_results/plots/demo_trex_04_lloop_strategies_results_n300_p1000_tafs_random_support_fdr_tpr_vs_snr.png)
+
+![TAFS: FDR and TPR versus SNR, strategies split across a 2x2 grid](simulation_results/plots/demo_trex_04_lloop_strategies_results_n300_p1000_tafs_random_support_fdr_tpr_vs_snr_grouped.png)
 
 ## Running
 

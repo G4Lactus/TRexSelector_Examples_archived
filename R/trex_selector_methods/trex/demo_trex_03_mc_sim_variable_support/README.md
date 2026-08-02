@@ -16,6 +16,12 @@ are fixed `beta_j = 1` (`rnd_coef = FALSE`; an isolated `rnorm(s)` stream is ava
 when `rnd_coef = TRUE`). Fine SNR grid `seq(0.1, 2.0, by = 0.1)` plus `5.0` (21 values),
 `num_MC = 200` per solver x SNR.
 
+Only the *location* of the active set varies — the design itself is unchanged from
+Demo 02: independent columns, so the empirical column-correlation matrix is
+essentially the identity:
+
+![Design-matrix correlation of the shared i.i.d. Gaussian DGP (natural order, no clustering)](../dgp_corr_plots/trex_gauss.png)
+
 ## What it computes
 
 - `run_trex_03` runs the MC over the same 14 `SOLVERS_DEFAULT` base solvers as Demo 02,
@@ -26,6 +32,40 @@ when `rnd_coef = TRUE`). Fine SNR grid `seq(0.1, 2.0, by = 0.1)` plus `5.0` (21 
 - Reports averaged FDR, TPR, Avg L, and Avg T per solver x SNR (`track_L_T = TRUE`).
 
 MC trials run in parallel over a hardcoded `num_cores <- 6L` (set at the top of the file).
+
+## Results
+
+`./generate_plots.sh` renders the tidy CSV through the shared ggplot2 plotter
+[`../trex_plt_utils.R`](../trex_plt_utils.R) into `simulation_results/plots/`
+(PNG + PDF; this port has no interactive HTML output). Only the `FDR` and `TPR`
+rows are plotted — the `AvgL` / `AvgT` rows stay in the `.txt` / `.csv` files.
+
+### Overview (all 14 solvers)
+
+FDR and TPR versus SNR on a log-scaled x-axis over the fine 21-point grid, every
+solver on one pair of panels:
+
+![FDR and TPR versus SNR for all 14 solvers](simulation_results/plots/demo_trex_03_mc_sim_variable_support_trex_results_n300_p1000_stagnation_window_5_fdr_tpr_vs_snr.png)
+
+*Left:* redrawing the support on every trial does not break FDR control — the
+maximum over the entire table is 0.0621 (TENET at SNR 0.7), well under the target
+`tFDR = 0.1` (black dotted line). The fine grid resolves a hump the coarse Demo 02
+grid only hints at: the four LARS-path solvers rise to 0.058–0.062 at SNR 0.7 and
+then decay to 0.029–0.031 by SNR 5.0, while the greedy family stays flatter and
+lower throughout (per-solver maxima 0.029–0.036, most of them reached at the top
+of the fine grid at SNR 1.7–1.8 rather than at the hump). *Right:* with
+`num_MC = 200` the power curves are smooth — TLARS climbs from 0.004 at SNR 0.1 to
+0.984 at SNR 2.0 and 1.000 at SNR 5.0. The two families cross near SNR 0.8: the
+LARS path leads below it, the greedy solvers above (at SNR 1.0, TSTEPWISE 0.884
+against TLARS 0.729).
+
+### Grouped 2x2 view (de-cluttered)
+
+The same data with the solvers split into two halves (columns) and FDR/TPR on the
+two rows, so each panel carries only ~7 curves. Both FDR panels share a y-scale,
+which makes the LARS-path hump and the flat greedy band directly comparable:
+
+![FDR and TPR versus SNR, solvers split across a 2x2 grid](simulation_results/plots/demo_trex_03_mc_sim_variable_support_trex_results_n300_p1000_stagnation_window_5_fdr_tpr_vs_snr_grouped.png)
 
 ## Running
 

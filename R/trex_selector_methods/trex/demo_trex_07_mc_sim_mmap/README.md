@@ -17,6 +17,12 @@ support is drawn once and shared across all trials via
 `make_mmap_trex_ctrl(solver = "TLARS", tloop_max_stagnant_steps = 7,
 use_openmp = FALSE, opt_threshold = 0.75)`.
 
+Both parts draw from the suite's shared i.i.d. Gaussian family — independent
+columns, so the empirical column-correlation matrix is essentially the identity;
+only the storage medium differs between them:
+
+![Design-matrix correlation of the shared i.i.d. Gaussian DGP (natural order, no clustering)](../dgp_corr_plots/trex_gauss.png)
+
 ## Parts
 
 - Part A (`run_part_a`, header "Part C") — MC with in-memory `X` + `use_memory_mapping = TRUE`:
@@ -30,6 +36,50 @@ use_openmp = FALSE, opt_threshold = 0.75)`.
 
 Both report averaged FDR, TPR, Avg L, Avg T per SNR (`track_L_T = TRUE`). MC trials run
 in parallel over a hardcoded `num_cores <- 6L` (set at the top of the file).
+
+## Results
+
+`./generate_plots.sh` renders both CSVs through the shared ggplot2 plotter
+[`../trex_plt_utils.R`](../trex_plt_utils.R) into `simulation_results/plots/`
+(PNG + PDF; this port has no interactive HTML output). Only the `FDR` and `TPR`
+rows are plotted — the `AvgL` / `AvgT` rows stay in the `.txt` / `.csv` files.
+
+### Storage scenarios overlaid (headline figure)
+
+Both parts run the identical sweep, so they belong on one pair of axes: the
+question is whether the storage medium is visible in the *results*, and two curves
+lying on top of each other answer it. The scenario takes the place of the "solver"
+row the other demos sweep (the plotter's `--overlay` mode):
+
+![FDR and TPR versus SNR for Part C and Part D, the two curves coinciding](simulation_results/plots/d03_trex_mmap_demo_c_vs_d.png)
+
+*Left:* FDR stays far below the target `tFDR = 0.1` under both pipelines across
+the whole grid, peaking at only 0.0474 (Part C) / 0.0486 (Part D) at SNR 1.0 and
+falling back to 0.0311 / 0.0321 at SNR 5.0. *Right:* the power curves are
+indistinguishable — TPR climbs from 0.0020 (C) / 0.0010 (D) at SNR 0.1 to
+1.0000 in both at SNR 5.0, passing through 0.7490 / 0.7500 at SNR 1.0.
+
+Across the five SNR levels the two pipelines never differ by more than 0.0062 in
+FDR (at SNR 0.5) or 0.0020 in TPR (at SNR 0.5 and 2.0) — Monte Carlo noise at
+`num_MC = 200`, not a systematic effect. This is the result the demo exists to
+show: memory-mapping `X` and `D` buys its memory savings without moving the
+statistics. The curves are *not* expected to coincide exactly — the two scenarios
+drive different data paths and the selector runs with `seed = -1` (hardware
+entropy), so their trials are not bit-identical.
+
+### Per-scenario overviews
+
+The same data one part at a time, for reading a single pipeline's numbers off a
+figure. A single TLARS row per part leaves the grouped 2x2 view nothing to
+de-clutter, so it is skipped:
+
+![Part C: FDR and TPR versus SNR](simulation_results/plots/d03_trex_mmap_demo_c_n300_p1000_sw7_fdr_tpr_vs_snr.png)
+
+![Part D: FDR and TPR versus SNR](simulation_results/plots/d03_trex_mmap_demo_d_n300_p1000_sw7_fdr_tpr_vs_snr.png)
+
+Both reproduce the Demo 02 TLARS row (fixed support, same SNR grid, same
+stagnation window) to within Monte Carlo noise, which is the cross-check that the
+mmap pipeline changes nothing statistically.
 
 ## Running
 

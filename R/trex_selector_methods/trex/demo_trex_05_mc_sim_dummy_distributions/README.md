@@ -20,6 +20,12 @@ contiguous-block variant is available but its call is commented out). SNR grid
 `{0.1, 0.2, 0.5, 0.6, 1.0, 2.0, 5.0}` (7 values, mirrors the current C++ grid),
 `num_MC = 200` per solver x distribution x SNR.
 
+The *design* is the suite's shared one and stays fixed across the sweep —
+independent columns, empirical column-correlation essentially the identity — so
+the only thing varying below is the distribution of the injected dummies:
+
+![Design-matrix correlation of the shared i.i.d. Gaussian DGP (natural order, no clustering)](../dgp_corr_plots/trex_gauss.png)
+
 The solver sweep (`SOLVERS`) is the outer loop; one `.txt` + `.csv` file pair is
 written per solver, with the lowercased solver name in the stem
 (`..._{tlars,tomp,tafs}_random_support`).
@@ -59,6 +65,73 @@ The C++ reference run shows all i.i.d. unit-variance rows FDR-equivalent at or b
 `tFDR` (isolated exceedances at very low SNR are small-`num_MC` noise), statistically
 indistinguishable TPR, and no systematic deviation even for the dependent
 UnifSphere_d5 rows.
+
+## Results
+
+This R run reproduces that pattern. `./generate_plots.sh` renders a cross-solver
+comparison grid plus one figure set per base solver through the shared ggplot2
+plotter [`../trex_plt_utils.R`](../trex_plt_utils.R), into
+`simulation_results/plots/` as PNG + PDF (this port renders no interactive HTML).
+
+### Cross-solver comparison grid
+
+The headline figure — a 2x3 layout, rows = metric (FDR / TPR), columns = base
+solver (TLARS / TOMP / TAFS), with all twelve dummy distributions drawn in every
+panel. Colours are keyed to the distribution, so a distribution can be tracked
+across solvers; the three FDR panels share one y-scale and the three TPR panels
+share `[0, 1]`:
+
+![FDR/TPR per base solver per dummy distribution, 2x3 comparison grid](simulation_results/plots/demo_trex_05_dummy_distributions_grid.png)
+
+Within each column the twelve curves are essentially one thick line. At SNR 1.0
+— at or next to the FDR peak for every solver — the entire twelve-distribution
+FDR spread is 0.0475 (Triangle) to 0.0575 (StudentT_df5) under TLARS, 0.0256
+(Rademacher) to 0.0325 (Gumbel) under TOMP, and 0.0311 (Gumbel) to 0.0429
+(Laplace) under TAFS: every value well under the target `tFDR = 0.1`, and the
+within-solver spread is of the same order as the gap between solvers. TPR at the same
+point is equally tight (TLARS 0.723–0.741, TOMP 0.859–0.875, TAFS 0.865–0.885),
+and every distribution reaches 1.0000 by SNR 5.0 under all three solvers. The
+*level* is solver-dependent — TLARS carries the familiar FDR hump around SNR
+0.6–1.0 while the greedy TOMP / TAFS run flatter and lower — but the choice of
+dummy distribution moves nothing systematically, not even the deliberately
+dependent **UnifSphere_d5** row (TLARS 0.0510, TOMP 0.0277, TAFS 0.0351 at SNR
+1.0, all mid-pack). Given that dummies are centered and L2-normalized before
+entering the solver, this is the demo's conclusion: the dummy distribution is
+effectively a free parameter, and the Normal default is justified.
+
+Note that the ranking of distributions is *not* stable across solvers — the
+TLARS minimum (Triangle) is not the TOMP minimum (Rademacher) or the TAFS
+minimum (Gumbel), and the TAFS maximum (Laplace) is mid-pack elsewhere. With
+`num_MC = 200` the residual spread is Monte Carlo noise, not an ordering.
+
+### Per-solver figure sets
+
+The usual overview (all twelve distributions on one FDR | TPR pair, log-scaled
+x-axis) plus a de-cluttered grouped 2x2 view that splits the distributions across
+two columns. The CSV's "solver" column holds the distribution name, so the
+distributions are the legend.
+
+**TLARS**:
+
+![TLARS: FDR and TPR versus SNR for all 12 dummy distributions](simulation_results/plots/demo_trex_05_dummy_distributions_results_n300_p1000_tlars_random_support_fdr_tpr_vs_snr.png)
+
+![TLARS: FDR and TPR versus SNR, distributions split across a 2x2 grid](simulation_results/plots/demo_trex_05_dummy_distributions_results_n300_p1000_tlars_random_support_fdr_tpr_vs_snr_grouped.png)
+
+**TOMP**:
+
+![TOMP: FDR and TPR versus SNR for all 12 dummy distributions](simulation_results/plots/demo_trex_05_dummy_distributions_results_n300_p1000_tomp_random_support_fdr_tpr_vs_snr.png)
+
+![TOMP: FDR and TPR versus SNR, distributions split across a 2x2 grid](simulation_results/plots/demo_trex_05_dummy_distributions_results_n300_p1000_tomp_random_support_fdr_tpr_vs_snr_grouped.png)
+
+**TAFS** (`rho_afs = 0.3`):
+
+![TAFS: FDR and TPR versus SNR for all 12 dummy distributions](simulation_results/plots/demo_trex_05_dummy_distributions_results_n300_p1000_tafs_random_support_fdr_tpr_vs_snr.png)
+
+![TAFS: FDR and TPR versus SNR, distributions split across a 2x2 grid](simulation_results/plots/demo_trex_05_dummy_distributions_results_n300_p1000_tafs_random_support_fdr_tpr_vs_snr_grouped.png)
+
+The grouped views are the ones to read when the overview curves overlap: with the
+twelve rows split across two columns on a shared y-scale, "no systematic
+deviation" is easier to confirm than on a single crowded panel.
 
 ## Running
 

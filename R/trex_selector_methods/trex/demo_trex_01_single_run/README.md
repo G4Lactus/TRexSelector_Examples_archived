@@ -18,6 +18,11 @@ settings:
 - High-dimensional (`p > n`): `n = 150`, `p = 300` — run first (as in C++).
 - Low-dimensional (`n > p`): `n = 5000`, `p = 1000` — run second.
 
+The design columns are drawn independently, so the design carries no correlation
+structure — the empirical column-correlation matrix is essentially the identity:
+
+![Design-matrix correlation of the shared i.i.d. Gaussian DGP (natural order, no clustering)](../dgp_corr_plots/trex_gauss.png)
+
 ## Control
 
 `trex_control(solver = "TLARS", K = 20, max_dummy_multiplier = 10,
