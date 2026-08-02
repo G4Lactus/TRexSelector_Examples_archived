@@ -255,16 +255,34 @@ marker_stride <- function(values) max(1L, length(values) %/% 10L)
                      limits = c(lo - pad, hi + pad), expand = expansion(0))
 }
 
-#' The shared panel look: light major/minor grid, bold panel title.
+#' The shared panel look: recessive grid, bold panel title.
+#'
+#' Grid convention (family-wide): major gridlines solid, minor gridlines
+#' dashed, both faint enough to stay behind the data — the curves carry the
+#' figure, the grid only helps read values off it.
 .panel_theme <- function() {
   theme_bw(base_size = 11) +
     theme(
-      panel.grid.major = element_line(colour = "grey70", linewidth = 0.4),
-      panel.grid.minor = element_line(colour = "grey85", linewidth = 0.25),
+      panel.grid.major = element_line(colour = "grey88", linewidth = 0.3),
+      panel.grid.minor = element_line(colour = "grey92", linewidth = 0.25,
+                                      linetype = "dashed"),
       plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
       legend.title = element_text(size = 10, face = "bold"),
       legend.text = element_text(size = 9),
       legend.background = element_rect(colour = "grey55", linewidth = 0.3))
+}
+
+#' Rate-axis breaks: FDR panels resolve to 0.02 (minor 0.01), the 0-1 rate
+#' panels (TPR) to 0.2 (minor 0.1). Wide FDR ranges fall back to a coarser
+#' step so the axis never crowds.
+.rate_y_scale <- function(metric, top = NULL) {
+  if (identical(metric, "FDR")) {
+    step <- if (!is.null(top) && top > 0.3) 0.05 else 0.02
+  } else {
+    step <- 0.2
+  }
+  scale_y_continuous(breaks = scales::breaks_width(step),
+                     minor_breaks = scales::breaks_width(step / 2))
 }
 
 #' Place a panel's own legend inside the plotting area (grouped figure /
@@ -327,7 +345,7 @@ save_figure <- function(plot, outdir, stem, formats = c("png", "pdf"),
          x = if (show_xlab) "Signal-to-noise ratio (SNR)" else NULL,
          y = if (show_ylab) unname(METRIC_LABELS[metric]) else NULL) +
     .sweep_x_scale(snr_values, xscale, ticks = choose_ticks(snr_values)) +
-    scale_y_continuous(breaks = scales::breaks_extended(6)) +
+    .rate_y_scale(metric, fdr_top) +
     .panel_theme()
   ylim <- if (metric == "FDR") c(0.0, fdr_top) else c(-0.02, 1.02)
   p + coord_cartesian(ylim = ylim)
@@ -692,6 +710,7 @@ plot_scalability_dashboard <- function(df, title, tfdr = DEFAULT_TFDR,
     scale_color_manual(name = NULL, values = slv_cols) +
     scale_shape_manual(name = NULL, values = slv_shapes) +
     .scal_p_scale(p_values, xscale) +
+    .rate_y_scale("FDR", fdr_top) +
     coord_cartesian(ylim = c(0.0, fdr_top)) +
     labs(title = "FDR control at scale",
          x = "Number of features p",

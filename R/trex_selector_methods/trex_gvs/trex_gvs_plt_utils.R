@@ -97,8 +97,9 @@ VIOLATION <- "cyan"
 .panel_theme <- function() {
   theme_bw(base_size = 11) +
     theme(
-      panel.grid.major = element_line(colour = "grey70", linewidth = 0.4),
-      panel.grid.minor = element_line(colour = "grey85", linewidth = 0.25),
+      panel.grid.major = element_line(colour = "grey88", linewidth = 0.3),
+      panel.grid.minor = element_line(colour = "grey92", linewidth = 0.25,
+                                      linetype = "dashed"),
       plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
       legend.title = element_text(size = 10, face = "bold"),
       legend.text = element_text(size = 9),
