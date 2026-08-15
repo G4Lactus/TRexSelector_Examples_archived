@@ -1,0 +1,6 @@
+Library line:   TRexSelector dev_beyond
+Checkout:       ~/Documents/C++/TRexSelector-beyond
+Last validated: 13d84a8 (2026-08-15, drop-recovery semantics: TLASSO/TENET/TIENET + AUG wrappers all 10/10 machine precision vs CRAN tlars)
+Install:        cpp  -> cmake --preset local-install && cmake --build --preset local-install-build && cmake --install cpp/build/release-portable   (in the checkout)
+                R    -> R CMD INSTALL --library=~/Rlibs/trex-beyond <checkout>/R/TRexSelectorNeo
+                        demos: library(TRexSelectorNeo, lib.loc = "~/Rlibs/trex-beyond")

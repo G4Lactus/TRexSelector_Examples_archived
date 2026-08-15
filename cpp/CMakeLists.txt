@@ -9,7 +9,7 @@
 #   cmake -S cpp -B cpp/build/debug -DCMAKE_PREFIX_PATH=<prefix>
 #
 # The CMakePresets.json in this directory sets CMAKE_PREFIX_PATH to
-# ../../TRexSelector/cpp/install by default.
+# ../../TRexSelector-beyond/cpp/install by default.
 # =============================================================================
 cmake_minimum_required(VERSION 3.23...4.3)
 

@@ -9,7 +9,7 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "CMAKE_PREFIX_PATH": "${sourceDir}/../../TRexSelector/cpp/install"
+                "CMAKE_PREFIX_PATH": "${sourceDir}/../../TRexSelector-beyond/cpp/install"
             }
         },
         {
@@ -20,7 +20,7 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "CMAKE_PREFIX_PATH": "${sourceDir}/../../TRexSelector/cpp/install"
+                "CMAKE_PREFIX_PATH": "${sourceDir}/../../TRexSelector-beyond/cpp/install"
             }
         }
     ],

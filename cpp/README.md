@@ -20,7 +20,7 @@ cmake --build <TRexSelector-build-dir> --target install
 ```
 
 The CMake presets in this directory expect the install tree at
-`../../TRexSelector/cpp/install`. Adjust `CMAKE_PREFIX_PATH` in
+`../../TRexSelector-beyond/cpp/install`. Adjust `CMAKE_PREFIX_PATH` in
 `CMakePresets.json` if your TRexSelector installation is elsewhere.
 
 ---
