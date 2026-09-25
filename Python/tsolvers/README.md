@@ -24,18 +24,18 @@ serialization can be inspected in isolation.
 
 | # | Solver | Folder | Strategy | Binding class |
 |---|--------|--------|----------|---------------|
-| 01 | **T-LARS** | [demo_ts_01_tlars/](demo_ts_01_tlars/README.md) | Least Angle Regression | `tsolvers.lars_based.TLARS_Solver` |
-| 02 | **T-LASSO** | [demo_ts_02_tlasso/](demo_ts_02_tlasso/README.md) | Lasso path | `tsolvers.lars_based.TLASSO_Solver` |
-| 03 | **T-Stepwise** | [demo_ts_03_tstepwise/](demo_ts_03_tstepwise/README.md) | Forward stepwise regression | `tsolvers.lars_based.TSTEPWISE_Solver` |
-| 04 | **T-ENET** | [demo_ts_04_tenet/](demo_ts_04_tenet/README.md) | Elastic net | `tsolvers.lars_based.TENET_Solver` |
-| 05 | **T-Stagewise** | [demo_ts_05_tstagewise/](demo_ts_05_tstagewise/README.md) | Forward stagewise regression | `tsolvers.lars_based.TSTAGEWISE_Solver` |
-| 06 | **T-OMP** | [demo_ts_06_tomp/](demo_ts_06_tomp/README.md) | Orthogonal matching pursuit | `tsolvers.omp_based.TOMP_Solver` |
-| 07 | **T-GP** | [demo_ts_07_tgp/](demo_ts_07_tgp/README.md) | Gradient pursuit | `tsolvers.omp_based.TGP_Solver` |
-| 08 | **T-ACGP** | [demo_ts_08_tacgp/](demo_ts_08_tacgp/README.md) | Approximate conjugate gradient pursuit | `tsolvers.omp_based.TACGP_Solver` |
-| 09 | **T-MP** | [demo_ts_09_tmp/](demo_ts_09_tmp/README.md) | Matching pursuit | `tsolvers.omp_based.TMP_Solver` |
-| 10 | **T-NCGMP** | [demo_ts_10_tncgmp/](demo_ts_10_tncgmp/README.md) | Norm-corrective generalized matching pursuit | `tsolvers.omp_based.TNCGMP_Solver` |
-| 11 | **T-OLS** | [demo_ts_11_tools/](demo_ts_11_tools/README.md) | Orthogonal least squares | `tsolvers.omp_based.TOOLS_Solver` |
-| 12 | **T-AFS** | [demo_ts_12_tafs/](demo_ts_12_tafs/README.md) | Adaptive forward stepwise | `tsolvers.afs_based.TAFS_Solver` |
+| 01 | **T-LARS** | [demo_ts_01_tlars/](demo_ts_01_tlars/README.md) | Least Angle Regression | `tsolvers.ad.lars_based.TLARS_Solver` |
+| 02 | **T-LASSO** | [demo_ts_02_tlasso/](demo_ts_02_tlasso/README.md) | Lasso path | `tsolvers.ad.lars_based.TLASSO_Solver` |
+| 03 | **T-Stepwise** | [demo_ts_03_tstepwise/](demo_ts_03_tstepwise/README.md) | Forward stepwise regression | `tsolvers.ad.lars_based.TSTEPWISE_Solver` |
+| 04 | **T-ENET** | [demo_ts_04_tenet/](demo_ts_04_tenet/README.md) | Elastic net | `tsolvers.ad.lars_based.TENET_Solver` |
+| 05 | **T-Stagewise** | [demo_ts_05_tstagewise/](demo_ts_05_tstagewise/README.md) | Forward stagewise regression | `tsolvers.ad.lars_based.TSTAGEWISE_Solver` |
+| 06 | **T-OMP** | [demo_ts_06_tomp/](demo_ts_06_tomp/README.md) | Orthogonal matching pursuit | `tsolvers.ad.omp_based.TOMP_Solver` |
+| 07 | **T-GP** | [demo_ts_07_tgp/](demo_ts_07_tgp/README.md) | Gradient pursuit | `tsolvers.ad.omp_based.TGP_Solver` |
+| 08 | **T-ACGP** | [demo_ts_08_tacgp/](demo_ts_08_tacgp/README.md) | Approximate conjugate gradient pursuit | `tsolvers.ad.omp_based.TACGP_Solver` |
+| 09 | **T-MP** | [demo_ts_09_tmp/](demo_ts_09_tmp/README.md) | Matching pursuit | `tsolvers.ad.omp_based.TMP_Solver` |
+| 10 | **T-NCGMP** | [demo_ts_10_tncgmp/](demo_ts_10_tncgmp/README.md) | Norm-corrective generalized matching pursuit | `tsolvers.ad.omp_based.TNCGMP_Solver` |
+| 11 | **T-OLS** | [demo_ts_11_tools/](demo_ts_11_tools/README.md) | Orthogonal least squares | `tsolvers.ad.omp_based.TOOLS_Solver` |
+| 12 | **T-AFS** | [demo_ts_12_tafs/](demo_ts_12_tafs/README.md) | Adaptive forward stepwise | `tsolvers.ad.afs_based.TAFS_Solver` |
 
 Every demo has the same four parts (mirroring the cpp files):
 

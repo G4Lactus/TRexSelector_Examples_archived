@@ -31,7 +31,7 @@ solver.executeStep(T_stop, early_stop=True)
 
 so, with `early_stop=True`, the run terminates early once the number of dummy variables in the active set reaches $T_{\text{stop}}$.
 
-The solver class is `TENET_Solver` from `trex_selector_neo.tsolvers.lars_based`; the constructor takes `lambda2` as an additional positional argument.
+The solver class is `TENET_Solver` from `trex_selector_neo.tsolvers.ad.lars_based`; the constructor takes `lambda2` as an additional positional argument.
 
 ---
 

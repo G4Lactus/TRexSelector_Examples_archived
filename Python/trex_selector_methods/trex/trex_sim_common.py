@@ -302,8 +302,8 @@ def _get_lloop_map():
             "STANDARD":             trex.LLoopStrategy.STANDARD,
             "HCONCAT":              trex.LLoopStrategy.HCONCAT,
             "PERMUTATION":          trex.LLoopStrategy.PERMUTATION,
-            "PERMUTATION_ONDEMAND": trex.LLoopStrategy.PERMUTATION_ONDEMAND,
-            "ONDEMAND":             trex.LLoopStrategy.ONDEMAND,
+            "PERMUTATION_SEEDED": trex.LLoopStrategy.PERMUTATION_SEEDED,
+            "SEEDED":             trex.LLoopStrategy.SEEDED,
             "SKIPL":                trex.LLoopStrategy.SKIPL,
         }
     return _LLOOP_MAP

@@ -24,7 +24,8 @@ import sys
 import numpy as np
 
 from trex_selector_neo.ml_methods import LpNormScaler, NormType
-from trex_selector_neo.tsolvers.omp_based import TACGP_Solver
+from trex_selector_neo.tsolvers.ad.omp_based import TACGP_Solver
+from trex_selector_neo.tsolvers.ad import SolverOptions
 from trex_selector_neo.utils import get_max_threads, numpy_to_memmap, set_num_threads
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -63,8 +64,7 @@ def demo_early_stopping(high_dim, rnd_coef, T_stop):
     X, D, y = gen_synthetic_data(n, p, num_dummies, true_support, true_coefs,
                                  snr, seed=42)
 
-    solver = TACGP_Solver(X, D, y, normalize=True, intercept=True,
-                          verbose=True)
+    solver = TACGP_Solver(X, D, y, SolverOptions(normalize=True, intercept=True, verbose=True))
     solver.executeStep(T_stop, early_stop=True)
 
     print_selection(solver, true_support)
@@ -105,8 +105,9 @@ def demo_with_external_normalizer(high_dim, rnd_coef, T_stop):
 
     y -= y.mean()
 
-    solver = TACGP_Solver(X, D, y, normalize=False, intercept=False,
-                          verbose=True)
+    solver = TACGP_Solver(
+        X, D, y,
+        SolverOptions(normalize=False, intercept=False, verbose=True))
     solver.executeStep(T_stop, early_stop=True)
 
     print_selection(solver, true_support)
@@ -137,16 +138,18 @@ def demo_serialization():
                                  snr, seed=42)
 
     # Reference solver: run until T_stop_final.
-    solver_ref = TACGP_Solver(X, D, y, normalize=True, intercept=True,
-                              verbose=False)
+    solver_ref = TACGP_Solver(
+        X, D, y,
+        SolverOptions(normalize=True, intercept=True, verbose=False))
     solver_ref.executeStep(T_stop_final, early_stop=True)
     print(f"\u2713 Reference completed with {solver_ref.getNumSteps()} steps\n")
 
     filename = os.path.join(_THIS_DIR, "tacgp_checkpoint.bin")
 
     # STEP 1: Run partial path and save checkpoint.
-    solver1 = TACGP_Solver(X, D, y, normalize=True, intercept=True,
-                           verbose=False)
+    solver1 = TACGP_Solver(
+        X, D, y,
+        SolverOptions(normalize=True, intercept=True, verbose=False))
     solver1.executeStep(T_stop_partial, early_stop=True)
     print(f"Checkpoint at partial stop: {solver1.getNumSteps()} steps")
     solver1.save(filename)
@@ -155,8 +158,9 @@ def demo_serialization():
     # STEP 2: Load from checkpoint and continue.
     # The Python binding hydrates an existing instance (cpp: static
     # load(filename, X, D)); the constructor re-binds the data views.
-    solver2 = TACGP_Solver(X, D, y, normalize=True, intercept=True,
-                           verbose=False)
+    solver2 = TACGP_Solver(
+        X, D, y,
+        SolverOptions(normalize=True, intercept=True, verbose=False))
     solver2.load(filename)
     print(f"Loaded from checkpoint: {solver2.getNumSteps()} steps")
     solver2.executeStep(T_stop_final, early_stop=True)
@@ -209,8 +213,9 @@ def demo_memory_mapped(high_dim, rnd_coef, T_stop):
         print("\u2713 Data generated on disk\n")
 
         print("Running T-ACGP on memory-mapped data...")
-        solver = TACGP_Solver(X_mmap.to_numpy(), D_mmap.to_numpy(), y_mmap.to_numpy(),
-                              normalize=True, intercept=True, verbose=True)
+        solver = TACGP_Solver(
+            X_mmap.to_numpy(), D_mmap.to_numpy(), y_mmap.to_numpy(),
+            SolverOptions(normalize=True, intercept=True, verbose=True))
         solver.executeStep(T_stop, early_stop=True)
         print("\u2713 T-ACGP completed\n")
 

@@ -38,7 +38,7 @@ import pandas as pd
 import trex_selector_neo as trex
 from trex_selector_neo.ml_methods import LpNormScaler, NormType
 from trex_selector_neo.ml_methods.clustering import LinkageMethod, agglomerative_cluster
-from trex_selector_neo.tsolvers.lars_based import TLARS_Solver
+from trex_selector_neo.tsolvers.ad.lars_based import TLARS_Solver
 from trex_selector_neo.utils import compute_fdp, compute_tpp, numpy_to_memmap
 
 from trex_sim_common import run_mc_trex  # local demo helpers last

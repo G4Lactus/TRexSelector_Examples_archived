@@ -31,7 +31,7 @@ solver.executeStep(T_stop, early_stop=True)
 
 where `T_stop` is the number of dummy variables that must enter the active set before the solver terminates early: with `early_stop=True` the run stops as soon as the count of active dummies reaches $T_{\text{stop}}$.
 
-The solver class is `TLARS_Solver` from `trex_selector_neo.tsolvers.lars_based`.
+The solver class is `TLARS_Solver` from `trex_selector_neo.tsolvers.ad.lars_based`.
 
 ---
 

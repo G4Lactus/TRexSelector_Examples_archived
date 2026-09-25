@@ -31,7 +31,7 @@ solver.executeStep(T_stop, early_stop=True)
 
 so, with `early_stop=True`, the solver terminates early once the number of dummy variables in the active set reaches $T_{\text{stop}}$.
 
-The solver class is `TOMP_Solver` from `trex_selector_neo.tsolvers.omp_based`.
+The solver class is `TOMP_Solver` from `trex_selector_neo.tsolvers.ad.omp_based`.
 
 ---
 
