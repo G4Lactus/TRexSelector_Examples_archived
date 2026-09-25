@@ -77,10 +77,10 @@ demo_mmap_basics <- function() {
 
   on.exit(remove_file(path), add = TRUE)
 
-  # 3. Write the matrix to a MemoryMappedMatrix. convert_to_memory_mapped()
+  # 3. Write the matrix to a MemoryMappedMatrix. mem_matrix_from()
   #    copies the R matrix into the file-backed buffer (column-major, matching
   #    the Eigen ColMajor storage used by the C++ backend) and returns a handle.
-  mmap_mat <- convert_to_memory_mapped(original, path)
+  mmap_mat <- mem_matrix_from(original, path)
   cat("3. Matrix written to MemoryMappedMatrix.\n\n")
 
   # 4. Inspect metadata through the S3 methods
@@ -107,7 +107,7 @@ demo_mmap_basics <- function() {
 
   # 7. Re-open as read-only. Writes through the handle raise at runtime
   #    (R has no compile-time const guard — see Demo 4).
-  mmap_ro <- mmap_matrix(path, rows = n_rows, cols = n_cols, mode = "readonly")
+  mmap_ro <- mem_matrix(path, rows = n_rows, cols = n_cols, mode = "readonly")
   cat(sprintf(paste0("7. Re-opened in ReadOnly mode: %d x %d",
                      "  (writes raise an error)\n\n"),
               dim(mmap_ro)[1], dim(mmap_ro)[2]))
@@ -147,7 +147,7 @@ demo_out_of_core_streaming <- function() {
   cat("✓ All columns written.\n\n")
 
   # Verify column 1: re-generate with seed 1000 and compare.
-  mmap_mat <- mmap_matrix(path, rows = n_rows, cols = n_cols, mode = "readonly")
+  mmap_mat <- mem_matrix(path, rows = n_rows, cols = n_cols, mode = "readonly")
   set.seed(1000L)
   col1_ref  <- rnorm(n_rows)
   col1_mmap <- mmap_mat[1:n_rows, 1]
@@ -183,7 +183,7 @@ demo_per_column_seeded_fill <- function() {
   # loop runs under "#pragma omp parallel for": because every column has its
   # own seed and its own non-overlapping memory region, the result is
   # bitwise-identical regardless of thread scheduling order.
-  mmap_mat <- mmap_matrix(path, rows = n_rows, cols = n_cols)
+  mmap_mat <- mem_matrix(path, rows = n_rows, cols = n_cols)
 
   cat(sprintf("Filling %d columns with per-column seeds (3000 + c)...\n", n_cols))
   for (c in seq_len(n_cols)) {
@@ -225,7 +225,7 @@ demo_element_wise_access <- function() {
   # 1. Create and populate with seeded data (same pattern as Demo 1)
   set.seed(42)
   original <- matrix(rnorm(n_rows * n_cols), nrow = n_rows, ncol = n_cols)
-  mmap_mat <- convert_to_memory_mapped(original, path)
+  mmap_mat <- mem_matrix_from(original, path)
   cat(sprintf("1. Created %d x %d matrix with seeded data (seed 42).\n\n",
               n_rows, n_cols))
 
@@ -261,7 +261,7 @@ demo_element_wise_access <- function() {
   )
 
   # 6. Mode guard — writing through a read-only handle raises
-  mmap_ro <- mmap_matrix(path, rows = n_rows, cols = n_cols, mode = "readonly")
+  mmap_ro <- mem_matrix(path, rows = n_rows, cols = n_cols, mode = "readonly")
   cat("6. Write attempt on ReadOnly matrix:\n")
   tryCatch(
     mmap_ro[1, 1] <- 1.0,

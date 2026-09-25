@@ -111,7 +111,7 @@ fit_and_report <- function(X, y, num_folds, seed) {
   # Grid parameters mirror the C++ fit(): a 100-lambda grid anchored at the
   # largest useful penalty, spanning a 1000x range; `seed` fixes the fold
   # assignment.
-  cv <- RidgeCV$new()
+  cv <- MLRidgeCV$new()
   cv$fit(X, y, num_folds = num_folds, n_lambda = 100L, lambda_ratio = 1000,
          seed = seed)
 
@@ -211,7 +211,7 @@ demo_kfold_mmap <- function() {
   cat(sprintf("  File size: %.2f MB\n", file_bytes / 2^20))
   cat(sprintf("  Active coefs: %d\n\n", sum(dat$beta_true != 0)))
 
-  X_mmap <- convert_to_memory_mapped(dat$X, mmap_path)
+  X_mmap <- mem_matrix_from(dat$X, mmap_path)
   rm(X_mmap)  # release the writer handle before re-opening
 
   # Re-open the file read-only and pass the handle straight to $fit(): the
@@ -219,7 +219,7 @@ demo_kfold_mmap <- function() {
   # mirroring the cpp demo's ConstMapType / Eigen::Ref path.
   cat(sprintf("Re-opening mmap read-only and fitting RidgeCV (%d-fold)...\n\n",
               n_folds))
-  X_ro <- mmap_matrix(mmap_path, rows = n, cols = p, mode = "readonly")
+  X_ro <- mem_matrix(mmap_path, rows = n, cols = p, mode = "readonly")
 
   fit_and_report(X_ro, dat$y, n_folds, seed = 444L)
   invisible(NULL)

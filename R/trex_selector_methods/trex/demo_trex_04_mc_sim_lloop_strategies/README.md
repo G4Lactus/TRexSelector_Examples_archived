@@ -24,14 +24,14 @@ contiguous-block variant is available but its call is commented out). SNR grid
 - HCONCAT — horizontally concatenated dummy columns.
 - PERMUTATION — re-use the stored base dummy matrix via deterministic row
   permutations per experiment.
-- PERMUTATION_ONDEMAND — seed-derived base + row permutations, nothing stored
+- PERMUTATION_SEEDED — seed-derived base + row permutations, nothing stored
   (bit-identical to PERMUTATION for the same seed).
-- ONDEMAND — seed-derived i.i.d. draws, nothing stored.
+- SEEDED — seed-derived i.i.d. draws, nothing stored.
 - SKIPL_5p / SKIPL_10p / SKIPL_20p / SKIPL_50p — skip the L-loop, fixed
   `L = max_dummy_multiplier * p` at 5p / 10p / 20p / 50p.
 
 (The former `DIRECT` / `PERMUTATION_DIRECT` strategy names were renamed to
-`ONDEMAND` / `PERMUTATION_ONDEMAND`; the old names are no longer accepted.)
+`SEEDED` / `PERMUTATION_SEEDED`; the old names are no longer accepted.)
 
 Shared control per strategy: `solver = "TLARS"`, `K = 20`, `use_max_T_stop = TRUE`,
 `lloop_strategy` swept. Reports averaged FDR, TPR, Avg L, Avg T per strategy x SNR

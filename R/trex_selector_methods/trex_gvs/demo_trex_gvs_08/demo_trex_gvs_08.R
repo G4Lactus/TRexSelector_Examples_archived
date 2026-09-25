@@ -148,8 +148,8 @@ run_part_2 <- TRUE    # full benchmark (3 scenarios x rho x snr grid)
   si <- sel$selected_indices
   ts <- dat$true_support
   list(
-    coord_tpr  = TRexSelectorNeo::compute_tpp(si, ts),
-    coord_fdp  = TRexSelectorNeo::compute_fdp(si, ts),
+    coord_tpr  = TRexSelectorNeo::trex_tpp(si, ts),
+    coord_fdp  = TRexSelectorNeo::trex_fdp(si, ts),
     block_hit  = .block_hit_rate(si, dat$active_blocks, dat$block_size),
     block_fdp  = .block_fdp(si, dat$active_blocks, dat$G, dat$block_size),
     full_block = .full_block_rate(si, dat$active_blocks, dat$block_size),

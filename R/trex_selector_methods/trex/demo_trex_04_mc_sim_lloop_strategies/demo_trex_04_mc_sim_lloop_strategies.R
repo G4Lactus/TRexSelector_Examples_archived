@@ -18,9 +18,9 @@
 #                           base draw.
 #    PERMUTATION          — Re-use the stored base dummy matrix via
 #                           deterministic row permutations per experiment.
-#    PERMUTATION_ONDEMAND — Seed-derived base + row permutations; nothing
+#    PERMUTATION_SEEDED — Seed-derived base + row permutations; nothing
 #                           stored. Bit-identical to PERMUTATION per seed.
-#    ONDEMAND             — Seed-derived i.i.d. draws; nothing stored.
+#    SEEDED             — Seed-derived i.i.d. draws; nothing stored.
 #    SKIPL                — Skip the L-loop entirely; always uses
 #                           L = max_dummy_multiplier (no adaptive L calibration).
 #
@@ -86,8 +86,8 @@ L_STRATEGIES <- list(
   .make_strat_entry("STANDARD",           "STANDARD"),
   .make_strat_entry("HCONCAT",            "HCONCAT"),
   .make_strat_entry("PERMUTATION",        "PERMUTATION"),
-  .make_strat_entry("PERMUTATION_ONDEMAND", "PERMUTATION_ONDEMAND"),
-  .make_strat_entry("ONDEMAND",             "ONDEMAND"),
+  .make_strat_entry("PERMUTATION_SEEDED", "PERMUTATION_SEEDED"),
+  .make_strat_entry("SEEDED",             "SEEDED"),
   .make_strat_entry("SKIPL_5p",  "SKIPL",  5L),
   .make_strat_entry("SKIPL_10p", "SKIPL", 10L),
   .make_strat_entry("SKIPL_20p", "SKIPL", 20L),

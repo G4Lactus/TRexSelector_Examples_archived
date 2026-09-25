@@ -64,7 +64,7 @@ demo_ridge_primal <- function() {
   y         <- as.numeric(X %*% beta_true) + 0.1 * rnorm(n)
 
   # Step 2. Solve
-  solver   <- RidgeSolver$new()
+  solver   <- MLRidge$new()
   beta_hat <- solver$solve(X, y, lambda)
 
   # Step 3. Report
@@ -106,7 +106,7 @@ demo_ridge_dual <- function() {
   y         <- as.numeric(X %*% beta_true) + 0.1 * rnorm(n)
 
   # Step 2. Solve
-  solver   <- RidgeSolver$new()
+  solver   <- MLRidge$new()
   beta_hat <- solver$solve(X, y, lambda)
 
   # Step 3. Report
@@ -140,7 +140,7 @@ demo_ridge_lambda_sweep <- function() {
 
   lambdas <- c(1e-4, 1e-2, 0.1, 1.0, 10.0, 100.0, 1000.0)
 
-  solver <- RidgeSolver$new()
+  solver <- MLRidge$new()
 
   cat(sprintf("%-12s%-22s%-18s%-18s\n",
               "lambda", "||beta_hat - true||_2", "||beta_hat||_2",

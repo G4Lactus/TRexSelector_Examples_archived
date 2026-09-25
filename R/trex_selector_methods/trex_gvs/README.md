@@ -2,7 +2,7 @@
 
 > **Status**: migrated to the **TRexSelectorNeo** R6 API
 > (`TRexGVSSelector$new(..., gvs_control = trex_gvs_control(...))$select()`,
-> with `compute_fdp()` / `compute_tpp()`). No longer depends on the CRAN
+> with `trex_fdp()` / `trex_tpp()`). No longer depends on the CRAN
 > `TRexSelector` package.
 
 ## Purpose

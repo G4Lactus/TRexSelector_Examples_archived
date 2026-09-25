@@ -13,7 +13,7 @@
 #           solver run with normalize = FALSE, intercept = FALSE.
 #   Demo 3: Serialization & warm start — save a partial path, reload,
 #           continue, and compare against a reference run.
-#   Demo 4: Memory-mapped X via convert_to_memory_mapped(). The R binding
+#   Demo 4: Memory-mapped X via mem_matrix_from(). The R binding
 #           accepts an mmap X (D and y stay in memory); cpp maps all three
 #           and generates p = 500,000 on disk — scaled to p = 5,000 here.
 #
@@ -57,8 +57,8 @@ demo_early_stopping <- function(high_dim, rnd_coef, T_stop) {
   dat <- gen_synthetic_data(n, p, num_dummies, true_support, true_coefs,
                             snr, seed = 42)
 
-  solver <- TNCGMP_Solver$new(dat$X, dat$D, dat$y, variant = "line_search", normalize = TRUE,
-                              intercept = TRUE, verbose = TRUE)
+  solver <- TNCGMP_Solver$new(dat$X, dat$D, dat$y,
+      options = tsolver_options(ncgmp_variant = "line_search", normalize = TRUE, intercept = TRUE, verbose = TRUE))
   solver$execute_step(T_stop, early_stop = TRUE)
 
   print_selection(solver, true_support, p)
@@ -91,11 +91,11 @@ demo_with_external_normalizer <- function(high_dim, rnd_coef, T_stop) {
 
   # External normalization: center + unit-L2 columns for X and D, center y.
   cat("Applying external L2 normalization...\n")
-  l2scaler_X <- LpNormScaler$new(norm_type = 2, center = TRUE)
+  l2scaler_X <- MLLpNormScaler$new(norm_type = 2, center = TRUE)
   l2scaler_X$fit(dat$X)
   l2scaler_X$transform_inplace(dat$X)
 
-  l2scaler_D <- LpNormScaler$new(norm_type = 2, center = TRUE)
+  l2scaler_D <- MLLpNormScaler$new(norm_type = 2, center = TRUE)
   l2scaler_D$fit(dat$D)
   l2scaler_D$transform_inplace(dat$D)
 
@@ -104,8 +104,8 @@ demo_with_external_normalizer <- function(high_dim, rnd_coef, T_stop) {
   # The data was already externally L2-normalized and y centered above, so
   # the solver's own normalization and intercept are disabled here —
   # enabling them would normalize twice and fit an intercept on centered y.
-  solver <- TNCGMP_Solver$new(dat$X, dat$D, dat$y, variant = "line_search", normalize = FALSE,
-                              intercept = FALSE, verbose = TRUE)
+  solver <- TNCGMP_Solver$new(dat$X, dat$D, dat$y,
+      options = tsolver_options(ncgmp_variant = "line_search", normalize = FALSE, intercept = FALSE, verbose = TRUE))
   solver$execute_step(T_stop, early_stop = TRUE)
 
   print_selection(solver, true_support, p)
@@ -139,8 +139,8 @@ demo_serialization <- function() {
                             snr, seed = 42)
 
   # Reference solver: run until T_stop_final.
-  solver_ref <- TNCGMP_Solver$new(dat$X, dat$D, dat$y, variant = "line_search", normalize = TRUE,
-                                  intercept = TRUE, verbose = TRUE)
+  solver_ref <- TNCGMP_Solver$new(dat$X, dat$D, dat$y,
+      options = tsolver_options(ncgmp_variant = "line_search", normalize = TRUE, intercept = TRUE, verbose = TRUE))
   solver_ref$execute_step(T_stop_final, early_stop = TRUE)
   cat(sprintf("\u2713 Reference completed with %d steps\n\n",
               solver_ref$get_num_steps()))
@@ -148,8 +148,8 @@ demo_serialization <- function() {
   filename <- file.path(this_dir_, "tncgmp_checkpoint.bin")
 
   # STEP 1: Run partial path and save checkpoint.
-  solver1 <- TNCGMP_Solver$new(dat$X, dat$D, dat$y, variant = "line_search", normalize = TRUE,
-                               intercept = TRUE, verbose = TRUE)
+  solver1 <- TNCGMP_Solver$new(dat$X, dat$D, dat$y,
+      options = tsolver_options(ncgmp_variant = "line_search", normalize = TRUE, intercept = TRUE, verbose = TRUE))
   solver1$execute_step(T_stop_partial, early_stop = TRUE)
   cat(sprintf("Checkpoint at partial stop: %d steps\n", solver1$get_num_steps()))
   solver1$save(filename)
@@ -158,8 +158,8 @@ demo_serialization <- function() {
   # STEP 2: Load from checkpoint and continue.
   # The R binding hydrates an existing instance (cpp: static
   # load(filename, X, D)); $new() re-binds the data views.
-  solver2 <- TNCGMP_Solver$new(dat$X, dat$D, dat$y, variant = "line_search", normalize = TRUE,
-                               intercept = TRUE, verbose = TRUE)
+  solver2 <- TNCGMP_Solver$new(dat$X, dat$D, dat$y,
+      options = tsolver_options(ncgmp_variant = "line_search", normalize = TRUE, intercept = TRUE, verbose = TRUE))
   solver2$load(filename)
   cat(sprintf("Loaded from checkpoint: %d steps\n", solver2$get_num_steps()))
   solver2$execute_step(T_stop_final, early_stop = TRUE)
@@ -214,13 +214,13 @@ demo_memory_mapped <- function(high_dim, rnd_coef, T_stop) {
   # Write X to disk and pass the mmap view to the solver. The R binding
   # accepts an mmap_matrix for X only; D and y remain in memory (cpp maps
   # all three via SyntheticDataMapped).
-  X_mmap <- convert_to_memory_mapped(dat$X, X_file)
+  X_mmap <- mem_matrix_from(dat$X, X_file)
   dat$X <- NULL
   cat("\u2713 Data generated on disk\n\n")
 
   cat("Running T-NCGMP on memory-mapped data...\n")
-  solver <- TNCGMP_Solver$new(X_mmap, dat$D, dat$y, variant = "line_search", normalize = TRUE,
-                              intercept = TRUE, verbose = TRUE)
+  solver <- TNCGMP_Solver$new(X_mmap, dat$D, dat$y,
+      options = tsolver_options(ncgmp_variant = "line_search", normalize = TRUE, intercept = TRUE, verbose = TRUE))
   solver$execute_step(T_stop, early_stop = TRUE)
   cat("\u2713 T-NCGMP completed\n\n")
 

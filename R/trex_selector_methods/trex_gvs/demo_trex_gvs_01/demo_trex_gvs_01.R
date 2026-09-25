@@ -106,8 +106,8 @@ run_part_6 <- TRUE
   cat(sprintf("  Selection:    %d selected  |  TP = %d  FP = %d\n",
               n_sel, n_tp, n_fp))
   cat(sprintf("  Rates:        TPP = %.3f  |  FDP = %.3f  (target tFDR <= %.2f)\n",
-              TRexSelectorNeo::compute_tpp(sel_set, ts),
-              TRexSelectorNeo::compute_fdp(sel_set, ts), tFDR))
+              TRexSelectorNeo::trex_tpp(sel_set, ts),
+              TRexSelectorNeo::trex_fdp(sel_set, ts), tFDR))
   cat(strrep("=", 70), "\n\n")
   invisible(NULL)
 }

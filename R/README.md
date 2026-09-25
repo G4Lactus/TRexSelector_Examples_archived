@@ -12,9 +12,9 @@ Two R packages appear in this tree:
 - **TRexSelectorNeo** (v0.2.0) — the new Rcpp/R6 package from the main repo
   (`TRexSelector/R/TRexSelectorNeo`, requires R >= 4.3). Its R6 API is
   `TRexSelector$new(X, y, tFDR, control = trex_control(...))$select()`, plus
-  helpers such as `compute_fdp()` / `compute_tpp()`, `mmap_matrix()` /
-  `convert_to_memory_mapped()`, the scaler classes, and
-  `agglomerative_cluster()`.
+  helpers such as `trex_fdp()` / `trex_tpp()`, `mem_matrix()` /
+  `mem_matrix_from()`, the scaler classes, and
+  `ml_agglomerative_cluster()`.
 - **TRexSelector** (1.0.0, CRAN) — the old package with the functional API
   (`trex()`, `FDP()`, `TPP()`, `add_dummies_GVS()`). Its only consumer, the
   path-equivalence reference generator `demo_ts_compare_tlars_tlasso.R`, moved to
@@ -71,7 +71,7 @@ explicitly where fixed supports are mirrored from C++.
 
 | Area | Status | What it covers | cpp counterpart |
 |---|---|---|---|
-| [memory_mapping/](memory_mapping/README.md) | NEW (TRexSelectorNeo) | `mmap_matrix` / `convert_to_memory_mapped` walkthrough: basics, out-of-core streaming, per-column seeded fill, element access (folder-per-demo) | [cpp/memory_mapping/](../cpp/memory_mapping/) |
+| [memory_mapping/](memory_mapping/README.md) | NEW (TRexSelectorNeo) | `mem_matrix` / `mem_matrix_from` walkthrough: basics, out-of-core streaming, per-column seeded fill, element access (folder-per-demo) | [cpp/memory_mapping/](../cpp/memory_mapping/) |
 | [ml_methods/hac_clustering/](ml_methods/hac_clustering/README.md) | NEW (TRexSelectorNeo) | Agglomerative hierarchical clustering: six in-memory scenarios (`demo_mlm_hac_01`) plus the out-of-core LSH linkage comparison (`demo_mlm_hac_02_mmap`), ARI evaluation | [cpp/ml_methods/hac_clustering/](../cpp/ml_methods/hac_clustering/) |
 | [ml_methods/scaler_methods/](ml_methods/scaler_methods/README.md) | NEW (TRexSelectorNeo) | `ZScoreScaler` / `LpNormScaler`: center/scale switches, inverse transform, serialization, mmap-backed scaling | [cpp/ml_methods/scaler_methods/](../cpp/ml_methods/scaler_methods/) |
 | [ml_methods/pca/](ml_methods/pca/README.md) | NEW (TRexSelectorNeo) | `PCA` R6 class: fit, restore round-trip, out-of-sample transform | [cpp/ml_methods/pca/](../cpp/ml_methods/pca/) |

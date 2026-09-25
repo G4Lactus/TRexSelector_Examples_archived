@@ -189,9 +189,9 @@ You can compare this out-of-core behavior with the in-memory HAC examples in
   expected size already exists; the R mirror creates a fresh `tempfile()` on every run and always regenerates.
 - The C++ demo generates and standardizes with OpenMP parallel loops (C++-exclusive); the R mirror streams one variable
   at a time through the `[` / `[<-` block accessors, so numbers match qualitatively, not bitwise.
-- `agglomerative_cluster()` ignores its `use_mmap` argument when the input is already an `mmap_matrix` — that path is
+- `ml_agglomerative_cluster()` ignores its `use_mmap` argument when the input is already an `mmap_matrix` — that path is
   always memory-mapped.
-- Cluster ids returned by `cut_tree()` are **1-based**, following the R language convention (the C++ and Python ports
+- Cluster ids returned by `ml_cut_tree()` are **1-based**, following the R language convention (the C++ and Python ports
   are 0-based); the ARI is invariant to the label encoding.
 - Cleanup is handled with `on.exit()`: the backing file is removed when the demo function returns.
 - The backend prints its own allocation diagnostics (e.g. the projected 64-D RAM estimate) between the test headers;

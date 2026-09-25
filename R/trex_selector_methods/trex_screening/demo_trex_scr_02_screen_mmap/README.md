@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Repeat Demo 01's Ordinary vs. Bootstrap-CI screening with **memory-mapped** storage, to validate that Screen-TRex's disk-backed workflow reproduces the in-memory behavior while enabling larger, RAM-constrained problems. Two mmap levels are exercised: `trex_control(use_memory_mapping = TRUE)` activates the internal dummy-matrix mmap + solver-serialization pipeline (D-mmap), and `convert_to_memory_mapped()` additionally moves the design matrix `X` itself to a memory-mapped file so it never has to reside fully in RAM. Mirrors [demo_trex_scr_02_screen_trex_mmap.cpp](../../../../cpp/trex_selector_methods/trex_screening/demo_trex_scr_02_screen_trex_mmap/).
+Repeat Demo 01's Ordinary vs. Bootstrap-CI screening with **memory-mapped** storage, to validate that Screen-TRex's disk-backed workflow reproduces the in-memory behavior while enabling larger, RAM-constrained problems. Two mmap levels are exercised: `trex_control(use_memory_mapping = TRUE)` activates the internal dummy-matrix mmap + solver-serialization pipeline (D-mmap), and `mem_matrix_from()` additionally moves the design matrix `X` itself to a memory-mapped file so it never has to reside fully in RAM. Mirrors [demo_trex_scr_02_screen_trex_mmap.cpp](../../../../cpp/trex_selector_methods/trex_screening/demo_trex_scr_02_screen_trex_mmap/).
 
 ## Data-generating process
 
@@ -21,7 +21,7 @@ Shared controls via `make_scr_trex_ctrl(use_memory_mapping = TRUE)`: `solver = "
 ## Parts
 
 - **Part A** — In-memory `X` + `use_memory_mapping = TRUE` (D-mmap only): one Ordinary and one Bootstrap-CI single run.
-- **Part B** — Fully memory-mapped `X` (written to a temp mmap file via `convert_to_memory_mapped()`, unlinked on exit) + D-mmap: one Ordinary single run.
+- **Part B** — Fully memory-mapped `X` (written to a temp mmap file via `mem_matrix_from()`, unlinked on exit) + D-mmap: one Ordinary single run.
 - **Part C** — Monte Carlo SNR sweep (Ordinary vs. Bootstrap-CI) with mmap enabled, reporting FDR / TPR / Estimated FDR.
 
 ## Running

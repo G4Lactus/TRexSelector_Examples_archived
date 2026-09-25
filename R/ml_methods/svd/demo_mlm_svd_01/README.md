@@ -127,7 +127,7 @@ When reading the console output, focus on these points:
 
 ## Technical notes
 
-- `SVDSolver$new()$compute(X, M)` returns a named list with elements `U`, `S`, and `V`; the path (direct, Gram, or
+- `MLSVD$new()$compute(X, M)` returns a named list with elements `U`, `S`, and `V`; the path (direct, Gram, or
   randomized) is chosen internally from the shape of `X`.
 - The demo labels the first scenario as the "Direct Path" for $n \ge p$ and the second as the "Gram Path" for the
   wide-matrix regime $p > 2n$, matching the C++ demo.

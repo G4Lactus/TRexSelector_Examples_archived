@@ -47,7 +47,7 @@ Every demo has the same four parts (mirroring the cpp files):
 3. **Serialization & warm start** — save a partial path, reload, continue,
    and compare against a reference run (steps, RSS, $R^2$, action path).
 4. **Memory-mapped data** — X written to disk via
-   `convert_to_memory_mapped()` and passed to the solver as an
+   `mem_matrix_from()` and passed to the solver as an
    `mmap_matrix`. The R binding accepts a memory-mapped X (D and y stay in
    memory; cpp maps all three and generates $p = 500{,}000$ on disk — the
    port scales this to $p = 5{,}000$).

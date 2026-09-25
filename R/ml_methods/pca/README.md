@@ -69,7 +69,7 @@ Console output only.
 
 ## APIs used
 
-- `PCA$new(X, M, center = TRUE, normalize = TRUE)` with `$fit()`, `$transform(X_new)`, `$restore()`, `$get_scores()`,
+- `MLPCA$new(X, M, center = TRUE, normalize = TRUE)` with `$fit()`, `$transform(X_new)`, `$restore()`, `$get_scores()`,
   `$get_loadings()`, `$get_explained_variance()`, `$get_means()`, `$get_norms()`.
 
 ---
@@ -90,6 +90,6 @@ pca/
 
 - This folder currently contains one introductory PCA demo.
 - The demo prints its diagnostics to the console.
-- `PCA$new(X, ...)` maps the memory of `X` directly, so `$fit()` standardizes `X` **in place**; take an explicit deep
+- `MLPCA$new(X, ...)` maps the memory of `X` directly, so `$fit()` standardizes `X` **in place**; take an explicit deep
   copy with `X + 0` where the original values are needed afterwards (a plain alias shares the same buffer).
 - The demo is intended to explain PCA usage and interface behavior rather than to benchmark large-scale performance.

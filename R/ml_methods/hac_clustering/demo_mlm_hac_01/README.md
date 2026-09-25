@@ -187,7 +187,7 @@ where the definition of $d(A,B)$ depends on the chosen linkage rule. This subpro
 both accuracy and computational behavior on the same synthetic structure. The correlation-based tests run under the
 **exact** Pearson-correlation distance; Ward, centroid, and median switch to Euclidean distance, because their
 Lance-Williams updates are only defined in Euclidean geometry. (The C++ demo runs single linkage twice — once through
-the SLINK class directly and once through the dispatcher; the R binding has a single `agglomerative_cluster()` entry
+the SLINK class directly and once through the dispatcher; the R binding has a single `ml_agglomerative_cluster()` entry
 point, so single linkage appears once.)
 
 ---
@@ -272,10 +272,10 @@ When reading the output, focus on the following points:
 
 ## Technical notes
 
-- `agglomerative_cluster()` clusters the **rows** of its input and returns a linkage matrix; `cut_tree()` recovers flat
+- `ml_agglomerative_cluster()` clusters the **rows** of its input and returns a linkage matrix; `ml_cut_tree()` recovers flat
   labels. Sample clustering passes `X` directly, variable clustering passes `t(X)`. (The C++ engine clusters columns
   and uses Eigen transposed views instead.)
-- Cluster ids returned by `cut_tree()` — and the linkage-matrix ids from `agglomerative_cluster()` — are **1-based**,
+- Cluster ids returned by `ml_cut_tree()` — and the linkage-matrix ids from `ml_agglomerative_cluster()` — are **1-based**,
   following the R language convention; the binding converts deliberately at the Rcpp boundary (the C++ and Python
   ports are 0-based). The ARI is invariant to the label encoding.
 - Ward, median, and centroid linkage require Euclidean geometry and are rejected by the R binding for correlation or

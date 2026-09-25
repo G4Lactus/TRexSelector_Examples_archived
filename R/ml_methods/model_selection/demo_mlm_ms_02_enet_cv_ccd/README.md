@@ -119,9 +119,9 @@ When reading the console output, focus on these points:
 
 ## Technical notes
 
-- APIs used: `ElasticNet$new()` with `$fit(X, y, alpha)` / `$fit_grid(X, y, lambda_grid, alpha)`, `$get_coef()`,
+- APIs used: `MLElasticNet$new()` with `$fit(X, y, alpha)` / `$fit_grid(X, y, lambda_grid, alpha)`, `$get_coef()`,
   `$get_intercepts()`, `$get_lambdas()`, `$get_dev_ratio()`, `$converged()`, `$predict(X_new)`; and
-  `ElasticNetCV$new()` with `$fit(X, y, alpha, n_folds, n_lambda, lambda_min_ratio, seed, standardize, intercept,
+  `MLElasticNetCV$new()` with `$fit(X, y, alpha, n_folds, n_lambda, lambda_min_ratio, seed, standardize, intercept,
   max_iter, tol)`, `$cv_min()`, `$cv_1se()`, `$index_min()`, `$index_1se()`, `$get_lambdas()`, `$get_cv_errors()`,
   `$get_cv_std()`.
 - `$index_min()` / `$index_1se()` return **1-based** indices into the lambda grid, following the R language

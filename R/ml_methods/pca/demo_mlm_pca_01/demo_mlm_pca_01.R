@@ -22,7 +22,7 @@
 #                            fit scores on the training data.
 #
 # Notes on the port:
-#   - In-place (zero-copy) design: PCA$new(X, ...) maps the memory of the R
+#   - In-place (zero-copy) design: MLPCA$new(X, ...) maps the memory of the R
 #     matrix X directly, the same Eigen::Map interface that serves both
 #     in-memory and memory-mapped data. This is deliberate — the library
 #     targets data volumes that can exceed RAM, so it never takes hidden
@@ -66,7 +66,7 @@ demo_pca_fit <- function() {
   # Step 2. Construct and fit. center = TRUE subtracts the column means,
   #         normalize = TRUE scales the columns; both happen in place on X
   #         and are undone by $restore().
-  pca <- PCA$new(X, M = M, center = TRUE, normalize = TRUE)
+  pca <- MLPCA$new(X, M = M, center = TRUE, normalize = TRUE)
   pca$fit()
 
   # Step 3. Print result dimensions. Z holds the principal-component scores:
@@ -122,7 +122,7 @@ demo_pca_restore <- function() {
   #         same buffer and be mutated together with X by the in-place fit().
   X_orig <- X + 0
 
-  pca <- PCA$new(X, M = M, center = TRUE, normalize = TRUE)
+  pca <- MLPCA$new(X, M = M, center = TRUE, normalize = TRUE)
   pca$fit()
 
   # At this point X holds the standardized data (in-place preprocessing).
@@ -176,7 +176,7 @@ demo_pca_transform <- function() {
   X_test <- matrix(rnorm(n_test * p), nrow = n_test, ncol = p)
 
   # Step 2. Fit PCA on training data
-  pca <- PCA$new(X_train, M = M, center = TRUE, normalize = TRUE)
+  pca <- MLPCA$new(X_train, M = M, center = TRUE, normalize = TRUE)
   pca$fit()
   Z_train <- pca$get_scores()
 

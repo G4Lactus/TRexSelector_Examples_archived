@@ -137,11 +137,11 @@ fit_path_suite <- function(dat, alphas) {
     # alpha=1 is the pure L1 lasso (sparse), alpha=0 the pure L2 ridge (dense),
     # in between the elastic net.
     cat(sprintf("--- alpha=%g ---\n", alpha))
-    en <- ElasticNet$new()$fit(dat$X, dat$y, alpha)
+    en <- MLElasticNet$new()$fit(dat$X, dat$y, alpha)
     print_path_summary(en, step_size = 10L)
 
     stopifnot(all(diff(en$get_dev_ratio()) >= -1e-12))
-    en_grid  <- ElasticNet$new()$fit_grid(dat$X, dat$y, en$get_lambdas(), alpha)
+    en_grid  <- MLElasticNet$new()$fit_grid(dat$X, dat$y, en$get_lambdas(), alpha)
     max_diff <- max(abs(en$get_coef() - en_grid$get_coef()))
     stopifnot(max_diff < 1e-12)
     cat(sprintf("  fit_grid() reproduction check (max |coef diff| = %.2e): PASS\n\n",
@@ -202,7 +202,7 @@ demo_cv_low_dim <- function() {
 
   for (alpha in c(0.0, 0.5, 1.0)) {
     cat(sprintf("--- alpha=%g ---\n", alpha))
-    cv <- ElasticNetCV$new()
+    cv <- MLElasticNetCV$new()
     cv$fit(dat$X, dat$y, alpha = alpha, n_folds = n_folds, seed = 0L)
     print_cv_summary(cv, step_size = 10L)
 
@@ -233,7 +233,7 @@ demo_cv_ridge_lars_conversion <- function() {
   cat(sprintf("Data: n=%d, p=%d, folds=%d, active coefs=%d\n\n",
               n, p, n_folds, sum(dat$beta_true != 0)))
 
-  cv <- ElasticNetCV$new()
+  cv <- MLElasticNetCV$new()
   cv$fit(dat$X, dat$y, alpha = 0.0, n_folds = n_folds, seed = 0L)
   print_cv_summary(cv, step_size = 10L)
 

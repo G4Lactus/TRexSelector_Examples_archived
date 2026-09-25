@@ -3,7 +3,7 @@
 ## Overview
 
 This folder contains R examples for **hierarchical agglomerative clustering (HAC)** through the **TRexSelectorNeo**
-function `agglomerative_cluster()` and its companion `cut_tree()`.
+function `ml_agglomerative_cluster()` and its companion `ml_cut_tree()`.
 
 Within the TRexSelector project, HAC is used by the **GVS (Grouped Variable Selection)** workflow to construct variable
 groups from a dendrogram cut. The examples in this folder show how clustering behaves in smaller in-memory settings and
@@ -70,11 +70,11 @@ Console output only.
 
 ## APIs used
 
-- `agglomerative_cluster(data, method, metric, use_mmap)`, where `data` is a numeric matrix or an `mmap_matrix`, and
-  the enums are `LinkageMethod$...` (Ward, Average, Complete, Single, WPGMA, Median, Centroid) and
-  `DistanceMetric$...` (Euclidean, Correlation, Manhattan, Correlation_LSH_Filter, Correlation_LSH_Approx).
-- `cut_tree(linkage, num_orig_objs, num_clusters)` to flatten the dendrogram.
-- `convert_to_memory_mapped()` / `mmap_matrix()` for the out-of-core demo.
+- `ml_agglomerative_cluster(data, method, metric, use_mmap)`, where `data` is a numeric matrix or an `mmap_matrix`, and
+  the enums are `ml_linkage_method$...` (Ward, Average, Complete, Single, WPGMA, Median, Centroid) and
+  `ml_distance_metric$...` (Euclidean, Correlation, Manhattan, Correlation_LSH_Filter, Correlation_LSH_Approx).
+- `ml_cut_tree(linkage, num_orig_objs, num_clusters)` to flatten the dendrogram.
+- `mem_matrix_from()` / `mem_matrix()` for the out-of-core demo.
 
 ---
 
@@ -95,7 +95,7 @@ hac_clustering/
 
 ## Notes for new users
 
-- `agglomerative_cluster()` clusters the **rows** of its input: pass `X` for sample clustering and `t(X)` for variable
+- `ml_agglomerative_cluster()` clusters the **rows** of its input: pass `X` for sample clustering and `t(X)` for variable
   clustering.
 - Ward, median, and centroid linkage require Euclidean geometry and are rejected for correlation or Manhattan metrics.
   The single exception is Ward + `Correlation_LSH_Approx`, which runs in a 64-dimensional SimHash-projected Euclidean

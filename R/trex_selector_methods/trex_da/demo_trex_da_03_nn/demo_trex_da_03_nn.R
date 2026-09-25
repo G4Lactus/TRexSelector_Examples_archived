@@ -101,8 +101,8 @@ MC_BASE <- list(
   n_sel   <- length(sel_set)
   n_tp    <- length(intersect(sel_set, dat$true_support))
   n_fp    <- n_sel - n_tp
-  tpp_val <- TRexSelectorNeo::compute_tpp(result$selected_indices, dat$true_support)
-  fdp_val <- TRexSelectorNeo::compute_fdp(result$selected_indices, dat$true_support)
+  tpp_val <- TRexSelectorNeo::trex_tpp(result$selected_indices, dat$true_support)
+  fdp_val <- TRexSelectorNeo::trex_fdp(result$selected_indices, dat$true_support)
 
   cat(strrep("=", 70), "\n")
   cat(sprintf("  %s\n", scenario_name))

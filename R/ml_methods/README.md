@@ -79,12 +79,12 @@ ml_methods/
 ## Notes on the R port
 
 - All demos print to the console only; no `simulation_results/` folders are produced in this tree.
-- Index convention: everything user-facing is **1-based** in R (`cut_tree()` labels, `$index_min()` /
+- Index convention: everything user-facing is **1-based** in R (`ml_cut_tree()` labels, `$index_min()` /
   `$index_1se()`), following the R language convention — the binding converts deliberately at the Rcpp boundary. The
   C++ and Python ports are 0-based.
 - RNG seeds match the C++ demos, but R's Mersenne-Twister stream differs from `std::mt19937`, so printed numbers agree
   qualitatively, not bitwise.
-- Memory-mapped inputs are first-class: `mmap_matrix` handles are accepted directly by `agglomerative_cluster()`, the
+- Memory-mapped inputs are first-class: `mmap_matrix` handles are accepted directly by `ml_agglomerative_cluster()`, the
   scalers, and `RidgeCV`, and are bound zero-copy through the same Eigen map interface the C++ demos use (the scalers
   require `"readwrite"` handles; `RidgeCV` also accepts `"readonly"`).
 - The `scaler_methods/` folder was previously named `standardization/`; it was renamed and its two flat scripts were

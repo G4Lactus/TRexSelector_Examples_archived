@@ -39,7 +39,7 @@
 # geometry creates well-separated clusters in correlation space.
 #
 # Notes on the port:
-#   - agglomerative_cluster() clusters the ROWS of its input, so the matrix is
+#   - ml_agglomerative_cluster() clusters the ROWS of its input, so the matrix is
 #     stored TRANSPOSED on disk relative to cpp: P x N, one variable per row.
 #     The mmap_matrix handle is passed directly to the clustering call, which
 #     keeps the backend's intermediate distance data on disk as well.
@@ -196,7 +196,7 @@ demo_lsh_linkage_comparison_mmap <- function() {
   cat(sprintf("    N=%d, P=%d, K=%d\n", n_samples, p_features, k_clusters))
 
   # Stored transposed relative to cpp: P x N, one variable per row.
-  mmap_mat <- mmap_matrix(mmap_path, rows = p_features, cols = n_samples)
+  mmap_mat <- mem_matrix(mmap_path, rows = p_features, cols = n_samples)
 
   t0 <- Sys.time()
   generate_correlated_variables_to_mmap(mmap_mat, n_samples, k_clusters,
@@ -222,11 +222,11 @@ demo_lsh_linkage_comparison_mmap <- function() {
     t0 <- Sys.time()
     # The mmap handle is passed straight through: the backend reads the
     # variables from disk and keeps its intermediate distance data there too.
-    merges <- agglomerative_cluster(
+    merges <- ml_agglomerative_cluster(
       data = mmap_mat, method = method,
-      metric = DistanceMetric$Correlation_LSH_Approx)
+      metric = ml_distance_metric$Correlation_LSH_Approx)
     elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
-    labels <- cut_tree(merges, num_orig_objs = p_features,
+    labels <- ml_cut_tree(merges, num_orig_objs = p_features,
                        num_clusters = k_clusters)
     cat(sprintf("    Time : %.4f s\n", elapsed))
     cat(sprintf("    ARI  : %.4f / 1.0000\n\n",
@@ -234,7 +234,7 @@ demo_lsh_linkage_comparison_mmap <- function() {
   }
 
   # Test A — Single Linkage (routes to SLINK)
-  run_test("[Test A] Single Linkage (SLINK + LSH)", LinkageMethod$Single)
+  run_test("[Test A] Single Linkage (SLINK + LSH)", ml_linkage_method$Single)
 
   # Test B — Complete Linkage & WPGMA (skipped, mirroring cpp)
   cat("[Test B] Complete Linkage & WPGMA:\n")
@@ -245,11 +245,11 @@ demo_lsh_linkage_comparison_mmap <- function() {
 
   # Test C — Average Linkage (UPGMA, projected RAM engine)
   run_test("[Test C] UPGMA Average Linkage (Projected 64D RAM Engine + LSH)",
-           LinkageMethod$Average)
+           ml_linkage_method$Average)
 
   # Test D — Ward's Minimum Variance (projected RAM engine)
   run_test("[Test D] Ward's Minimum Variance (Projected 64D RAM Engine + LSH)",
-           LinkageMethod$Ward)
+           ml_linkage_method$Ward)
 
   cat("[Demo 03 Complete]\n\n")
   invisible(NULL)

@@ -3,7 +3,7 @@
 ## Overview
 
 This folder contains R examples for the **memory-mapped matrix** utility of the **TRexSelectorNeo** package
-(`mmap_matrix()` / `convert_to_memory_mapped()`).
+(`mem_matrix()` / `mem_matrix_from()`).
 
 The utility provides a disk-backed matrix interface that behaves like an ordinary R matrix, making it useful when
 matrices are too large to keep entirely in RAM. In the TRexSelector project, this is especially relevant for large

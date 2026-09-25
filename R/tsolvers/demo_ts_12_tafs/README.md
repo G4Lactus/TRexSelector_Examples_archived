@@ -26,7 +26,8 @@ Like the other terminating solvers, T-AFS stops early once a prescribed number $
 In the demo, the solver is an R6 class from the TRexSelectorNeo package, constructed with the adaptivity parameter `rho = 1.0` and advanced through calls of the form
 
 ```r
-solver <- TAFS_Solver$new(X, D, y, rho, normalize = TRUE, intercept = TRUE, verbose = TRUE)
+solver <- TAFS_Solver$new(X, D, y,
+    options = tsolver_options(rho_afs = rho, normalize = TRUE, intercept = TRUE, verbose = TRUE))
 solver$execute_step(T_stop, early_stop = TRUE)
 ```
 
@@ -58,7 +59,7 @@ The reloaded run is compared against the reference path using the final number o
 
 ### 4. Memory-mapped data
 
-The fourth part writes the design matrix $X$ to disk via `convert_to_memory_mapped()` and runs T-AFS on the resulting `mmap_matrix` view. The R binding accepts a memory-mapped $X$ while $D$ and $y$ stay in memory; the cpp demo maps all three.
+The fourth part writes the design matrix $X$ to disk via `mem_matrix_from()` and runs T-AFS on the resulting `mem_matrix` view. The R binding accepts a memory-mapped $X$ while $D$ and $y$ stay in memory; the cpp demo maps all three.
 
 The cpp counterpart generates $p = 500{,}000$ predictors directly on disk; the R port scales this down to $p = 5{,}000$ (with $n = 1{,}000$ and $10p$ dummies). The file `demo_tafs_X.bin` is written into the demo folder and removed at the end.
 

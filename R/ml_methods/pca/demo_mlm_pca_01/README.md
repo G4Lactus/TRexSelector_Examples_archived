@@ -128,7 +128,7 @@ When reading the console output, focus on the following points:
 
 ## Technical notes
 
-- `PCA$new(X, M, center, normalize)` maps the memory of the R matrix `X` directly — the same `Eigen::Map` interface that
+- `MLPCA$new(X, M, center, normalize)` maps the memory of the R matrix `X` directly — the same `Eigen::Map` interface that
   serves both in-memory and memory-mapped data. `$fit()` therefore standardizes `X` **in place** and `$restore()`
   reverses the preprocessing exactly.
 - The in-place, zero-copy behavior is deliberate: the library targets data volumes that can exceed RAM and never takes

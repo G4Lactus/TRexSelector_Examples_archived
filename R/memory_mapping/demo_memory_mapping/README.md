@@ -36,9 +36,9 @@ The demo focuses on several practical ideas:
 
 Entry points used (from `TRexSelectorNeo`):
 
-- `mmap_matrix(filename, rows, cols, mode)` — open (or create) a disk-backed matrix in `"readwrite"` or `"readonly"`
+- `mem_matrix(filename, rows, cols, mode)` — open (or create) a disk-backed matrix in `"readwrite"` or `"readonly"`
   mode
-- `convert_to_memory_mapped(mat, filename)` — write an R matrix to a binary file and return an `mmap_matrix` handle
+- `mem_matrix_from(mat, filename)` — write an R matrix to a binary file and return an `mmap_matrix` handle
   over it
 - the S3 methods `print()`, `dim()`, `[`, `[<-`, and `as.matrix()` on the returned handle
 

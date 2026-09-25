@@ -108,7 +108,7 @@ n = 1000, \qquad p = 5000
 ```
 
 (the C++ demo uses $n = 20000$, $p = 100000$; the sizes are scaled down here to keep the R demo fast). The script
-creates a writable mapped matrix with `mmap_matrix()`, fills it column by column with the deterministic pattern
+creates a writable mapped matrix with `mem_matrix()`, fills it column by column with the deterministic pattern
 $X_{ij} = 2i + j/100$ (0-based $i$, $j$, matching the C++ demo), fits an $L_2$-based `LpNormScaler`, transforms and
 inverse-transforms the data in place on disk, and finally removes the backing file.
 

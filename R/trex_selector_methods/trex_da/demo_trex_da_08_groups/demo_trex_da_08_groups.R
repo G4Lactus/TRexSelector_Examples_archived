@@ -80,8 +80,8 @@ PHI_LEAF   <- 0.50
     sel$select()
 
     ts <- which(dat$beta != 0)
-    c(FDP = compute_fdp(sel$selected_indices, ts),
-      TPP = compute_tpp(sel$selected_indices, ts))
+    c(FDP = trex_fdp(sel$selected_indices, ts),
+      TPP = trex_tpp(sel$selected_indices, ts))
   }
 
   res <- if (.Platform$OS.type == "unix") {

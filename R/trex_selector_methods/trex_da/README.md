@@ -2,7 +2,7 @@
 
 > **Status**: NEW — migrated to the **TRexSelectorNeo** R6 API
 > (`TRexDASelector$new(..., da_control = trex_da_control(...))$select()`, with
-> `compute_fdp()` / `compute_tpp()`). No longer depends on the CRAN
+> `trex_fdp()` / `trex_tpp()`). No longer depends on the CRAN
 > `TRexSelector` package.
 
 ## Purpose

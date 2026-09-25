@@ -10,7 +10,7 @@
 # in-core T-Rex run is impractical.
 #   * use_memory_mapping = TRUE in trex_control() activates the internal D-mmap
 #     + solver-serialization pipeline.
-#   * convert_to_memory_mapped() writes an in-memory X to a memory-mapped file
+#   * mem_matrix_from() writes an in-memory X to a memory-mapped file
 #     so X itself never has to reside fully in RAM.
 #
 # The file mirrors:
@@ -61,7 +61,7 @@ NUM_MC <- 40L   # C++ uses 500; reduced for a ~1-minute runtime.
 with_temp_mmap <- function(X_matrix, fn) {
   x_path <- tempfile(fileext = ".dat")
   on.exit(unlink(x_path), add = TRUE)
-  fn(TRexSelectorNeo::convert_to_memory_mapped(X_matrix, x_path))
+  fn(TRexSelectorNeo::mem_matrix_from(X_matrix, x_path))
 }
 
 

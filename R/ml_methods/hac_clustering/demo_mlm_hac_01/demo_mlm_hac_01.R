@@ -42,7 +42,7 @@
 #                                   N = 300, P = 500 here.)
 #
 # Notes on the port:
-#   - agglomerative_cluster() clusters the ROWS of its input.
+#   - ml_agglomerative_cluster() clusters the ROWS of its input.
 #     Sample clustering passes X directly.
 #     Variable clustering passes t(X) so that variables become the clustered
 #     objects.
@@ -50,7 +50,7 @@
 #     updates are derived from the law of cosines. The one exception is
 #     Ward + Correlation_LSH_Approx, which the dispatcher routes through a
 #     64-dimensional SimHash-projected Euclidean space.
-#   - cut_tree() returns 1-based cluster labels in R (0-based in C++/Python);
+#   - ml_cut_tree() returns 1-based cluster labels in R (0-based in C++/Python);
 #     compute_ari() below is invariant to the label encoding.
 #   - The cpp demo fills matrices with OpenMP-parallel per-thread RNGs — that
 #     part is C++-exclusive; vectorized R generation is used here, so results
@@ -190,9 +190,9 @@ standardize_for_correlation <- function(X) {
 cluster_and_score <- function(objects, method, metric, true_labels, k_clusters) {
   n_objs <- nrow(objects)
   t0 <- Sys.time()
-  merges <- agglomerative_cluster(objects, method = method, metric = metric)
+  merges <- ml_agglomerative_cluster(objects, method = method, metric = metric)
   elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
-  pred_labels <- cut_tree(merges, num_orig_objs = n_objs,
+  pred_labels <- ml_cut_tree(merges, num_orig_objs = n_objs,
                           num_clusters = k_clusters)
   list(elapsed = elapsed,
        ari = compute_ari(true_labels, pred_labels),
@@ -230,7 +230,7 @@ demo_slink_sample_clustering <- function() {
 
   # Samples are the rows, which is exactly what the binding clusters.
   cat("Building Single Linkage tree (SLINK)...\n")
-  res <- cluster_and_score(dat$X, LinkageMethod$Single, DistanceMetric$Euclidean,
+  res <- cluster_and_score(dat$X, ml_linkage_method$Single, ml_distance_metric$Euclidean,
                            dat$true_labels, k_clusters)
   cat(sprintf("✓ Tree built successfully in %.6f seconds.\n\n", res$elapsed))
 
@@ -267,8 +267,8 @@ demo_slink_variable_clustering <- function() {
 
   # Variables are the columns; transpose so they become the clustered rows.
   cat("Building Single Linkage tree for Variables...\n")
-  res <- cluster_and_score(t(X_std), LinkageMethod$Single,
-                           DistanceMetric$Correlation, dat$true_labels,
+  res <- cluster_and_score(t(X_std), ml_linkage_method$Single,
+                           ml_distance_metric$Correlation, dat$true_labels,
                            k_clusters)
   cat(sprintf("✓ Tree built successfully in %.6f seconds.\n\n", res$elapsed))
 
@@ -304,16 +304,16 @@ demo_slink_variable_clustering_lsh <- function() {
 
   tests <- list(
     list(title = "[Test A] Exact Pearson Correlation (The Baseline)",
-         metric = DistanceMetric$Correlation, show_sizes = FALSE),
+         metric = ml_distance_metric$Correlation, show_sizes = FALSE),
     list(title = "[Test B] LSH Filter (Gatekeeper to Exact Dot Product)",
-         metric = DistanceMetric$Correlation_LSH_Filter, show_sizes = FALSE),
+         metric = ml_distance_metric$Correlation_LSH_Filter, show_sizes = FALSE),
     list(title = "[Test C] LSH Approx (Pure O(1) SimHash Angular Estimation)",
-         metric = DistanceMetric$Correlation_LSH_Approx, show_sizes = TRUE)
+         metric = ml_distance_metric$Correlation_LSH_Approx, show_sizes = TRUE)
   )
   for (tst in tests) {
     cat("\n", strrep("-", 60), "\n", sep = "")
     cat(tst$title, "\n", sep = "")
-    res <- cluster_and_score(XT, LinkageMethod$Single, tst$metric,
+    res <- cluster_and_score(XT, ml_linkage_method$Single, tst$metric,
                              dat$true_labels, k_clusters)
     cat(sprintf("✓ Tree built successfully in %.6f seconds.\n", res$elapsed))
     if (tst$show_sizes) {
@@ -351,16 +351,16 @@ demo_compare_linkage <- function() {
   # cpp runs Single linkage twice (direct SLINK and via the dispatcher);
   # the R binding exposes one entry point, so it appears once here.
   corr_tests <- list(
-    list(title = "[Test A] Single Linkage (SLINK)", method = LinkageMethod$Single),
+    list(title = "[Test A] Single Linkage (SLINK)", method = ml_linkage_method$Single),
     list(title = "[Test B] Complete Linkage (Disk/Matrix Bound)",
-         method = LinkageMethod$Complete),
+         method = ml_linkage_method$Complete),
     list(title = "[Test C] UPGMA (RAM/Geometric Bound)",
-         method = LinkageMethod$Average),
-    list(title = "[Test D] WPGMA (Disk/Matrix Bound)", method = LinkageMethod$WPGMA)
+         method = ml_linkage_method$Average),
+    list(title = "[Test D] WPGMA (Disk/Matrix Bound)", method = ml_linkage_method$WPGMA)
   )
   for (tst in corr_tests) {
     cat(sprintf("\n%s:\n", tst$title))
-    res <- cluster_and_score(XT, tst$method, DistanceMetric$Correlation,
+    res <- cluster_and_score(XT, tst$method, ml_distance_metric$Correlation,
                              dat$true_labels, k_clusters)
     cat(sprintf("Time: %.6f seconds\n", res$elapsed))
     cat(sprintf("ARI:  %.4f / 1.0000\n", res$ari))
@@ -368,18 +368,18 @@ demo_compare_linkage <- function() {
 
   # Ward, Centroid, and Median require Euclidean geometry.
   euclid_tests <- list(
-    list(title = "[Test E] WARD (RAM/Geometric Bound)", method = LinkageMethod$Ward),
+    list(title = "[Test E] WARD (RAM/Geometric Bound)", method = ml_linkage_method$Ward),
     list(title = "[Test F] Centroid Linkage (Generic Linkage)",
-         method = LinkageMethod$Centroid),
+         method = ml_linkage_method$Centroid),
     list(title = "[Test G] Median Linkage (Generic Linkage)",
-         method = LinkageMethod$Median)
+         method = ml_linkage_method$Median)
   )
   for (tst in euclid_tests) {
     cat(sprintf("\n%s:\n", tst$title))
-    if (identical(tst$method, LinkageMethod$Ward)) {
+    if (identical(tst$method, ml_linkage_method$Ward)) {
       cat(" -> Note: Switching to Squared Euclidean Distance!\n")
     }
-    res <- cluster_and_score(XT, tst$method, DistanceMetric$Euclidean,
+    res <- cluster_and_score(XT, tst$method, ml_distance_metric$Euclidean,
                              dat$true_labels, k_clusters)
     cat(sprintf("Time: %.6f seconds\n", res$elapsed))
     cat(sprintf("ARI:  %.4f / 1.0000\n", res$ari))
@@ -416,18 +416,18 @@ demo_lsh_linkage_comparison <- function() {
   cat("3. Setting distance policy (Pure O(1) Correlation LSH Approx)...\n")
   tests <- list(
     list(title = "[Test A] Single Linkage (SLINK with LSH)",
-         method = LinkageMethod$Single),
+         method = ml_linkage_method$Single),
     list(title = "[Test B] Complete Linkage (Disk/Matrix Bound)",
-         method = LinkageMethod$Complete),
+         method = ml_linkage_method$Complete),
     list(title = "[Test C] UPGMA (RAM/Geometric Bound)",
-         method = LinkageMethod$Average),
+         method = ml_linkage_method$Average),
     list(title = "[Test D] WPGMA (Disk/Matrix Bound)",
-         method = LinkageMethod$WPGMA)
+         method = ml_linkage_method$WPGMA)
   )
   for (tst in tests) {
     cat(sprintf("\n%s:\n", tst$title))
     res <- cluster_and_score(XT, tst$method,
-                             DistanceMetric$Correlation_LSH_Approx,
+                             ml_distance_metric$Correlation_LSH_Approx,
                              dat$true_labels, k_clusters)
     cat(sprintf("Time: %.6f seconds\n", res$elapsed))
     cat(sprintf("ARI:  %.4f / 1.0000\n", res$ari))
@@ -465,15 +465,15 @@ demo_ar1_linkage_comparison <- function() {
 
   cat("3. Setting distance policy (Exact Pearson Correlation)...\n")
   tests <- list(
-    list(title = "[Test A] Single Linkage (SLINK)", method = LinkageMethod$Single),
+    list(title = "[Test A] Single Linkage (SLINK)", method = ml_linkage_method$Single),
     list(title = "[Test B] Complete Linkage (Disk/Matrix Bound)",
-         method = LinkageMethod$Complete),
+         method = ml_linkage_method$Complete),
     list(title = "[Test C] UPGMA (RAM/Geometric Bound)",
-         method = LinkageMethod$Average)
+         method = ml_linkage_method$Average)
   )
   for (tst in tests) {
     cat(sprintf("\n%s:\n", tst$title))
-    res <- cluster_and_score(XT, tst$method, DistanceMetric$Correlation,
+    res <- cluster_and_score(XT, tst$method, ml_distance_metric$Correlation,
                              dat$true_labels, k_clusters)
     cat(sprintf("Time: %.6f seconds\n", res$elapsed))
     cat(sprintf("ARI:  %.4f / 1.0000\n", res$ari))

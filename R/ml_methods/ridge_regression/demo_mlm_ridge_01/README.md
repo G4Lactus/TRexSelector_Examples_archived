@@ -143,7 +143,7 @@ When reading the output, focus on these points:
 
 ## Technical notes
 
-- `RidgeSolver$new()$solve(X, y, lambda)` wraps the static C++ `RidgeSolver::solve()`; the primal ($n \ge p$) and dual
+- `MLRidge$new()$solve(X, y, lambda)` wraps the static C++ `RidgeSolver::solve()`; the primal ($n \ge p$) and dual
   ($n < p$) Cholesky paths are selected internally.
 - The demo labels the first two cases as "Primal Path" and "Dual Path", corresponding to the low-dimensional and
   high-dimensional regimes used in the demo output.

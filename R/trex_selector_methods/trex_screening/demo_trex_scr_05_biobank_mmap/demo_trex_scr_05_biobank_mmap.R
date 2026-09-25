@@ -69,7 +69,7 @@ run_biobank_mmap <- function(X, Y, seed = 42L, verbose = FALSE, R_boot = 1000L) 
 with_temp_mmap <- function(X_matrix, fn) {
   x_path <- tempfile(fileext = ".dat")
   on.exit(unlink(x_path), add = TRUE)
-  fn(TRexSelectorNeo::convert_to_memory_mapped(X_matrix, x_path))
+  fn(TRexSelectorNeo::mem_matrix_from(X_matrix, x_path))
 }
 
 
@@ -155,8 +155,8 @@ part_c <- function() {
         run_biobank_mmap(X_mmap, dat$y, seed = -1L, R_boot = 500L))  # single record
       sel <- res$selected_indices
       m <- res$method_used
-      fdp[[m]][si]   <- fdp[[m]][si]   + compute_fdp(sel, dat$true_support)
-      tpp[[m]][si]   <- tpp[[m]][si]   + compute_tpp(sel, dat$true_support)
+      fdp[[m]][si]   <- fdp[[m]][si]   + trex_fdp(sel, dat$true_support)
+      tpp[[m]][si]   <- tpp[[m]][si]   + trex_tpp(sel, dat$true_support)
       usage[[m]][si] <- usage[[m]][si] + 1
       est[["Screen-TRex (ordinary)"]][si]    <- est[["Screen-TRex (ordinary)"]][si]    + res$estimated_FDR_screen_ordinary
       est[["Screen-TRex (bootstrap-CI)"]][si] <- est[["Screen-TRex (bootstrap-CI)"]][si] + res$estimated_FDR_screen_bootstrap

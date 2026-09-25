@@ -347,8 +347,8 @@ cap_hc <- function(hc_dist) {
                               dat$X, dat$y, tFDR, K)
     ts <- which(dat$beta != 0)
     c(
-      FDP = TRexSelectorNeo::compute_fdp(sel$selected_indices, ts),
-      TPP = TRexSelectorNeo::compute_tpp(sel$selected_indices, ts)
+      FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
+      TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts)
     )
   }
 
@@ -859,8 +859,8 @@ cap_hc <- function(hc_dist) {
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
                        hc_dist, en_solver, lambda2_method)
     ts <- which(dat$beta != 0)
-    c(FDP = TRexSelectorNeo::compute_fdp(sel$selected_indices, ts),
-      TPP = TRexSelectorNeo::compute_tpp(sel$selected_indices, ts))
+    c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
+      TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
   }
 
   mc_indices <- seq_len(num_MC)
@@ -948,8 +948,8 @@ cap_hc <- function(hc_dist) {
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
                        hc_dist, en_solver, lambda2_method)
     ts <- which(dat$beta != 0)
-    c(FDP = TRexSelectorNeo::compute_fdp(sel$selected_indices, ts),
-      TPP = TRexSelectorNeo::compute_tpp(sel$selected_indices, ts))
+    c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
+      TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
   }
 
   mc_indices <- seq_len(num_MC)
@@ -1020,8 +1020,8 @@ cap_hc <- function(hc_dist) {
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
                        hc_dist, en_solver, lambda2_method)
     ts <- which(dat$beta != 0)
-    c(FDP = TRexSelectorNeo::compute_fdp(sel$selected_indices, ts),
-      TPP = TRexSelectorNeo::compute_tpp(sel$selected_indices, ts))
+    c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
+      TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
   }
 
   mc_indices <- seq_len(num_MC)
@@ -1091,8 +1091,8 @@ cap_hc <- function(hc_dist) {
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
                        hc_dist, en_solver, lambda2_method)
     ts <- which(dat$beta != 0)
-    c(FDP = TRexSelectorNeo::compute_fdp(sel$selected_indices, ts),
-      TPP = TRexSelectorNeo::compute_tpp(sel$selected_indices, ts))
+    c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
+      TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
   }
 
   mc_indices <- seq_len(num_MC)
@@ -1166,8 +1166,8 @@ cap_hc <- function(hc_dist) {
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
                        hc_dist, en_solver, lambda2_method)
     ts <- which(dat$beta != 0)
-    c(FDP = TRexSelectorNeo::compute_fdp(sel$selected_indices, ts),
-      TPP = TRexSelectorNeo::compute_tpp(sel$selected_indices, ts))
+    c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
+      TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
   }
 
   mc_indices <- seq_len(num_MC)
@@ -1238,8 +1238,8 @@ cap_hc <- function(hc_dist) {
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
                        hc_dist, en_solver, lambda2_method)
     ts <- which(dat$beta != 0)
-    c(FDP = TRexSelectorNeo::compute_fdp(sel$selected_indices, ts),
-      TPP = TRexSelectorNeo::compute_tpp(sel$selected_indices, ts))
+    c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
+      TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
   }
 
   mc_indices <- seq_len(num_MC)
@@ -1317,8 +1317,8 @@ cap_hc <- function(hc_dist) {
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
                        hc_dist, en_solver, lambda2_method)
     ts <- which(dat$beta != 0)
-    c(FDP = TRexSelectorNeo::compute_fdp(sel$selected_indices, ts),
-      TPP = TRexSelectorNeo::compute_tpp(sel$selected_indices, ts))
+    c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
+      TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
   }
 
   mc_indices <- seq_len(num_MC)

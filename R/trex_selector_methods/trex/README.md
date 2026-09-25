@@ -12,8 +12,8 @@ ctrl     <- trex_control(solver = "TLARS", K = 20L)
 selector <- TRexSelector$new(X, y, tFDR = 0.1, control = ctrl)
 selector$select()
 selector$selected_indices          # 1-based selected support
-compute_fdp(selector$selected_indices, true_support)
-compute_tpp(selector$selected_indices, true_support)
+trex_fdp(selector$selected_indices, true_support)
+trex_tpp(selector$selected_indices, true_support)
 ```
 
 The suite mirrors the C++ demos in
@@ -49,9 +49,9 @@ trex/
 | 01 | [demo_trex_01_single_run](demo_trex_01_single_run/) | Single run in a low- and a high-dimensional setting with a fixed true support (TLARS); illustrates reporting of the internal statistics `phi_prime`, `phi_mat`, `fdp_hat_mat`, `r_mat`, `voting_grid` | `demo_trex_01_single_run` |
 | 02 | [demo_trex_02_mc_sim_fixed_support](demo_trex_02_mc_sim_fixed_support/) | MC simulation with fixed support (drawn once with seed 24): 14 solvers x SNR sweep {0.1, 0.5, 1.0, 2.0, 5.0}; averaged FDR/TPR per solver x SNR | `demo_trex_02_mc_sim_fixed_support` |
 | 03 | [demo_trex_03_mc_sim_variable_support](demo_trex_03_mc_sim_variable_support/) | MC simulation with support (and optionally coefficients) redrawn each trial: 14 solvers x 21 SNR values {0.1, 0.2, …, 2.0, 5.0}; averaged FDR / TPR / Avg L / Avg T | `demo_trex_03_mc_sim_variable_support` |
-| 04 | [demo_trex_04_mc_sim_lloop_strategies](demo_trex_04_mc_sim_lloop_strategies/) | MC comparison of the six L-loop strategies (STANDARD, HCONCAT, PERMUTATION, PERMUTATION_ONDEMAND, ONDEMAND, SKIPL) with the TLARS base solver; n=300, p=1000, s=10; 21 SNR values; random and block support scenarios | `demo_trex_04_mc_sim_lloop_strategies` |
+| 04 | [demo_trex_04_mc_sim_lloop_strategies](demo_trex_04_mc_sim_lloop_strategies/) | MC comparison of the six L-loop strategies (STANDARD, HCONCAT, PERMUTATION, PERMUTATION_SEEDED, SEEDED, SKIPL) with the TLARS base solver; n=300, p=1000, s=10; 21 SNR values; random and block support scenarios | `demo_trex_04_mc_sim_lloop_strategies` |
 | 05 | [demo_trex_05_mc_sim_dummy_distributions](demo_trex_05_mc_sim_dummy_distributions/) | MC comparison of 12 dummy distribution variants (Normal, Uniform, Rademacher, StudentT df 3/5, Laplace, Gumbel, Triangle, Logistic, Mammen, sparse Rademacher s=0.1, UniformSphere dim=5) across 3 base solvers (TLARS/TOMP/TAFS rho_afs=1.0) with the STANDARD L-loop strategy held fixed; n=300, p=1000, s=10; 21 SNR values; one result file pair per solver | `demo_trex_05_mc_sim_dummy_distributions` |
-| 06 | [demo_trex_06_mmap](demo_trex_06_mmap/) | Memory-mapped usage patterns. Part A: in-memory X + `use_memory_mapping = TRUE` (internal D-mmap + solver serialization). Part B: fully memory-mapped X via `convert_to_memory_mapped()` / `mmap_matrix()` | `demo_trex_06_mmap` |
+| 06 | [demo_trex_06_mmap](demo_trex_06_mmap/) | Memory-mapped usage patterns. Part A: in-memory X + `use_memory_mapping = TRUE` (internal D-mmap + solver serialization). Part B: fully memory-mapped X via `mem_matrix_from()` / `mem_matrix()` | `demo_trex_06_mmap` |
 | 07 | [demo_trex_07_mc_sim_mmap](demo_trex_07_mc_sim_mmap/) | MC verification of the D-mmap + solver-serialization pipeline (TLARS only, fixed support seed 24, SNR {0.1, 0.5, 1.0, 2.0, 5.0}, `tloop_max_stagnant_steps = 7`, `opt_threshold = 0.75`). Part A: in-memory X; Part B: per-trial temporary mmap-backed X/y with exception-safe cleanup | `demo_trex_07_mc_sim_mmap` |
 | 08 | [demo_trex_08_mc_sim_scalability](demo_trex_08_mc_sim_scalability/) | MC scalability benchmark: in-memory vs chunked, memory-mapped out-of-core execution over an exponentially increasing (n, p) grid targeting specific memory footprints; measures execution time and peak memory, saves a CSV | `demo_trex_08_mc_sim_scalability` (R-only content; the C++ demo 08 is a WIP placeholder) |
 
@@ -101,7 +101,7 @@ across these demos include:
   `ncgmp_variant`;
 - `K` (number of random experiments) and `max_dummy_multiplier`;
 - `lloop_strategy` (`"STANDARD"`, `"HCONCAT"`, `"PERMUTATION"`,
-  `"PERMUTATION_ONDEMAND"`, `"ONDEMAND"`, `"SKIPL"`);
+  `"PERMUTATION_SEEDED"`, `"SEEDED"`, `"SKIPL"`);
 - `dummy_distribution` (built with `trex_dummy_distribution()`; e.g.
   `trex_dummy_distribution("StudentT", df = 3)` — see demo 05);
 - `use_max_T_stop`, `tloop_stagnation_stop`, `tloop_max_stagnant_steps`,

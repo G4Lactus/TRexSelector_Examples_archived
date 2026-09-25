@@ -56,7 +56,7 @@ Console output only.
 
 ## APIs used
 
-- `SVDSolver$new()` with `$compute(X, M)`, returning a list with elements `U` ($n \times M$), `S` ($M$), and `V`
+- `MLSVD$new()` with `$compute(X, M)`, returning a list with elements `U` ($n \times M$), `S` ($M$), and `V`
   ($p \times M$).
 
 ---

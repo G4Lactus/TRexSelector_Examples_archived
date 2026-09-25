@@ -51,7 +51,7 @@ Console output only.
 
 ## APIs used
 
-- `RidgeSolver$new()` with `$solve(X, y, lambda)`, returning the coefficient vector of length $p$. The primal
+- `MLRidge$new()` with `$solve(X, y, lambda)`, returning the coefficient vector of length $p$. The primal
   ($n \ge p$) and dual ($n < p$) paths are dispatched internally.
 
 For the cross-validated choice of $\lambda$, see

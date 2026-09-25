@@ -22,7 +22,7 @@ For each phenotype the biobank selector routes adaptively against the acceptable
 2. **Screen-TRex (bootstrap-CI)** — tried if Ordinary's estimated FDR falls outside the window.
 3. **T-Rex (fallback)** — classical T-Rex at the selector's `tFDR = 0.10` target, used if Bootstrap-CI also fails.
 
-The fraction of phenotypes routed to each method is the reported **Usage %**. Shared controls come via `make_scr_trex_ctrl(use_memory_mapping = TRUE)` (`solver = "TLARS"`, `K = 20`), `trex_screen_control(R_boot = ...)`, and `trex_biobank_control()`. The single fully-mmap `X` in Parts B and C is built with `TRexSelectorNeo::convert_to_memory_mapped()` into a temporary `.dat` file, wrapped in an RAII-like `with_temp_mmap()` helper that `unlink()`s the file on exit (see Demo 02).
+The fraction of phenotypes routed to each method is the reported **Usage %**. Shared controls come via `make_scr_trex_ctrl(use_memory_mapping = TRUE)` (`solver = "TLARS"`, `K = 20`), `trex_screen_control(R_boot = ...)`, and `trex_biobank_control()`. The single fully-mmap `X` in Parts B and C is built with `TRexSelectorNeo::mem_matrix_from()` into a temporary `.dat` file, wrapped in an RAII-like `with_temp_mmap()` helper that `unlink()`s the file on exit (see Demo 02).
 
 ## Parts
 

@@ -56,7 +56,7 @@ demo_svd_direct <- function() {
   X <- matrix(rnorm(n * p), nrow = n, ncol = p)
 
   # Step 2. Compute SVD (for tall matrices the solver decomposes X directly)
-  solver <- SVDSolver$new()
+  solver <- MLSVD$new()
   res <- solver$compute(X, M)
 
   # Step 3. Print dimensions
@@ -114,7 +114,7 @@ demo_svd_gram <- function() {
 
   # Step 2. Compute SVD. For wide matrices the solver works on the n x n Gram
   #         matrix X X^T instead of X itself, which is much cheaper when p >> n.
-  solver <- SVDSolver$new()
+  solver <- MLSVD$new()
   res <- solver$compute(X, M)
 
   # Step 3. Print dimensions
@@ -149,7 +149,7 @@ demo_svd_orthogonality <- function() {
   set.seed(99)
   X <- matrix(rnorm(n * p), nrow = n, ncol = p)
 
-  solver <- SVDSolver$new()
+  solver <- MLSVD$new()
   res <- solver$compute(X, M)
 
   # The singular vector blocks must be orthonormal: U^T U = I and V^T V = I.

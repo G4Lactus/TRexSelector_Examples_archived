@@ -58,10 +58,10 @@ Console output only.
 
 ## APIs used
 
-- `ZScoreScaler$new(center, scale)` with `$fit()`, `$transform_inplace()`, `$inverse_transform_inplace()`,
+- `MLZScoreScaler$new(center, scale)` with `$fit()`, `$transform_inplace()`, `$inverse_transform_inplace()`,
   `$get_centers()`, `$get_scales()`, `$save()`, `$load()`.
-- `LpNormScaler$new(norm_type, center, scale)` with the same method set.
-- `mmap_matrix()` for the memory-mapped subproblem; the handle is passed straight to the scaler methods, which bind
+- `MLLpNormScaler$new(norm_type, center, scale)` with the same method set.
+- `mem_matrix()` for the memory-mapped subproblem; the handle is passed straight to the scaler methods, which bind
   the disk-backed buffer zero-copy (all scaler methods require `"readwrite"` mode).
 
 ---

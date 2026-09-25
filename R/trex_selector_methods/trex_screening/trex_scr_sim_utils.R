@@ -191,8 +191,8 @@ default_scr_methods <- function() {
   }
   cat(sprintf("  Selected (%d):  %s\n",
               length(selected), paste(sort(selected), collapse = " ")))
-  fdp <- compute_fdp(selected, true_support)
-  tpp <- compute_tpp(selected, true_support)
+  fdp <- trex_fdp(selected, true_support)
+  tpp <- trex_tpp(selected, true_support)
   cat(sprintf("  FDP: %.4f  |  TPP: %.4f\n", fdp, tpp))
   cat(sprintf("  True support:   %s\n\n", paste(sort(true_support), collapse = " ")))
   invisible(list(fdp = fdp, tpp = tpp))
@@ -227,8 +227,8 @@ run_mc_screen <- function(num_MC, label, make_data, trex_ctrl,
     )
     sc$select()
     sel      <- sc$selected_indices
-    fdp[mc]  <- compute_fdp(sel, dat$true_support)
-    tpp[mc]  <- compute_tpp(sel, dat$true_support)
+    fdp[mc]  <- trex_fdp(sel, dat$true_support)
+    tpp[mc]  <- trex_tpp(sel, dat$true_support)
     est[mc]  <- sc$estimated_FDR
   }
   cat(sprintf("  %s -- done.  TPR=%.4f  FDR=%.4f  Est.FDR=%.4f\n",
@@ -333,7 +333,7 @@ BIOBANK_METHODS <- c("Screen-TRex (ordinary)",
   cat(sprintf("  alpha_hat_C (boot):%.4f\n", rec$estimated_FDR_screen_bootstrap))
   cat(sprintf("  Selected (%d):  %s\n", length(sel), paste(sort(sel), collapse = " ")))
   cat(sprintf("  FDP: %.4f  |  TPP: %.4f\n",
-              compute_fdp(sel, true_support), compute_tpp(sel, true_support)))
+              trex_fdp(sel, true_support), trex_tpp(sel, true_support)))
   cat(sprintf("  True support:   %s\n\n", paste(sort(true_support), collapse = " ")))
 }
 
@@ -354,8 +354,8 @@ BIOBANK_METHODS <- c("Screen-TRex (ordinary)",
     sel <- rec$selected_indices
     cat(sprintf("%6d  %-26s%10.4f%10d%10.4f%10.4f\n",
                 i, rec$method_used, rec$estimated_FDR, length(sel),
-                compute_fdp(sel, true_supports[[i]]),
-                compute_tpp(sel, true_supports[[i]])))
+                trex_fdp(sel, true_supports[[i]]),
+                trex_tpp(sel, true_supports[[i]])))
   }
   cat("\n")
 }

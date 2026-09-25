@@ -24,8 +24,8 @@ sel$select()
 sel$selected_indices        # 1-based screened support
 sel$estimated_FDR           # procedure's self-reported FDR
 sel$estimated_correlation   # estimated rho (DA variants)
-compute_fdp(sel$selected_indices, true_support)
-compute_tpp(sel$selected_indices, true_support)
+trex_fdp(sel$selected_indices, true_support)
+trex_tpp(sel$selected_indices, true_support)
 
 # Biobank / Algorithm 1 (many phenotypes, one shared X)
 bio <- TRexBiobankScreeningSelector$new(
@@ -79,7 +79,7 @@ Each demo folder has its own `README.md`.
 | # | Folder | Description | cpp counterpart | Key APIs |
 |---|---|---|---|---|
 | 01 | [demo_trex_scr_01_screen/](demo_trex_scr_01_screen/) | In-memory Ordinary vs. Bootstrap-CI screening: two single runs (fixed support, SNR 5) plus an 8-point SNR-sweep Monte Carlo reporting FDR / TPR / Estimated FDR | [demo_trex_scr_01_screen_trex/](../../../cpp/trex_selector_methods/trex_screening/demo_trex_scr_01_screen_trex/) | `TRexScreeningSelector`, `trex_screen_control(use_bootstrap_CI=)` |
-| 02 | [demo_trex_scr_02_screen_mmap/](demo_trex_scr_02_screen_mmap/) | Same screening scenario with the memory-mapped pipeline: Part A in-memory X + `use_memory_mapping=TRUE` (D-mmap); Part B fully memory-mapped X via `convert_to_memory_mapped()`; Part C mmap MC SNR sweep | [demo_trex_scr_02_screen_trex_mmap/](../../../cpp/trex_selector_methods/trex_screening/demo_trex_scr_02_screen_trex_mmap/) | `convert_to_memory_mapped`, `trex_control(use_memory_mapping=)` |
+| 02 | [demo_trex_scr_02_screen_mmap/](demo_trex_scr_02_screen_mmap/) | Same screening scenario with the memory-mapped pipeline: Part A in-memory X + `use_memory_mapping=TRUE` (D-mmap); Part B fully memory-mapped X via `mem_matrix_from()`; Part C mmap MC SNR sweep | [demo_trex_scr_02_screen_trex_mmap/](../../../cpp/trex_selector_methods/trex_screening/demo_trex_scr_02_screen_trex_mmap/) | `mem_matrix_from`, `trex_control(use_memory_mapping=)` |
 | 03 | [demo_trex_scr_03_screen_correlated/](demo_trex_scr_03_screen_correlated/) | Ordinary vs. DA screening on correlated designs: 4 single runs (Ordinary/DA-AR1/DA-EQUI/DA-BLOCK-EQUI) + 5 Monte Carlo sweeps (AR(1)/equi SNR sweeps and AR(1)/equi/block-equi rho sweeps) | [demo_trex_scr_03_screen_trex_correlated/](../../../cpp/trex_selector_methods/trex_screening/demo_trex_scr_03_screen_trex_correlated/) | `trex_method = "TREX_DA_*"`, `estimated_correlation` |
 | 04 | [demo_trex_scr_04_biobank_inmem/](demo_trex_scr_04_biobank_inmem/) | Biobank "Algorithm 1" (in-memory): single phenotype, 5-phenotype routing table + summary, and MC SNR sweeps (single and multi-phenotype) reporting per-method Usage % / FDR / TPR / Est. FDR | [demo_trex_scr_04_biobank_screen_trex_inmem/](../../../cpp/trex_selector_methods/trex_screening/demo_trex_scr_04_biobank_screen_trex_inmem/) | `TRexBiobankScreeningSelector`, `trex_biobank_control` |
 | 05 | [demo_trex_scr_05_biobank_mmap/](demo_trex_scr_05_biobank_mmap/) | Same biobank workflow with the memory-mapped pipeline: Part A in-memory X + D-mmap; Part B single + multi phenotype on a fully memory-mapped X; Part C mmap MC SNR sweep | [demo_trex_scr_05_biobank_screen_trex_mmap/](../../../cpp/trex_selector_methods/trex_screening/demo_trex_scr_05_biobank_screen_trex_mmap/) | `TRexBiobankScreeningSelector` + mmap X |

@@ -142,8 +142,8 @@ part_2 <- function() {
 .accumulate <- function(maps, rec, true_support, si, tFDR) {
   m   <- rec$method_used
   sel <- rec$selected_indices
-  maps$fdp[[m]][si]   <- maps$fdp[[m]][si]   + compute_fdp(sel, true_support)
-  maps$tpp[[m]][si]   <- maps$tpp[[m]][si]   + compute_tpp(sel, true_support)
+  maps$fdp[[m]][si]   <- maps$fdp[[m]][si]   + trex_fdp(sel, true_support)
+  maps$tpp[[m]][si]   <- maps$tpp[[m]][si]   + trex_tpp(sel, true_support)
   maps$usage[[m]][si] <- maps$usage[[m]][si] + 1
   maps$est[["Screen-TRex (ordinary)"]][si]     <-
     maps$est[["Screen-TRex (ordinary)"]][si]     + rec$estimated_FDR_screen_ordinary

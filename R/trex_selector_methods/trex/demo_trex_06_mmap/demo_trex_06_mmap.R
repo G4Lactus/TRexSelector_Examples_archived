@@ -20,7 +20,7 @@
 #  Part B: Fully memory-mapped X + use_memory_mapping = TRUE.
 #          In C++ this uses SyntheticDataMapped (X never fully in RAM).
 #          The R package TRexSelectorNeo supports MemoryMappedMatrix objects
-#          for X (via convert_to_memory_mapped / mmap_matrix), but creating
+#          for X (via mem_matrix_from / mem_matrix), but creating
 #          a memory-mapped version of a generated matrix requires writing it
 #          to disk first.
 #          This part mirrors the statistical scenario
@@ -80,8 +80,8 @@ DEMO_CFG <- list(
   n_sel        <- length(selected)
   n_tp         <- length(intersect(selected, true_support))
   n_fp         <- n_sel - n_tp
-  tpp          <- TRexSelectorNeo::compute_tpp(selected, true_support)
-  fdp          <- TRexSelectorNeo::compute_fdp(selected, true_support)
+  tpp          <- TRexSelectorNeo::trex_tpp(selected, true_support)
+  fdp          <- TRexSelectorNeo::trex_fdp(selected, true_support)
 
   cat(strrep("-", 70L), "\n")
   cat(sprintf("  Selected indices: {%s}\n", paste(selected, collapse = ", ")))

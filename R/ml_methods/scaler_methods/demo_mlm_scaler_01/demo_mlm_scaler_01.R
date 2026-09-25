@@ -96,7 +96,7 @@ demo_scaler_comparison <- function() {
   )
   for (case in z_cases) {
     Xt <- X + 0                      # forced deep copy: the transform is in-place
-    zscaler <- ZScoreScaler$new(center = case$center, scale = case$scale)
+    zscaler <- MLZScoreScaler$new(center = case$center, scale = case$scale)
     zscaler$fit(Xt)
     Xt <- zscaler$transform_inplace(Xt)
     print_column_stats(case$label, Xt)
@@ -114,7 +114,7 @@ demo_scaler_comparison <- function() {
   )
   for (case in l_cases) {
     Xt <- X + 0
-    lscaler <- LpNormScaler$new(norm_type = case$norm, center = case$center,
+    lscaler <- MLLpNormScaler$new(norm_type = case$norm, center = case$center,
                                 scale = TRUE)
     lscaler$fit(Xt)
     Xt <- lscaler$transform_inplace(Xt)
@@ -143,7 +143,7 @@ demo_scaler_inverse_transform <- function() {
 
   # Step 2. Test ZScoreScaler
   X <- X_orig + 0
-  zscaler <- ZScoreScaler$new()
+  zscaler <- MLZScoreScaler$new()
   zscaler$fit(X)
   X <- zscaler$transform_inplace(X)
   X <- zscaler$inverse_transform_inplace(X)
@@ -155,7 +155,7 @@ demo_scaler_inverse_transform <- function() {
 
   # Step 3. Test LpNormScaler L2
   X <- X_orig + 0
-  l2scaler <- LpNormScaler$new(norm_type = 2L, center = TRUE)
+  l2scaler <- MLLpNormScaler$new(norm_type = 2L, center = TRUE)
   l2scaler$fit(X)
   X <- l2scaler$transform_inplace(X)
   X <- l2scaler$inverse_transform_inplace(X)
@@ -188,13 +188,13 @@ demo_scaler_serialization <- function() {
   filename <- tempfile(pattern = "trex_scaler_demo_", fileext = ".bin")
   on.exit(unlink(filename), add = TRUE)
 
-  scaler <- ZScoreScaler$new()
+  scaler <- MLZScoreScaler$new()
   scaler$fit(X)
   scaler$save(filename)
   cat(sprintf("✓ Saved ZScoreScaler to '%s'\n", filename))
 
   # Step 3. Load and verify
-  loaded_scaler <- ZScoreScaler$new()
+  loaded_scaler <- MLZScoreScaler$new()
   loaded_scaler$load(filename)
   cat(sprintf("✓ Loaded ZScoreScaler from '%s'\n\n", filename))
 
@@ -235,7 +235,7 @@ demo_scaler_on_mmap_matrix <- function() {
     cat("✓ Memory-mapped file removed\n\n\n")
   }, add = TRUE)
 
-  X_mmap <- mmap_matrix(mmap_filename, rows = n, cols = p)
+  X_mmap <- mem_matrix(mmap_filename, rows = n, cols = p)
 
   # Step 2. Populate the file column by column: X(i, j) = 2*i + j/100
   #         (0-based i, j — matching the C++ demo, which fills the mapped
@@ -248,7 +248,7 @@ demo_scaler_on_mmap_matrix <- function() {
   # Step 3. Fit and run LpNormScaler directly on the mmap handle. The scaler
   #         binds the disk-backed buffer zero-copy through the same Eigen map
   #         interface as the C++ demo — no block is materialized in R memory.
-  l2scaler <- LpNormScaler$new(norm_type = 2L, center = TRUE)
+  l2scaler <- MLLpNormScaler$new(norm_type = 2L, center = TRUE)
   cat("Fitting L2 LpNormScaler on memory-mapped matrix...\n")
   l2scaler$fit(X_mmap)
   cat("✓ LpNormScaler fitted\n")

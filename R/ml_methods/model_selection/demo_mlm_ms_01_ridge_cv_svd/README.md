@@ -79,7 +79,7 @@ n = 2000, \qquad p = 500, \qquad K = 10 \text{ folds}
 ```
 
 (the C++ demo uses $n = 5000$; the size is scaled down here to keep the R demo fast). The design matrix is written to a
-memory-mapped file with `convert_to_memory_mapped()`, the writer handle is released, and the file is re-opened read-only
+memory-mapped file with `mem_matrix_from()`, the writer handle is released, and the file is re-opened read-only
 before the fit.
 
 The `mmap_matrix` handle is passed straight to `$fit()`, which binds the disk-backed buffer zero-copy through a const
@@ -112,7 +112,7 @@ When reading the console output, focus on these points:
 
 ## Technical notes
 
-- APIs used: `RidgeCV$new()` with `$fit(X, y, num_folds, n_lambda, lambda_ratio, seed)`, `$cv_min()`, `$cv_1se()`,
+- APIs used: `MLRidgeCV$new()` with `$fit(X, y, num_folds, n_lambda, lambda_ratio, seed)`, `$cv_min()`, `$cv_1se()`,
   `$index_min()`, `$index_1se()`, `$get_lambdas()`, `$get_cv_errors()`, `$get_cv_std()`.
 - `$index_min()` / `$index_1se()` return **1-based** indices into the lambda grid, following the R language
   convention — the binding converts deliberately at the Rcpp boundary (the C++ and Python accessors are 0-based).
