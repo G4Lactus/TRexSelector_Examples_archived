@@ -21,7 +21,8 @@
 #include <Eigen/Dense>
 
 // tsolvers includes
-#include <tsolvers/linear_model/omp_based/tncgmp_solver.hpp>
+#include <filesystem>
+#include <tsolvers/ad/linear_model/omp_based/tncgmp_solver.hpp>
 
 // ml_methods includes
 #include <ml_methods/scaler_methods/lp_norm_scaler.hpp>
@@ -47,7 +48,7 @@ namespace rates = trex::utils::eval::rates;
 namespace counts = trex::utils::eval::counts;
 namespace composites = trex::utils::eval::composites;
 namespace fs = std::filesystem;
-namespace tsolvers = trex::tsolvers::linear_model::omp_based;
+namespace tsolvers = trex::tsolvers::ad::linear_model::omp_based;
 
 
 // ============================================================================
@@ -111,10 +112,7 @@ void demo_TNCGMP_early_stopping(bool high_dim, bool rnd_coef, std::size_t T_stop
         X_map,
         D_map,
         y_map,
-        tsolvers::NCGMPVariant::LineSearch,
-        true,
-        true,
-        true
+        trex::tsolvers::ad::SolverOptions{.normalize = true, .intercept = true, .verbose = true, .ncgmp_variant = tsolvers::NCGMPVariant::LineSearch}
     );
 
     // Execute with early stopping
@@ -214,10 +212,7 @@ void demo_TNCGMP_with_external_normalizer(bool high_dim, bool rnd_coef, std::siz
         X_map,
         D_map,
         y_map,
-        tsolvers::NCGMPVariant::LineSearch,
-        /*normalize=*/false,
-        /*intercept=*/false,
-        /*verbose=*/true
+        trex::tsolvers::ad::SolverOptions{.normalize = false, .intercept = false, .verbose = true, .ncgmp_variant = tsolvers::NCGMPVariant::LineSearch}
     );
 
     // Execute with early stopping
@@ -284,12 +279,9 @@ void demo_TNCGMP_serialization() {
     // Create reference solver: run until T_stop_final
     tsolvers::TNCGMP_Solver solver_ref(
          X_map,
-        D_map,
-        y_map,
-        tsolvers::NCGMPVariant::LineSearch,
-        true,
-        true,
-        true
+         D_map,
+         y_map,
+         trex::tsolvers::ad::SolverOptions{.normalize = true, .intercept = true, .verbose = true, .ncgmp_variant = tsolvers::NCGMPVariant::LineSearch}
     );
 
     solver_ref.executeStep(T_stop_final, /*early_stop=*/true);
@@ -303,10 +295,7 @@ void demo_TNCGMP_serialization() {
             X_map,
             D_map,
             y_map,
-            tsolvers::NCGMPVariant::LineSearch,
-            true,
-            true,
-            true
+            trex::tsolvers::ad::SolverOptions{.normalize = true, .intercept = true, .verbose = true, .ncgmp_variant = tsolvers::NCGMPVariant::LineSearch}
         );
         solver1.executeStep(/*T_stop=*/T_stop_partial, /*early_stop=*/true);
 
@@ -404,12 +393,9 @@ void demo_memory_mapped(bool high_dim, bool rnd_coef, std::size_t T_stop) {
     std::cout << "Running T-NCGMP on memory-mapped data...\n";
     tsolvers::TNCGMP_Solver tncgmp(
          X_map,
-        D_map,
-        y_map,
-        tsolvers::NCGMPVariant::LineSearch,
-        true,
-        true,
-        true
+         D_map,
+         y_map,
+         trex::tsolvers::ad::SolverOptions{.normalize = true, .intercept = true, .verbose = true, .ncgmp_variant = tsolvers::NCGMPVariant::LineSearch}
     );
 
     // Execute

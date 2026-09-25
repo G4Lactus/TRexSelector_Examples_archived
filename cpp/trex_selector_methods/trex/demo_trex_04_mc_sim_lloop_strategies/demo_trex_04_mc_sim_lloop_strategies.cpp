@@ -22,10 +22,10 @@
  *                           (faster, prefix-stable, same result).
  *    PERMUTATION          — Stored base dummy matrix + deterministic row
  *                           permutations per experiment.
- *    PERMUTATION_ONDEMAND — Seed-derived base + row permutations per
+ *    PERMUTATION_SEEDED — Seed-derived base + row permutations per
  *                           experiment; nothing stored. Bit-identical to
  *                           PERMUTATION for the same seed.
- *    ONDEMAND             — Seed-derived independent dummies per experiment;
+ *    SEEDED             — Seed-derived independent dummies per experiment;
  *                           nothing stored.
  *    SKIPL                — Skip the L-loop entirely and use
  *                           L = max_dummy_multiplier.
@@ -58,7 +58,7 @@
 #include <utils/openmp/utils_openmp.hpp>
 
 // T-Rex Selector includes
-#include <trex_selector_methods/trex_core/trex.hpp>
+#include <trex_selector_methods/ad/trex_core/trex.hpp>
 #include <utils/datageneration/utils_datagen.hpp>
 #include <utils/eval_metrics/utils_eval_cdiagnostics.hpp>
 #include <utils/eval_metrics/utils_eval_rates.hpp>
@@ -77,9 +77,9 @@ namespace datagen = trex::utils::datageneration::datagen;
 namespace dummygen = trex::utils::datageneration::dummygen;
 
 // T-Rex types
-using trex::trex_selector_methods::trex_core::TRexControlParameter;
-using trex::trex_selector_methods::trex_core::LLoopStrategy;
-using trex::trex_selector_methods::utils::solver_dispatch::SolverTypeForTRex;
+using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
+using trex::trex_selector_methods::ad::trex_core::LLoopStrategy;
+using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
 
 
 // ==============================================================================
@@ -105,7 +105,7 @@ struct LLoopStrategyInfo {
 
 /** @brief Returns the canonical list of L-loop strategy variants to compare.
  *
- *  Adaptive strategies (STANDARD … ONDEMAND) all use max_dummy_multiplier = 10 (default).
+ *  Adaptive strategies (STANDARD … SEEDED) all use max_dummy_multiplier = 10 (default).
  *  SKIPL is compared at three explicit L levels: 5p, 10p, and 20p.
  */
 static std::vector<LLoopStrategyInfo> make_lloop_strategies() {
@@ -113,8 +113,8 @@ static std::vector<LLoopStrategyInfo> make_lloop_strategies() {
         {"STANDARD",             LLoopStrategy::STANDARD},
         {"HCONCAT",              LLoopStrategy::HCONCAT},
         {"PERMUTATION",          LLoopStrategy::PERMUTATION},
-        {"PERMUTATION_ONDEMAND", LLoopStrategy::PERMUTATION_ONDEMAND},
-        {"ONDEMAND",             LLoopStrategy::ONDEMAND},
+        {"PERMUTATION_SEEDED", LLoopStrategy::PERMUTATION_SEEDED},
+        {"SEEDED",             LLoopStrategy::SEEDED},
         {"SKIPL_5p",             LLoopStrategy::SKIPL, 5},
         {"SKIPL_10p",            LLoopStrategy::SKIPL, 10},
         {"SKIPL_20p",            LLoopStrategy::SKIPL, 20}

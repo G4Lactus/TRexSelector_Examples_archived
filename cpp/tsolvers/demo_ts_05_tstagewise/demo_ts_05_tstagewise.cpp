@@ -22,7 +22,8 @@
 #include <Eigen/Dense>
 
 // tsolvers includes
-#include <tsolvers/linear_model/lars_based/tstagewise_solver.hpp>
+#include <filesystem>
+#include <tsolvers/ad/linear_model/lars_based/tstagewise_solver.hpp>
 
 // ml_methods includes
 #include <ml_methods/scaler_methods/lp_norm_scaler.hpp>
@@ -48,7 +49,7 @@ namespace rates = trex::utils::eval::rates;
 namespace counts = trex::utils::eval::counts;
 namespace composites = trex::utils::eval::composites;
 namespace fs = std::filesystem;
-namespace tsolvers = trex::tsolvers::linear_model::lars_based;
+namespace tsolvers = trex::tsolvers::ad::linear_model::lars_based;
 
 
 // ============================================================================
@@ -112,9 +113,7 @@ void demo_TSTAGEWISE_early_stopping(bool high_dim, bool rnd_coef, std::size_t T_
         X_map,
         D_map,
         y_map,
-        /*normalize=*/true,
-        /*intercept=*/true,
-        /*verbose=*/true
+        trex::tsolvers::ad::SolverOptions{.normalize = true, .intercept = true, .verbose = true}
     );
 
     // Execute with early stopping
@@ -218,9 +217,7 @@ void demo_TSTAGEWISE_with_external_normalizer(bool high_dim, bool rnd_coef, std:
         X_map,
         D_map,
         y_map,
-        /*normalize=*/false,
-        /*intercept=*/false,
-        /*verbose=*/true
+        trex::tsolvers::ad::SolverOptions{.normalize = false, .intercept = false, .verbose = true}
     );
 
     // Execute with early stopping
@@ -295,9 +292,7 @@ void demo_TSTAGEWISE_serialization() {
         X_map,
         D_map,
         y_map,
-        /*normalize=*/true,
-        /*intercept=*/true,
-        /*verbose=*/false
+        trex::tsolvers::ad::SolverOptions{.normalize = true, .intercept = true, .verbose = false}
     );
 
     solver_ref.executeStep(T_stop_final, /*early_stop=*/true);
@@ -311,9 +306,7 @@ void demo_TSTAGEWISE_serialization() {
             X_map,
             D_map,
             y_map,
-            /*normalize=*/true,
-            /*intercept=*/true,
-            /*verbose=*/false
+            trex::tsolvers::ad::SolverOptions{.normalize = true, .intercept = true, .verbose = false}
         );
         solver1.executeStep(/*T_stop=*/T_stop_partial, /*early_stop=*/true);
 
@@ -413,9 +406,7 @@ void demo_memory_mapped(bool high_dim, bool rnd_coef, std::size_t T_stop) {
         X_map,
         D_map,
         y_map,
-        /*normalize=*/true,
-        /*intercept=*/true,
-        /*verbose=*/true
+        trex::tsolvers::ad::SolverOptions{.normalize = true, .intercept = true, .verbose = true}
     );
 
     // Execute

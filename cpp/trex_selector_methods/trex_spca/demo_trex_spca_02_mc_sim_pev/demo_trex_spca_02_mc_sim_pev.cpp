@@ -97,10 +97,10 @@
 
 // Namespace usage
 using namespace spca_sim;
-using trex::trex_selector_methods::trex_gvs::TRexGVSSelector;
-using trex::trex_selector_methods::trex_gvs::TRexGVSControlParameter;
-using trex::trex_selector_methods::trex_gvs::GVSType;
-using trex::trex_selector_methods::utils::solver_dispatch::SolverTypeForTRex;
+using trex::trex_selector_methods::ad::trex_gvs::TRexGVSSelector;
+using trex::trex_selector_methods::ad::trex_gvs::TRexGVSControlParameter;
+using trex::trex_selector_methods::ad::trex_gvs::GVSType;
+using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
 
 // ==============================================================================
 // Shared sweep driver

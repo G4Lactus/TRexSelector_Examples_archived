@@ -57,8 +57,8 @@
 #include <Eigen/Dense>
 
 // TRex includes
-#include <trex_selector_methods/trex_screening/trex_screening.hpp>
-#include <trex_selector_methods/trex_screening/trex_biobank_screening.hpp>
+#include <trex_selector_methods/ad/trex_screening/trex_screening.hpp>
+#include <trex_selector_methods/ad/trex_screening/trex_biobank_screening.hpp>
 #include <utils/eval_metrics/utils_eval_cdiagnostics.hpp>
 #include <utils/eval_metrics/utils_eval_rates.hpp>
 #include <utils/openmp/utils_openmp.hpp>
@@ -74,15 +74,15 @@ namespace dummygen = trex::utils::datageneration::dummygen;
 namespace rates    = trex::utils::eval::rates;
 
 /** @brief Namespace alias for Biobank Screen-TRex types. */
-namespace tbs = trex::trex_selector_methods::trex_biobank_screening;
+namespace tbs = trex::trex_selector_methods::ad::trex_biobank_screening;
 
-using trex::trex_selector_methods::trex_core::TRexControlParameter;
-using trex::trex_selector_methods::trex_core::LLoopStrategy;
-using trex::trex_selector_methods::utils::solver_dispatch::SolverTypeForTRex;
-using trex::trex_selector_methods::trex_screening::ScreenTRexControlParameter;
-using trex::trex_selector_methods::trex_screening::ScreenTRexMethod;
-using trex::trex_selector_methods::trex_screening::ScreenTRexSelector;
-using trex::trex_selector_methods::trex_screening::ScreenTRexSelectionResult;
+using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
+using trex::trex_selector_methods::ad::trex_core::LLoopStrategy;
+using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
+using trex::trex_selector_methods::ad::trex_screening::ScreenTRexControlParameter;
+using trex::trex_selector_methods::ad::trex_screening::ScreenTRexMethod;
+using trex::trex_selector_methods::ad::trex_screening::ScreenTRexSelector;
+using trex::trex_selector_methods::ad::trex_screening::ScreenTRexSelectionResult;
 
 
 // ==============================================================================

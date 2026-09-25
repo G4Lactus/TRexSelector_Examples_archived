@@ -102,7 +102,7 @@
 #include <utils/openmp/utils_openmp.hpp>
 
 // T-Rex Selector includes
-#include <trex_selector_methods/trex_core/trex.hpp>
+#include <trex_selector_methods/ad/trex_core/trex.hpp>
 #include <utils/datageneration/utils_datagen.hpp>
 #include <utils/eval_metrics/utils_eval_cdiagnostics.hpp>
 #include <utils/eval_metrics/utils_eval_rates.hpp>
@@ -123,10 +123,10 @@ namespace dummygen    = trex::utils::datageneration::dummygen;
 namespace rates       = trex::utils::eval::rates;
 
 // T-Rex types
-using trex::trex_selector_methods::trex_core::TRexControlParameter;
-using trex::trex_selector_methods::trex_core::TRexSelector;
-using trex::trex_selector_methods::trex_core::LLoopStrategy;
-using trex::trex_selector_methods::utils::solver_dispatch::SolverTypeForTRex;
+using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
+using trex::trex_selector_methods::ad::trex_core::TRexSelector;
+using trex::trex_selector_methods::ad::trex_core::LLoopStrategy;
+using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
 
 
 // ==============================================================================
