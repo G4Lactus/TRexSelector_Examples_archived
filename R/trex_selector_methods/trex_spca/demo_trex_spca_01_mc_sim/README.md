@@ -78,11 +78,21 @@ with result fields `$V` (sparse loadings), `$Z` (scores), and `$active_sets` (**
 
 ## Output Files
 
-Written to `simulation_results/` (already populated):
+Written to `simulation_results/data/`:
 
-- `demo_trex_spca_01_mc_sim.txt` — human-readable table (methods × FDR/TPR/PEV × SNR column(s)).
-- `demo_trex_spca_01_mc_sim.csv` — tidy long format: `method, metric, snr_db, value`.
-- `res_demo_trex_spca_01_x.txt` — **legacy record**: recorded console output of the pre-restructure R demo (`demo_trex_spca_01.R`, now deleted), a 9-point SNR sweep with a different method set (Ord PCA, Oracle PCA, Zou `elasticnet::spca`, "Oracle SPCA", T-Rex EN/IEN Act/Thr via the CRAN-era pipeline). Since the current pipeline is back on the same centered footing, its T-Rex EN rows are roughly comparable again (e.g. FDR 10.0–17.5% at $-10$ dB) — but the method set and pipeline details differ, so treat it as historical context only.
+- `demo_trex_spca_01_mc_sim.txt` — human-readable table
+  (methods × FDR/TPR/PEV under three normalizations × SNR columns).
+- `demo_trex_spca_01_mc_sim.csv` — tidy long format: `method, metric, snr_db, value`
+  (metrics `FDR`, `TPR`, `PEV`, `PEVsig`, `PEVsigmix`).
+- `demo_trex_spca_01_mc_sim_union_fdr.csv` — Section 2, tidy long format:
+  `pc, metric, snr_db, value` (metrics `FDRunion`, `k`).
+
+Figures (via `./generate_plots.sh`, written to `simulation_results/plots/`):
+
+- `demo_trex_spca_01_mc_sim.{png,pdf}` — TPR/FDR vs SNR.
+- `demo_trex_spca_01_mc_sim_pev.{png,pdf}` — cumulative PEV under both normalizations
+  (total variance vs Definition 1, incl. the OrdPCA Sig+Mix reference curve).
+- `demo_trex_spca_01_mc_sim_union_fdr.{png,pdf}` — union-support FDR and support size per PC.
 
 ---
 
@@ -91,9 +101,11 @@ Written to `simulation_results/` (already populated):
 ```bash
 Rscript R/trex_selector_methods/trex_spca/demo_trex_spca_01_mc_sim/demo_trex_spca_01_mc_sim.R       # default 6 worker cores
 Rscript R/trex_selector_methods/trex_spca/demo_trex_spca_01_mc_sim/demo_trex_spca_01_mc_sim.R 8     # 8 worker cores
+TREX_SPCA_PARTS=2 Rscript .../demo_trex_spca_01_mc_sim.R      # only Section 2 (union-FDR)
+TREX_SPCA_NUM_MC=10 Rscript .../demo_trex_spca_01_mc_sim.R    # pilot-run MC override
 ```
 
-Dependencies: `TRexSelectorNeo` and base-R `parallel` only. The Monte Carlo trials run in parallel via `parallel::mclapply` (see `../trex_spca_sim_utils.R`).
+Dependencies: `TRexSelectorNeo` and base-R `parallel` only (figures additionally need `ggplot2` + `patchwork`). The Monte Carlo trials run in parallel via `parallel::mclapply` (see `../trex_spca_sim_utils.R`).
 
 ---
 

@@ -49,11 +49,11 @@ trex/
 | 01 | [demo_trex_01_single_run](demo_trex_01_single_run/) | Single run in a low- and a high-dimensional setting with a fixed true support (TLARS); illustrates reporting of the internal statistics `phi_prime`, `phi_mat`, `fdp_hat_mat`, `r_mat`, `voting_grid` | `demo_trex_01_single_run` |
 | 02 | [demo_trex_02_mc_sim_fixed_support](demo_trex_02_mc_sim_fixed_support/) | MC simulation with fixed support (drawn once with seed 24): 14 solvers x SNR sweep {0.1, 0.5, 1.0, 2.0, 5.0}; averaged FDR/TPR per solver x SNR | `demo_trex_02_mc_sim_fixed_support` |
 | 03 | [demo_trex_03_mc_sim_variable_support](demo_trex_03_mc_sim_variable_support/) | MC simulation with support (and optionally coefficients) redrawn each trial: 14 solvers x 21 SNR values {0.1, 0.2, …, 2.0, 5.0}; averaged FDR / TPR / Avg L / Avg T | `demo_trex_03_mc_sim_variable_support` |
-| 04 | [demo_trex_04_mc_sim_lloop_strategies](demo_trex_04_mc_sim_lloop_strategies/) | MC comparison of the six L-loop strategies (STANDARD, HCONCAT, PERMUTATION, PERMUTATION_SEEDED, SEEDED, SKIPL) with the TLARS base solver; n=300, p=1000, s=10; 21 SNR values; random and block support scenarios | `demo_trex_04_mc_sim_lloop_strategies` |
-| 05 | [demo_trex_05_mc_sim_dummy_distributions](demo_trex_05_mc_sim_dummy_distributions/) | MC comparison of 12 dummy distribution variants (Normal, Uniform, Rademacher, StudentT df 3/5, Laplace, Gumbel, Triangle, Logistic, Mammen, sparse Rademacher s=0.1, UniformSphere dim=5) across 3 base solvers (TLARS/TOMP/TAFS rho_afs=1.0) with the STANDARD L-loop strategy held fixed; n=300, p=1000, s=10; 21 SNR values; one result file pair per solver | `demo_trex_05_mc_sim_dummy_distributions` |
+| 04 | [demo_trex_04_mc_sim_lloop_strategies](demo_trex_04_mc_sim_lloop_strategies/) | MC comparison of the six L-loop strategies (STANDARD, HCONCAT, PERMUTATION, PERMUTATION_SEEDED, SEEDED, SKIPL at 5p/10p/20p) across 3 base solvers (TLARS/TOMP/TAFS rho_afs=0.3); n=300, p=1000, s=10; 21 SNR values; random and block support scenarios; one result file pair per solver | `demo_trex_04_mc_sim_lloop_strategies` |
+| 05 | [demo_trex_05_mc_sim_dummy_distributions](demo_trex_05_mc_sim_dummy_distributions/) | MC comparison of 12 dummy distribution variants (Normal, Uniform, Rademacher, StudentT df 3/5, Laplace, Gumbel, Triangle, Logistic, Mammen, sparse Rademacher s=0.1, UniformSphere dim=5) across 3 base solvers (TLARS/TOMP/TAFS rho_afs=0.3) with the STANDARD L-loop strategy held fixed; n=300, p=1000, s=10; 7 SNR values; one result file pair per solver | `demo_trex_05_mc_sim_dummy_distributions` |
 | 06 | [demo_trex_06_mmap](demo_trex_06_mmap/) | Memory-mapped usage patterns. Part A: in-memory X + `use_memory_mapping = TRUE` (internal D-mmap + solver serialization). Part B: fully memory-mapped X via `mem_matrix_from()` / `mem_matrix()` | `demo_trex_06_mmap` |
 | 07 | [demo_trex_07_mc_sim_mmap](demo_trex_07_mc_sim_mmap/) | MC verification of the D-mmap + solver-serialization pipeline (TLARS only, fixed support seed 24, SNR {0.1, 0.5, 1.0, 2.0, 5.0}, `tloop_max_stagnant_steps = 7`, `opt_threshold = 0.75`). Part A: in-memory X; Part B: per-trial temporary mmap-backed X/y with exception-safe cleanup | `demo_trex_07_mc_sim_mmap` |
-| 08 | [demo_trex_08_mc_sim_scalability](demo_trex_08_mc_sim_scalability/) | MC scalability benchmark: in-memory vs chunked, memory-mapped out-of-core execution over an exponentially increasing (n, p) grid targeting specific memory footprints; measures execution time and peak memory, saves a CSV | `demo_trex_08_mc_sim_scalability` (R-only content; the C++ demo 08 is a WIP placeholder) |
+| 08 | [demo_trex_08_mc_sim_scalability](demo_trex_08_mc_sim_scalability/) | Scalability benchmark on the fully memory-mapped pipeline: n in {1000, 1500, 2000, 5000} x p up to 200000 (out-of-core barrier point beyond physical RAM), 3 base solvers (TLARS/TOMP/TAFS rho_afs=0.3), num_MC=10 sequential trials per cell with a resumable per-trial cache; records timing, memory, and FDR/TPR | `demo_trex_08_mc_sim_scalability` |
 
 Each demo folder has its own `README.md`.
 
@@ -145,7 +145,8 @@ the C++ suite convention):
 
 - `.txt` files — human-readable summaries,
 - `.csv` files — tidy long-format tables for plotting and post-processing
-  (e.g. `demo_trex_02_mc_sim_fixed_support/simulation_results/data/demo_trex_02_mc_sim_fixed_support_results_n300_p1000_stagnation_window_7.csv`).
+  (e.g. `demo_trex_02_mc_sim_fixed_support/simulation_results/data/demo_trex_02_mc_sim_fixed_support_trex_results_n300_p1000_stagnation_window_7.csv`).
 
-Demos 02–08 persist result tables (`.csv`/`.txt`, or the mmap selection/
-benchmark CSVs); only demo 01 (single run) is console-only.
+All demos persist result files (`.csv`/`.txt`, or the mmap selection/benchmark
+CSVs); demo 01 (single run) writes its result block to a `.txt` per dimension
+setting (dual console + file).

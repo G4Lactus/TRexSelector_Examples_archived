@@ -15,7 +15,11 @@
 #     dgp_chunked_gauss_snr()   — Chunked out-of-core DGP for massive datasets.
 #
 #   Section 3 — Single-run print helpers
-#     .print_single_run()       — Formatted single-run result block.
+#     .make_dual_out()           — PrintFn-style dual console + file sink.
+#     .print_sparse_vector()     — Nonzero entries of a p-vector.
+#     .print_sparse_matrix()     — Nonzero entries of a (T x p) matrix.
+#     .print_selection_results() — Selected indices, FDP/TPP, sparse Phi block.
+#     .print_single_run()        — Formatted single-run result block.
 #
 #   Section 4 — MC infrastructure
 #     SOLVERS_DEFAULT            — List of 14 solver descriptors (mirrors
@@ -25,6 +29,7 @@
 #     .print_demo_header()       — Standardised demo section headers.
 #     .make_trex_ctrl()          — Build trex_control() from a solver descriptor.
 #     .run_mc_trex()             — Parallel MC runner (TRexSelector OOP API).
+#     .run_mc_trex_full_mmap()   — MC runner with per-trial mmap-backed X.
 #     .print_solver_table()      — Aligned solver x SNR table to console.
 #     .save_mc_csv()             — Tidy long-format CSV to disk.
 #     .save_and_print_mc()       — Console + .txt + .csv combined output.
@@ -140,7 +145,7 @@ dgp_gauss_snr <- function(n,
 #'
 #' Generates a massive design matrix X in memory-efficient column chunks,
 #' writing it directly to a memory-mapped matrix using TRexSelector's native
-#' `mmap_matrix` backend. Bypasses R's memory limits for large datasets.
+#' `mem_matrix` backend. Bypasses R's memory limits for large datasets.
 #'
 #' @param n            Number of observations.
 #' @param p            Number of predictors.
@@ -154,7 +159,7 @@ dgp_gauss_snr <- function(n,
 #'
 #' @return A list with components:
 #'   \describe{
-#'     \item{X}{Memory-mapped matrix object (TRexSelector mmap_matrix).}
+#'     \item{X}{Memory-mapped matrix object (TRexSelector mem_matrix).}
 #'     \item{y}{Response vector (length n, in memory).}
 #'     \item{beta}{Coefficient vector (length p, in memory).}
 #'     \item{true_support}{1-based integer index vector of active predictors.}
@@ -221,10 +226,131 @@ dgp_chunked_gauss_snr <- function(n,
 
 # ==============================================================================
 # Section 3 — Single-run print helpers
+# (mirrors Python trex_helpers.py / C++ trex_sim_utils.hpp sparse printers)
 # ==============================================================================
+#
+# All printers accept an optional `out` callback for dual console + file
+# output (mirrors the C++ PrintFn pattern / Python make_dual_out); when
+# omitted, output goes to the console only.
+
+#' Console-only output sink (default for the printers below).
+.console_out <- function(text) cat(text)
+
+
+#' Return a PrintFn-style callback writing to both console and `con`.
+#'
+#' Mirrors the C++ `print_dual` lambda and Python make_dual_out().
+#'
+#' @param con An open writable connection (text mode).
+.make_dual_out <- function(con) {
+  function(text) {
+    cat(text)
+    cat(text, file = con)
+  }
+}
+
+
+#' Print only the nonzero entries of a p-vector, with their (1-based) indices.
+#'
+#' Mirrors Python print_sparse_vector() / C++ print_sparse_vector(): Phi_prime
+#' carries one entry per variable, so a dense dump puts p numbers on a single
+#' line of which typically ~0.1% are nonzero. Falls back to the dense form when
+#' the vector is not actually sparse.
+.print_sparse_vector <- function(label, vec, out = .console_out, eps = 1e-12) {
+  vec <- as.numeric(vec)
+  n   <- length(vec)
+  nz  <- which(abs(vec) > eps)
+
+  out(sprintf("\n%s: %d of %d entries nonzero\n", label, length(nz), n))
+
+  if (length(nz) * 4L > n) {   # dense enough: keep the plain dump
+    out(paste0("  ", paste(sprintf("%.6f", vec), collapse = "  "), "\n"))
+    return(invisible(NULL))
+  }
+
+  per_line <- 5L
+  cells    <- sprintf("%-20s", sprintf("[%d] %.6f", nz, vec[nz]))
+  for (start in seq(1L, length(cells), by = per_line)) {
+    stop_i <- min(start + per_line - 1L, length(cells))
+    out(paste0("  ", paste(cells[start:stop_i], collapse = "  "), "\n"))
+  }
+  invisible(NULL)
+}
+
+
+#' Print only the nonzero entries of a matrix, row by row (1-based indices).
+#'
+#' Mirrors Python print_sparse_matrix(): the Phi matrix is (T x p), so each of
+#' its rows is as wide as the variable count.
+.print_sparse_matrix <- function(label, mat, out = .console_out, eps = 1e-12) {
+  mat   <- as.matrix(mat)
+  total <- length(mat)
+  nnz   <- sum(abs(mat) > eps)
+
+  out(sprintf("\n%s: %d x %d, %d of %d entries nonzero\n",
+              label, nrow(mat), ncol(mat), nnz, total))
+
+  if (nnz * 4L > total) {      # dense enough: keep the plain dump
+    out(paste0(paste(utils::capture.output(print(round(mat, 4L))),
+                     collapse = "\n"), "\n"))
+    return(invisible(NULL))
+  }
+
+  for (r in seq_len(nrow(mat))) {
+    nz <- which(abs(mat[r, ]) > eps)
+    if (length(nz) == 0L) {
+      out(sprintf("  row %d:  (all zero)\n", r))
+    } else {
+      cells <- sprintf("[%d] %.4f", nz, mat[r, nz])
+      out(sprintf("  row %d:  %s\n", r, paste(cells, collapse = "  ")))
+    }
+  }
+  invisible(NULL)
+}
+
+
+#' Print all selection outputs (indices, metrics, matrices).
+#'
+#' Mirrors Python print_selection_results() / C++ trex_sim::print_results():
+#' selected indices, FDP/TPP, sparse Phi_prime, sparse Phi, dense FDP_hat and
+#' R matrices, and the voting grid. Indices are 1-based (R convention).
+.print_selection_results <- function(selected, true_support, selector,
+                                     out = .console_out) {
+
+  out(paste0("Selected indices: ", paste(selected, collapse = " "), " \n"))
+
+  fdp <- TRexSelectorNeo::trex_fdp(selected, true_support)
+  tpp <- TRexSelectorNeo::trex_tpp(selected, true_support)
+  out(sprintf("False Discovery Proportion (FDP): %.4f\n", fdp))
+  out(sprintf("True Positive Proportion (TPP):   %.4f\n", tpp))
+
+  .print_sparse_vector("Adjusted Relative Occurrences (Phi_prime)",
+                       selector$phi_prime, out)
+
+  .print_sparse_matrix("Phi Matrix (Phi)", selector$phi_mat, out)
+
+  out("\nEstimated FDP Matrix (FDP_hat):\n")
+  out(paste0(paste(utils::capture.output(print(round(selector$fdp_hat_mat, 4L))),
+                   collapse = "\n"), "\n"))
+
+  out("\nR Matrix (R):\n")
+  out(paste0(paste(utils::capture.output(print(round(selector$r_mat, 4L))),
+                   collapse = "\n"), "\n"))
+
+  out("\nVoting Grid:\n")
+  out(paste0("  ", paste(sprintf("%.4f", selector$voting_grid),
+                         collapse = "  "), "\n"))
+  invisible(NULL)
+}
+
 
 #' Print a formatted single-run result block.
-.print_single_run <- function(scenario_name, dat, selector, tFDR) {
+#'
+#' A data/calibration header followed by the selection-result block with the
+#' per-variable Phi_prime / Phi structures printed sparsely (mirrors Python
+#' print_single_run_result()).
+.print_single_run <- function(scenario_name, dat, selector, tFDR,
+                              out = .console_out) {
 
   true_support <- dat$true_support
   s            <- length(true_support)
@@ -233,39 +359,30 @@ dgp_chunked_gauss_snr <- function(n,
   n_sel        <- length(selected)
   n_tp         <- length(intersect(selected, true_support))
   n_fp         <- n_sel - n_tp
-  tpp          <- TRexSelectorNeo::trex_tpp(selected, true_support)
-  fdp          <- TRexSelectorNeo::trex_fdp(selected, true_support)
 
-  cat(strrep("=", 70L), "\n")
-  cat(sprintf("  %s\n", scenario_name))
-  cat(strrep("-", 70L), "\n")
-  cat(sprintf("  Data:  n = %d,  p = %d,  s = %d,  tFDR = %.2f\n",
+  sep_  <- strrep("=", 70L)
+  dash_ <- strrep("-", 70L)
+
+  out(paste0(sep_, "\n"))
+  out(sprintf("  %s\n", scenario_name))
+  out(paste0(dash_, "\n"))
+  out(sprintf("  Data:  n = %d,  p = %d,  s = %d,  tFDR = %.2f\n",
               nrow(dat$X), p, s, tFDR))
-  cat(sprintf("         True support (1-based):   {%s}\n",
+  out(sprintf("         True support (1-based):   {%s}\n",
               paste(true_support, collapse = ", ")))
-  cat(sprintf("         Active coefficients:       {%s}\n",
-              paste(round(dat$beta[true_support], 3L), collapse = ", ")))
-  cat(strrep("-", 70L), "\n")
-  cat(sprintf("  Calibration:  T_stop = %d,  L = %d\n",
+  out(sprintf("         Active coefficients:       {%s}\n",
+              paste(sprintf("%.3f", dat$beta[true_support]), collapse = ", ")))
+  out(paste0(dash_, "\n"))
+  out(sprintf("  Calibration:  T_stop = %d,  L = %d\n",
               selector$T_stop, selector$L))
-  cat(sprintf("  Selection:    %d selected  |  TP = %d  FP = %d\n",
+  out(sprintf("  Selection:    %d selected  |  TP = %d  FP = %d\n",
               n_sel, n_tp, n_fp))
-  cat(sprintf("  Rates:        TPP = %.4f  |  FDP = %.4f  (target tFDR <= %.2f)\n",
-              tpp, fdp, tFDR))
-  cat(strrep("-", 70L), "\n")
-  cat("\nAdjusted Relative Occurrences (phi_prime):\n")
-  cat(format(round(selector$phi_prime, 6L)), fill = TRUE)
-  cat("\nPhi Matrix (phi_mat):\n")
-  print(round(selector$phi_mat, 4L))
-  cat("\nEstimated FDP Matrix (fdp_hat_mat):\n")
-  print(round(selector$fdp_hat_mat, 4L))
-  cat("\nR Matrix (r_mat):\n")
-  print(round(selector$r_mat, 4L))
-  cat("\nVoting Grid (voting_grid):\n")
-  cat(format(round(selector$voting_grid, 4L)), fill = TRUE)
-  cat(strrep("=", 70L), "\n\n")
-  invisible(NULL)
+  out(paste0(dash_, "\n"))
 
+  .print_selection_results(selected, true_support, selector, out)
+
+  out(paste0(sep_, "\n\n"))
+  invisible(NULL)
 }
 
 
@@ -284,34 +401,40 @@ dgp_chunked_gauss_snr <- function(n,
 # (mirrors make_default_solvers_to_test() in C++)
 # ==============================================================================
 
+# Values mirror the C++ DemoSolverInfo list exactly: lambda2 and rho_afs default
+# to 0.0, overridden only where C++ does — TENET (lambda2 = 0.1), TAFS_rho_0.3 /
+# TAFS_rho_1.0 (rho_afs = 0.3 / 1.0), TNCGMP_v1 (ncgmp_variant = 1). lambda2
+# only affects the elastic-net solvers (TENET; a nonzero value would turn TLASSO
+# into an elastic net), and rho_afs only affects TAFS — so the per-solver
+# defaults must be 0.0 to match C++, not a blanket 0.1 / 0.3.
 SOLVERS_DEFAULT <- list(
-  list(solver = "TLARS",      name = "TLARS",        lambda2 = 0.1, rho_afs = 0.3,
+  list(solver = "TLARS",      name = "TLARS",        lambda2 = 0.0, rho_afs = 0.0,
        ncgmp_variant = 0L),
-  list(solver = "TLASSO",     name = "TLASSO",       lambda2 = 0.1, rho_afs = 0.3,
+  list(solver = "TLASSO",     name = "TLASSO",       lambda2 = 0.0, rho_afs = 0.0,
        ncgmp_variant = 0L),
-  list(solver = "TENET",      name = "TENET",        lambda2 = 0.1, rho_afs = 0.3,
+  list(solver = "TENET",      name = "TENET",        lambda2 = 0.1, rho_afs = 0.0,
        ncgmp_variant = 0L),
-  list(solver = "TSTAGEWISE", name = "TSTAGEWISE",   lambda2 = 0.1, rho_afs = 0.3,
+  list(solver = "TSTAGEWISE", name = "TSTAGEWISE",   lambda2 = 0.0, rho_afs = 0.0,
        ncgmp_variant = 0L),
-  list(solver = "TSTEPWISE",  name = "TSTEPWISE",    lambda2 = 0.1, rho_afs = 0.3,
+  list(solver = "TSTEPWISE",  name = "TSTEPWISE",    lambda2 = 0.0, rho_afs = 0.0,
        ncgmp_variant = 0L),
-  list(solver = "TOMP",       name = "TOMP",         lambda2 = 0.1, rho_afs = 0.3,
+  list(solver = "TOMP",       name = "TOMP",         lambda2 = 0.0, rho_afs = 0.0,
        ncgmp_variant = 0L),
-  list(solver = "TGP",        name = "TGP",          lambda2 = 0.1, rho_afs = 0.3,
+  list(solver = "TGP",        name = "TGP",          lambda2 = 0.0, rho_afs = 0.0,
        ncgmp_variant = 0L),
-  list(solver = "TACGP",      name = "TACGP",        lambda2 = 0.1, rho_afs = 0.3,
+  list(solver = "TACGP",      name = "TACGP",        lambda2 = 0.0, rho_afs = 0.0,
        ncgmp_variant = 0L),
-  list(solver = "TMP",        name = "TMP",          lambda2 = 0.1, rho_afs = 0.3,
+  list(solver = "TMP",        name = "TMP",          lambda2 = 0.0, rho_afs = 0.0,
        ncgmp_variant = 0L),
-  list(solver = "TAFS",       name = "TAFS_rho_0.3", lambda2 = 0.1, rho_afs = 0.3,
+  list(solver = "TAFS",       name = "TAFS_rho_0.3", lambda2 = 0.0, rho_afs = 0.3,
        ncgmp_variant = 0L),
-  list(solver = "TAFS",       name = "TAFS_rho_1.0", lambda2 = 0.1, rho_afs = 1.0,
+  list(solver = "TAFS",       name = "TAFS_rho_1.0", lambda2 = 0.0, rho_afs = 1.0,
        ncgmp_variant = 0L),
-  list(solver = "TNCGMP",     name = "TNCGMP_v1",    lambda2 = 0.1, rho_afs = 0.3,
+  list(solver = "TNCGMP",     name = "TNCGMP_v1",    lambda2 = 0.0, rho_afs = 0.0,
        ncgmp_variant = 1L),
-  list(solver = "TNCGMP",     name = "TNCGMP_v0",    lambda2 = 0.1, rho_afs = 0.3,
+  list(solver = "TNCGMP",     name = "TNCGMP_v0",    lambda2 = 0.0, rho_afs = 0.0,
        ncgmp_variant = 0L),
-  list(solver = "TOOLS",      name = "TOOLS",        lambda2 = 0.1, rho_afs = 0.3,
+  list(solver = "TOOLS",      name = "TOOLS",        lambda2 = 0.0, rho_afs = 0.0,
        ncgmp_variant = 0L)
 )
 
@@ -322,7 +445,9 @@ SOLVERS_DEFAULT <- list(
 
 #' Make a TRex control list for memory-mapping scenarios.
 #'
-#' Matches C++ make_mmap_trex_ctrl().
+#' Matches C++ make_mmap_trex_ctrl() and Python _MMAP_CTRL_DICT
+#' (demo_trex_06_mmap.py): every option is pinned explicitly to the C++
+#' reference values — no reliance on trex_control() defaults.
 #'
 #' @param ... Optional overrides for trex_control parameters.
 #' @return A trex_control object.
@@ -332,9 +457,15 @@ make_mmap_trex_ctrl <- function(...) {
     K                        = 20L,
     max_dummy_multiplier     = 10L,
     use_max_T_stop           = TRUE,
+    opt_threshold            = 0.75,
     lloop_strategy           = "HCONCAT",
     tloop_stagnation_stop    = TRUE,
-    use_memory_mapping       = TRUE
+    tloop_max_stagnant_steps = 5L,
+    use_memory_mapping       = TRUE,
+    lambda2                  = 0.1,
+    rho_afs                  = 0.0,   # non-TAFS solver; rho_afs is unused
+    ncgmp_variant            = 0L,
+    use_openmp               = FALSE
   )
 
   overrides <- list(...)
@@ -351,17 +482,35 @@ make_mmap_trex_ctrl <- function(...) {
 #' temporary memory-mapped file, yielding it to the provided function,
 #' and ensuring the file is unlinked safely.
 #'
+#' IMPORTANT: everything that touches the memory-mapped matrix — in
+#' particular building AND running the TRexSelector — must happen INSIDE
+#' `expr_func`. The backing file is unlinked via on.exit() as soon as this
+#' function returns, so a mmap view that escapes the callback (e.g.
+#' `execute_with_temp_mmap(X, function(x) x)`) points at a deleted file.
+#' The callback's return value is checked and an error is raised if the
+#' mmap object (or a list containing it) is returned.
+#'
 #' @param X_matrix The in-memory matrix to convert.
 #' @param expr_func A function taking the memory-mapped matrix as its argument.
-#' @return The result of `expr_func`.
+#' @return The result of `expr_func` (must not contain the mmap view).
 execute_with_temp_mmap <- function(X_matrix, expr_func) {
 
   x_path <- tempfile(fileext = ".dat")
   on.exit(unlink(x_path), add = TRUE)
 
   X_mmap <- TRexSelectorNeo::mem_matrix_from(X_matrix, x_path)
-  expr_func(X_mmap)
+  res    <- expr_func(X_mmap)
 
+  # Guard against the mmap view escaping the callback: once this function
+  # returns, the backing file is gone and the view is dangling.
+  escapes <- inherits(res, "MemoryMappedMatrix") ||
+    (is.list(res) && any(vapply(res, inherits, logical(1L), "MemoryMappedMatrix")))
+  if (escapes) {
+    stop("execute_with_temp_mmap(): the memory-mapped matrix must not escape ",
+         "the callback — run the selector inside `expr_func` and return only ",
+         "plain results (the temp backing file is unlinked on return).")
+  }
+  res
 }
 
 
@@ -493,6 +642,105 @@ execute_with_temp_mmap <- function(X_matrix, expr_func) {
     )
   } else {
     # NOTE: parLapply on Windows spawns a new R process for each trial
+    cl <- parallel::makeCluster(num_cores)
+    on.exit(parallel::stopCluster(cl), add = TRUE)
+    parallel::clusterEvalQ(cl, library(TRexSelectorNeo))
+    parallel::clusterExport(
+      cl,
+      varlist = c("base_seed", "make_data_fn", "ctrl", "tFDR", "track_L_T"),
+      envir   = environment()
+    )
+    res_list <- parallel::parLapply(cl, seq_len(num_MC), one_trial)
+  }
+
+  res_mat <- do.call(rbind, res_list)
+  fdps <- res_mat[, "FDP"]
+  tpps <- res_mat[, "TPP"]
+
+  out <- list(
+    mean_FDR = mean(fdps),
+    mean_TPR = mean(tpps),
+    sd_FDR   = sd(fdps),
+    sd_TPR   = sd(tpps)
+  )
+  if (track_L_T) {
+    out$mean_L <- mean(res_mat[, "L"])
+    out$mean_T <- mean(res_mat[, "T"])
+  }
+
+  if (nchar(label) > 0L)
+    cat(sprintf("  %s \u2014 done. mean_TPR=%.3f  mean_FDR=%.3f\n\n",
+                label, out$mean_TPR, out$mean_FDR))
+  out
+}
+
+
+# ==============================================================================
+# .run_mc_trex_full_mmap
+# ==============================================================================
+
+#' Parallel MC runner \u2014 fully memory-mapped X per trial.
+#'
+#' Same interface as .run_mc_trex(), but each trial writes its X to a
+#' per-trial temporary mmap file via execute_with_temp_mmap() and runs the
+#' selector INSIDE the callback (the backing file is unlinked as soon as the
+#' callback returns, so the mmap view must never escape it).
+#'
+#' Mirrors Python trex_sim_common.run_mc_trex_full_mmap() and C++
+#' trx_sim::run_mc_trials_trex_mmap(). The caller should pass a ctrl with
+#' use_memory_mapping = TRUE to also enable internal D-mmap and solver
+#' serialization on top of the X-mmap layer.
+#'
+#' @inheritParams .run_mc_trex
+#' @return Named list: mean_FDR, mean_TPR, sd_FDR, sd_TPR, and (if track_L_T)
+#'   mean_L, mean_T.
+.run_mc_trex_full_mmap <- function(make_data_fn,
+                                   ctrl,
+                                   tFDR,
+                                   base_seed,
+                                   num_MC,
+                                   num_cores,
+                                   track_L_T = FALSE,
+                                   label     = "") {
+
+  one_trial <- function(mc) {
+    trial_seed <- base_seed + mc - 1L
+    dat <- make_data_fn(mc, trial_seed)
+
+    # DGP result stays in RAM; X is written to a per-trial temp mmap file and
+    # the selector runs on the mmap view inside the callback (exception-safe
+    # RAII equivalent \u2014 mirrors C++ MmapFileGuard before SyntheticDataMapped).
+    execute_with_temp_mmap(dat$X, function(X_mmap) {
+      sel <- TRexSelector$new(
+        X       = X_mmap,
+        y       = dat$y,
+        tFDR    = tFDR,
+        seed    = -1L,  # hardware entropy per trial (independent random experiments)
+        verbose = FALSE,
+        control = ctrl
+      )
+      sel$select()
+      res <- c(
+        FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, dat$true_support),
+        TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, dat$true_support)
+      )
+      if (track_L_T) res <- c(res, L = sel$L, T = sel$T_stop)
+      res
+    })
+  }
+
+  if (nchar(label) > 0L)
+    cat(sprintf("  %s \u2014 Running %d MC trials (full-mmap X) ...\n", label, num_MC))
+
+  if (.Platform$OS.type == "unix") {
+    # See .run_mc_trex for the rationale of mc.preschedule = FALSE.
+    res_list <- parallel::mclapply(
+      X               = seq_len(num_MC),
+      FUN             = one_trial,
+      mc.cores        = num_cores,
+      mc.preschedule  = FALSE
+    )
+  } else {
     cl <- parallel::makeCluster(num_cores)
     on.exit(parallel::stopCluster(cl), add = TRUE)
     parallel::clusterEvalQ(cl, library(TRexSelectorNeo))

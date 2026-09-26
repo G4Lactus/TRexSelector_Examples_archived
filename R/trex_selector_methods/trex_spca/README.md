@@ -90,16 +90,21 @@ There is currently one demo: **`demo_trex_spca_01_mc_sim/`**, comparing all meth
 trex_spca/
   ├── README.md
   ├── trex_spca_sim_utils.R
+  ├── trex_spca_plt_utils.R
+  ├── run_overnight.sh
   └── demo_trex_spca_01_mc_sim/
       ├── demo_trex_spca_01_mc_sim.R
+      ├── generate_plots.sh
       ├── README.md
       └── simulation_results/
-          ├── demo_trex_spca_01_mc_sim.txt
-          ├── demo_trex_spca_01_mc_sim.csv
-          └── res_demo_trex_spca_01_x.txt   <- legacy pre-restructure record
+          ├── data/
+          │   ├── demo_trex_spca_01_mc_sim.txt
+          │   ├── demo_trex_spca_01_mc_sim.csv
+          │   └── demo_trex_spca_01_mc_sim_union_fdr.csv
+          └── plots/
 ```
 
-The suite-level [trex_spca_sim_utils.R](trex_spca_sim_utils.R) mirrors the C++ `trex_spca_sim_utils.hpp`: `generate_sparse_factor_model()`, `center_columns()`, `evaluate_spca()`, the Monte Carlo runners `run_mc_trials_pca()` / `run_mc_trials_oracle_pca()` / `run_mc_trials_trex_spca()` (parallel via `parallel::mclapply`), and `save_and_print_spca_mc_results()` (console + `.txt` table plus a tidy CSV `method,metric,snr_db,value`).
+The suite-level [trex_spca_sim_utils.R](trex_spca_sim_utils.R) mirrors the C++ `trex_spca_sim_utils.hpp`: `generate_sparse_factor_model()`, `center_columns()`, `evaluate_spca()` (TPR/FDR on PC1 plus cumulative PEV under three normalizations), the Monte Carlo runners `run_mc_trials_pca()` / `run_mc_trials_oracle_pca()` / `run_mc_trials_trex_spca()` (parallel via `parallel::mclapply`), and the writers `save_and_print_spca_sweep_results()` / `save_and_print_spca_mc_results()` (console + `.txt` table plus a tidy CSV `method,metric,snr_db,value`). Figures are rendered by [trex_spca_plt_utils.R](trex_spca_plt_utils.R) (ggplot2, PNG + PDF) via each demo's `generate_plots.sh`.
 
 ---
 
@@ -124,7 +129,7 @@ The demo has **real committed output** — a single SNR point ($-10$ dB), `num_M
 - The four T-Rex variants are statistically indistinguishable from each other at this one data point; no solver/mode conclusion should be drawn from a single SNR level. The Thresholded variants' slightly higher PEV is the one systematic difference.
 - The C++ counterpart's committed table (same configuration, C++ RNG streams) agrees within Monte Carlo noise: OrdPCA 0.9500/1.0000/0.2021, OraclePCA 0.0060/0.9940/0.1241, T-Rex FDR $\approx 0.123\text{–}0.131$, TPR $\approx 0.996\text{–}0.997$; likewise Python (T-Rex FDR $\approx 0.132\text{–}0.136$). Exact numbers cannot match across languages because the data RNG streams differ.
 
-> **History note (z-scoring episode, fixed 2026-07-08)**: an earlier version of this pipeline z-score-standardized $\boldsymbol{X}$, which destroyed the factor amplitude signal and inflated the measured T-Rex FDR to $\approx 0.53$ at this same nominal SNR; the C++ `validation_trex_spca_06_handrolled_comparison` isolated the cause and the pipeline is back to center-only. Like the C++ `main()`, the R demo currently exercises a single SNR value ($-10$ dB, "TEMP fast-validation") with `num_MC = 200`. Trial-for-trial reproduction is intentionally impossible: each trial's **data** is drawn from a deterministic seed, but the per-trial dummies use hardware entropy (selector `seed = -1L`), as required for a valid Monte Carlo FDR estimate; re-runs reproduce the table to within MC noise. See the demo's own [README.md](demo_trex_spca_01_mc_sim/README.md) for detail.
+> **History note (z-scoring episode, fixed 2026-07-08)**: an earlier version of this pipeline z-score-standardized $\boldsymbol{X}$, which destroyed the factor amplitude signal and inflated the measured T-Rex FDR to $\approx 0.53$ at this same nominal SNR; the C++ `validation_trex_spca_06_handrolled_comparison` isolated the cause and the pipeline is back to center-only. Like the C++ and Python demos, the R demo sweeps the full legacy CRAN grid ($-10$ … $10$ dB, 9 points) with `num_MC = 200`; the committed table above still shows the earlier single-point ($-10$ dB) fast-validation run and will be refreshed by the next full rerun. Trial-for-trial reproduction is intentionally impossible: each trial's **data** is drawn from a deterministic seed, but the per-trial dummies use hardware entropy (selector `seed = -1L`), as required for a valid Monte Carlo FDR estimate; re-runs reproduce the table to within MC noise. See the demo's own [README.md](demo_trex_spca_01_mc_sim/README.md) for detail.
 
 ---
 

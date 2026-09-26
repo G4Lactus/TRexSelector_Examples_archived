@@ -22,10 +22,10 @@
  *                           (faster, prefix-stable, same result).
  *    PERMUTATION          — Stored base dummy matrix + deterministic row
  *                           permutations per experiment.
- *    PERMUTATION_SEEDED — Seed-derived base + row permutations per
+ *    PERMUTATION_SEEDED   — Seed-derived base + row permutations per
  *                           experiment; nothing stored. Bit-identical to
  *                           PERMUTATION for the same seed.
- *    SEEDED             — Seed-derived independent dummies per experiment;
+ *    SEEDED               — Seed-derived independent dummies per experiment;
  *                           nothing stored.
  *    SKIPL                — Skip the L-loop entirely and use
  *                           L = max_dummy_multiplier.

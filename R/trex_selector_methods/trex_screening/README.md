@@ -58,16 +58,16 @@ plus the shared `trex_scr_sim_utils.R` helper at the suite level.
 trex_screening/
   ├── README.md
   ├── trex_scr_sim_utils.R            <- shared DGPs, MC runner, table output
-  ├── demo_trex_scr_01_screen/
-  │   ├── demo_trex_scr_01_screen.R
+  ├── demo_trex_scr_01_mc_sim_screen_trex/
+  │   ├── demo_trex_scr_01_mc_sim_screen_trex.R
   │   ├── README.md
   │   └── simulation_results/
-  ├── demo_trex_scr_02_screen_mmap/
+  ├── demo_trex_scr_02_mc_sim_screen_trex_mmap/
   │   └── ...
-  ├── demo_trex_scr_03_screen_correlated/
-  ├── demo_trex_scr_04_biobank_inmem/
-  ├── demo_trex_scr_05_biobank_mmap/
-  └── demo_trex_scr_06_screen_solvers/
+  ├── demo_trex_scr_03_mc_sim_correlated/
+  ├── demo_trex_scr_04_mc_sim_biobank/
+  ├── demo_trex_scr_05_mc_sim_biobank_mmap/
+  └── demo_trex_scr_06_mc_sim_solvers/
 ```
 
 ---
@@ -78,12 +78,12 @@ Each demo folder has its own `README.md`.
 
 | # | Folder | Description | cpp counterpart | Key APIs |
 |---|---|---|---|---|
-| 01 | [demo_trex_scr_01_screen/](demo_trex_scr_01_screen/) | In-memory Ordinary vs. Bootstrap-CI screening: two single runs (fixed support, SNR 5) plus an 8-point SNR-sweep Monte Carlo reporting FDR / TPR / Estimated FDR | [demo_trex_scr_01_screen_trex/](../../../cpp/trex_selector_methods/trex_screening/demo_trex_scr_01_screen_trex/) | `TRexScreeningSelector`, `trex_screen_control(use_bootstrap_CI=)` |
-| 02 | [demo_trex_scr_02_screen_mmap/](demo_trex_scr_02_screen_mmap/) | Same screening scenario with the memory-mapped pipeline: Part A in-memory X + `use_memory_mapping=TRUE` (D-mmap); Part B fully memory-mapped X via `mem_matrix_from()`; Part C mmap MC SNR sweep | [demo_trex_scr_02_screen_trex_mmap/](../../../cpp/trex_selector_methods/trex_screening/demo_trex_scr_02_screen_trex_mmap/) | `mem_matrix_from`, `trex_control(use_memory_mapping=)` |
-| 03 | [demo_trex_scr_03_screen_correlated/](demo_trex_scr_03_screen_correlated/) | Ordinary vs. DA screening on correlated designs: 4 single runs (Ordinary/DA-AR1/DA-EQUI/DA-BLOCK-EQUI) + 5 Monte Carlo sweeps (AR(1)/equi SNR sweeps and AR(1)/equi/block-equi rho sweeps) | [demo_trex_scr_03_screen_trex_correlated/](../../../cpp/trex_selector_methods/trex_screening/demo_trex_scr_03_screen_trex_correlated/) | `trex_method = "TREX_DA_*"`, `estimated_correlation` |
-| 04 | [demo_trex_scr_04_biobank_inmem/](demo_trex_scr_04_biobank_inmem/) | Biobank "Algorithm 1" (in-memory): single phenotype, 5-phenotype routing table + summary, and MC SNR sweeps (single and multi-phenotype) reporting per-method Usage % / FDR / TPR / Est. FDR | [demo_trex_scr_04_biobank_screen_trex_inmem/](../../../cpp/trex_selector_methods/trex_screening/demo_trex_scr_04_biobank_screen_trex_inmem/) | `TRexBiobankScreeningSelector`, `trex_biobank_control` |
-| 05 | [demo_trex_scr_05_biobank_mmap/](demo_trex_scr_05_biobank_mmap/) | Same biobank workflow with the memory-mapped pipeline: Part A in-memory X + D-mmap; Part B single + multi phenotype on a fully memory-mapped X; Part C mmap MC SNR sweep | [demo_trex_scr_05_biobank_screen_trex_mmap/](../../../cpp/trex_selector_methods/trex_screening/demo_trex_scr_05_biobank_screen_trex_mmap/) | `TRexBiobankScreeningSelector` + mmap X |
-| 06 | [demo_trex_scr_06_screen_solvers/](demo_trex_scr_06_screen_solvers/) | Solver-backend comparison under screening: 8-point SNR sweep for TLARS / TAFS(rho_afs=0.3) / TOMP, Part 1 Ordinary only (3 series), Part 2 x {Ordinary, Bootstrap-CI} (6 series) | [demo_trex_scr_06_screen_trex_solvers/](../../../cpp/trex_selector_methods/trex_screening/demo_trex_scr_06_screen_trex_solvers/) | `trex_control(solver=, rho_afs=)` |
+| 01 | [demo_trex_scr_01_mc_sim_screen_trex/](demo_trex_scr_01_mc_sim_screen_trex/) | In-memory Ordinary vs. Bootstrap-CI screening: two single runs (fixed support, SNR 5) plus an 8-point SNR-sweep Monte Carlo reporting FDR / TPR / Estimated FDR | [demo_trex_scr_01_screen_trex/](../../../cpp/trex_selector_methods/trex_screening/demo_trex_scr_01_screen_trex/) | `TRexScreeningSelector`, `trex_screen_control(use_bootstrap_CI=)` |
+| 02 | [demo_trex_scr_02_mc_sim_screen_trex_mmap/](demo_trex_scr_02_mc_sim_screen_trex_mmap/) | Same screening scenario with the memory-mapped pipeline: Part A in-memory X + `use_memory_mapping=TRUE` (D-mmap); Part B fully memory-mapped X via `mem_matrix_from()`; Part C mmap MC SNR sweep | [demo_trex_scr_02_screen_trex_mmap/](../../../cpp/trex_selector_methods/trex_screening/demo_trex_scr_02_screen_trex_mmap/) | `mem_matrix_from`, `trex_control(use_memory_mapping=)` |
+| 03 | [demo_trex_scr_03_mc_sim_correlated/](demo_trex_scr_03_mc_sim_correlated/) | Ordinary vs. DA screening on correlated designs: 4 single runs (Ordinary/DA-AR1/DA-EQUI/DA-BLOCK-EQUI) + 5 Monte Carlo sweeps (AR(1)/equi SNR sweeps and AR(1)/equi/block-equi rho sweeps) | [demo_trex_scr_03_screen_trex_correlated/](../../../cpp/trex_selector_methods/trex_screening/demo_trex_scr_03_screen_trex_correlated/) | `trex_method = "TREX_DA_*"`, `estimated_correlation` |
+| 04 | [demo_trex_scr_04_mc_sim_biobank/](demo_trex_scr_04_mc_sim_biobank/) | Biobank "Algorithm 1" (in-memory): single phenotype, 5-phenotype routing table + summary, and MC SNR sweeps (single and multi-phenotype) reporting per-method Usage % / FDR / TPR / Est. FDR | [demo_trex_scr_04_biobank_screen_trex_inmem/](../../../cpp/trex_selector_methods/trex_screening/demo_trex_scr_04_biobank_screen_trex_inmem/) | `TRexBiobankScreeningSelector`, `trex_biobank_control` |
+| 05 | [demo_trex_scr_05_mc_sim_biobank_mmap/](demo_trex_scr_05_mc_sim_biobank_mmap/) | Same biobank workflow with the memory-mapped pipeline: Part A in-memory X + D-mmap; Part B single + multi phenotype on a fully memory-mapped X; Part C mmap MC SNR sweep | [demo_trex_scr_05_biobank_screen_trex_mmap/](../../../cpp/trex_selector_methods/trex_screening/demo_trex_scr_05_biobank_screen_trex_mmap/) | `TRexBiobankScreeningSelector` + mmap X |
+| 06 | [demo_trex_scr_06_mc_sim_solvers/](demo_trex_scr_06_mc_sim_solvers/) | Solver-backend comparison under screening: 8-point SNR sweep for TLARS / TAFS(rho_afs=0.3) / TOMP, Part 1 Ordinary only (3 series), Part 2 x {Ordinary, Bootstrap-CI} (6 series) | [demo_trex_scr_06_screen_trex_solvers/](../../../cpp/trex_selector_methods/trex_screening/demo_trex_scr_06_screen_trex_solvers/) | `trex_control(solver=, rho_afs=)` |
 
 ---
 
@@ -99,12 +99,13 @@ sourced by every demo:
   SNR-calibrated noise, `sigma = sqrt(||X beta||^2 / (n * SNR))`.
 - **Section 2 — control factories**: `make_scr_trex_ctrl()`,
   `default_scr_methods()`.
-- **Section 3 — single-run printer**: `.print_scr_result()`.
-- **Section 4 — Monte Carlo**: `run_mc_screen()` (per-grid-point MC runner) and
-  `save_and_print_scr_mc()` (console table + `.txt` + tidy `.csv`).
-- **Section 5 — Biobank**: `.print_biobank_single()`, `.print_biobank_table()`,
-  `.print_biobank_summary()`, and `save_and_print_biobank_mc()` (with a
-  per-method Usage (%) row).
+- **Section 3 — Monte Carlo**: `run_mc_screen()` (parallel per-grid-point MC
+  runner, `parallel::mclapply` over trials) and `save_and_print_scr_mc()`
+  (console table + `.txt` + tidy `.csv`).
+- **Section 4 — Biobank**: `biobank_single_trial()`, `biobank_multi_trial()`,
+  `run_mc_biobank()` (parallel trial runner), `accumulate_snr()` (per-method
+  Usage / conditional FDR-TPR aggregation), and `save_and_print_biobank_mc()`
+  (with a per-method Usage (%) row).
 
 ---
 
@@ -139,33 +140,32 @@ projection:
 
 ## Monte Carlo counts
 
-The C++ demos use `num_MC = 500`. To keep each R demo to roughly one to two
-minutes single-threaded, the MC counts here are reduced (60 for demo 01, 40 for
-demo 02, 10 for demo 03's five sweeps, 40/15 for demo 04, 30 for demo 05, 20 for
-demo 06) — each demo header states its own count. Results are statistically
-comparable to the C++ reference, **not** bit-identical: the two use different
-RNG streams, so seeds are mirrored as labels only.
+Every demo uses `num_MC = 200`, matching the C++ and Python references (demos
+04 and 05 also use `num_MC_multi = 200` and `R_boot = 1000`). Trials run in
+parallel, so the counts need no reduction. Results are statistically comparable
+to the C++/Python reference, **not** bit-identical: the three suites use
+different RNG streams, so seeds are mirrored as labels only.
 
 ---
 
 ## Running and outputs
 
 ```bash
-Rscript R/trex_selector_methods/trex_screening/demo_trex_scr_01_screen/demo_trex_scr_01_screen.R
-Rscript R/trex_selector_methods/trex_screening/demo_trex_scr_02_screen_mmap/demo_trex_scr_02_screen_mmap.R
-Rscript R/trex_selector_methods/trex_screening/demo_trex_scr_03_screen_correlated/demo_trex_scr_03_screen_correlated.R
-Rscript R/trex_selector_methods/trex_screening/demo_trex_scr_04_biobank_inmem/demo_trex_scr_04_biobank_inmem.R
-Rscript R/trex_selector_methods/trex_screening/demo_trex_scr_05_biobank_mmap/demo_trex_scr_05_biobank_mmap.R
-Rscript R/trex_selector_methods/trex_screening/demo_trex_scr_06_screen_solvers/demo_trex_scr_06_screen_solvers.R
+# Each demo takes an optional worker-core count as positional argument 1
+# (default 6); Monte Carlo trials run in parallel via parallel::mclapply.
+Rscript R/trex_selector_methods/trex_screening/demo_trex_scr_01_mc_sim_screen_trex/demo_trex_scr_01_mc_sim_screen_trex.R [num_worker_cores]
+Rscript R/trex_selector_methods/trex_screening/demo_trex_scr_02_mc_sim_screen_trex_mmap/demo_trex_scr_02_mc_sim_screen_trex_mmap.R [num_worker_cores]
+Rscript R/trex_selector_methods/trex_screening/demo_trex_scr_03_mc_sim_correlated/demo_trex_scr_03_mc_sim_correlated.R [num_worker_cores]
+Rscript R/trex_selector_methods/trex_screening/demo_trex_scr_04_mc_sim_biobank/demo_trex_scr_04_mc_sim_biobank.R [num_worker_cores]
+Rscript R/trex_selector_methods/trex_screening/demo_trex_scr_05_mc_sim_biobank_mmap/demo_trex_scr_05_mc_sim_biobank_mmap.R [num_worker_cores]
+Rscript R/trex_selector_methods/trex_screening/demo_trex_scr_06_mc_sim_solvers/demo_trex_scr_06_mc_sim_solvers.R [num_worker_cores]
 ```
 
 Demos run from any working directory (each resolves the shared
-`../trex_scr_sim_utils.R` relative to its own location). The Monte Carlo parts
-write into each demo's own `simulation_results/` subfolder:
+`../trex_scr_sim_utils.R` relative to its own location). Every part is a Monte
+Carlo study and writes into that demo's own `simulation_results/data/`
+subfolder:
 
 - `.txt` — human-readable summary tables,
 - `.csv` — tidy long-format tables (`method, metric, SNR|rho, value`) for
   plotting and post-processing.
-
-The single-run parts (and the biobank single/multi-phenotype tables) print to
-the console only.

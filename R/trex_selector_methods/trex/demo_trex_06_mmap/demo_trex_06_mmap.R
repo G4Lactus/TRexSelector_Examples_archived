@@ -27,6 +27,10 @@
 #          (same n, p, support, snr, ctrl) while demonstrating the R mmap
 #          interface for completeness.
 #
+# Output (mirrors C++/Python): per configuration one .txt (dual console +
+# file, with the sparse Phi_prime/Phi block) and one per-variable selection
+# .csv, both in simulation_results/data/.
+#
 # ==============================================================================
 
 library(TRexSelectorNeo)
@@ -73,22 +77,18 @@ DEMO_CFG <- list(
 # Shared helper
 # ==============================================================================
 
-#' Print and save single-run results.
-.print_and_save_d02 <- function(stem, dat, selector, tFDR) {
+#' Print and save single-run results (dual console + file via `out`).
+#'
+#' Mirrors Python _print_and_save() in demo_trex_06_mmap.py: the C++-style
+#' selection-result block (sparse Phi_prime/Phi, dense FDP_hat/R, voting grid)
+#' followed by the T_stop / L line, plus the per-variable selection CSV.
+.print_and_save_d02 <- function(stem, dat, selector, tFDR, out = .console_out) {
   true_support <- dat$true_support
   selected     <- selector$selected_indices
-  n_sel        <- length(selected)
-  n_tp         <- length(intersect(selected, true_support))
-  n_fp         <- n_sel - n_tp
-  tpp          <- TRexSelectorNeo::trex_tpp(selected, true_support)
-  fdp          <- TRexSelectorNeo::trex_fdp(selected, true_support)
 
-  cat(strrep("-", 70L), "\n")
-  cat(sprintf("  Selected indices: {%s}\n", paste(selected, collapse = ", ")))
-  cat(sprintf("  FDP = %.4f  |  TPP = %.4f  (target tFDR <= %.2f)\n",
-              fdp, tpp, tFDR))
-  cat(sprintf("  T_stop = %d,  L = %d\n", selector$T_stop, selector$L))
-  cat(strrep("-", 70L), "\n\n")
+  .print_selection_results(selected, true_support, selector, out)
+  out(sprintf("\nT_stop = %d,  L = %d  (target tFDR <= %.2f)\n\n",
+              selector$T_stop, selector$L, tFDR))
 
   # Save per-variable CSV (mirrors save_selection_csv() in C++)
   p          <- ncol(dat$X)
@@ -118,20 +118,26 @@ trex_05_part_a <- function() {
     cfg       <- DEMO_CFG
     cfg$n     <- if (high_dim) 1000L else 5000L
     cfg$p     <- if (high_dim) 5000L else 1000L
+    dim_label <- if (high_dim) "High-dimensional (p > n)" else "Low-dimensional (n > p)"
 
-    .print_demo_header(
-      "Part A: In-Memory X  +  use_memory_mapping = TRUE",
-      "Activates D-mmap and solver serialization inside TRexSelector.",
-      high_dim, cfg$n, cfg$p
-    )
+    stem     <- sprintf("d02_trex_mmap_demo_a_n%d_p%d", cfg$n, cfg$p)
+    txt_path <- file.path(OUT_DIR, paste0(stem, ".txt"))
+    con      <- file(txt_path, open = "wt")
+    on.exit(close(con), add = TRUE)
+    out      <- .make_dual_out(con)
+
+    out(sprintf("\n%s\n", strrep("=", 70L)))
+    out("Part A: In-Memory X  +  use_memory_mapping = TRUE\n")
+    out("  Activates D-mmap and solver serialization inside TRexSelector.\n")
+    out(sprintf("  %s  (n = %d, p = %d)\n\n", dim_label, cfg$n, cfg$p))
 
     ctrl <- make_mmap_trex_ctrl(solver = "TLARS")
 
-    cat("Generating synthetic data (in-memory) ...\n")
+    out("Generating synthetic data (in-memory) ...\n")
     dat <- dgp_gauss_snr(cfg$n, cfg$p, cfg$true_support, coefs = cfg$true_coefs,
                          snr = cfg$snr, seed = 58L)
 
-    cat("Running T-Rex Selector ...\n\n")
+    out("Running T-Rex Selector ...\n\n")
     selector <- TRexSelector$new(
       X       = dat$X,
       y       = dat$y,
@@ -142,8 +148,8 @@ trex_05_part_a <- function() {
     )
     selector$select()
 
-    stem <- sprintf("d02_trex_mmap_demo_a_n%d_p%d", cfg$n, cfg$p)
-    .print_and_save_d02(stem, dat, selector, cfg$tFDR)
+    .print_and_save_d02(stem, dat, selector, cfg$tFDR, out = out)
+    cat(sprintf("[Info] Results saved to: %s\n", txt_path))
   }
 
   run_single(high_dim = FALSE)
@@ -165,23 +171,31 @@ trex_05_part_b <- function() {
     cfg       <- DEMO_CFG
     cfg$n     <- if (high_dim) 1000L else 5000L
     cfg$p     <- if (high_dim) 5000L else 1000L
+    dim_label <- if (high_dim) "High-dimensional (p > n)" else "Low-dimensional (n > p)"
 
-    .print_demo_header(
-      "Part B: Memory-Mapped X  +  use_memory_mapping = TRUE",
-      "Full mmap pipeline: X mmap + D mmap + solver serialization.",
-      high_dim, cfg$n, cfg$p
-    )
+    stem     <- sprintf("d02_trex_mmap_demo_b_n%d_p%d", cfg$n, cfg$p)
+    txt_path <- file.path(OUT_DIR, paste0(stem, ".txt"))
+    con      <- file(txt_path, open = "wt")
+    on.exit(close(con), add = TRUE)
+    out      <- .make_dual_out(con)
+
+    out(sprintf("\n%s\n", strrep("=", 70L)))
+    out("Part B: Memory-Mapped X  +  use_memory_mapping = TRUE\n")
+    out("  Full mmap pipeline: X mmap + D mmap + solver serialization.\n")
+    out(sprintf("  %s  (n = %d, p = %d)\n\n", dim_label, cfg$n, cfg$p))
 
     ctrl <- make_mmap_trex_ctrl(solver = "TLARS")
 
     # Generate data in-memory, then convert X to a memory-mapped file.
-    cat("Generating synthetic data ...\n")
+    out("Generating synthetic data ...\n")
     dat <- dgp_gauss_snr(cfg$n, cfg$p, cfg$true_support, coefs = cfg$true_coefs,
                          snr = cfg$snr, seed = 58L)
 
-    stem <- sprintf("d02_trex_mmap_demo_b_n%d_p%d", cfg$n, cfg$p)
-    cat("Converting X to memory-mapped file and running T-Rex Selector...\n\n")
+    out("Converting X to memory-mapped file and running T-Rex Selector ...\n\n")
 
+    # Selector construction + select() + result printing all run INSIDE the
+    # callback — the temp backing file is unlinked on return (see
+    # execute_with_temp_mmap()).
     execute_with_temp_mmap(dat$X, function(X_mmap) {
       selector <- TRexSelector$new(
         X       = X_mmap,
@@ -192,8 +206,10 @@ trex_05_part_b <- function() {
         control = ctrl
       )
       selector$select()
-      .print_and_save_d02(stem, dat, selector, cfg$tFDR)
+      .print_and_save_d02(stem, dat, selector, cfg$tFDR, out = out)
+      invisible(NULL)
     })
+    cat(sprintf("[Info] Results saved to: %s\n", txt_path))
   }
 
   run_single(high_dim = FALSE)

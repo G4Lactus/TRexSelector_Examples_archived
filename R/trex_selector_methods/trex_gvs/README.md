@@ -9,38 +9,41 @@
 
 R demos and Monte Carlo simulations for the **Grouped Variable Selection
 T-Rex (T-Rex+GVS)** selector on designs where the active variables cluster
-into groups. The folder layout mirrors the C++ suite one-to-one: one
-subfolder per demo, plus a single consolidated DGP file.
+into groups. The folder layout mirrors the C++/Python suites one-to-one: one
+subfolder per demo, plus a single consolidated DGP file and a shared
+simulation-common file.
 
 ```txt
 trex_gvs/
   ├── README.md
   ├── trex_gvs_dgps.R                 <- all scenario DGPs (one file)
-  ├── demo_trex_gvs_01/
-  │   ├── demo_trex_gvs_01.R
+  ├── trex_gvs_sim_common.R           <- shared sweep driver + result writers
+  ├── demo_trex_gvs_01_mc_sim_hastie_en_blocks/
+  │   ├── demo_trex_gvs_01_mc_sim_hastie_en_blocks.R
   │   ├── README.md
   │   └── simulation_results/
-  ├── demo_trex_gvs_02/
+  ├── demo_trex_gvs_02_mc_sim_scattered_blocks/
   │   └── ...
-  └── demo_trex_gvs_08/
+  └── demo_trex_gvs_08_mc_sim_block_bench/
 ```
 
-Each demo begins with a **Part 1 single-run** (data/structure diagnostics plus
-a Plotly correlation heatmap in interactive sessions) and then runs Monte Carlo
-sweeps that compare the three dummy-generation methods
-**EN (TENET) / EN+AUG (TENET_AUG) / IEN**, sweeping SNR, a correlation knob,
-and a 2-D SNR × correlation grid. Typical fixed settings: n = 200, p = 500,
-tFDR = 0.1, K = 20, 200 MC runs (demo 08 uses 500).
+Demos 01–07 each run a single Monte Carlo **2-D SNR × correlation sweep**
+comparing the three dummy-generation methods
+**TENET / TENET_AUG / TIENET_AUG** (demo 01 adds two fixed-operating-point
+method comparisons: `lambda2_method` and `hc_linkage`). Typical fixed
+settings: n = 200, p = 500, tFDR = 0.1, K = 20, 200 MC runs.
 
-Dependencies: `TRexSelectorNeo`, `plotly`, `parallel`. Each demo sources the
+Dependencies: `TRexSelectorNeo`, `parallel`. Each demo sources the
 consolidated [trex_gvs_dgps.R](trex_gvs_dgps.R) (all scenario generators in one
-file, mirroring the C++ `trex_gvs_dgps.hpp`) and the shared
+file, mirroring the C++ `trex_gvs_dgps.hpp`), the shared
+[trex_gvs_sim_common.R](trex_gvs_sim_common.R) (2-D sweep driver, matrix/table
+renderers, and the `.txt`/`.csv` result writers, mirroring the Python
+`gvs_sim_common.py`), and — except demo 08 — the shared
 [../support_generators.R](../support_generators.R) /
 [../simulation_utils.R](../simulation_utils.R) (which provides the `.run_mc_*()`
-EN/EN+AUG/IEN wrappers and the `.gvs_select()` selector adapter). Demo 08 is
-self-contained (its block runner, metrics, and grid printer live in the demo
-file). Output is console-only; each demo's `simulation_results/` folder holds
-any manually-recorded result summaries (see demo 01).
+TENET/TENET_AUG/TIENET_AUG wrappers and the `.gvs_select()` selector adapter).
+Demo 08's block runner and metrics live in the demo file. Each demo writes its
+result tables to `simulation_results/data/` as `.txt` + `.csv`.
 
 ---
 
@@ -48,36 +51,30 @@ any manually-recorded result summaries (see demo 01).
 
 | # | Scenario | Sweeps | DGP (in `trex_gvs_dgps.R`) | cpp counterpart |
 |---|---|---|---|---|
-| [01](demo_trex_gvs_01/) | Hastie: 3 equicorrelated active groups of 50 (all active, s = 150) | SNR, rho, 2-D, **lambda2_method**, **hc_linkage** | `dgp_hastie_snr` | `demo_trex_gvs_01_mc_sim_hastie_en_blocks` |
-| [02](demo_trex_gvs_02/) | Scattered-grouped: same 3 groups, members permuted across columns | SNR, rho, 2-D | `dgp_scattered_grouped_snr` | `demo_trex_gvs_02_mc_sim_scattered_blocks` |
-| [03](demo_trex_gvs_03/) | Mixed blocks: 3 active blocks (20/50/80) + 1 trap (65), random order, noise gaps | SNR, rho, 2-D — **two presets** (default sd_x; fixed rho = 0.75) | `dgp_mixed_blocks_snr` | `demo_trex_gvs_03_mc_sim_mixed_blocks` |
-| [04](demo_trex_gvs_04/) | Negative traps: active +Z/−Z group + two inactive +Z/−Z traps (s = 100) | SNR, rho, 2-D | `dgp_neg_traps_snr` | `demo_trex_gvs_04_mc_sim_neg_traps` |
-| [05](demo_trex_gvs_05/) | Heavy-tailed blocks: demo-03 geometry with Student-t(3) factors/noise | SNR (fixed rho = 0.75), rho, 2-D | `dgp_t3_equi_blocks_snr` | `demo_trex_gvs_05_mc_sim_t3_blocks` |
-| [06](demo_trex_gvs_06/) | AR(1) blocks: demo-03 geometry with within-block Cor = rho^\|j−k\| | SNR (fixed rho = 0.85), rho, 2-D | `dgp_ar1_blocks_snr` | `demo_trex_gvs_06_mc_sim_ar1_blocks` |
-| [07](demo_trex_gvs_07/) | ARMA blocks: AR(1) / MA(3) / ARMA(2,1) active blocks + AR(1) trap | SNR (fixed ar_coef = 0.8), **ar_coef**, 2-D | `dgp_arma_blocks_snr` | `demo_trex_gvs_07_mc_sim_arma_blocks` |
-| [08](demo_trex_gvs_08/) | Block benchmark: 100 blocks × 5, 10 active; HAC-discovered vs oracle groups | 4 methods (M1–M4) × 3 truth scenarios over a (rho × snr) grid | `dgp_block_equicorr` | `demo_trex_gvs_08_mc_sim_block_bench` |
+| [01](demo_trex_gvs_01_mc_sim_hastie_en_blocks/) | Hastie: 3 equicorrelated active groups of 50 (all active, s = 150) | 2-D SNR × rho, **lambda2_method**, **hc_linkage** | `dgp_hastie_snr` | `demo_trex_gvs_01_mc_sim_hastie_en_blocks` |
+| [02](demo_trex_gvs_02_mc_sim_scattered_blocks/) | Scattered-grouped: same 3 groups, members permuted across columns | 2-D SNR × rho | `dgp_scattered_grouped_snr` | `demo_trex_gvs_02_mc_sim_scattered_blocks` |
+| [03](demo_trex_gvs_03_mc_sim_mixed_blocks/) | Mixed blocks: 3 active blocks (20/50/80) + 1 trap (65), random order, noise gaps | 2-D SNR × rho (5 × 7 union grid) | `dgp_mixed_blocks_snr` | `demo_trex_gvs_03_mc_sim_mixed_blocks` |
+| [04](demo_trex_gvs_04_mc_sim_neg_traps/) | Negative traps: active +Z/−Z group + two inactive +Z/−Z traps (s = 100) | 2-D SNR × rho | `dgp_neg_traps_snr` | `demo_trex_gvs_04_mc_sim_neg_traps` |
+| [05](demo_trex_gvs_05_mc_sim_t3_blocks/) | Heavy-tailed blocks: demo-03 geometry with Student-t(3) factors/noise | 2-D SNR × rho | `dgp_t3_equi_blocks_snr` | `demo_trex_gvs_05_mc_sim_t3_blocks` |
+| [06](demo_trex_gvs_06_mc_sim_ar1_blocks/) | AR(1) blocks: demo-03 geometry with within-block Cor = rho^\|j−k\| | 2-D SNR × rho | `dgp_ar1_blocks_snr` | `demo_trex_gvs_06_mc_sim_ar1_blocks` |
+| [07](demo_trex_gvs_07_mc_sim_arma_blocks/) | ARMA blocks: AR(1) / MA(3) / ARMA(2,1) active blocks + AR(1) trap | 2-D SNR × **ar_coef** | `dgp_arma_blocks_snr` | `demo_trex_gvs_07_mc_sim_arma_blocks` |
+| [08](demo_trex_gvs_08_mc_sim_block_bench/) | Block benchmark: 100 blocks × 5, 10 active; HAC-discovered vs oracle groups | 4 methods (M1–M4) × 2 truth scenarios over a (rho × snr) grid | `dgp_block_equicorr` | `demo_trex_gvs_08_mc_sim_block_bench` |
 
-Each demo folder has its own `README.md`. Every demo exposes `run_part_*` flags
-at the top to enable/disable individual parts. Output is console-only, as in C++
-for demo 08.
+Each demo folder has its own `README.md`. Demo 01 exposes `run_part_*` flags
+at the top to enable/disable its three parts.
 
 ### Demo 08 notes (block benchmark)
 
 Demo 08 compares four variants — **M1** = EN + HAC-discovered groups, **M2** =
-EN + oracle groups, **M3** = IEN + HAC, **M4** = IEN + oracle — across three
-within-block truth scenarios (**INDIVIDUAL**: 1 active var/block;
-**REPRESENTATIVE**: 2–3/block; **WHOLE**: all 5/block). Oracle groups are
-supplied via `trex_gvs_control(groups = ...)` with contiguous 1..G labels; HAC
-variants discover groups from the data (`corr_max = 0.5`, single linkage). It
-reports coordinate TPR/FDR, block-level FDR and a scenario-specific block metric
-(`blk_hit` / `full_blk`), plus `T_stop` and `M_found`.
-
-The C++ benchmark also reports a group-**purity** diagnostic computed from the
-selector's internal per-variable cluster labels. The TRexSelectorNeo R6 API does
-not expose those labels, so purity is reported as `1.0` for the oracle methods
-(true by construction) and `-` for the HAC methods; **M_found** (the number of
-clusters the selector formed, from `$max_clusters`) is the R-side grouping
-diagnostic.
+EN + oracle groups, **M3** = IEN + HAC, **M4** = IEN + oracle — across two
+within-block truth scenarios (**WHOLE**: all 5 vars/block active, the headline
+scenario; **INDIVIDUAL**: 1 active var/block, the cautionary appendix). Oracle
+groups are supplied via `trex_gvs_control(groups = ...)` with contiguous 1..G
+labels; HAC variants discover groups from the data (`corr_max = 0.5`, single
+linkage). It reports coordinate TPR/FDR, block-level FDR and a
+scenario-specific block metric (`blk_hit` / `full_blk`), plus **purity**
+(computed from the selector's per-variable cluster labels, `$groups`),
+`T_stop`, and `M_found` (number of clusters formed, from `$max_clusters`).
 
 ---
 
@@ -97,21 +94,21 @@ consolidation.
 
 ## Recorded results
 
-Manually-recorded result summaries live in each demo's `simulation_results/`
-folder, e.g.
-[demo_trex_gvs_01/simulation_results/data/demo_trex_gvs_01_hastie_models.md](demo_trex_gvs_01/simulation_results/data/demo_trex_gvs_01_hastie_models.md).
+Result tables are written to each demo's `simulation_results/data/` folder
+(`<stem>.txt` + `<stem>.csv`). Manually-recorded result summaries also live
+there, e.g.
+[demo_trex_gvs_01_mc_sim_hastie_en_blocks/simulation_results/data/demo_trex_gvs_01_hastie_models.md](demo_trex_gvs_01_mc_sim_hastie_en_blocks/simulation_results/data/demo_trex_gvs_01_hastie_models.md).
 
 ---
 
 ## Running
 
 ```bash
-Rscript R/trex_selector_methods/trex_gvs/demo_trex_gvs_01/demo_trex_gvs_01.R      # all parts
-Rscript R/trex_selector_methods/trex_gvs/demo_trex_gvs_08/demo_trex_gvs_08.R 8    # 8 worker cores
+Rscript R/trex_selector_methods/trex_gvs/demo_trex_gvs_01_mc_sim_hastie_en_blocks/demo_trex_gvs_01_mc_sim_hastie_en_blocks.R      # all parts
+Rscript R/trex_selector_methods/trex_gvs/demo_trex_gvs_08_mc_sim_block_bench/demo_trex_gvs_08_mc_sim_block_bench.R 8              # 8 worker cores
 ```
 
 Scripts resolve their own directory, so they run from any working directory.
 The optional first argument sets the number of parallel worker cores (default 6).
-The `run_part_*` flags at the top of each file enable or disable individual
-parts. These are full Monte Carlo simulations (200–500 trials on n = 200,
+These are full Monte Carlo simulations (200 trials per grid point on n = 200,
 p = 500); reduce `num_MC` / grid sizes for a quick smoke run.

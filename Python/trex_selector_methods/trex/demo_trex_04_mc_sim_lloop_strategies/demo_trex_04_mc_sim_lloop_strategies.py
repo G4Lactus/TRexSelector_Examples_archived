@@ -18,9 +18,9 @@
 #                           same base draw (faster, prefix-stable).
 #    PERMUTATION          — Stored base dummy matrix re-used via deterministic
 #                           row permutations per experiment.
-#    PERMUTATION_SEEDED — Seed-derived base + row permutations; nothing
+#    PERMUTATION_SEEDED   — Seed-derived base + row permutations; nothing
 #                           stored. Bit-identical to PERMUTATION per seed.
-#    SEEDED             — Seed-derived i.i.d. draws; nothing stored.
+#    SEEDED               — Seed-derived i.i.d. draws; nothing stored.
 #    SKIPL_{5p,10p,20p}   — Skip the L-loop entirely; fixed
 #                           L = max_dummy_multiplier in {5, 10, 20} x p.
 #

@@ -2,15 +2,20 @@
 # trex_da_dgps.R
 # ==============================================================================
 # Consolidated data-generating processes for the T-Rex+DA demonstration suite
-# (mirrors cpp dgp_generators.hpp). One section per DGP family; each demo sources
-# this single file.
+# (mirrors cpp dgp_generators.hpp / Python dgp_generators.py). One section per
+# DGP family; each demo sources this single file.
 #
-#   dgp_ar1_snr                                  -> demo_trex_da_01, 03, 03b
-#   dgp_bt_snr / dgp_ar1_block_snr /
-#     dgp_ar1_block_white_snr                    -> demo_trex_da_02, 04, 05
-#   dgp_nn_snr / dgp_nn_block_snr                -> demo_trex_da_03
-#   dgp_ht_block_snr / dgp_ht_block_white_snr    -> demo_trex_da_06, 07
-#   dgp_groups_toeplitz_leaf                     -> demo_trex_da_08
+#   dgp_ar1_snr                 (dgp_ar1)                 -> demos 01, 07
+#   dgp_ar1_block_white_snr     (dgp_ar1_block_white)     -> demo 02
+#   dgp_ar1_block_snr           (dgp_ar1_block)           -> demo 03
+#   dgp_block_toeplitz_hvt_snr  (dgp_block_toeplitz_hvt)  -> demo 04
+#   dgp_ht_block_white_snr      (dgp_ht_block_white)      -> demo 05
+#   dgp_groups_toeplitz_leaf    (dgp_groups_toeplitz_leaf)-> demo 06
+#   dgp_nn_snr                  (dgp_nn)                  -> demo 07
+#   dgp_equi_snr                (dgp_equi)                -> demo 08
+#
+# dgp_bt_snr (two-level factor model) and dgp_nn_block_snr (block-diagonal
+# MA(kappa)) are R-only leftovers kept for reference; no demo uses them.
 # ==============================================================================
 
 
@@ -115,6 +120,72 @@ dgp_ar1_snr <- function(n,
   signal      <- drop(X %*% beta)
   var_sig     <- stats::var(signal)
   noise_sigma <- sqrt(var_sig / snr)
+  y           <- signal + stats::rnorm(n, mean = 0, sd = noise_sigma)
+
+  list(
+    X            = X,
+    y            = y,
+    beta         = beta,
+    true_support = as.integer(support),
+    n            = n,
+    p            = p,
+    s            = length(support),
+    snr          = snr,
+    rho          = rho
+  )
+}
+
+# ==============================================================================
+# ==  DGP family: equi_snr
+# ==============================================================================
+
+# ==============================================================================
+# dgp_equi_snr
+# ==============================================================================
+
+#' Equicorrelation DGP with SNR-calibrated noise (cpp: dgp_equi).
+#'
+#' Compound symmetry via a single latent factor:
+#'
+#'   X[i, j] = sqrt(rho) * f[i] + sqrt(1 - rho) * eta[i, j]
+#'
+#' with f and eta i.i.d. N(0, 1), yielding Sigma[j, k] = rho for j != k.
+#' The response noise is calibrated to the target SNR exactly as in
+#' `dgp_ar1_snr()` (sample variance with the n-1 denominator).
+#'
+#' @param n         Number of observations.
+#' @param p         Number of predictors.
+#' @param support   1-based integer vector of active predictor indices.
+#' @param amplitude Signal coefficient for each active predictor. Default 3.
+#' @param rho       Equicorrelation coefficient in [0, 1).
+#' @param snr       Target signal-to-noise ratio Var(signal) / Var(noise).
+#' @param seed      Integer seed for the RNG (governs both X and noise).
+#'
+#' @return A list with components:
+#'   X, y, beta, true_support, n, p, s, snr, rho.
+dgp_equi_snr <- function(n,
+                         p,
+                         support,
+                         amplitude = 3,
+                         rho       = 0.25,
+                         snr       = 2.0,
+                         seed      = NULL) {
+
+  stopifnot(rho >= 0, rho < 1)
+  stopifnot(snr > 0)
+  stopifnot(all(support >= 1L), all(support <= p))
+
+  if (!is.null(seed)) set.seed(seed)
+
+  f   <- stats::rnorm(n)
+  eta <- matrix(stats::rnorm(n * p), nrow = n, ncol = p)
+  X   <- sqrt(rho) * matrix(f, nrow = n, ncol = p) + sqrt(1.0 - rho) * eta
+
+  beta          <- numeric(p)
+  beta[support] <- amplitude
+
+  signal      <- drop(X %*% beta)
+  noise_sigma <- sqrt(stats::var(signal) / snr)
   y           <- signal + stats::rnorm(n, mean = 0, sd = noise_sigma)
 
   list(
@@ -669,15 +740,18 @@ dgp_nn_block_snr <- function(n, p, support,
 
 
 # ==============================================================================
-# dgp_ht_block_snr
+# dgp_block_toeplitz_hvt_snr
 # ==============================================================================
 
-#' DGP for heavy-tailed AR(1)-block data with SNR-calibrated noise.
+#' DGP for heavy-tailed block-Toeplitz data with SNR-calibrated noise
+#' (cpp: dgp_block_toeplitz_hvt).
 #'
-#' All p predictors form M independent AR(1) blocks of size p/M.  Each block
-#' is drawn as a multivariate Student-t via the Gaussian-scale-mixture
-#' representation: Z ~ N(0, Sigma_AR1), then X = Z / sqrt(U/nu) where
-#' U ~ chi2(nu) is shared across all columns within each observation.
+#' All p predictors form n_blocks independent AR(1)-Toeplitz blocks of size
+#' p / n_blocks. When `heavy_X`, each block is converted to multivariate
+#' Student-t(nu) via a Gaussian scale mixture with an independent chi-squared
+#' mixing variable per (row, block) — extreme events are block-local,
+#' mirroring cpp dgp_block_toeplitz_hvt. Noise is Gaussian, or
+#' variance-matched Student-t(nu) when `heavy_noise`.
 #'
 #' @param n           Number of observations.
 #' @param p           Total number of predictors. Must be divisible by n_blocks.
@@ -687,46 +761,55 @@ dgp_nn_block_snr <- function(n, p, support,
 #' @param rho         AR(1) within-block correlation parameter.
 #' @param snr         Target signal-to-noise ratio Var(signal) / Var(noise).
 #' @param nu          Degrees of freedom for the Student-t distribution. Default 3.
+#' @param heavy_X     If TRUE (default), predictors are block-local Student-t(nu).
 #' @param heavy_noise If TRUE, noise is also Student-t(nu); otherwise Gaussian.
 #' @param seed        Integer RNG seed. NULL means do not set seed.
 #'
-#' @return A list with components: X, y, beta, true_support, n, p, rho, snr,
-#'   nu, heavy_noise.
-dgp_ht_block_snr <- function(n,
-                             p,
-                             support,
-                             amplitude   = 1.0,
-                             n_blocks    = 5L,
-                             rho         = 0.8,
-                             snr         = 2.0,
-                             nu          = 3.0,
-                             heavy_noise = FALSE,
-                             seed        = NULL) {
+#' @return A list with components: X, y, beta, true_support, n, p, n_blocks,
+#'   rho, snr, nu, heavy_noise.
+dgp_block_toeplitz_hvt_snr <- function(n,
+                                       p,
+                                       support,
+                                       amplitude   = 1.0,
+                                       n_blocks    = 5L,
+                                       rho         = 0.8,
+                                       snr         = 2.0,
+                                       nu          = 3.0,
+                                       heavy_X     = TRUE,
+                                       heavy_noise = FALSE,
+                                       seed        = NULL) {
+
+  stopifnot(p %% n_blocks == 0)
+  stopifnot(abs(rho) < 1)
+  stopifnot(snr > 0, nu > 2)
+  stopifnot(all(support >= 1L), all(support <= p))
 
   if (!is.null(seed)) set.seed(seed)
 
   block_size <- p %/% n_blocks
   innov_sd   <- sqrt(1.0 - rho^2)
 
-  # Step 1: Generate underlying Gaussian AR(1) blocks Z ~ N(0, Sigma_AR1)
-  Z <- matrix(0.0, nrow = n, ncol = p)
+  X <- matrix(0.0, nrow = n, ncol = p)
   for (m in seq_len(n_blocks)) {
     col_start <- (m - 1L) * block_size + 1L
     col_end   <- m * block_size
 
-    Z[, col_start] <- stats::rnorm(n)
-    for (j in seq(col_start + 1L, col_end)) {
-      Z[, j] <- rho * Z[, j - 1L] + innov_sd * stats::rnorm(n)
+    Z_block       <- matrix(0.0, nrow = n, ncol = block_size)
+    Z_block[, 1L] <- stats::rnorm(n)
+    if (block_size > 1L) {
+      for (j in seq(2L, block_size)) {
+        Z_block[, j] <- rho * Z_block[, j - 1L] + innov_sd * stats::rnorm(n)
+      }
     }
+    if (heavy_X) {
+      # One mixing variable per (row, block): sqrt(nu / chi2(nu))
+      U       <- stats::rchisq(n, df = nu)
+      Z_block <- Z_block * sqrt(nu / U)
+    }
+    X[, col_start:col_end] <- Z_block
   }
 
-  # Step 2: Convert to multivariate Student-t via Gaussian scale mixture.
-  # One chi-squared scale draw per observation, shared across all columns.
-  U            <- stats::rchisq(n, df = nu)
-  scale_factor <- sqrt(U / nu)
-  X            <- Z / scale_factor
-
-  # Step 3: Response and SNR-calibrated noise
+  # Response and SNR-calibrated noise
   beta    <- numeric(p)
   beta[support] <- amplitude
 
@@ -750,6 +833,7 @@ dgp_ht_block_snr <- function(n,
     true_support = as.integer(support),
     n           = n,
     p           = p,
+    n_blocks    = n_blocks,
     rho         = rho,
     snr         = snr,
     nu          = nu,
@@ -762,12 +846,14 @@ dgp_ht_block_snr <- function(n,
 # dgp_ht_block_white_snr
 # ==============================================================================
 
-#' DGP for heavy-tailed AR(1)-block + identity-block data with SNR-calibrated noise.
+#' DGP for heavy-tailed AR(1)-block + identity-block data with SNR-calibrated
+#' noise (cpp: dgp_ht_block_white).
 #'
 #' The p_total = p_ar + p_white predictors consist of:
-#'   - p_ar columns: M independent AR(1) blocks of size p_ar/M, each drawn
-#'     as heavy-tailed (Student-t) via the Gaussian scale mixture.
-#'   - p_white columns: a single heavy-tailed i.i.d. block (identity covariance).
+#'   - p_ar columns: M independent AR(1)-Toeplitz t(nu) blocks of size p_ar/M
+#'     (one chi-squared mixing variable per (row, block)).
+#'   - p_white columns: i.i.d. Student-t(nu) white-noise columns (element-wise
+#'     independent, mirroring cpp dgp_ht_block_white).
 #'
 #' Active predictors lie entirely within the AR blocks (one per block).
 #' The white-noise columns allow p_total to stay fixed while M and Q vary.
@@ -813,21 +899,20 @@ dgp_ht_block_white_snr <- function(n,
 
     Z_block        <- matrix(0.0, nrow = n, ncol = block_size)
     Z_block[, 1L]  <- stats::rnorm(n)
-    for (j in seq(2L, block_size)) {
-      Z_block[, j] <- rho * Z_block[, j - 1L] + innov_sd * stats::rnorm(n)
+    if (block_size > 1L) {
+      for (j in seq(2L, block_size)) {
+        Z_block[, j] <- rho * Z_block[, j - 1L] + innov_sd * stats::rnorm(n)
+      }
     }
 
-    U_block            <- stats::rchisq(n, df = nu)
-    scale_factor_block <- sqrt(U_block / nu)
-    X[, col_start:col_end] <- Z_block / scale_factor_block
+    U_block <- stats::rchisq(n, df = nu)
+    X[, col_start:col_end] <- Z_block * sqrt(nu / U_block)
   }
 
-  # White-noise block with heavy-tailed scaling (one chi-sq draw per observation)
+  # White-noise block: element-wise independent Student-t(nu) columns.
   if (p_white > 0L) {
-    Z_white            <- matrix(stats::rnorm(n * p_white), nrow = n, ncol = p_white)
-    U_white            <- stats::rchisq(n, df = nu)
-    scale_factor_white <- sqrt(U_white / nu)
-    X[, (p_ar + 1L):p] <- Z_white / scale_factor_white
+    X[, (p_ar + 1L):p] <- matrix(stats::rt(n * p_white, df = nu),
+                                 nrow = n, ncol = p_white)
   }
 
   beta <- numeric(p)
@@ -853,6 +938,9 @@ dgp_ht_block_white_snr <- function(n,
     true_support = as.integer(support),
     n           = n,
     p           = p,
+    p_ar        = p_ar,
+    p_white     = p_white,
+    n_blocks    = n_blocks,
     rho         = rho,
     snr         = snr,
     nu          = nu,

@@ -9,14 +9,21 @@
 #
 # The file mirrors:
 # cpp/trex_selector_methods/trex/demo_trex_01_single_run.cpp
+# and
+# Python/trex_selector_methods/trex/demo_trex_01_single_run.py
 #
 # Demo content:
 # ----------------------------------------------------------------
 #
-#  - Low- and high-dimensional settings.
-#  - Fixed true support; TLARS solver.
-#  - Illustrates the reporting of TRex internal statistics
-#    phi_prime, phi_mat, fdp_hat_mat, r_mat, voting_grid.
+#  - High- and low-dimensional settings (run in that order, as in C++).
+#  - Fixed true support; fixed +1 coefficients; TLARS solver.
+#  - Reports selected indices, FDP/TPP, Phi_prime and Phi (printed sparsely),
+#    FDP_hat, R, and the voting grid — dual console + file output to
+#    simulation_results/data/d01_trex_basic_n{n}_p{p}.txt.
+#
+# Seed note: data seed 58 and selector seed 42 mirror the C++/Python demos
+# structurally; the RNG streams differ across languages, so the drawn data
+# (and hence the exact selection) are not bit-identical to the C++ output.
 #
 # ==============================================================================
 
@@ -41,6 +48,9 @@ source(file.path(this_dir_, "..", "trex_sim_utils.R"))
 # Global Simulation Parameters
 # ==============================================================================
 
+OUT_DIR <- file.path(this_dir_, "simulation_results", "data")
+dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
+
 # Fixed true support (0-based in C++, converted to 1-based)
 # C++ (0-based): {27, 149, 43, 128, 42, 4}
 # R (1-based): c(28, 150, 44, 129, 43, 5)
@@ -56,18 +66,28 @@ run_part_01 <- TRUE
 trx_01_part_01 <- function() {
 
   # Parameters matching C++ demo_TRexSelector()
-  tFDR <- 0.1
-  snr  <- 1.0
+  tFDR      <- 0.1
+  snr       <- 1.0
+  data_seed <- 58L
+  trex_seed <- 42L
 
+  # Complete control block, values taken from the C++ reference
+  # (demo_trex_01_single_run.cpp) — every option explicit, no reliance on
+  # trex_control() defaults.
   ctrl <- trex_control(
     solver                   = "TLARS",
     K                        = 20L,
     max_dummy_multiplier     = 10L,
     use_max_T_stop           = TRUE,
-    lloop_strategy           = "HCONCAT",
+    opt_threshold            = 0.75,
+    lloop_strategy           = "STANDARD",
     tloop_stagnation_stop    = FALSE,
     tloop_max_stagnant_steps = 5L,
-    use_openmp               = FALSE
+    use_openmp               = FALSE,
+    use_memory_mapping       = FALSE,
+    lambda2                  = 0.1,
+    rho_afs                  = 0.0,   # non-TAFS solver; rho_afs is unused
+    ncgmp_variant            = 0L
   )
 
 
@@ -76,35 +96,44 @@ trx_01_part_01 <- function() {
     n <- if (high_dim) 150L else 5000L
     p <- if (high_dim) 300L else 1000L
     dim_label <- if (high_dim) "High-dimensional (p > n)" else "Low-dimensional (n > p)"
-    seed <- 4231
 
-    cat("\n", strrep("=", 70L), "\n", sep = "")
-    cat("Part 1: Single-run basic T-Rex demo  |  ", dim_label, "\n", sep = "")
-    cat(sprintf("n = %d,  p = %d,  tFDR = %.2f,  SNR = %.1f\n\n", n, p, tFDR, snr))
+    txt_path <- file.path(OUT_DIR, sprintf("d01_trex_basic_n%d_p%d.txt", n, p))
+    con      <- file(txt_path, open = "wt")
+    on.exit(close(con), add = TRUE)
+    out      <- .make_dual_out(con)
 
-    cat("Generating synthetic data ...\n")
-    dat <- dgp_gauss_snr(n, p, TRUE_SUPPORT_P1, amplitude = 1, snr = snr, seed = seed)
+    out(sprintf("\n%s\n", strrep("=", 70L)))
+    out(sprintf("Part 1: Single-run basic T-Rex demo  |  %s\n", dim_label))
+    out(sprintf("n = %d,  p = %d,  tFDR = %.2f,  SNR = %.1f\n\n", n, p, tFDR, snr))
 
-    cat("Running T-Rex Selector (TLARS) ...\n\n")
+    out("Generating synthetic data ...\n")
+    dat <- dgp_gauss_snr(n, p, TRUE_SUPPORT_P1, amplitude = 1, snr = snr,
+                         seed = data_seed)
+
+    out("Running T-Rex Selector (TLARS) ...\n\n")
     selector <- TRexSelector$new(
       X       = dat$X,
       y       = dat$y,
       tFDR    = tFDR,
-      seed    = seed, # using a != -1 seed for reproducibility in the demo
+      seed    = trex_seed, # using a != -1 seed for reproducibility in the demo
       verbose = TRUE,
       control = ctrl
     )
     selector$select()
 
     .print_single_run(
-      sprintf("Part 1 \u2014 i.i.d. Gaussian  [%s, TLARS]", dim_label),
-      dat, selector, tFDR
+      sprintf("Part 1 — i.i.d. Gaussian  [%s, TLARS]", dim_label),
+      dat, selector, tFDR, out = out
     )
+
+    cat(sprintf("[Info] Results saved to: %s\n", txt_path))
     invisible(selector)
   }
 
-  run_single(high_dim = FALSE)
+  # C++ main() runs the high-dimensional scenario first, then the
+  # low-dimensional one; both with fixed +1 coefficients.
   run_single(high_dim = TRUE)
+  run_single(high_dim = FALSE)
 }
 
 
