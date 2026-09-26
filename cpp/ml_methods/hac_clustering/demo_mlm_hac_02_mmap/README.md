@@ -14,6 +14,9 @@ The workflow is organized into three phases:
 2. **Standardization**: mean-center and L2-normalize columns in place.
 3. **Clustering**: benchmark selected HAC linkage strategies under an LSH-based correlation distance approximation.
 
+Each phase section below ends with the console output of the recorded run (library 8ad3376, 8 OpenMP threads, 12-core
+Apple Silicon, 64 GB RAM, 1 h 17 min in total).
+
 ---
 
 ## Statistical model and notation
@@ -67,7 +70,8 @@ In the implementation, the within-block signal and noise weights are fixed to
 \gamma = 0.15,
 ```
 
-which produces strongly correlated variable blocks while preserving some within-block heterogeneity.
+which produces strongly correlated variable blocks while preserving some within-block heterogeneity. The ten blocks are
+imbalanced and sum to exactly 400,000 variables.
 
 The true labels are determined deterministically from the block sizes, so the clustering target is known exactly before
 the HAC stage begins.
@@ -85,11 +89,8 @@ memory-mapped file, while only the latent signal matrix
 
 is held in memory.
 
-This changes the storage pattern from a RAM-bound dense allocation to an out-of-core workflow. In the current
-implementation, the memory-mapped file has a disk footprint of about 298 GB, whereas the latent $n \times K$ signal
-matrix occupies only a small RAM budget relative to the full design matrix.
-
----
+This changes the storage pattern from a RAM-bound dense allocation to an out-of-core workflow. The file holds
+$n \times p$ doubles, 320 GB (298 GiB as the demo prints it), whereas the latent $n \times K$ matrix is 7.6 MB.
 
 ## Phase 2: In-place standardization
 
@@ -104,6 +105,37 @@ Before correlation-based clustering, each variable is standardized in place by
 This preprocessing step is required for correlation-based distance calculations and is performed directly on the
 memory-mapped matrix rather than on a copied in-memory version.
 
+### Phases 1 and 2: Console output
+
+Both phases stream through the file once, column by column, with 8 threads; each takes about six minutes, so the
+320 GB are written at roughly 0.9 GB/s and rewritten at 0.8 GB/s. The time goes to the SSD, not to the arithmetic.
+
+```text
+============================================================
+HAC Memory-Mapped Demo Suite (N=100k x P=400k)
+============================================================
+OpenMP version: 202011 (5.1+)
+Max threads: 12
+Num processors: 12
+Custom reductions: Supported
+Running with 8 threads
+
+
+============================================================
+Demo 03: LSH Linkage Comparison via Memory-Mapped I/O (N=100k, P=400k, K=10)
+============================================================
+Memory-mapped file : .../cpp/ml_methods/hac_clustering/demo_mlm_hac_02_mmap/trex_mlm_demo_02_hac_mmap.bin
+File size          : 298.02 GB
+Latent RAM (N x K)   : 7.63 MB
+
+=== Phase 1: Generating correlated variables into mmap ===
+    N=100000, P=400000, K=10
+    Done. (355.6 s)
+
+=== Phase 2: Standardising columns (mean=0, L2=1) in-place ===
+    Done. (392.4 s)
+```
+
 ---
 
 ## Phase 3: Clustering
@@ -117,7 +149,8 @@ d_{\mathrm{LSH}}(j,\ell)
 ```
 
 The source describes this as a pure $O(1)$ SimHash-based correlation approximation, used to avoid repeatedly evaluating
-full high-dimensional exact correlations at this scale.
+full high-dimensional exact correlations at this scale. Every variable is reduced to a 64-bit signature from 64 random
+hyperplanes, so a distance is a Hamming distance between two words.
 
 ### Subproblem 1: Single linkage
 
@@ -144,46 +177,99 @@ without a message.
 
 The fourth subproblem applies **Ward’s minimum-variance linkage** under the same large-scale setup. Ward with the LSH
 approximation is the one route the dispatcher sends to the projected 64-dimensional engine: the clustering runs on a
-$64 \times p$ matrix of doubles, about 205 MB here, instead of the $p \times p$ distance matrix.
+$64 \times p$ matrix of doubles, about 195 MB here, instead of the $p \times p$ distance matrix.
+
+### Phase 3: Console output
+
+Single linkage over all 400,000 variables takes 26 minutes: SLINK evaluates each pair once, but with the $O(1)$ Hamming
+distance the 8 x 10^10 evaluations stay affordable; the exact-correlation equivalent would read the 320 GB file
+80 billion times over. Ward projects the file once into the 64-dimensional space (the 195 MB) and then runs its NN-chain
+in RAM for 38 minutes. Both recover the ten imbalanced blocks exactly. The demo unmaps and deletes the file at the end.
+
+```text
+=== Phase 3: Reopening mmap for clustering ===
+    Distance policy: Correlation LSH Approximation (O(1) SimHash)
+
+[Test A] Single Linkage (SLINK + LSH):
+    Time : 1568.1046 s
+    ARI  : 1.0000 / 1.0000
+
+[Test B] Complete Linkage & WPGMA:
+    [SKIPPED] These methods lack a geometric center of mass.
+    They strictly require the O(P^2) Lance-Williams matrix.
+    At P=400,000, this requires 1.2 TB of NVMe I/O, which is intractable.
+
+[Test C] UPGMA Average Linkage:
+    [SKIPPED] Average linkage runs on the O(P^2) Lance-Williams matrix as well;
+    the geometric centroid update of the projected engine does not implement
+    the UPGMA formula. At P=400,000 the matrix is 1.28 TB, which is intractable.
+
+[Test D] Ward's Minimum Variance (Projected 64D RAM Engine + LSH):
+  -> [Backend] Projecting data to 64D (195 MB RAM)...
+    Time : 2306.0468 s
+    ARI  : 1.0000 / 1.0000
+
+[Demo 03 Complete]
+
+Cleaned up mmap file: .../cpp/ml_methods/hac_clustering/demo_mlm_hac_02_mmap/trex_mlm_demo_02_hac_mmap.bin
+
+============================================================
+Demo 03 completed successfully
+============================================================
+```
+
+---
+
+## Results at a glance
+
+| Phase | Work | Time | Result |
+| --- | --- | --- | --- |
+| 1 Generation | 400,000 columns x 100,000 rows into the mapped file | 356 s | 320 GB file |
+| 2 Standardization | mean 0, unit L2 norm, in place | 392 s | |
+| 3 Test A | single linkage, SLINK + LSH | 1568 s | ARI 1.000 |
+| 3 Test B | complete linkage, WPGMA | skipped | $O(p^2)$ matrix, 1.2 TB |
+| 3 Test C | average linkage (UPGMA) | skipped | $O(p^2)$ matrix, 1.28 TB |
+| 3 Test D | Ward, projected 64-D engine + LSH | 2306 s | ARI 1.000 |
+
+You can compare the large-scale behavior with the in-memory HAC examples in
+[demo_mlm_hac_01](../demo_mlm_hac_01/README.md), where Subproblem 5 runs the same LSH linkage comparison on
+50,000 x 100,000 in RAM. The same memory-mapped clustering technique is demonstrated at a smaller, illustrative scale in
+[Python](../../../../Python/ml_methods/hac_clustering/demo_mlm_hac_02_mmap/) and
+[R](../../../../R/ml_methods/hac_clustering/demo_mlm_hac_02_mmap/).
 
 ---
 
 ## Running the demo
 
+Through the folder's launch script, which rebuilds the target, keeps the console output under `logs/` and reports the
+wall-clock time:
+
 ```bash
-./build/debug/bin/ml_methods/hac_clustering/demo_mlm_hac_02_mmap/demo_mlm_hac_02_mmap
+cd cpp/ml_methods/hac_clustering
+THREADS=8 ./run_hac_demos.sh 02
 ```
 
-The demo prints its diagnostics to the console, including file size, latent-memory footprint, phase timings, and ARI
-values for the executed clustering tasks.
+Or directly, the OpenMP thread count as the optional first argument (default 6):
 
----
+```bash
+cpp/build/release/bin/ml_methods/hac_clustering/demo_mlm_hac_02_mmap/demo_mlm_hac_02_mmap 8
+```
 
-## What to look for
-
-When reading the output, focus on the following points:
-
-- whether ARI remains close to 1 despite the use of approximate correlation distances,
-- whether the block structure is recovered consistently across the executed linkage strategies,
-- how the three workflow phases differ in runtime,
-- which linkage strategies are executed and which are skipped for computational reasons,
-- whether the temporary memory-mapped file is cleaned up successfully at the end.
-
-You can compare the large-scale behavior with the in-memory HAC examples in
-[demo_mlm_hac_01](../demo_mlm_hac_01/README.md).
-
-The same memory-mapped clustering technique is demonstrated at a smaller, illustrative scale in
-[Python](../../../../Python/ml_methods/hac_clustering/demo_mlm_hac_02_mmap/) and
-[R](../../../../R/ml_methods/hac_clustering/demo_mlm_hac_02_mmap/).
+The demo prints to the console only. It needs 320 GB of free disk for the duration of the run and about 1 h 20 min on
+8 threads.
 
 ---
 
 ## Technical notes
 
 - The memory-mapped file path is injected at compile time via `TREX_DEMO_MMAP_PATH`, with a relative fallback if not
-  provided.
+  provided. The pattern `trex_mlm_demo_*_mmap.bin` is gitignored.
 - If a file with the expected size already exists, the generation and standardization phases are skipped and the demo
   reuses the existing mapped matrix for clustering. Because the file is pre-allocated to its full size before any data
   is written, a run that is interrupted mid-generation can leave behind a same-sized but incomplete file that this
   check cannot distinguish from a valid one.
-- Cleanup is handled automatically on normal exit by unmapping first and then removing the backing file.
+- Cleanup is handled automatically on normal exit by unmapping first and then removing the backing file. A run that is
+  killed leaves the file behind; move it to the Trash or let the next run reuse it.
+- Resident memory during the run reaches the size of the machine, because the operating system keeps the touched pages
+  of the mapped file in the page cache. Those pages are file-backed and reclaimable; the process's own allocations are
+  the latent matrix (7.6 MB), the LSH signatures and planes, and Ward's 64 x p projection (195 MB).
