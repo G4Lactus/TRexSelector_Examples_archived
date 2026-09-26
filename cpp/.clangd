@@ -1,4 +1,7 @@
 CompileFlags:
+  # The release preset writes compile_commands.json here (relative to this
+  # file); clangd itself only searches ancestors and their build/ folder.
+  CompilationDatabase: build/release
   # Drops the macOS-specific OpenMP flag from the background linter
   # so it stops complaining about 'libomp', but keeps OpenMP support.
   Remove: [-fopenmp=libomp]
