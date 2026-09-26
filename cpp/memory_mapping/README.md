@@ -2,104 +2,46 @@
 
 ## Overview
 
-This folder contains C++ examples for the **`MemoryMappedMatrix<Scalar>`** utility from `utils/memmap/`.
-
-The utility provides a disk-backed matrix interface that can be used like an Eigen matrix through `Eigen::Map`, making
-it useful when matrices are too large to keep entirely in RAM. In the TRexSelector project, this is especially relevant
-for large design matrices and dummy matrices that exceed available RAM in solver and selector workflows.
-
-The main goals of this folder are:
-
-1. to show how memory-mapped matrices are created and accessed in C++,
-2. to demonstrate out-of-core workflows for large matrices,
-3. to illustrate safe file lifetime management via RAII.
-
-The demo showcases C++-specific features such as RAII, zero-copy access through `Eigen::Map`, and OpenMP-based parallel
-generation.
-
-Equivalent memory-mapping functionality is also available in the Python and R packages; see `Python/memory_mapping/` and
-`R/memory_mapping/` for the corresponding walkthroughs.
-
----
-
-## What this folder covers
-
-A memory-mapped matrix stores its entries in a file on disk and exposes them through a matrix-like interface:
+This folder holds the C++ examples for `MemoryMappedMatrix<Scalar>` from `utils/memmap/`. The class stores a matrix
+in a file on disk and exposes it through `Eigen::Map`:
 
 ```math
 \boldsymbol{X}_{\mathrm{mmap}} \in \mathbb{R}^{n \times p}.
 ```
 
-Conceptually, the matrix behaves like a regular numeric matrix, but its storage is file-backed rather than purely
-in-memory. The underlying `MemoryMappedMatrix<Scalar>` template supports any fixed-size scalar type — including real
-(`float`, `double`) and complex (`std::complex<float>`, `std::complex<double>`) entries — although the demos here use
-`double`.
+The data is used like an Eigen matrix while its storage is file-backed. Any fixed-size scalar type works, real
+(`float`, `double`) and complex (`std::complex<float>`, `std::complex<double>`); the demos use `double`.
 
-This is useful for:
-
-- **large matrices**, when RAM is limited,
-- **persistent intermediate data**, when matrix contents should survive beyond a single object lifetime,
-- **solver interoperability**, because the mapped data can be consumed through Eigen-compatible interfaces.
+In TRexSelector this matters for design matrices and dummy matrices that exceed the available RAM in solver and
+selector workflows, for intermediate data that should outlive a single object, and for handing mapped data to the
+solvers through their Eigen interfaces without a copy. The C++ side adds RAII cleanup of the backing file, zero-copy
+`Eigen::Map` access and OpenMP-parallel generation. The Python and R packages offer the same functionality; see
+`Python/memory_mapping/` and `R/memory_mapping/`.
 
 ---
 
-## Start here
-
-If you are new to memory mapping in TRexSelector, begin with:
-
-1. **`demo_memory_mapping/`** — a self-contained demo covering matrix creation, read/write access, serial and parallel
-   out-of-core generation, and safe cleanup.
-
----
-
-## Demo overview
+## Demos
 
 | Folder | Purpose |
 | ------ | ------- |
-| `demo_memory_mapping/` | Demonstrates basic mmap usage, out-of-core writes, OpenMP-based parallel filling, and element-wise access checks |
+| [`demo_memory_mapping/`](demo_memory_mapping/) | Create and access a mapped matrix, stream columns out of core serially and in parallel, element-wise access with bounds and read-only checks. The README walks through the console output. |
 
 ---
 
 ## Building and running
 
-From the C++ workspace root:
+From `cpp/`, with the library SDK installed at the path the presets point to:
 
 ```bash
-# navigate to the TRexSelector C++ workspace
-cd TRexSelector_Examples/cpp
-
-# build the demo in debug mode, linking against the installed TRexSelector library
-cmake -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_PREFIX_PATH="<path-to-TRexSelector>/cpp/install"
-
-# build the demo target
-cmake --build build/debug --target demo_memory_mapping
+cmake --preset release && cmake --build --preset release-build          # all demos
+cmake --build --preset release-build --target demo_memory_mapping       # this demo only
 ```
 
-Run the demo with:
+Run it from the repository root:
 
 ```bash
-./build/debug/bin/memory_mapping/demo_memory_mapping/demo_memory_mapping
+cpp/build/release/bin/memory_mapping/demo_memory_mapping/demo_memory_mapping
 ```
 
----
-
-## Folder contents
-
-```txt
-memory_mapping/
-  ├── README.md
-  ├── CMakeLists.txt
-  └── demo_memory_mapping/
-      ├── demo_memory_mapping.cpp
-      └── README.md
-```
-
----
-
-## Notes for new users
-
-- This demo prints results to the console and does not write simulation summary files.
-- Temporary backing files are created in the system temporary directory and removed automatically.
-- The demo is intended to explain the memory-mapping utility itself, not to benchmark maximum scale production
-  performance.
+The demo prints to the console only. Its backing files live in the system temporary directory and are removed
+when each part ends.
