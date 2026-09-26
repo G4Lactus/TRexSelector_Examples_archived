@@ -26,6 +26,7 @@ notes/
 deprecated/
 .cache/
 .github/
+.claude/
 documentation/
 
 ################################
