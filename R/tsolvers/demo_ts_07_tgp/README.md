@@ -53,6 +53,8 @@ This demonstrates the externally normalized workflow and allows it to be compare
 
 The third part runs a reference fit to a final stopping level, then separately runs a shorter partial fit, saves the solver state to `tgp_checkpoint.bin` in the demo folder, reloads it, and continues from the checkpoint to the same final stopping level.
 
+The data are normalized once in front (`MLLpNormScaler` on `X` and `D`, `y` centered) and the reference, checkpoint and resumed solvers run as readers (`normalize = FALSE, intercept = FALSE`), so the three solvers share the data without copies and the paths are bit-identical. Three writer solvers on the same data would each center and scale it in place, which moves the data by rounding and made the paths differ (the 2026-09-25 finding); since the library's in-place contract a second writer on a held buffer raises instead.
+
 Unlike the cpp version, which uses a static `load(filename, X, D)` factory, the R binding hydrates an existing solver instance: a fresh solver is constructed with the same `X`, `D`, and `y`, and the checkpoint is loaded via `solver$load(path)`.
 
 The reloaded run is compared against the reference path using the final number of steps, the final RSS difference, the final $R^2$ difference, and equality of the recorded action path. The checkpoint file is removed afterward.

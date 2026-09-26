@@ -135,9 +135,25 @@ demo_serialization <- function(rho) {
   dat <- gen_synthetic_data(n, p, num_dummies, true_support, true_coefs,
                             snr, seed = 42)
 
+  # Normalize ONCE in front; the three solvers below are READERS.
+  # The reference, checkpoint and resumed solvers share dat$X and dat$D (the
+  # R6 solvers map the R matrices, no copy). A solver with normalize = TRUE /
+  # intercept = TRUE is a WRITER that preprocesses them in place, so three
+  # writers would center and scale the data three times, which moves it by
+  # rounding and made the paths differ (the 2026-09-25 finding; a second
+  # writer on a held matrix errors since the library's in-place contract).
+  # So: the statistics live in the scalers, the solvers run as constructed
+  # (normalize = FALSE, intercept = FALSE), no copies, bit-identical paths.
+  l2scaler_X <- MLLpNormScaler$new(norm_type = 2, center = TRUE)
+  l2scaler_X$fit_transform_inplace(dat$X)
+  l2scaler_D <- MLLpNormScaler$new(norm_type = 2, center = TRUE)
+  l2scaler_D$fit_transform_inplace(dat$D)
+  y_mean <- mean(dat$y)
+  dat$y <- dat$y - y_mean
+
   # Reference solver: run until T_stop_final.
   solver_ref <- TAFS_Solver$new(dat$X, dat$D, dat$y,
-      options = tsolver_options(rho_afs = rho, normalize = TRUE, intercept = TRUE, verbose = FALSE))
+      options = tsolver_options(rho_afs = rho, normalize = FALSE, intercept = FALSE, verbose = FALSE))
   solver_ref$execute_step(T_stop_final, early_stop = TRUE)
   cat(sprintf("\u2713 Reference completed with %d steps\n\n",
               solver_ref$get_num_steps()))
@@ -146,7 +162,7 @@ demo_serialization <- function(rho) {
 
   # STEP 1: Run partial path and save checkpoint.
   solver1 <- TAFS_Solver$new(dat$X, dat$D, dat$y,
-      options = tsolver_options(rho_afs = rho, normalize = TRUE, intercept = TRUE, verbose = FALSE))
+      options = tsolver_options(rho_afs = rho, normalize = FALSE, intercept = FALSE, verbose = FALSE))
   solver1$execute_step(T_stop_partial, early_stop = TRUE)
   cat(sprintf("Checkpoint at partial stop: %d steps\n", solver1$get_num_steps()))
   solver1$save(filename)
@@ -154,9 +170,11 @@ demo_serialization <- function(rho) {
 
   # STEP 2: Load from checkpoint and continue.
   # The R binding hydrates an existing instance (cpp: static
-  # load(filename, X, D)); $new() re-binds the data views.
+  # load(filename, X, D)); $new() re-binds the data views. The receiving
+  # solver is a reader on the pre-scaled data, the state the checkpoint
+  # was saved in.
   solver2 <- TAFS_Solver$new(dat$X, dat$D, dat$y,
-      options = tsolver_options(rho_afs = rho, normalize = TRUE, intercept = TRUE, verbose = FALSE))
+      options = tsolver_options(rho_afs = rho, normalize = FALSE, intercept = FALSE, verbose = FALSE))
   solver2$load(filename)
   cat(sprintf("Loaded from checkpoint: %d steps\n", solver2$get_num_steps()))
   solver2$execute_step(T_stop_final, early_stop = TRUE)
@@ -171,6 +189,11 @@ demo_serialization <- function(rho) {
   paths_match <- identical(unlist(solver_ref$get_actions()),
                            unlist(solver2$get_actions()))
   cat(if (paths_match) "\u2713 Paths match\n" else "\u2717 Paths differ!\n")
+
+  # Give the data back (the statistics are in the scalers)
+  l2scaler_X$inverse_transform_inplace(dat$X)
+  l2scaler_D$inverse_transform_inplace(dat$D)
+  dat$y <- dat$y + y_mean
 
   file.remove(filename)
   cat("\u2713 Checkpoint file removed\n")
