@@ -94,9 +94,9 @@ void demo_TLARS_early_stopping(bool high_dim, bool rnd_coef, std::size_t T_stop)
         /*seed=*/42,
         /*X_seed=*/-1,
         /*dummy_seed=*/-1,
-        datagen::predictor_policy::Normal(),   // 1. Predictor Policy
+        datagen::predictor_policy::Normal(),         // 1. Predictor Distribution
         datagen::dummygen::Distribution::Normal(),   // 2. Dummy Distribution
-        datagen::noisegen::noise_policy::Normal()  // 3. Noise Policy
+        datagen::noisegen::noise_policy::Normal()    // 3. Noise Distribution
     );
 
     // Create Maps
