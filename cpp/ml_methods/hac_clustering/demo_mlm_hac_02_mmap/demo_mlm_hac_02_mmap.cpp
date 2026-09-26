@@ -42,6 +42,7 @@
 // std includes
 #include <filesystem>
 #include <iomanip>
+#include <cstdlib>
 #include <iostream>
 #include <random>
 #include <string>
@@ -486,14 +487,16 @@ void init_omp_environment(int threads = 6) {
     omp_set_schedule(omp_sched_static, 0);
 }
 
-int main() {
-    std::cout << std::unitbuf; // Flush after every write — keeps log file current.
+int main(int argc, char** argv) {
+    std::cout << std::unitbuf; // Flush after every write; keeps a redirected log current.
     std::cout << "\n";
     cdiagnostics::print_section_header(
         "HAC Memory-Mapped Demo Suite (N=100k x P=400k)");
 
     omp_utils::print_info();
-    init_omp_environment(6);
+    // Optional first argument: OpenMP thread count (default 6).
+    const int threads = (argc > 1 && std::atoi(argv[1]) > 0) ? std::atoi(argv[1]) : 6;
+    init_omp_environment(threads);
     std::cout << "Running with " << omp_get_max_threads() << " threads\n\n";
 
     try {

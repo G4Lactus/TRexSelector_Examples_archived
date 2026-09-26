@@ -2,88 +2,46 @@
 
 ## Overview
 
-This folder contains C++ examples for **hierarchical agglomerative clustering (HAC)** in the `ml_methods` module.
+This folder holds the C++ examples for hierarchical agglomerative clustering (HAC) in the `ml_methods` module. HAC
+builds a tree of successive merges and recovers cluster assignments by cutting that tree at a chosen level. In
+TRexSelector the GVS (Grouped Variable Selection) workflow uses it to form variable groups from a dendrogram cut.
 
-Within the TRexSelector project, HAC is used by the **GVS (Grouped Variable Selection)** workflow to construct variable
-groups from a dendrogram cut. The examples in this folder show how clustering behaves in smaller in-memory settings and
-how the same ideas can be scaled to much larger problems through memory-mapped I/O.
-
-The main goals of this folder are:
-
-1. to demonstrate how HAC is applied to synthetic sample and variable clustering tasks,
-2. to compare clustering behavior under different distance and linkage choices,
-3. to illustrate how large clustering problems can be handled with memory-mapped storage,
-4. to provide a bridge between exploratory clustering demos and downstream grouped-variable workflows.
-
-Equivalent HAC clustering demos are also available in the Python and R packages; see
+The folder has two demos, each in its own subfolder with the source file and a README that walks through the
+console output: `demo_mlm_hac_01/` clusters samples and variables in memory, compares distance and linkage choices
+and shows the LSH approximation on problems up to n = 50,000 x p = 100,000; `demo_mlm_hac_02_mmap/` repeats the LSH
+linkage comparison at biobank scale (n = 100,000 x p = 400,000) on a memory-mapped matrix that is never held in RAM.
+Both are benchmarks with runtimes of hours, print to the console only and take an optional first argument, the
+OpenMP thread count (default 6). The Python and R packages have the same demos; see
 [Python/ml_methods/hac_clustering/](../../../Python/ml_methods/hac_clustering/README.md) and
-[R/ml_methods/hac_clustering/](../../../R/ml_methods/hac_clustering/README.md) for the corresponding walkthroughs.
+[R/ml_methods/hac_clustering/](../../../R/ml_methods/hac_clustering/README.md). Cross-language correctness checks
+against R references live in the library's test suite (`cpp/tests/validation/`), not in these examples.
 
 ---
 
-## What this folder covers
-
-Hierarchical agglomerative clustering builds a tree of successive merges and then recovers cluster assignments by
-cutting that tree at a chosen level.
-
-In this folder, the demos focus on:
-
-- **in-memory HAC experiments**, for understanding clustering structure and linkage behavior,
-- **correlation-based variable clustering**, which is relevant for grouped variable selection,
-- **memory-mapped large-scale HAC**, for problems that would otherwise exceed available RAM.
-
----
-
-## Start here
-
-If you are new to this folder, begin with:
-
-1. **`demo_mlm_hac_01/`**  
-   An in-memory HAC demo suite covering several clustering scenarios and linkage comparisons.
-
-2. **`demo_mlm_hac_02_mmap/`**  
-   A memory-mapped large-scale demo that reproduces the LSH linkage comparison idea at biobank-representative scale.
-
----
-
-## Demo overview
+## Demos
 
 | Folder | Purpose |
-| -------------------------- | --------- |
-| `demo_mlm_hac_01/` | In-memory HAC demo suite for sample clustering, variable clustering, and linkage-method comparisons |
-| `demo_mlm_hac_02_mmap/` | Memory-mapped large-scale HAC demo for LSH-based linkage comparison without full in-RAM allocation |
+| ------ | ------- |
+| [`demo_mlm_hac_01/`](demo_mlm_hac_01/) | In-memory HAC suite: sample clustering, correlation-distance variable clustering, LSH approximation, linkage-method comparisons, AR(1) Toeplitz blocks (six subproblems) |
+| [`demo_mlm_hac_02_mmap/`](demo_mlm_hac_02_mmap/) | Memory-mapped large-scale HAC: generation, in-place standardization and four linkage rules on a 100,000 x 400,000 matrix |
 
 ---
 
 ## Running
 
+`run_hac_demos.sh` rebuilds the selected targets, runs them in order with per-demo logs under `logs/hac_<timestamp>/`
+(gitignored) and prints a summary with wall-clock times:
+
 ```bash
-./build/debug/bin/ml_methods/hac_clustering/demo_mlm_hac_01/demo_mlm_hac_01
-./build/debug/bin/ml_methods/hac_clustering/demo_mlm_hac_02_mmap/demo_mlm_hac_02_mmap
+cd cpp/ml_methods/hac_clustering
+THREADS=8 ./run_hac_demos.sh          # both demos, 8 OpenMP threads (default 6)
+THREADS=8 ./run_hac_demos.sh 01       # only the in-memory suite
+tail -f logs/hac_*/demo_01.log        # follow a run from a second terminal
 ```
 
----
+The binaries can also be started directly, the thread count as the first argument:
 
-## Folder contents
-
-```txt
-hac_clustering/
-  ├── README.md
-  ├── demo_mlm_hac_01/
-  │   ├── demo_mlm_hac_01.cpp
-  │   └── README.md
-  └── demo_mlm_hac_02_mmap/
-      ├── demo_mlm_hac_02_mmap.cpp
-      └── README.md
+```bash
+cpp/build/release/bin/ml_methods/hac_clustering/demo_mlm_hac_01/demo_mlm_hac_01 8
+cpp/build/release/bin/ml_methods/hac_clustering/demo_mlm_hac_02_mmap/demo_mlm_hac_02_mmap 8
 ```
-
----
-
-## Notes for new users
-
-- `demo_mlm_hac_01` is best for understanding the clustering logic in standard in-memory workflows.
-- `demo_mlm_hac_02_mmap` is intended for very large synthetic settings where the matrix should not be allocated fully in
-  RAM.
-- Both demos print their main results to the console.
-- Cross-language correctness checks against R references live in the TRexSelector library test suite
-  (`cpp/tests/validation/`), run on demand rather than shipped with these examples.
