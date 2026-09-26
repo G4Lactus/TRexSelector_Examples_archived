@@ -137,10 +137,27 @@ def demo_serialization():
     X, D, y = gen_synthetic_data(n, p, num_dummies, true_support, true_coefs,
                                  snr, seed=42)
 
+    # Normalize ONCE in front; the three solvers below are READERS.
+    # The reference, checkpoint and resumed solvers share X and D (Fortran-
+    # ordered float64 arrays are shared, not copied). A solver constructed
+    # with normalize=True / intercept=True is a WRITER that preprocesses them
+    # in place, so three writers would center and scale the data three times,
+    # which moves it by rounding and made the paths differ (the 2026-09-25
+    # finding; a second writer on a held buffer raises since the library's
+    # in-place contract). So: the statistics live in the scalers, the solvers
+    # run as constructed (normalize=False, intercept=False), no copies,
+    # bit-identical paths.
+    l2scaler_X = LpNormScaler(NormType.L2, center=True)
+    l2scaler_X.fit_transform_inplace(X)
+    l2scaler_D = LpNormScaler(NormType.L2, center=True)
+    l2scaler_D.fit_transform_inplace(D)
+    y_mean = float(y.mean())
+    y -= y_mean
+
     # Reference solver: run until T_stop_final.
     solver_ref = TACGP_Solver(
         X, D, y,
-        SolverOptions(normalize=True, intercept=True, verbose=False))
+        SolverOptions(normalize=False, intercept=False, verbose=False))
     solver_ref.executeStep(T_stop_final, early_stop=True)
     print(f"\u2713 Reference completed with {solver_ref.getNumSteps()} steps\n")
 
@@ -149,7 +166,7 @@ def demo_serialization():
     # STEP 1: Run partial path and save checkpoint.
     solver1 = TACGP_Solver(
         X, D, y,
-        SolverOptions(normalize=True, intercept=True, verbose=False))
+        SolverOptions(normalize=False, intercept=False, verbose=False))
     solver1.executeStep(T_stop_partial, early_stop=True)
     print(f"Checkpoint at partial stop: {solver1.getNumSteps()} steps")
     solver1.save(filename)
@@ -157,10 +174,12 @@ def demo_serialization():
 
     # STEP 2: Load from checkpoint and continue.
     # The Python binding hydrates an existing instance (cpp: static
-    # load(filename, X, D)); the constructor re-binds the data views.
+    # load(filename, X, D)); the constructor re-binds the data views. The
+    # receiving solver is a reader on the pre-scaled data, the state the
+    # checkpoint was saved in.
     solver2 = TACGP_Solver(
         X, D, y,
-        SolverOptions(normalize=True, intercept=True, verbose=False))
+        SolverOptions(normalize=False, intercept=False, verbose=False))
     solver2.load(filename)
     print(f"Loaded from checkpoint: {solver2.getNumSteps()} steps")
     solver2.executeStep(T_stop_final, early_stop=True)
@@ -172,6 +191,11 @@ def demo_serialization():
     print(f"R2 diff:    {abs(solver_ref.getR2()[-1] - solver2.getR2()[-1])}")
     paths_match = solver_ref.getActions() == solver2.getActions()
     print("\u2713 Paths match" if paths_match else "\u2717 Paths differ!")
+
+    # Give the data back (the statistics are in the scalers)
+    l2scaler_X.inverse_transform_inplace(X)
+    l2scaler_D.inverse_transform_inplace(D)
+    y += y_mean
 
     os.remove(filename)
     print("\u2713 Checkpoint file removed")

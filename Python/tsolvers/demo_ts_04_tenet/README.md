@@ -51,6 +51,8 @@ The second part applies external L2 normalization (`LpNormScaler` with `NormType
 
 The third part runs a reference fit to a final stopping level, then separately runs a shorter partial fit, saves the solver state to disk, reloads it, and continues from the checkpoint to the same final stopping level.
 
+The data are normalized once in front (`LpNormScaler` on `X` and `D`, `y` centered) and the reference, checkpoint and resumed solvers run as readers (`normalize=False, intercept=False`), so the three solvers share the data without copies and the paths are bit-identical. Three writer solvers on the same data would each center and scale it in place, which moves the data by rounding and made the paths differ (the 2026-09-25 finding); since the library's in-place contract a second writer on a held buffer raises instead.
+
 Unlike cpp, which uses a static `load(filename, X, D)` factory, the Python binding hydrates an existing solver instance: a new `TENET_Solver` is constructed with the same `X`, `D`, `y`, and `lambda2`, and then `solver.load(path)` restores the checkpointed state.
 
 The reloaded run is compared against the reference path using the final number of steps, the final RSS difference, the final $R^2$ difference, equality of the recorded action path, and the T-ENET-specific removal and cycling diagnostics.

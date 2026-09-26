@@ -53,6 +53,8 @@ This section is useful for comparing the solver's external-normalization workflo
 
 The third part runs a reference T-LARS fit to a final stopping level, then separately runs a shorter partial fit, saves the solver state to disk, reloads it, and continues to the same final stopping level.
 
+The data are normalized once in front (`LpNormScaler` on `X` and `D`, `y` centered) and the reference, checkpoint and resumed solvers run as readers (`normalize=False, intercept=False`), so the three solvers share the data without copies and the paths are bit-identical. Three writer solvers on the same data would each center and scale it in place, which moves the data by rounding and made the paths differ (the 2026-09-25 finding); since the library's in-place contract a second writer on a held buffer raises instead.
+
 Unlike cpp, which uses a static `load(filename, X, D)` factory, the Python binding hydrates an existing solver instance: a new `TLARS_Solver` is constructed with the same `X`, `D`, and `y`, and then `solver.load(path)` restores the checkpointed state.
 
 The reloaded solver is compared against the reference run through the number of steps, the final RSS difference, the final $R^2$ difference, and the equality of the recorded action path (`getActions()`).
