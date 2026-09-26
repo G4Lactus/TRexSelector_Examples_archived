@@ -274,12 +274,29 @@ void demo_TACGP_serialization() {
                                         data.num_dummies());
     Eigen::Map<Eigen::VectorXd> y_map(data.getY().data(), data.rows());
 
+    // --------- Normalize ONCE in front; the solvers below are READERS ---------
+    // The three solvers of this section (reference, checkpoint, resumed) share
+    // these maps. A solver constructed with normalize = true / intercept = true
+    // is a WRITER that preprocesses X and D in place, so three writers on one
+    // buffer would center and scale it three times, which moves the data by
+    // rounding and made the paths differ (the 2026-09-25 finding; since the
+    // library's in-place contract a second writer on a held buffer throws).
+    // So: the statistics live in the scalers, the solvers run as constructed
+    // (normalize = false, intercept = false), no copies, bit-identical paths.
+    scaler::LpNormScaler l2scaler_X(scaler::LpNormScaler::NormType::L2, true);
+    l2scaler_X.fit_transform_inplace(X_map);
+    scaler::LpNormScaler l2scaler_D(scaler::LpNormScaler::NormType::L2, true);
+    l2scaler_D.fit_transform_inplace(D_map);
+    const double y_mean = y_map.mean();
+    y_map.array() -= y_mean;
+
+
     // Create reference solver: run until T_stop_final
     tsolvers::TACGP_Solver solver_ref(
         X_map,
         D_map,
         y_map,
-        trex::tsolvers::ad::SolverOptions{.normalize = true, .intercept = true, .verbose = false}
+        trex::tsolvers::ad::SolverOptions{.normalize = false, .intercept = false, .verbose = false}
     );
 
     solver_ref.executeStep(T_stop_final, /*early_stop=*/true);
@@ -293,7 +310,7 @@ void demo_TACGP_serialization() {
             X_map,
             D_map,
             y_map,
-            trex::tsolvers::ad::SolverOptions{.normalize = true, .intercept = true, .verbose = false}
+            trex::tsolvers::ad::SolverOptions{.normalize = false, .intercept = false, .verbose = false}
         );
         solver1.executeStep(/*T_stop=*/T_stop_partial, /*early_stop=*/true);
 
@@ -329,6 +346,11 @@ void demo_TACGP_serialization() {
     }
 
     // Cleanup
+    // Give the data back (the statistics are in the scalers)
+    l2scaler_X.inverse_transform_inplace(X_map);
+    l2scaler_D.inverse_transform_inplace(D_map);
+    y_map.array() += y_mean;
+
     fs::remove(filename);
     std::cout << "✓ Checkpoint file removed\n";
 

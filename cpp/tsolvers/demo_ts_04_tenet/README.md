@@ -49,6 +49,8 @@ This demonstrates the externally normalized workflow and allows it to be compare
 
 The third part runs a reference fit to a final stopping level, then separately runs a shorter partial fit, saves the solver state to disk, reloads it, and continues from the checkpoint to the same final stopping level.
 
+The data are normalized once in front (`scaler::LpNormScaler` on `X` and `D`, `y` centered) and the reference, checkpoint and resumed solvers run as readers (`.normalize = false, .intercept = false`), so the three solvers share the data without copies and the paths are bit-identical. Three writer solvers on the same data would each center and scale it in place, which moves the data by rounding and made the paths differ (the 2026-09-25 finding); since the library's in-place contract a second writer on a held buffer raises instead.
+
 The reloaded run is compared against the reference path using the final number of steps, the final RSS difference, the final $R^2$ difference, equality of the recorded action path, and the T-ENET-specific removal and cycling diagnostics.
 
 ### 4. Memory-mapped data
