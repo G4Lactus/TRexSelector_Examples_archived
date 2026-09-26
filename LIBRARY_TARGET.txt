@@ -1,10 +1,16 @@
 Library line:   TRexSelector dev_beyond
 Checkout:       ~/Documents/C++/TRexSelector-beyond
-Last validated: d404033 (2026-09-25, C++ 1.0.0 / R 2.0.0 / Python 1.0.0: ad/ vd/ sd/ tree with
-                include paths and namespaces under ad/, (X, D, y, [groups | K,] SolverOptions)
-                solver constructors, R trex_/tsolver_/ml_/mem_ names and ML* classes, Python
-                tsolvers.ad.* / trex_selector_methods.ad, L-loop strategies SEEDED /
-                PERMUTATION_SEEDED, exact vote counts at the voting-grid ties)
+Last validated: f390bfc (2026-09-25 evening, C++ 1.0.0 / R 2.0.0 / Python 1.0.0: the in-place
+                writer/reader contract of the T-solvers with the shared-buffer claim — a second
+                writer on a held buffer throws — the zero-copy R T-solver binding with $restore(),
+                the memory-mapped ML / Biobank / SPCA entry points, the opt-in low_memory engines,
+                TRexSelector restore(). The 36 T-solver demos' serialization sections pre-scale once
+                and run readers (A'); "Paths match" in all of them, C++, R and Python.
+                Before: d404033 (2026-09-25: ad/ vd/ sd/ tree with include paths and namespaces
+                under ad/, (X, D, y, [groups | K,] SolverOptions) solver constructors, R
+                trex_/tsolver_/ml_/mem_ names and ML* classes, Python tsolvers.ad.* /
+                trex_selector_methods.ad, L-loop strategies SEEDED / PERMUTATION_SEEDED, exact vote
+                counts at the voting-grid ties)
 Install:        cpp  -> cd cpp && cmake --preset local-install && cmake --build --preset local-install-build \
                         && cmake --install build/release-portable          (in the checkout; headers land under
                         cpp/install/include/TRexSelector/, the Examples presets point at cpp/install)
