@@ -74,15 +74,20 @@ The rules:
 - Python >= 3.10
 - numpy >= 1.26 (installed automatically with TRexSelectorNeo)
 - pandas (used by the demos to write CSV result files)
+- matplotlib and plotly (used by the plotters behind each demo's
+  `generate_plots.sh`)
 
 TRexSelectorNeo is built with scikit-build-core + pybind11 from the main
-repository. Install it into a virtual environment:
+repository. Install it into a virtual environment at the repository root;
+the overnight runners and the `generate_plots.sh` scripts look for
+`.venv/bin/python` there:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install <path-to>/TRexSelector/Python/TRexSelectorNeo
-pip install pandas
+pip install pandas matplotlib plotly
+pip install -r requirements-dev.txt   # optional: mypy + stubs for the linter
 ```
 
 The old package name `trex_selector` is obsolete — all demos in this tree
