@@ -131,17 +131,20 @@ The second subproblem is a **feasibility question** rather than a full benchmark
 complete linkage and WPGMA are skipped because they require the $O(p^2)$ Lance-Williams matrix machinery and are
 therefore treated as computationally intractable at $p = 400000$ in this setting.
 
-### Subproblem 3: Average linkage
+### Subproblem 3: Average linkage feasibility
 
-The third subproblem applies **average linkage (UPGMA)** under the same LSH-based distance approximation. The
-implementation routes this through a projected low-dimensional internal representation rather than performing the full
-clustering directly on a quadratic out-of-core structure.
+The third subproblem is skipped for the same reason as the second. The dispatcher routes **average linkage (UPGMA)**
+to the exact Lance-Williams matrix engine for every metric, because the geometric centroid update of the projected
+engine does not implement the UPGMA formula and would break the reducibility the NN-chain relies on. At $p = 400000$
+that matrix is 1.28 TB, in RAM or on disk. An earlier version of this demo ran UPGMA here in the belief that it used the
+projected engine; the RAM matrix engine zero-fills its buffer before it reports, and the process was killed by memory
+without a message.
 
 ### Subproblem 4: Ward linkage
 
-The fourth subproblem applies **Ward’s minimum-variance linkage** under the same large-scale setup. As in the
-average-linkage case, the implementation uses an internal projected engine so that the clustering remains
-computationally manageable at this dimension.
+The fourth subproblem applies **Ward’s minimum-variance linkage** under the same large-scale setup. Ward with the LSH
+approximation is the one route the dispatcher sends to the projected 64-dimensional engine: the clustering runs on a
+$64 \times p$ matrix of doubles, about 205 MB here, instead of the $p \times p$ distance matrix.
 
 ---
 

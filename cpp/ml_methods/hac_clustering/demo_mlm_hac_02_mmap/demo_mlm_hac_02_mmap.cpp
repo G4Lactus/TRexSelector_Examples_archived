@@ -419,35 +419,25 @@ void demo_lsh_linkage_comparison_mmap() {
         std::cout << "    At P=400,000, this requires 1.2 TB of NVMe I/O, which is intractable.\n\n";
     }
 
-    // Test C — Average Linkage (UPGMA) via Dispatcher
-    // Routes to Projected 64D RAM Engine!
+    // Test C — Average Linkage (UPGMA): skipped at this scale.
+    // The dispatcher routes Average to the exact Lance-Williams matrix engine
+    // for every metric; the projected 64D engine is valid for Ward only.
     // -------------------------------------------------------------------------
     {
-        std::cout << "[Test C] UPGMA Average Linkage (Projected 64D RAM Engine + LSH):\n";
-
-        const double t0 = omp_get_wtime();
-        // Notice we don't need use_mmap=true anymore. The dispatcher intercepts
-        // this and builds the compressed 204 MB RAM matrix.
-        auto merges = hac::AgglomerativeClustering::cluster<
-            EigenMap, LshDistPol, hac::LinkageMethod::Average>(X_map);
-        const double t1 = omp_get_wtime();
-
-        auto labels = hac::DendrogramUtils::cut_tree(
-            merges, X_map.cols(), config.k_clusters);
-        const double ari = compute_ari(true_labels, labels);
-
-        std::cout << "    Time : " << std::setprecision(4) << (t1 - t0) << " s\n";
-        std::cout << "    ARI  : " << std::setprecision(4) << ari << " / 1.0000\n\n";
+        std::cout << "[Test C] UPGMA Average Linkage:\n";
+        std::cout << "    [SKIPPED] Average linkage runs on the O(P^2) Lance-Williams matrix as well;\n";
+        std::cout << "    the geometric centroid update of the projected engine does not implement\n";
+        std::cout << "    the UPGMA formula. At P=400,000 the matrix is 1.28 TB, which is intractable.\n\n";
     }
 
     // Test D — Ward's Minimum Variance via Dispatcher
-    // Routes to Projected 64D RAM Engine!
+    // Ward + LSH_Approx is the one route the dispatcher sends to the projected
+    // 64D engine: a 64 x P matrix of doubles in RAM (205 MB here).
     // -------------------------------------------------------------------------
     {
         std::cout << "[Test D] Ward's Minimum Variance (Projected 64D RAM Engine + LSH):\n";
 
         const double t0 = omp_get_wtime();
-        // The dispatcher intercepts this as well and runs it purely in RAM.
         auto merges = hac::AgglomerativeClustering::cluster<
             EigenMap, LshDistPol, hac::LinkageMethod::Ward>(X_map);
         const double t1 = omp_get_wtime();
