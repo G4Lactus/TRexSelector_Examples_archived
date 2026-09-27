@@ -185,7 +185,8 @@ int main(int argc, char** argv) {
             Eigen::Map<Eigen::MatrixXd> D_map(data.getD().data(), data.rows(), data.num_dummies());
             Eigen::Map<Eigen::VectorXd> y_map(data.getY().data(), data.rows());
 
-            // Scale once in front; every solver below is a reader on these buffers
+            // Center and scale once in front; every solver below is a reader on
+            // these buffers (precentered: active sets stop at the rank n - 1)
             scaler::LpNormScaler scaler_X(scaler::LpNormScaler::NormType::L2, true);
             scaler_X.fit_transform_inplace(X_map);
             scaler::LpNormScaler scaler_D(scaler::LpNormScaler::NormType::L2, true);

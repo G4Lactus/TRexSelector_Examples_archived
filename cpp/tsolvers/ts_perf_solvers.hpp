@@ -8,8 +8,11 @@
  *        each with the settings of its own solver demo.
  *
  * @details Every solver runs as a reader (normalize = false, intercept =
- *          false): the caller scales X and D once in front, and all solvers
- *          share the buffers without copies. T-AFS appears once per rho.
+ *          false): the caller centers and scales X and D and centers y once in
+ *          front, and all solvers share the buffers without copies. The data
+ *          are marked precentered, so the row-bounded active sets stop at the
+ *          rank n - 1 of the centered design (T-ENET with lambda2 > 0 and the
+ *          line-search T-NCGMP have no such cap). T-AFS appears once per rho.
  */
 // ============================================================================
 
@@ -58,7 +61,7 @@ struct SolverSpec {
  * @brief Spec for solver class @p Solver with the reader options @p options.
  * @param name    Label in tables and figures.
  * @param family  Library family of the solver.
- * @param options SolverOptions; normalize and intercept must be false.
+ * @param options SolverOptions; normalize and intercept false, precentered true.
  */
 template <class Solver>
 SolverSpec make_spec(std::string name, std::string family, trex::tsolvers::ad::SolverOptions options) {
@@ -81,28 +84,28 @@ inline std::vector<SolverSpec> demo_solvers() {
 
     const std::string LARS = "LARS-based", OMP = "OMP-based", AFS = "AFS-based";
     return {
-        make_spec<lars::TLARS_Solver>("T-LARS", LARS, Options{.normalize = false, .intercept = false}),
-        make_spec<lars::TLASSO_Solver>("T-LASSO", LARS, Options{.normalize = false, .intercept = false}),
-        make_spec<lars::TSTEPWISE_Solver>("T-Stepwise", LARS, Options{.normalize = false, .intercept = false}),
+        make_spec<lars::TLARS_Solver>("T-LARS", LARS, Options{.normalize = false, .intercept = false, .precentered = true}),
+        make_spec<lars::TLASSO_Solver>("T-LASSO", LARS, Options{.normalize = false, .intercept = false, .precentered = true}),
+        make_spec<lars::TSTEPWISE_Solver>("T-Stepwise", LARS, Options{.normalize = false, .intercept = false, .precentered = true}),
         make_spec<lars::TENET_Solver>("T-ENET (lambda2 0.5)", LARS,
-                                      Options{.normalize = false, .intercept = false, .lambda2 = 0.5}),
-        make_spec<lars::TSTAGEWISE_Solver>("T-Stagewise", LARS, Options{.normalize = false, .intercept = false}),
-        make_spec<omp::TOMP_Solver>("T-OMP", OMP, Options{.normalize = false, .intercept = false}),
-        make_spec<omp::TGP_Solver>("T-GP", OMP, Options{.normalize = false, .intercept = false}),
-        make_spec<omp::TACGP_Solver>("T-ACGP", OMP, Options{.normalize = false, .intercept = false}),
-        make_spec<omp::TMP_Solver>("T-MP", OMP, Options{.normalize = false, .intercept = false}),
+                                      Options{.normalize = false, .intercept = false, .precentered = true, .lambda2 = 0.5}),
+        make_spec<lars::TSTAGEWISE_Solver>("T-Stagewise", LARS, Options{.normalize = false, .intercept = false, .precentered = true}),
+        make_spec<omp::TOMP_Solver>("T-OMP", OMP, Options{.normalize = false, .intercept = false, .precentered = true}),
+        make_spec<omp::TGP_Solver>("T-GP", OMP, Options{.normalize = false, .intercept = false, .precentered = true}),
+        make_spec<omp::TACGP_Solver>("T-ACGP", OMP, Options{.normalize = false, .intercept = false, .precentered = true}),
+        make_spec<omp::TMP_Solver>("T-MP", OMP, Options{.normalize = false, .intercept = false, .precentered = true}),
         make_spec<omp::TNCGMP_Solver>("T-NCGMP", OMP,
-                                      Options{.normalize = false, .intercept = false,
+                                      Options{.normalize = false, .intercept = false, .precentered = true,
                                               .ncgmp_variant = omp::NCGMPVariant::LineSearch}),
-        make_spec<omp::TOOLS_Solver>("T-OLS", OMP, Options{.normalize = false, .intercept = false}),
+        make_spec<omp::TOOLS_Solver>("T-OLS", OMP, Options{.normalize = false, .intercept = false, .precentered = true}),
         make_spec<afs::TAFS_Solver>("T-AFS (rho 0.1)", AFS,
-                                    Options{.normalize = false, .intercept = false, .rho_afs = 0.1}),
+                                    Options{.normalize = false, .intercept = false, .precentered = true, .rho_afs = 0.1}),
         make_spec<afs::TAFS_Solver>("T-AFS (rho 0.3)", AFS,
-                                    Options{.normalize = false, .intercept = false, .rho_afs = 0.3}),
+                                    Options{.normalize = false, .intercept = false, .precentered = true, .rho_afs = 0.3}),
         make_spec<afs::TAFS_Solver>("T-AFS (rho 0.5)", AFS,
-                                    Options{.normalize = false, .intercept = false, .rho_afs = 0.5}),
+                                    Options{.normalize = false, .intercept = false, .precentered = true, .rho_afs = 0.5}),
         make_spec<afs::TAFS_Solver>("T-AFS (rho 1)", AFS,
-                                    Options{.normalize = false, .intercept = false, .rho_afs = 1.0}),
+                                    Options{.normalize = false, .intercept = false, .precentered = true, .rho_afs = 1.0}),
     };
 }
 

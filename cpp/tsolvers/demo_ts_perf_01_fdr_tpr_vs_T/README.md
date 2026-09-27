@@ -16,9 +16,11 @@ fitting every $T$ from scratch.
 - $L = p = 300$ standard normal dummies, drawn fresh in every run,
 - $T \in \lbrace 1, 2, 5, 10, 20, 50, 100 \rbrace$ and 500 Monte Carlo runs.
 
-Each run scales $\mathbf{X}$ and $\mathbf{D}$ once and hands them to all 15 solver configurations as readers. These
-are the 12 solvers of the solver demos with their demo settings (T-ENET with $\lambda_2 = 0.5$, T-NCGMP in its
-line-search variant) and T-AFS for $\rho \in \lbrace 0.1, 0.3, 0.5, 1 \rbrace$.
+Each run centers and scales $\mathbf{X}$ and $\mathbf{D}$ and centers $\mathbf{y}$ once, and hands them to all 15
+solver configurations as readers. These are the 12 solvers of the solver demos with their demo settings (T-ENET with
+$\lambda_2 = 0.5$, T-NCGMP in its line-search variant) and T-AFS for $\rho \in \lbrace 0.1, 0.3, 0.5, 1 \rbrace$.
+The readers are marked `precentered`: the centered design has rank $n - 1$, so the active sets stop at $n - 1 = 99$
+variables, as with a fitted intercept (T-ENET with $\lambda_2 > 0$ and the line-search T-NCGMP run without this cap).
 
 A variable counts as selected when its coefficient is nonzero, as in the T-Rex selector and the vignette. With the
 selected set $\widehat{\mathcal{A}}$ and the true support $\mathcal{A}$, the false discovery proportion (FDP) and the
