@@ -2,90 +2,43 @@
 
 ## Overview
 
-This folder contains C++ examples for **model selection** routines in the `ml_methods` module.
-
-The demos focus on regularized Gaussian regression models and show how hyperparameters are selected from synthetic data
-using K-fold cross-validation. In the TRexSelector project, these workflows are relevant for tuning penalization
-strength in ridge- and elastic-net-type estimators.
-
-The main goals of this folder are:
-
-1. to demonstrate model selection for regularized linear regression in C++,
-2. to illustrate how K-fold cross-validation is used to choose penalty parameters,
-3. to compare numerically stable SVD-based ridge fitting with coordinate-descent elastic-net fitting,
-4. to connect fitted penalty choices to downstream TRexSelector workflows.
-
-Equivalent model selection demos are also available in the Python and R packages; see
-[Python/ml_methods/model_selection/](../../../Python/ml_methods/model_selection/README.md) and
-[R/ml_methods/model_selection/](../../../R/ml_methods/model_selection/README.md) for the corresponding walkthroughs.
-
----
-
-## What this folder covers
-
-The demos study penalized regression models of the form
+This folder holds the C++ examples for model selection in the `ml_methods` module: choosing the penalty of a
+regularized Gaussian regression by K-fold cross-validation (CV). In TRexSelector, these routines tune the ridge
+penalty of Grouped Variable Selection (GVS). Both demos draw synthetic data from
 
 ```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta} + \boldsymbol{\varepsilon},
 \qquad
-\boldsymbol{\varepsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma^2 \boldsymbol{I}_n).
+\boldsymbol{\varepsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma^2 \boldsymbol{I}_n),
 ```
 
-They focus on:
+with ten active coefficients, and report the CV-optimal penalty $\lambda_{\min}$ together with the more heavily
+regularized one-standard-error pick $\lambda_{1\mathrm{se}}$.
 
-- **ridge regression**, where coefficient shrinkage is controlled by a quadratic penalty,
-- **elastic-net regression**, which combines $\ell_1$ and $\ell_2$ regularization,
-- **cross-validation workflows**, used to select tuning parameters such as $\lambda$ and $\alpha$.
-
----
-
-## Start here
-
-If you are new to this folder, begin with:
-
-1. **`demo_mlm_ms_01_ridge_cv_svd/`**  
-   A ridge-regression CV demo using an SVD-based solver across several dimensional regimes.
-
-2. **`demo_mlm_ms_02_enet_cv_ccd/`**  
-   An elastic-net demo covering both regularization-path fitting and K-fold CV via coordinate descent.
+The folder has two demos, each in its own subfolder with the source file and a README that walks through the
+console output: `demo_mlm_ms_01_ridge_cv_svd/` runs ridge CV with a singular value decomposition (SVD) per fold, from
+$n > p$ to $p \gg n$ and on a memory-mapped design matrix; `demo_mlm_ms_02_enet_cv_ccd/` fits elastic-net paths by
+cyclic coordinate descent (CCD) and selects $\lambda$ for ridge, elastic net and lasso, including the ridge conversion
+used by GVS. Both print to the console only and finish in under a minute. The Python and R packages have the same
+demos; see [Python/ml_methods/model_selection/](../../../Python/ml_methods/model_selection/README.md) and
+[R/ml_methods/model_selection/](../../../R/ml_methods/model_selection/README.md).
 
 ---
 
-## Demo overview
+## Demos
 
 | Folder | Purpose |
-| -------------------------------- | --------- |
-| `demo_mlm_ms_01_ridge_cv_svd/` | Ridge regression K-fold CV via `Eigen::JacobiSVD`, including a memory-mapped design-matrix example |
-| `demo_mlm_ms_02_enet_cv_ccd/` | Elastic-net path fitting and K-fold CV via coordinate descent, including ridge/lasso/elastic-net comparisons |
+| ------ | ------- |
+| [`demo_mlm_ms_01_ridge_cv_svd/`](demo_mlm_ms_01_ridge_cv_svd/) | Ridge K-fold CV via `Eigen::JacobiSVD` in four regimes, including a memory-mapped design matrix and a grid-edge check |
+| [`demo_mlm_ms_02_enet_cv_ccd/`](demo_mlm_ms_02_enet_cv_ccd/) | Elastic-net paths and K-fold CV via coordinate descent for ridge, elastic net and lasso, with the TRexGVS ridge conversion |
 
 ---
 
 ## Running
 
+From the repository root, after `cmake --preset release && cmake --build --preset release-build` in `cpp/`:
+
 ```bash
-./build/debug/bin/ml_methods/model_selection/demo_mlm_ms_01_ridge_cv_svd/demo_mlm_ms_01_ridge_cv_svd
-./build/debug/bin/ml_methods/model_selection/demo_mlm_ms_02_enet_cv_ccd/demo_mlm_ms_02_enet_cv_ccd
+cpp/build/release/bin/ml_methods/model_selection/demo_mlm_ms_01_ridge_cv_svd/demo_mlm_ms_01_ridge_cv_svd
+cpp/build/release/bin/ml_methods/model_selection/demo_mlm_ms_02_enet_cv_ccd/demo_mlm_ms_02_enet_cv_ccd
 ```
-
----
-
-## Folder contents
-
-```txt
-model_selection/
-  ├── README.md
-  ├── demo_mlm_ms_01_ridge_cv_svd/
-  │   ├── demo_mlm_ms_01_ridge_cv_svd.cpp
-  │   └── README.md
-  └── demo_mlm_ms_02_enet_cv_ccd/
-      ├── demo_mlm_ms_02_enet_cv_ccd.cpp
-      └── README.md
-```
-
----
-
-## Notes for new users
-
-- Both demos use synthetic Gaussian regression data with known signal structure.
-- The focus is on hyperparameter selection and diagnostic output rather than downstream prediction benchmarking.
-- The demo-specific README files explain the exact model, penalty, and cross-validation setup in more detail.
