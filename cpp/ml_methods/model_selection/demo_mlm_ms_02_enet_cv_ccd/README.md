@@ -80,8 +80,8 @@ returns the coefficient vectors $\widehat{\boldsymbol\beta}(\lambda_k,\alpha)$. 
 - the grid holds up to 100 values from $\lambda_{\max}$, the smallest penalty that keeps all coefficients at zero, down
   to $\lambda_{\max}/10{,}000$ for $n > p$ or $\lambda_{\max}/100$ for $n < p$,
 - for ridge, $\lambda_{\max}$ is computed as for $\alpha = 0.001$, since no finite penalty zeroes a ridge fit,
-- a sequential strong rule screens coefficients, and the path stops early once the explained fraction of the null
-  deviance exceeds 0.999 or grows by less than a relative $10^{-5}$ between neighbors.
+- the path stops early once the explained fraction of the null deviance exceeds 0.999 or grows by less than a
+  relative $10^{-5}$ between neighbors, while the optional sequential strong rule stays off by default, as in glmnet.
 
 The demo prints every tenth path point and the last one, with the number of nonzero coefficients (`nnz`), the
 $\ell_1$-norm of the coefficient vector and the deviance ratio (`dev.ratio`), the fraction of the null deviance the
@@ -127,7 +127,7 @@ cpp/build/release/bin/ml_methods/model_selection/demo_mlm_ms_02_enet_cv_ccd/demo
 ```
 
 The demo prints to the console only and finishes in under a second. The output below is a run against library
-8ad3376 on an Apple Silicon machine. The data come from `std::mt19937` and `std::normal_distribution`. The latter is
+b95b984 on an Apple Silicon machine. The data come from `std::mt19937` and `std::normal_distribution`. The latter is
 implementation-defined, so another standard library (libstdc++ on Linux, for example) may draw different data and
 print different numbers.
 
@@ -369,8 +369,9 @@ Data: n=300, p=200, folds=10, active coefs=10
 
 ## Technical notes
 
-- `enet_gaussian` uses pathwise cyclic coordinate descent with glmnet's path construction, strong rule and stopping
-  rules, while `n_lambda` and `lambda_min_ratio` override the grid defaults.
+- `enet_gaussian` uses pathwise cyclic coordinate descent with glmnet's path construction and stopping rules (the
+  optional sequential strong rule is off by default), while `n_lambda` and `lambda_min_ratio` override the grid
+  defaults.
 - `enet_cv_ccd` builds the $\lambda$ grid once on the full dataset and reuses it across folds, rather than rebuilding a
   grid for every fold.
 - The demo explains path behavior and penalty selection but does not benchmark prediction accuracy over replicated

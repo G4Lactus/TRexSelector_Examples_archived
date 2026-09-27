@@ -20,7 +20,7 @@ cpp/build/release/bin/memory_mapping/demo_memory_mapping/demo_memory_mapping
 
 The demo prints to the console only, so no `simulation_results/` folder is created. The backing files live in the
 system temporary directory and are removed when each part ends. The output below is a run against library
-8ad3376 on a 12-core Apple Silicon machine. The temporary paths, the `data()` pointer and the thread counts differ
+b95b984 on a 12-core Apple Silicon machine. The temporary paths, the `data()` pointer and the thread counts differ
 per machine, while everything else is deterministic. The temporary folder is shown as `<tmp>/`.
 
 ---

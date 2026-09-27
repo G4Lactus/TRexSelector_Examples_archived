@@ -73,7 +73,7 @@ cpp/build/release/bin/ml_methods/ridge_regression/demo_mlm_ridge_01/demo_mlm_rid
 ```
 
 The demo prints to the console only and finishes in under a second. The output below comes from a run against
-library 8ad3376 on an Apple Silicon machine. The data are drawn with `std::mt19937` and `std::normal_distribution`.
+library b95b984 on an Apple Silicon machine. The data are drawn with `std::mt19937` and `std::normal_distribution`.
 The latter is implementation-defined, so another standard library, such as libstdc++ on Linux, may draw different
 data and print different numbers.
 
