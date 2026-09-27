@@ -11,8 +11,8 @@
  *          false): the caller centers and scales X and D and centers y once in
  *          front, and all solvers share the buffers without copies. The data
  *          are marked precentered, so the row-bounded active sets stop at the
- *          rank n - 1 of the centered design (T-ENET with lambda2 > 0 and the
- *          line-search T-NCGMP have no such cap). T-AFS appears once per rho.
+ *          rank n - 1 of the centered design (T-ENET with lambda2 > 0 has no
+ *          such cap). T-AFS appears once per rho.
  */
 // ============================================================================
 
