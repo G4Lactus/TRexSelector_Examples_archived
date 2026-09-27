@@ -293,7 +293,8 @@ error follows the same pattern, with its minimum of 0.50 at the same point. Beyo
 slowly, because every further null variable in the refit adds estimation noise, to about 1.5 at the cap. The refit
 does not blow up there, because the dummies are dropped and about 54 variables remain for 100 rows. Only T-Stagewise
 and T-ENET, whose selections grow past $n$, end with a minimum-norm refit that interpolates the training data, with a
-prediction RMSE near 10 and of 8.4.
+prediction RMSE near 10 and of 8.4. The T-Stagewise mean rests on a few extreme runs, as its standard error of 5.1
+shows.
 
 ---
 

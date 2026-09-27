@@ -204,5 +204,5 @@ The second figure shows the ratio of a fresh run to $T + 1$ over the warm start 
 - The runs share the memory bandwidth of the machine, and at $L = 20p$ every run holds about 84 MB of data. The absolute
   times are therefore higher than in a run alone and serve for comparison only. T-MP and T-NCGMP follow the same path,
   and their times differ by up to 7%, which marks the run-to-run noise of the medians.
-- The nested dummy sets keep the comparison across $L$ tight: a larger $L$ adds dummies to the same data instead of
-  drawing new ones.
+- The nested dummy sets keep the comparison across $L$ tight, because a larger $L$ adds dummies to the same data
+  instead of drawing new ones.
