@@ -9,9 +9,14 @@ Plot patterns hosted here:
     plot_terminated_paths()  — coefficient paths vs. number of included dummies,
                                one panel per T_stop of a warm-started solver
                                (the figure of the R tlars vignette).
+    plot_path_comparison()   — the same paths for several variants of one
+                               solver (T-AFS rho values, T-NCGMP variants), one
+                               panel per variant at its largest T_stop.
 
-CLI mode (typically driven from a demo's generate_plots.sh):
+CLI modes (typically driven from a demo's generate_plots.sh):
     python ts_plt_utils.py paths <stem>_path.csv --solver T-LARS --title "..."
+    python ts_plt_utils.py compare --csvs a_path.csv b_path.csv \
+        --labels 'rho = 0.1' 'rho = 1' --title "..." --stem my_stem
 
 The path mode reads <stem>_path.csv (T_stop,step,index,is_dummy,beta) and the
 sibling <stem>_actions.csv (T_stop,step,index,is_dummy,added) written by
@@ -75,7 +80,8 @@ def read_paths(path_csv: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     return pd.read_csv(path_csv), pd.read_csv(actions_csv)
 
 
-def _draw_path_panel(ax: plt.Axes, path: pd.DataFrame, actions: pd.DataFrame, T_stop: int) -> None:
+def _draw_path_panel(ax: plt.Axes, path: pd.DataFrame, actions: pd.DataFrame, T_stop: int,
+                     label: str | None = None) -> None:
     """One panel: coefficient paths up to the T_stop-th included dummy."""
     num_steps = int(actions["step"].max())
     steps = range(num_steps + 1)
@@ -126,8 +132,21 @@ def _draw_path_panel(ax: plt.Axes, path: pd.DataFrame, actions: pd.DataFrame, T_
 
     num_dummies = len(dummy_steps)
     dummy_word = "dummy" if num_dummies == 1 else "dummies"
-    ax.set_title(f"$T = {T_stop}$: {num_steps} steps, {num_dummies} {dummy_word} included",
+    prefix = f"{label}, " if label else ""
+    ax.set_title(f"{prefix}$T = {T_stop}$: {num_steps} steps, {num_dummies} {dummy_word} included",
                  fontsize=11, loc="left")
+
+
+def _finish_figure(fig: plt.Figure, title: str) -> None:
+    """Title and legend above the panels, so the legend never covers a curve."""
+    handles = [
+        Line2D([], [], color=COLOR_ORIGINAL, linestyle="-", label="Original variables"),
+        Line2D([], [], color=COLOR_DUMMY, linestyle="--", label="Dummies"),
+    ]
+    fig.suptitle(title, fontsize=13, y=0.995)
+    fig.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, 0.975), ncol=2,
+               frameon=True, facecolor="white", edgecolor="0.7")
+    fig.tight_layout(rect=(0.0, 0.0, 1.0, 0.962))
 
 
 def plot_terminated_paths(path: pd.DataFrame, actions: pd.DataFrame, solver: str,
@@ -140,14 +159,19 @@ def plot_terminated_paths(path: pd.DataFrame, actions: pd.DataFrame, solver: str
         _draw_path_panel(ax, path[path["T_stop"] == T_stop], actions[actions["T_stop"] == T_stop],
                          int(T_stop))
 
-    handles = [
-        Line2D([], [], color=COLOR_ORIGINAL, linestyle="-", label="Original variables"),
-        Line2D([], [], color=COLOR_DUMMY, linestyle="--", label="Dummies"),
-    ]
-    axes[0, 0].legend(handles=handles, loc="upper left", frameon=True, facecolor="white",
-                      edgecolor="0.7")
-    fig.suptitle(title or f"{solver}: terminated solution paths", fontsize=13)
-    fig.tight_layout()
+    _finish_figure(fig, title or f"{solver}: terminated solution paths")
+    return fig
+
+
+def plot_path_comparison(variants: list[tuple[str, pd.DataFrame, pd.DataFrame]],
+                         title: str) -> plt.Figure:
+    """One panel per (label, path, actions) variant, each at its largest T_stop."""
+    fig, axes = plt.subplots(len(variants), 1, figsize=(10, 4.2 * len(variants)), squeeze=False)
+    for ax, (label, path, actions) in zip(axes[:, 0], variants):
+        T_stop = int(actions["T_stop"].max())
+        _draw_path_panel(ax, path[path["T_stop"] == T_stop], actions[actions["T_stop"] == T_stop],
+                         T_stop, label)
+    _finish_figure(fig, title)
     return fig
 
 
@@ -167,7 +191,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     paths.add_argument("--stem", default=None, help="output stem (default: CSV stem without _path)")
     paths.add_argument("--outdir", type=Path, default=None, help="output folder")
     paths.add_argument("--formats", nargs="+", default=["png", "pdf"], help="output formats")
-    return parser.parse_args(argv)
+
+    compare = sub.add_parser("compare", help="paths of several variants, one panel each")
+    compare.add_argument("--csvs", type=Path, nargs="+", required=True, help="<stem>_path.csv files")
+    compare.add_argument("--labels", nargs="+", required=True, help="one panel label per CSV")
+    compare.add_argument("--title", required=True, help="figure title")
+    compare.add_argument("--stem", required=True, help="output stem")
+    compare.add_argument("--outdir", type=Path, default=None, help="output folder")
+    compare.add_argument("--formats", nargs="+", default=["png", "pdf"], help="output formats")
+    args = parser.parse_args(argv)
+    if args.mode == "compare" and len(args.csvs) != len(args.labels):
+        parser.error("--csvs and --labels need the same number of entries")
+    return args
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -177,6 +212,11 @@ def main(argv: list[str] | None = None) -> None:
         fig = plot_terminated_paths(path, actions, args.solver, args.title)
         stem = args.stem or args.path_csv.stem.removesuffix("_path")
         save_figure(fig, args.outdir or default_plots_dir(args.path_csv), stem, args.formats)
+        plt.close(fig)
+    elif args.mode == "compare":
+        variants = [(label, *read_paths(csv)) for label, csv in zip(args.labels, args.csvs)]
+        fig = plot_path_comparison(variants, args.title)
+        save_figure(fig, args.outdir or default_plots_dir(args.csvs[0]), args.stem, args.formats)
         plt.close(fig)
 
 

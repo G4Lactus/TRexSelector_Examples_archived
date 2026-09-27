@@ -4,12 +4,13 @@
 
 This demo illustrates the **T-LASSO (Terminating Least Absolute Shrinkage and Selection Operator)** solver.
 
-It shows how T-LASSO is used in four settings:
+It shows how T-LASSO is used in five settings:
 
 1. basic execution with early stopping,
 2. external versus internal normalization,
 3. serialization and warm-start continuation,
-4. operation on memory-mapped data.
+4. operation on memory-mapped data,
+5. terminated solution paths of one warm-started object, drawn as a figure.
 
 In addition to the standard selection diagnostics, the demo also reports T-LASSO-specific path diagnostics such as variable removals and cycling behavior.
 
@@ -51,7 +52,7 @@ This section demonstrates the externally normalized workflow and again reports t
 
 The third part runs a reference fit to a final stopping level, then separately runs a shorter partial fit, saves the solver state to disk, reloads it, and continues from the checkpoint to the same final stopping level.
 
-The data are normalized once in front (`scaler::LpNormScaler` on `X` and `D`, `y` centered) and the reference, checkpoint and resumed solvers run as readers (`.normalize = false, .intercept = false`), so the three solvers share the data without copies and the paths are bit-identical. Three writer solvers on the same data would each center and scale it in place, which moves the data by rounding and made the paths differ (the 2026-09-25 finding); since the library's in-place contract a second writer on a held buffer raises instead.
+The data are normalized once in front (`scaler::LpNormScaler` on `X` and `D`, `y` centered) and the reference, checkpoint and resumed solvers run as readers (`.normalize = false, .intercept = false`), so the three solvers share the data without copies and the paths are bit-identical. Three writer solvers on the same data would each center and scale it in place, which moves the data by rounding and made the paths differ (the 2026-09-25 finding). Under the library's in-place contract, a second writer on a held buffer now raises an error instead.
 
 The reloaded path is compared against the reference run using the final number of steps, the final RSS difference, the final $R^2$ difference, equality of the recorded action path, and the T-LASSO-specific removal and cycling diagnostics.
 
@@ -61,13 +62,63 @@ The fourth part generates synthetic data directly on disk, retrieves memory-mapp
 
 This shows that the solver can also be used in workflows where large matrices are stored on disk rather than held entirely in standard in-memory matrices.
 
+### 5. Terminated solution paths
+
+The fifth part repeats the quick start of the R tlars vignette. With $n = 150$, $p = 300$, five true coefficients
+equal to 1 and $L = p = 300$ dummies, one T-LASSO object runs to $T = 1$ and is then warm-started to $T = 2$ and
+$T = 5$. Each call continues the stored path, and a snapshot of the path after each call goes to
+`simulation_results/data/`. The setting `snr = 5` gives a noise standard deviation of about 1, as in the vignette.
+
+```text
+=== Demo 5: T-LASSO Terminated Solution Paths ===
+============================================================
+Configuration:
+  n = 150, p = 300
+  num_dummies = 300
+  T_stop = 5
+  True support size = 5
+  True support: 0 1 2 3 4
+  True coefficients: 1 1 1 1 1
+  SNR = 5
+
+T_stop = 1: steps =  9, predictors =  8, dummies = 1, FDP = 0.375, TPP = 1.000
+T_stop = 2: steps = 12, predictors = 10, dummies = 2, FDP = 0.500, TPP = 1.000
+T_stop = 5: steps = 16, predictors = 11, dummies = 5, FDP = 0.545, TPP = 1.000
+
+Selection:
+  Predictors: {0, 4, 1, 2, 3, 72, 106, 183, 282, 22, 5}
+  Dummies: {564, 399, 355, 321, 383}
+  Path: [+v0, +v4, +v1, +v2, +v3, +v72, +v106, +v183, +D264, +v282, +v22, +D99, +D55, +D21, +v5, +D83]
+
+Path data written to:
+  .../cpp/tsolvers/demo_ts_02_tlasso/simulation_results/data/tlasso_terminated_paths_path.csv
+  .../cpp/tsolvers/demo_ts_02_tlasso/simulation_results/data/tlasso_terminated_paths_actions.csv
+```
+
+The path equals the T-LARS path of [demo_ts_01_tlars](../demo_ts_01_tlars/README.md) to the last digit. The lasso
+modification drops a variable whose coefficient crosses zero, and no coefficient changes sign before the fifth dummy,
+so T-LASSO never drops a variable and takes the same 16 steps. The five true variables enter first, and three false
+ones follow before the first dummy. The true positive proportion (TPP) stays at 1 while the false discovery proportion
+(FDP) grows from 0.375 to 0.545. The figure shows the three snapshots. Original variables are black, dummies red and
+dashed, a red vertical line marks each included dummy, and the top axis names the variable that enters at each step.
+
+![T-LASSO terminated solution paths for T = 1, 2 and 5](simulation_results/plots/tlasso_terminated_paths.png)
+
 ---
 
 ## Running
 
+From the repository root, after `cmake --preset release && cmake --build --preset release-build` in `cpp/`:
+
 ```bash
-./build/debug/bin/tsolvers/demo_ts_02_tlasso/demo_ts_02_tlasso
+cpp/build/release/bin/tsolvers/demo_ts_02_tlasso/demo_ts_02_tlasso      # Parts 1-5
+cpp/build/release/bin/tsolvers/demo_ts_02_tlasso/demo_ts_02_tlasso 5    # Part 5 only
+cpp/tsolvers/demo_ts_02_tlasso/generate_plots.sh                        # path figure from the Part 5 data
 ```
+
+The optional arguments select the parts to run. Part 4 writes about 44 GB of temporary files, so `5` refreshes the
+path data in well under a second without it. `generate_plots.sh` uses the repository's `.venv` and writes the figure
+as PNG and PDF to `simulation_results/plots/`.
 
 The demo prints its diagnostics to the console, including configuration summaries, selected variables, path-quality measures, removal counts, cycling ratios, serialization checks, and memory-mapped execution status messages.
 
@@ -83,7 +134,8 @@ When reading the console output, focus on the following points:
 - whether the serialized solver state can be reloaded and continued without changing the final path,
 - how many active-set removals occur,
 - whether the reported cycling ratio stays well behaved,
-- whether the memory-mapped workflow completes successfully and cleans up its temporary files.
+- whether the memory-mapped workflow completes successfully and cleans up its temporary files,
+- how the terminated path grows with $T$ when the same object is warm-started.
 
 ---
 
@@ -93,4 +145,5 @@ When reading the console output, focus on the following points:
 - The demo uses both in-memory and memory-mapped workflows.
 - The serialization example writes a temporary checkpoint file named `tlasso_checkpoint.bin` and removes it afterward.
 - The memory-mapped example writes temporary files for $X$, $D$, and $y$, runs T-LASSO on those mapped views, and removes those files at the end.
+- The path data and figures under `simulation_results/` are committed, so the figure is visible without a run.
 - For a dedicated cross-check against related LARS/LASSO reference behavior, see `validation_ts_02_tlars_tlasso_rcompare` in the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/tsolvers/`).

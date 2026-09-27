@@ -7,11 +7,15 @@
  * @brief Demonstration of T-Stepwise (Terminating Stepwise Regression) solver.
  *
  * @details Shows basic usage, external/internal normalization, serialization,
- * and comparison between in-memory and memory-mapped workflows.
+ *          comparison between in-memory and memory-mapped workflows, and the
+ *          terminated solution paths behind the path figure.
+ *
+ *          Usage: demo_ts_03_tstepwise [part ...]   (no argument runs Parts 1-5)
  */
 // ============================================================================
 
 // std includes
+#include <iomanip>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -33,6 +37,9 @@
 #include <utils/eval_metrics/utils_eval_cdiagnostics.hpp>
 #include <utils/eval_metrics/utils_eval_rates.hpp>
 #include <utils/eval_metrics/utils_eval_composites.hpp>
+
+// demo suite includes
+#include "ts_perf_utils.hpp"
 
 
 // ============================================================================
@@ -431,11 +438,91 @@ void demo_memory_mapped(bool high_dim, bool rnd_coef, std::size_t T_stop) {
 }
 
 
+
+// ============================================================================
+// Demo 5: Terminated Solution Paths
+// ============================================================================
+
+/**
+ * @brief Record the terminated solution paths of one T-Stepwise object that is
+ *        warm-started T = 1 -> 2 -> 5 (setup of the R tlars vignette).
+ *
+ * @details Writes tstepwise_terminated_paths_{path,actions}.csv to DEMO_OUTPUT_DIR;
+ *          generate_plots.sh draws the path figure from them.
+ */
+void demo_TSTEPWISE_terminated_paths() {
+
+    // Print Demo Header
+    cdiagnost::print_section_header("=== Demo 5: T-Stepwise Terminated Solution Paths ===");
+
+    // Setup of the tlars vignette: 5 actives with beta = 1 and noise sigma about 1
+    const std::size_t n = 150, p = 300;
+    const std::size_t num_dummies = p;
+    const std::vector<std::size_t> true_support = {0, 1, 2, 3, 4};
+    const std::vector<double> true_coefs = {1, 1, 1, 1, 1};
+    const double snr = 5.0; // signal variance 5 over noise variance 1
+    const std::vector<std::size_t> T_stops = {1, 2, 5};
+
+    cdiagnost::print_talgo_demo_config(n, p, num_dummies, T_stops.back(), true_support,
+                                       true_coefs, snr);
+
+    // Generate data
+    datagen::SyntheticData data(
+        static_cast<Eigen::Index>(n),
+        static_cast<Eigen::Index>(p),
+        static_cast<Eigen::Index>(num_dummies),
+        true_support,
+        true_coefs,
+        snr,
+        /*seed=*/42,
+        /*X_seed=*/-1,
+        /*dummy_seed=*/-1,
+        datagen::predictor_policy::Normal(),
+        datagen::dummygen::Distribution::Normal(),
+        datagen::noisegen::noise_policy::Normal()
+    );
+
+    // Create Maps
+    Eigen::Map<Eigen::MatrixXd> X_map(data.getX().data(), data.rows(), data.cols());
+    Eigen::Map<Eigen::MatrixXd> D_map(data.getD().data(), data.rows(), data.num_dummies());
+    Eigen::Map<Eigen::VectorXd> y_map(data.getY().data(), data.rows());
+
+    // One solver object; every executeStep() call continues its path
+    tsolvers::TSTEPWISE_Solver tstepwise(
+        X_map,
+        D_map,
+        y_map,
+        trex::tsolvers::ad::SolverOptions{.normalize = true, .intercept = true, .verbose = false}
+    );
+
+    ts_perf::PathRecorder recorder("tstepwise_terminated_paths");
+    std::cout << std::fixed << std::setprecision(3);
+    for (const std::size_t T_stop : T_stops) {
+        tstepwise.executeStep(T_stop, /*early_stop=*/true);
+        recorder.record(tstepwise, T_stop);
+
+        const auto selected = tstepwise.getActivePredictorIndices();
+        std::cout << "T_stop = " << T_stop << ": "
+                  << "steps = " << std::setw(2) << tstepwise.getNumSteps() << ", "
+                  << "predictors = " << std::setw(2) << selected.size() << ", "
+                  << "dummies = " << tstepwise.getActiveDummyIndices().size() << ", "
+                  << "FDP = " << rates::compute_fdp(selected, true_support) << ", "
+                  << "TPP = " << rates::compute_tpp(selected, true_support) << "\n";
+    }
+    std::cout << std::defaultfloat;
+
+    // Results
+    cdiagnost::print_selection(tstepwise, true_support);
+
+    std::cout << "\nPath data written to:\n  " << ts_perf::display_path(recorder.path_file())
+              << "\n  " << ts_perf::display_path(recorder.actions_file()) << "\n\n";
+}
+
 // ===========================================================================
 // Main
 // ===========================================================================
 
-int main() {
+int main(int argc, char** argv) {
 
     std::cout << "\n";
     // Print header
@@ -448,14 +535,17 @@ int main() {
 
     try {
 
+        // Optional arguments: the parts to run (default: all)
+        const ts_perf::PartSelection run(argc, argv);
+
         // Demo 1: Basic usage with internal normalization
-        if (true) {
+        if (run(1)) {
             demo_TSTEPWISE_early_stopping(/*high_dim=*/true, /*rnd_coef=*/false, /*T_stop=*/10);
             demo_TSTEPWISE_early_stopping(/*high_dim=*/false, /*rnd_coef=*/false, /*T_stop=*/10);
         }
 
         // Demo 2: External normalization
-        if (true) {
+        if (run(2)) {
             demo_TSTEPWISE_with_external_normalizer(/*high_dim=*/false, /*rnd_coef=*/false,
                                                     /*T_stop=*/10);
             demo_TSTEPWISE_with_external_normalizer(/*high_dim=*/true, /*rnd_coef=*/false,
@@ -463,13 +553,18 @@ int main() {
         }
 
         // Demo 3: Serialization
-        if (true) {
+        if (run(3)) {
             demo_TSTEPWISE_serialization();
         }
 
         // Demo 4: Memory-mapped
-        if (true) {
+        if (run(4)) {
             demo_memory_mapped(/*high_dim=*/true, /*rnd_coef=*/false, /*T_stop=*/10);
+        }
+
+        // Demo 5: Terminated solution paths (data for the path figure)
+        if (run(5)) {
+            demo_TSTEPWISE_terminated_paths();
         }
 
         cdiagnost::print_section_header("✓ All demos completed successfully");

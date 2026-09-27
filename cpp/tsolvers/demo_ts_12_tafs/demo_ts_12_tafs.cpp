@@ -7,12 +7,17 @@
  * @brief Demonstration of T-AFS (Terminating Adaptive Forward Stepwise) solver.
  *
  * @details Shows basic usage, external/internal normalization, serialization,
- *          and comparison between in-memory and memory-mapped workflows.
+ *          comparison between in-memory and memory-mapped workflows, and the
+ *          terminated solution paths behind the path figure.
+ *
+ *          Usage: demo_ts_12_tafs [part ...]   (no argument runs Parts 1-5)
  */
 // ============================================================================
 
 // std includes
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -33,6 +38,9 @@
 #include <utils/eval_metrics/utils_eval_cdiagnostics.hpp>
 #include <utils/eval_metrics/utils_eval_rates.hpp>
 #include <utils/eval_metrics/utils_eval_composites.hpp>
+
+// demo suite includes
+#include "ts_perf_utils.hpp"
 
 // ============================================================================
 // Namespace aliases
@@ -441,11 +449,98 @@ void demo_memory_mapped(bool high_dim, bool rnd_coef, std::size_t T_stop, double
 // ===========================================================================
 
 
+
+// ============================================================================
+// Demo 5: Terminated Solution Paths
+// ============================================================================
+
+/**
+ * @brief Record the terminated solution paths of one T-AFS object with
+ *        shrinkage @p rho that is warm-started T = 1 -> 2 -> 5 (setup of the
+ *        R tlars vignette).
+ *
+ * @details Writes tafs_rho_<rho>_terminated_paths_{path,actions}.csv to
+ *          DEMO_OUTPUT_DIR; generate_plots.sh draws one panel per rho.
+ *
+ * @param rho Shrinkage step size in (0, 1]: 1 is forward stepwise, rho -> 0 approaches LAR.
+ */
+void demo_TAFS_terminated_paths(double rho) {
+
+    std::ostringstream rho_label;
+    rho_label << std::fixed << std::setprecision(1) << rho;
+
+    // Print Demo Header
+    cdiagnost::print_section_header("=== Demo 5: T-AFS Terminated Solution Paths (rho = "
+                                    + rho_label.str() + ") ===");
+
+    // Setup of the tlars vignette: 5 actives with beta = 1 and noise sigma about 1
+    const std::size_t n = 150, p = 300;
+    const std::size_t num_dummies = p;
+    const std::vector<std::size_t> true_support = {0, 1, 2, 3, 4};
+    const std::vector<double> true_coefs = {1, 1, 1, 1, 1};
+    const double snr = 5.0; // signal variance 5 over noise variance 1
+    const std::vector<std::size_t> T_stops = {1, 2, 5};
+
+    cdiagnost::print_talgo_demo_config(n, p, num_dummies, T_stops.back(), true_support,
+                                       true_coefs, snr);
+
+    // Generate data
+    datagen::SyntheticData data(
+        static_cast<Eigen::Index>(n),
+        static_cast<Eigen::Index>(p),
+        static_cast<Eigen::Index>(num_dummies),
+        true_support,
+        true_coefs,
+        snr,
+        /*seed=*/42,
+        /*X_seed=*/-1,
+        /*dummy_seed=*/-1,
+        datagen::predictor_policy::Normal(),
+        datagen::dummygen::Distribution::Normal(),
+        datagen::noisegen::noise_policy::Normal()
+    );
+
+    // Create Maps
+    Eigen::Map<Eigen::MatrixXd> X_map(data.getX().data(), data.rows(), data.cols());
+    Eigen::Map<Eigen::MatrixXd> D_map(data.getD().data(), data.rows(), data.num_dummies());
+    Eigen::Map<Eigen::VectorXd> y_map(data.getY().data(), data.rows());
+
+    // One solver object; every executeStep() call continues its path
+    tsolvers::TAFS_Solver tafs(
+        X_map,
+        D_map,
+        y_map,
+        trex::tsolvers::ad::SolverOptions{.normalize = true, .intercept = true, .verbose = false, .rho_afs = rho}
+    );
+
+    ts_perf::PathRecorder recorder("tafs_rho_" + rho_label.str() + "_terminated_paths");
+    std::cout << std::fixed << std::setprecision(3);
+    for (const std::size_t T_stop : T_stops) {
+        tafs.executeStep(T_stop, /*early_stop=*/true);
+        recorder.record(tafs, T_stop);
+
+        const auto selected = tafs.getActivePredictorIndices();
+        std::cout << "T_stop = " << T_stop << ": "
+                  << "steps = " << std::setw(2) << tafs.getNumSteps() << ", "
+                  << "predictors = " << std::setw(2) << selected.size() << ", "
+                  << "dummies = " << tafs.getActiveDummyIndices().size() << ", "
+                  << "FDP = " << rates::compute_fdp(selected, true_support) << ", "
+                  << "TPP = " << rates::compute_tpp(selected, true_support) << "\n";
+    }
+    std::cout << std::defaultfloat;
+
+    // Results
+    cdiagnost::print_selection(tafs, true_support);
+
+    std::cout << "\nPath data written to:\n  " << ts_perf::display_path(recorder.path_file())
+              << "\n  " << ts_perf::display_path(recorder.actions_file()) << "\n\n";
+}
+
 // ===========================================================================
 // Main
 // ===========================================================================
 
-int main() {
+int main(int argc, char** argv) {
 
     std::cout << "\n";
     // Print header
@@ -458,8 +553,11 @@ int main() {
 
     try {
 
+        // Optional arguments: the parts to run (default: all)
+        const ts_perf::PartSelection run(argc, argv);
+
         // Demo 1: Basic usage with internal normalization
-        if (true) {
+        if (run(1)) {
             demo_TAFS_early_stopping(/*high_dim=*/true, /*rnd_coef=*/false,
                                      /*T_stop=*/10, /*rho=*/1.0);
             demo_TAFS_early_stopping(/*high_dim=*/false, /*rnd_coef=*/false,
@@ -467,7 +565,7 @@ int main() {
         }
 
         // Demo 2: External normalization
-        if (true) {
+        if (run(2)) {
             demo_TAFS_with_external_normalizer(/*high_dim=*/false, /*rnd_coef=*/false,
                                                /*T_stop=*/10, /*rho=*/1.0);
             demo_TAFS_with_external_normalizer(/*high_dim=*/true, /*rnd_coef=*/false,
@@ -475,13 +573,19 @@ int main() {
         }
 
         // Demo 3: Serialization
-        if (true) {
+        if (run(3)) {
             demo_TAFS_serialization(/*rho=*/1.0);
         }
 
         // Demo 4: Memory-mapped
-        if (true) {
+        if (run(4)) {
             demo_memory_mapped(/*high_dim=*/true, /*rnd_coef=*/false, /*T_stop=*/10, /*rho=*/1.0);
+        }
+
+        // Demo 5: Terminated solution paths (data for the path figure), one run per rho
+        if (run(5)) {
+            for (const double rho : {0.1, 0.3, 0.5, 1.0})
+                demo_TAFS_terminated_paths(rho);
         }
 
         cdiagnost::print_section_header("✓ All demos completed successfully");

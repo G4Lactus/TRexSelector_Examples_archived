@@ -47,26 +47,48 @@ The demos are organized around two common usage patterns:
 
 Several solver demos also illustrate Cereal-based serialization workflows such as `save(...)` and reload operations, which are relevant for checkpointing and repeated solver use inside larger pipelines.
 
+### Terminated solution paths
+
+Part 5 of every demo repeats the quick start of the R tlars vignette. One solver object with $n = 150$, $p = 300$,
+five true coefficients equal to 1 and $L = p = 300$ dummies is warm-started $T = 1 \to 2 \to 5$, and
+`ts_perf_utils.hpp` records each snapshot of its coefficient path. `ts_plt_utils.py` then draws the coefficients
+against the number of included dummies, and each demo README embeds its figure. On this data several solvers share
+one path to the last digit:
+
+| Shared path | Solvers |
+| ----------- | ------- |
+| T-LARS | T-LARS, T-LASSO, T-Stagewise |
+| T-OMP | T-OMP, T-Stepwise, T-AFS ($\rho = 1$), T-NCGMP (fully corrective variant) |
+| T-MP | T-MP, T-NCGMP (line-search variant) |
+| T-GP (same entry order, coefficients within 0.074) | T-GP, T-ACGP |
+
+T-ENET and T-OLS take paths of their own. The T-AFS figure shows four values of $\rho$ from 0.1 to 1,
+and the T-NCGMP figure both variants.
+
 ---
 
 ## Building
 
 ```bash
-cd TRexSelector_Examples/cpp
-cmake -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_PREFIX_PATH="<path-to-TRexSelector>/cpp/install"
-cmake --build build/debug
+cd cpp
+cmake --preset release
+cmake --build --preset release-build
 ```
 
 ---
 
 ## Running
 
-Run any demo from the build tree. For example:
+Run any demo from the repository root. For example:
 
 ```bash
-./build/debug/bin/tsolvers/demo_ts_01_tlars/demo_ts_01_tlars
+cpp/build/release/bin/tsolvers/demo_ts_01_tlars/demo_ts_01_tlars      # Parts 1-5
+cpp/build/release/bin/tsolvers/demo_ts_01_tlars/demo_ts_01_tlars 5    # Part 5 only
+cpp/tsolvers/demo_ts_01_tlars/generate_plots.sh                        # path figure from the Part 5 data
 ```
+
+Every demo takes the parts to run as optional arguments. Part 4 writes about 44 GB of temporary files, so `5`
+refreshes the path data in well under a second without it.
 
 ---
 
@@ -76,6 +98,8 @@ Run any demo from the build tree. For example:
 tsolvers/
   ├── README.md
   ├── CMakeLists.txt
+  ├── ts_perf_utils.hpp      # shared C++ helpers (part selection, path recorder)
+  ├── ts_plt_utils.py        # shared matplotlib figures
   ├── demo_ts_01_tlars/
   ├── demo_ts_02_tlasso/
   ├── demo_ts_03_tstepwise/

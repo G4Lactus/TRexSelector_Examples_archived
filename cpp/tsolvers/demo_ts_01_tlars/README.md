@@ -97,7 +97,8 @@ Path data written to:
 
 The five true variables enter in the first five steps. Three false ones follow before the first dummy ends the path at
 $T = 1$. The true positive proportion (TPP) stays at 1 while the false discovery proportion (FDP) grows from 0.375 to
-0.545, because the later steps admit noise variables as well as dummies. The figure shows the three snapshots, and
+0.545, because the later steps admit noise variables as well as dummies. In this run, T-LASSO and T-Stagewise follow
+the same path to the last digit. The figure shows the three snapshots, and
 each one continues the previous path. Original variables are black, dummies red and dashed, a red vertical line marks
 each included dummy, and the top axis names the variable that enters at each step.
 
@@ -116,10 +117,11 @@ cpp/tsolvers/demo_ts_01_tlars/generate_plots.sh                        # path fi
 ```
 
 The optional arguments select the parts to run. Part 4 writes about 44 GB of temporary files, so `5` refreshes the
-path data in well under a second without it. The demo prints its diagnostics to the console, including configuration
-summaries, selected variables, selection-quality measures, serialization checks, and memory-mapped execution status
-messages. `generate_plots.sh` uses the repository's `.venv` and writes the figure as PNG and PDF to
-`simulation_results/plots/`.
+path data in well under a second without it. `generate_plots.sh` uses the repository's `.venv` and writes the figure
+as PNG and PDF to `simulation_results/plots/`.
+
+The demo prints its diagnostics to the console, including configuration summaries, selected variables,
+selection-quality measures, serialization checks, and memory-mapped execution status messages.
 
 ---
 
