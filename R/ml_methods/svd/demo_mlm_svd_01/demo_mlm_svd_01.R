@@ -38,6 +38,19 @@ print_section_header <- function(title) {
 }
 
 
+# Compare the truncation error with the Eckart-Young optimum: the best rank-M
+# approximation in the Frobenius norm leaves exactly the energy of the
+# discarded singular values, which a full LAPACK SVD (base::svd) provides.
+print_eckart_young_check <- function(X, M, rel_error) {
+  s_all   <- svd(X, nu = 0, nv = 0)$d
+  optimum <- sqrt(sum(s_all[-seq_len(M)]^2)) / norm(X, "F")
+  diff    <- abs(rel_error - optimum)
+  cat(sprintf("Eckart-Young optimum sqrt(sum_{k>M} s_k^2) / ||X||_F  : %.4e\n", optimum))
+  cat(sprintf("Eckart-Young check (|difference| = %.4e < 1e-10): %s\n",
+              diff, if (diff < 1e-10) "PASS" else "FAIL"))
+}
+
+
 # ==============================================================================
 # Demo 1: Direct / Thin-Jacobi Path (n >= p)
 # ==============================================================================
@@ -69,8 +82,9 @@ demo_svd_direct <- function() {
   #         capture little energy).
   X_approx  <- res$U %*% diag(res$S) %*% t(res$V)
   rel_error <- norm(X_approx - X, "F") / norm(X, "F")
-  cat(sprintf("Relative reconstruction error ||X_M - X||_F / ||X||_F : %e\n",
+  cat(sprintf("Relative reconstruction error ||X_M - X||_F / ||X||_F : %.4e\n",
               rel_error))
+  print_eckart_young_check(X, M, rel_error)
 
   # Step 5. Singular values
   cat(sprintf("\nTop %d singular values:\n", M))
@@ -85,7 +99,7 @@ demo_svd_direct <- function() {
   res_full       <- solver$compute(X, p)
   X_full         <- res_full$U %*% diag(res_full$S) %*% t(res_full$V)
   rel_error_full <- norm(X_full - X, "F") / norm(X, "F")
-  cat(sprintf("\nFull-rank (M = p) relative reconstruction error : %e\n",
+  cat(sprintf("\nFull-rank (M = p) relative reconstruction error : %.4e\n",
               rel_error_full))
   stopifnot(rel_error_full < 1e-10)
   cat("✓ Full-rank reconstruction is exact\n")
@@ -125,8 +139,9 @@ demo_svd_gram <- function() {
   # Step 4. Reconstruction error
   X_approx  <- res$U %*% diag(res$S) %*% t(res$V)
   rel_error <- norm(X_approx - X, "F") / norm(X, "F")
-  cat(sprintf("Relative reconstruction error ||X_M - X||_F / ||X||_F : %e\n",
+  cat(sprintf("Relative reconstruction error ||X_M - X||_F / ||X||_F : %.4e\n",
               rel_error))
+  print_eckart_young_check(X, M, rel_error)
 
   cat("\n\n")
   invisible(NULL)
@@ -157,8 +172,8 @@ demo_svd_orthogonality <- function() {
   UtU_error <- norm(crossprod(res$U) - I_M, "F")
   VtV_error <- norm(crossprod(res$V) - I_M, "F")
 
-  cat(sprintf("||U^T U - I||_F : %e\n", UtU_error))
-  cat(sprintf("||V^T V - I||_F : %e\n\n", VtV_error))
+  cat(sprintf("||U^T U - I||_F : %.4e\n", UtU_error))
+  cat(sprintf("||V^T V - I||_F : %.4e\n\n", VtV_error))
 
   if (UtU_error < 1e-10 && VtV_error < 1e-10) {
     cat("✓ U and V are orthonormal\n")

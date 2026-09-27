@@ -31,7 +31,7 @@
 #                                 Lance-Williams matrix is intractable at the
 #                                 cpp scale (P = 400,000); the skip is kept to
 #                                 mirror the cpp console output.
-#                              C. Average Linkage  - UPGMA (projected engine)
+#                              C. Average Linkage  - UPGMA [SKIPPED as in cpp]
 #                              D. Ward Linkage     - minimum variance
 #                                                    (projected engine)
 #
@@ -177,13 +177,13 @@ demo_lsh_linkage_comparison_mmap <- function() {
   on.exit({
     if (file.exists(mmap_path)) {
       unlink(mmap_path)
-      cat(sprintf("Cleaned up mmap file: %s\n", mmap_path))
+      cat(sprintf("Cleaned up mmap file: <tmp>/%s\n", basename(mmap_path)))
     }
   }, add = TRUE)
 
   file_bytes <- as.numeric(n_samples) * as.numeric(p_features) * 8
 
-  cat(sprintf("Memory-mapped file : %s\n", mmap_path))
+  cat(sprintf("Memory-mapped file : <tmp>/%s\n", basename(mmap_path)))
   cat(sprintf("File size          : %.2f MB\n", file_bytes / 2^20))
   cat(sprintf("Latent RAM (N x K) : %.2f MB\n\n",
               n_samples * k_clusters * 8 / 2^20))
@@ -243,9 +243,14 @@ demo_lsh_linkage_comparison_mmap <- function() {
   cat("    At the cpp scale (P=400,000) this requires 1.2 TB of NVMe I/O, ")
   cat("which is intractable.\n\n")
 
-  # Test C — Average Linkage (UPGMA, projected RAM engine)
-  run_test("[Test C] UPGMA Average Linkage (Projected 64D RAM Engine + LSH)",
-           ml_linkage_method$Average)
+  # Test C — Average Linkage (UPGMA), skipped as in cpp: the dispatcher routes
+  # Average to the exact Lance-Williams matrix engine for every metric, and the
+  # projected 64D engine is valid for Ward only
+  cat("[Test C] UPGMA Average Linkage:\n")
+  cat("    [SKIPPED] Average linkage runs on the O(P^2) Lance-Williams matrix as well;\n")
+  cat("    the geometric centroid update of the projected engine does not implement\n")
+  cat("    the UPGMA formula. At the cpp scale (P=400,000) the matrix is 1.28 TB, which\n")
+  cat("    is intractable.\n\n")
 
   # Test D — Ward's Minimum Variance (projected RAM engine)
   run_test("[Test D] Ward's Minimum Variance (Projected 64D RAM Engine + LSH)",
@@ -262,6 +267,10 @@ demo_lsh_linkage_comparison_mmap <- function() {
 
 cat("\n")
 print_section_header("HAC Memory-Mapped Demo Suite (N=2k x P=4k)")
+
+# Six OpenMP threads, as the C++ demo
+trex_set_num_threads(min(6L, trex_get_max_threads()))
+cat(sprintf("Running with %d threads\n\n", trex_get_max_threads()))
 
 demo_lsh_linkage_comparison_mmap()
 

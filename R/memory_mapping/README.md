@@ -2,97 +2,55 @@
 
 ## Overview
 
-This folder contains R examples for the **memory-mapped matrix** utility of the **TRexSelectorNeo** package
-(`mem_matrix()` / `mem_matrix_from()`).
-
-The utility provides a disk-backed matrix interface that behaves like an ordinary R matrix, making it useful when
-matrices are too large to keep entirely in RAM. In the TRexSelector project, this is especially relevant for large
-design matrices and dummy matrices that exceed available RAM in solver and selector workflows — the R object passes a
-pointer to the disk-backed data straight through to the C++ backend.
-
-The main goals of this folder are:
-
-1. to show how memory-mapped matrices are created and accessed from R,
-2. to demonstrate out-of-core workflows for large matrices,
-3. to illustrate safe file lifetime management with `on.exit()`.
-
-The C++ demo suite additionally showcases C++-specific features such as RAII and OpenMP-based parallel generation; see
-[cpp/memory_mapping/](../../cpp/memory_mapping/) and [Python/memory_mapping/](../../Python/memory_mapping/) for the
-corresponding walkthroughs.
-
----
-
-## What this folder covers
-
-A memory-mapped matrix stores its entries in a file on disk and exposes them through a matrix-like interface:
+This folder holds the R examples for the memory-mapped matrix of the TRexSelectorNeo package. The `mmap_matrix`
+handle stores a matrix in a file on disk and exposes it through S3 methods like an ordinary R matrix:
 
 ```math
 \boldsymbol{X}_{\mathrm{mmap}} \in \mathbb{R}^{n \times p}.
 ```
 
-Conceptually, the matrix behaves like a regular numeric matrix, but its storage is file-backed rather than purely
-in-memory. The R binding maps `double` matrices.
+The data is indexed like an R matrix while its storage is file-backed. The R binding maps `double` matrices, stored
+column-major like an R or Eigen matrix, while the C++ class also takes `float` and complex scalar types.
 
-This is useful for:
+In TRexSelector this matters for design matrices and dummy matrices that exceed the available random-access memory
+(RAM) in solver and selector workflows, for intermediate data that should outlive a single object, and for handing
+mapped data to the C++ solvers without a copy, because the handle passes a pointer to the mapped file straight to the
+backend. R replaces the C++ cleanup by Resource Acquisition Is Initialization (RAII) with `on.exit()` handlers, while
+the Open Multi-Processing (OpenMP) parallel generation of the C++ demo stays C++-only. The C++ and Python packages offer
+the same functionality (see [cpp/memory_mapping/](../../cpp/memory_mapping/README.md) and
+[Python/memory_mapping/](../../Python/memory_mapping/README.md)).
 
-- **large matrices**, when RAM is limited,
-- **persistent intermediate data**, when matrix contents should survive beyond a single object lifetime,
-- **solver interoperability**, because the mapped data is consumed by the C++ solvers and selectors through a pointer,
-  without a copy.
+The entry points, all from TRexSelectorNeo, are:
+
+- `mem_matrix(filename, rows, cols, mode)`, which opens or creates a mapped file in `"readwrite"` (default) or
+  `"readonly"` mode and returns an `mmap_matrix` handle,
+- `mem_matrix_from(mat, filename)`, which writes an R matrix into a file and returns a handle over it,
+- the S3 methods `print()`, `dim()`, `[`, `[<-` and `as.matrix()` on the handle, with 1-based indices and contiguous
+  index ranges only.
+
+The same handles feed the out-of-core examples
+[demo_mlm_hac_02_mmap](../ml_methods/hac_clustering/demo_mlm_hac_02_mmap/README.md),
+[demo_mlm_scaler_01](../ml_methods/scaler_methods/demo_mlm_scaler_01/README.md) and
+[demo_mlm_ms_01_ridge_cv_svd](../ml_methods/model_selection/demo_mlm_ms_01_ridge_cv_svd/README.md), the
+[T-solver demos](../tsolvers/README.md) and the [T-Rex demos](../trex_selector_methods/trex/README.md).
 
 ---
 
-## Start here
-
-If you are new to memory mapping in TRexSelector, begin with:
-
-1. **`demo_memory_mapping/`** — a self-contained demo covering matrix creation, read/write access, serial out-of-core
-   generation, deterministic per-column seeding, and safe cleanup.
-
----
-
-## Demo overview
+## Demos
 
 | Folder | Purpose |
 | ------ | ------- |
-| [demo_memory_mapping/](demo_memory_mapping/README.md) | Demonstrates basic mmap usage, out-of-core writes, deterministic per-column seeded filling, and element-wise access checks |
+| [`demo_memory_mapping/`](demo_memory_mapping/) | Create and access a mapped matrix, stream columns out of core, fill columns from per-column seeds, element-wise access with bounds and read-only checks, block writes and a full copy into R memory. The README walks through the console output. |
 
 ---
 
 ## Running
 
+From the repository root, with the TRexSelectorNeo R package 2.0.0 built from library commit b95b984:
+
 ```bash
 Rscript R/memory_mapping/demo_memory_mapping/demo_memory_mapping.R
 ```
 
----
-
-## Folder contents
-
-```txt
-memory_mapping/
-  ├── README.md
-  └── demo_memory_mapping/
-      ├── demo_memory_mapping.R
-      └── README.md
-```
-
----
-
-## Notes for new users
-
-- This demo prints results to the console and does not write simulation summary files.
-- Temporary backing files are created in the R session's temporary directory and removed automatically.
-- All indices are 1-based; `[` / `[<-` support contiguous index ranges only.
-- The demo is intended to explain the memory-mapping utility itself, not to benchmark maximum scale production
-  performance.
-
----
-
-## Downstream users of the same interface
-
-The R mmap interface is exercised further by
-[../ml_methods/hac_clustering/demo_mlm_hac_02_mmap/](../ml_methods/hac_clustering/demo_mlm_hac_02_mmap/),
-[../ml_methods/scaler_methods/demo_mlm_scaler_01/](../ml_methods/scaler_methods/demo_mlm_scaler_01/),
-[../ml_methods/model_selection/demo_mlm_ms_01_ridge_cv_svd/](../ml_methods/model_selection/demo_mlm_ms_01_ridge_cv_svd/),
-and the T-Rex demos in [../trex_selector_methods/trex/](../trex_selector_methods/trex/README.md).
+The demo prints to the console only and finishes within a few seconds. Its backing files live in the session temporary
+directory of R and are removed when each part ends. There is no build step.

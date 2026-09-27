@@ -5,7 +5,12 @@ Validated C++:  SDK installed from b95b984; the 54 Examples targets built clean 
                 Part 5 path data of the 12 T-solver demos reproduce their committed files byte for byte;
                 the ml_methods and memory_mapping short demos pass (PCA and SVD diagnostics differ from the
                 former fast-math build at rounding level only).
-Pending:        Python and R validation on b95b984, after reinstalling both packages from it.
+Validated Py:   TRexSelectorNeo 1.0.0 reinstalled from b95b984; the ml_methods, memory_mapping and tsolvers
+                demos (incl. the performance demos P1-P4) rerun and their results committed.
+Validated R:    TRexSelectorNeo 2.0.0 reinstalled from b95b984; the ml_methods and memory_mapping demos
+                rerun and their results committed.
+Pending:        the R tsolvers demos (incl. the performance demos P1-P4); the Python and R
+                trex_selector_methods demos.
 Previous pins:  8ad3376 (2026-09-26), f390bfc (2026-09-25), d404033 (2026-09-25); what changed between
                 pins is in the git log of this file and in the library's HISTORY.md.
 

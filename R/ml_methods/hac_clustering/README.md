@@ -2,105 +2,50 @@
 
 ## Overview
 
-This folder contains R examples for **hierarchical agglomerative clustering (HAC)** through the **TRexSelectorNeo**
-function `ml_agglomerative_cluster()` and its companion `ml_cut_tree()`.
+This folder holds the R examples for hierarchical agglomerative clustering (HAC) in the TRexSelectorNeo package. HAC
+builds a tree of successive merges and recovers cluster assignments by cutting that tree at a chosen level. In
+TRexSelector the Grouped Variable Selection (GVS) workflow uses it to form variable groups from a dendrogram cut.
 
-Within the TRexSelector project, HAC is used by the **GVS (Grouped Variable Selection)** workflow to construct variable
-groups from a dendrogram cut. The examples in this folder show how clustering behaves in smaller in-memory settings and
-how the same ideas can be scaled to much larger problems through memory-mapped I/O.
+The folder has two demos, each in its own subfolder with the script and a README that walks through the console output.
+`demo_mlm_hac_01/` clusters samples and variables in memory, compares distance and linkage choices and shows the
+locality-sensitive hashing (LSH) approximation on problems of at most 800 samples and 1,000 variables, while
+`demo_mlm_hac_02_mmap/` repeats the LSH linkage comparison on a memory-mapped matrix of n = 2,000 x p = 4,000 that is
+never copied into random-access memory (RAM). Both mirror their C++ counterparts at sizes scaled down by a factor of 50
+to 100 in the variable count, the same sizes as in the Python demos, so each finishes within a few seconds. Both print
+to the console only and run on the Open Multi-Processing (OpenMP) threads of the C++ backend, 6 or fewer if the
+machine has fewer cores. The C++ and Python packages have the same demos, the C++ ones at full benchmark
+size (see [cpp/ml_methods/hac_clustering/](../../../cpp/ml_methods/hac_clustering/README.md) and
+[Python/ml_methods/hac_clustering/](../../../Python/ml_methods/hac_clustering/README.md)).
+Cross-language correctness checks against R references live in the library's test suite (`cpp/tests/validation/`), not
+in these examples.
 
-The main goals of this folder are:
-
-1. to demonstrate how HAC is applied to synthetic sample and variable clustering tasks,
-2. to compare clustering behavior under different distance and linkage choices,
-3. to illustrate how large clustering problems can be handled with memory-mapped storage,
-4. to provide a bridge between exploratory clustering demos and downstream grouped-variable workflows.
-
-Equivalent HAC clustering demos are available in the C++ and Python packages; see
-[cpp/ml_methods/hac_clustering/](../../../cpp/ml_methods/hac_clustering/README.md) and
-[Python/ml_methods/hac_clustering/](../../../Python/ml_methods/hac_clustering/README.md) for the corresponding
-walkthroughs.
-
----
-
-## What this folder covers
-
-Hierarchical agglomerative clustering builds a tree of successive merges and then recovers cluster assignments by
-cutting that tree at a chosen level.
-
-In this folder, the demos focus on:
-
-- **in-memory HAC experiments**, for understanding clustering structure and linkage behavior,
-- **correlation-based variable clustering**, which is relevant for grouped variable selection,
-- **memory-mapped large-scale HAC**, for problems that would otherwise exceed available RAM.
+The public entry points are `ml_agglomerative_cluster(data, method, metric, use_mmap)`, which clusters the **rows** of
+a numeric matrix or an `mmap_matrix` and returns a linkage matrix, and `ml_cut_tree(linkage, num_orig_objs,
+num_clusters)`, together with the lists `ml_linkage_method` (`Ward`, `Average`, `Complete`, `Single`, `WPGMA`,
+`Median`, `Centroid`) and `ml_distance_metric` (`Euclidean`, `Correlation`, `Manhattan`, `Correlation_LSH_Filter`,
+`Correlation_LSH_Approx`). Merge ids and cluster labels are 1-based, following the R convention of the repository. The
+R wrapper rejects Ward, median and centroid linkage for the correlation and Manhattan metrics, with the one exception
+of Ward under `Correlation_LSH_Approx`, which runs in a 64-dimensional projected Euclidean space. Both scripts are
+self-contained, with their helpers (the adjusted Rand index, the data generators, the standardization) inlined.
 
 ---
 
-## Start here
-
-If you are new to this folder, begin with:
-
-1. **`demo_mlm_hac_01/`**
-   An in-memory HAC demo suite covering six clustering scenarios and linkage comparisons.
-
-2. **`demo_mlm_hac_02_mmap/`**
-   A memory-mapped demo that reproduces the LSH linkage comparison at an out-of-core scale.
-
----
-
-## Demo overview
+## Demos
 
 | Folder | Purpose |
 | ------ | ------- |
-| [demo_mlm_hac_01/](demo_mlm_hac_01/README.md) | In-memory HAC demo suite for sample clustering, variable clustering, LSH benchmarks, linkage comparisons, and AR(1) block chains |
-| [demo_mlm_hac_02_mmap/](demo_mlm_hac_02_mmap/README.md) | Memory-mapped HAC demo for LSH-based linkage comparison without full in-RAM allocation |
+| [`demo_mlm_hac_01/`](demo_mlm_hac_01/) | In-memory HAC suite: sample clustering, correlation-distance variable clustering, LSH approximation, linkage-method comparisons, first-order autoregressive (AR(1)) Toeplitz blocks (six subproblems) |
+| [`demo_mlm_hac_02_mmap/`](demo_mlm_hac_02_mmap/) | Memory-mapped HAC: generation, in-place standardization and the LSH linkage comparison on a 2,000 x 4,000 matrix |
 
 ---
 
 ## Running
+
+From the repository root, with the TRexSelectorNeo R package 2.0.0 built from library commit b95b984:
 
 ```bash
 Rscript R/ml_methods/hac_clustering/demo_mlm_hac_01/demo_mlm_hac_01.R
 Rscript R/ml_methods/hac_clustering/demo_mlm_hac_02_mmap/demo_mlm_hac_02_mmap.R
 ```
 
-Console output only.
-
----
-
-## APIs used
-
-- `ml_agglomerative_cluster(data, method, metric, use_mmap)`, where `data` is a numeric matrix or an `mmap_matrix`, and
-  the enums are `ml_linkage_method$...` (Ward, Average, Complete, Single, WPGMA, Median, Centroid) and
-  `ml_distance_metric$...` (Euclidean, Correlation, Manhattan, Correlation_LSH_Filter, Correlation_LSH_Approx).
-- `ml_cut_tree(linkage, num_orig_objs, num_clusters)` to flatten the dendrogram.
-- `mem_matrix_from()` / `mem_matrix()` for the out-of-core demo.
-
----
-
-## Folder contents
-
-```txt
-hac_clustering/
-  ├── README.md
-  ├── demo_mlm_hac_01/
-  │   ├── demo_mlm_hac_01.R
-  │   └── README.md
-  └── demo_mlm_hac_02_mmap/
-      ├── demo_mlm_hac_02_mmap.R
-      └── README.md
-```
-
----
-
-## Notes for new users
-
-- `ml_agglomerative_cluster()` clusters the **rows** of its input: pass `X` for sample clustering and `t(X)` for variable
-  clustering.
-- Ward, median, and centroid linkage require Euclidean geometry and are rejected for correlation or Manhattan metrics.
-  The single exception is Ward + `Correlation_LSH_Approx`, which runs in a 64-dimensional SimHash-projected Euclidean
-  space.
-- Cluster ids are **1-based**, following the R language convention — the binding converts deliberately at the Rcpp
-  boundary (the C++ and Python ports are 0-based).
-- Both demos are self-contained: the helper functions (ARI, the data generators, the correlation standardizer) are
-  inlined in each script, mirroring the C++ and Python demos. The former shared `hac_helpers.R` was retired.
+There is no build step and no launch script. The scripts take no arguments.

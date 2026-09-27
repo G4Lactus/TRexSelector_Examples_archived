@@ -2,98 +2,51 @@
 
 ## Overview
 
-This folder contains R examples for the **model selection** routines of the **TRexSelectorNeo** package (`RidgeCV`,
-`ElasticNet`, `ElasticNetCV`).
-
-The demos focus on regularized Gaussian regression models and show how hyperparameters are selected from synthetic data
-using K-fold cross-validation. In the TRexSelector project, these workflows are relevant for tuning penalization
-strength in ridge- and elastic-net-type estimators.
-
-The main goals of this folder are:
-
-1. to demonstrate model selection for regularized linear regression from R,
-2. to illustrate how K-fold cross-validation is used to choose penalty parameters,
-3. to compare numerically stable SVD-based ridge fitting with coordinate-descent elastic-net fitting,
-4. to connect fitted penalty choices to downstream TRexSelector workflows.
-
-Equivalent model selection demos are available in the C++ and Python packages; see
-[cpp/ml_methods/model_selection/](../../../cpp/ml_methods/model_selection/README.md) and
-[Python/ml_methods/model_selection/](../../../Python/ml_methods/model_selection/README.md) for the corresponding
-walkthroughs.
-
----
-
-## What this folder covers
-
-The demos study penalized regression models of the form
+This folder holds the R examples for model selection in the TRexSelectorNeo R package, which choose the penalty of a
+regularized Gaussian regression by K-fold cross-validation (CV). In TRexSelector, these routines tune the ridge penalty
+of Grouped Variable Selection (GVS). Both demos draw synthetic data from
 
 ```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta} + \boldsymbol{\varepsilon},
 \qquad
-\boldsymbol{\varepsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma^2 \boldsymbol{I}_n).
+\boldsymbol{\varepsilon} \sim \mathcal{N}(\boldsymbol{0}, \sigma^2 \boldsymbol{I}_n),
 ```
 
-They focus on:
+with ten active coefficients, and report the CV-optimal penalty $\lambda_{\min}$ together with the more heavily
+regularized one-standard-error pick $\lambda_{1\mathrm{se}}$.
 
-- **ridge regression**, where coefficient shrinkage is controlled by a quadratic penalty,
-- **elastic-net regression**, which combines $\ell_1$ and $\ell_2$ regularization,
-- **cross-validation workflows**, used to select tuning parameters such as $\lambda$ and $\alpha$.
-
----
-
-## Start here
-
-If you are new to this folder, begin with:
-
-1. **`demo_mlm_ms_01_ridge_cv_svd/`**
-   A ridge-regression CV demo using the SVD-based solver across several dimensional regimes.
-
-2. **`demo_mlm_ms_02_enet_cv_ccd/`**
-   An elastic-net demo covering both regularization-path fitting and K-fold CV via coordinate descent.
+The folder has two demos, each in its own subfolder with the script and a README that walks through the console
+output. `demo_mlm_ms_01_ridge_cv_svd/` runs ridge CV with `MLRidgeCV`, which takes a singular value decomposition
+(SVD) per fold, from $n > p$ to $p \gg n$ and on a memory-mapped design matrix. In contrast,
+`demo_mlm_ms_02_enet_cv_ccd/` fits elastic-net paths with `MLElasticNet` by cyclic coordinate descent (CCD) and
+selects $\lambda$ with `MLElasticNetCV` for ridge, elastic net and lasso, including the ridge conversion used by GVS.
+Both print to the console only and finish in under a minute. The C++ and Python examples have the same demos (see
+[cpp/ml_methods/model_selection/](../../../cpp/ml_methods/model_selection/README.md) and
+[Python/ml_methods/model_selection/](../../../Python/ml_methods/model_selection/README.md)).
 
 ---
 
-## Demo overview
+## Demos
 
 | Folder | Purpose |
 | ------ | ------- |
-| [demo_mlm_ms_01_ridge_cv_svd/](demo_mlm_ms_01_ridge_cv_svd/README.md) | Ridge regression K-fold CV via `RidgeCV`, including a memory-mapped design-matrix example |
-| [demo_mlm_ms_02_enet_cv_ccd/](demo_mlm_ms_02_enet_cv_ccd/README.md) | Elastic-net path fitting (`ElasticNet`) and K-fold CV (`ElasticNetCV`) via coordinate descent, including ridge/lasso/elastic-net comparisons |
+| [`demo_mlm_ms_01_ridge_cv_svd/`](demo_mlm_ms_01_ridge_cv_svd/) | Ridge K-fold CV with `MLRidgeCV` (JacobiSVD per fold) in four regimes, including a memory-mapped design matrix and a grid-edge check |
+| [`demo_mlm_ms_02_enet_cv_ccd/`](demo_mlm_ms_02_enet_cv_ccd/) | Elastic-net paths with `MLElasticNet` and K-fold CV with `MLElasticNetCV` for ridge, elastic net and lasso, with the TRexGVS ridge conversion |
 
 ---
 
 ## Running
+
+From the repository root, with the TRexSelectorNeo R package installed as described in
+[`LIBRARY_TARGET.txt`](../../../LIBRARY_TARGET.txt):
 
 ```bash
 Rscript R/ml_methods/model_selection/demo_mlm_ms_01_ridge_cv_svd/demo_mlm_ms_01_ridge_cv_svd.R
 Rscript R/ml_methods/model_selection/demo_mlm_ms_02_enet_cv_ccd/demo_mlm_ms_02_enet_cv_ccd.R
 ```
 
-Console output only.
-
----
-
-## Folder contents
-
-```txt
-model_selection/
-  ├── README.md
-  ├── demo_mlm_ms_01_ridge_cv_svd/
-  │   ├── demo_mlm_ms_01_ridge_cv_svd.R
-  │   └── README.md
-  └── demo_mlm_ms_02_enet_cv_ccd/
-      ├── demo_mlm_ms_02_enet_cv_ccd.R
-      └── README.md
-```
-
----
-
-## Notes for new users
-
-- Both demos assert their invariants with `stopifnot()` (ordering of `lambda.min` / `lambda.1se`, monotone deviance
-  ratio, `$fit_grid()` reproduction), so a violated expectation aborts the script rather than printing quietly.
-- Index convention: `$index_min()` / `$index_1se()` are **1-based**, following the R language convention (the
-  binding converts deliberately at the Rcpp boundary); the C++ and Python ports are 0-based.
-- The glmnet cross-check that used to sit here (`demo_en_glmnet_compare.R` + `rdump_en/`) is local-testing material, not
-  a demo. It moved to the TRexSelector library test suite
-  (`TRexSelector/cpp/tests/validation/ml_methods/model_selection/`).
+The classes take ordinary numeric R matrices, which are column-major like the library's Eigen matrices, so no
+conversion is needed. Grid indices such as `$index_min()` are 1-based, the R convention, while the C++ and Python
+accessors are 0-based. Both scripts assert their invariants with `stopifnot()`, so a violated one stops the script. The
+data seeds match the C++ demos, but R's Mersenne-Twister generator draws other numbers than `std::mt19937`, so the
+results agree with C++ qualitatively, not bitwise.

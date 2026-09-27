@@ -70,8 +70,8 @@ demo_ridge_primal <- function() {
   # Step 3. Report
   coef_error <- l2_norm(beta_hat - beta_true)
   residual   <- l2_norm(y - X %*% beta_hat)
-  cat(sprintf("||beta_hat - beta_true||_2 : %e\n", coef_error))
-  cat(sprintf("Residual ||y - X*beta||_2  : %e\n", residual))
+  cat(sprintf("||beta_hat - beta_true||_2 : %.4e\n", coef_error))
+  cat(sprintf("Residual ||y - X*beta||_2  : %.4e\n", residual))
 
   # Didactic check: with sd(noise) = 0.1 the estimate must be close to truth.
   stopifnot(coef_error < 0.5)
@@ -112,8 +112,8 @@ demo_ridge_dual <- function() {
   # Step 3. Report
   coef_error <- l2_norm(beta_hat - beta_true)
   residual   <- l2_norm(y - X %*% beta_hat)
-  cat(sprintf("||beta_hat - beta_true||_2 : %e\n", coef_error))
-  cat(sprintf("Residual ||y - X*beta||_2  : %e\n", residual))
+  cat(sprintf("||beta_hat - beta_true||_2 : %.4e\n", coef_error))
+  cat(sprintf("Residual ||y - X*beta||_2  : %.4e\n", residual))
 
   cat("\n\n")
   invisible(NULL)
@@ -153,7 +153,7 @@ demo_ridge_lambda_sweep <- function() {
     beta_hat      <- solver$solve(X, y, lambdas[i])
     beta_norms[i] <- l2_norm(beta_hat)
     residuals[i]  <- l2_norm(y - X %*% beta_hat)
-    cat(sprintf("%-12.4e%-22.6e%-18.6e%-18.6e\n",
+    cat(sprintf("%-12.1e%-22.4e%-18.4e%-18.4e\n",
                 lambdas[i], l2_norm(beta_hat - beta_true),
                 beta_norms[i], residuals[i]))
   }

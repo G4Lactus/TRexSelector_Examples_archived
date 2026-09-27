@@ -12,8 +12,8 @@
 #                            loading matrix V, and explained variance per
 #                            retained component.
 #
-#   Demo 2 | Restore       : n = 300, p = 100, M = 5 — $fit() preprocesses X
-#                            in place; $restore() must return it to its
+#   Demo 2 | Restore       : n = 300, p = 100, M = 5 — MLPCA$new() preprocesses
+#                            X in place; $restore() must return it to its
 #                            original state.
 #
 #   Demo 3 | Transform     : n_train = 400, n_test = 50, p = 80, M = 8 —
@@ -26,8 +26,8 @@
 #     matrix X directly, the same Eigen::Map interface that serves both
 #     in-memory and memory-mapped data. This is deliberate — the library
 #     targets data volumes that can exceed RAM, so it never takes hidden
-#     copies of X. Consequently $fit() standardizes X in place and $restore()
-#     undoes the preprocessing exactly. A plain alias (`X_orig <- X`) shares
+#     copies of X. Consequently MLPCA$new() standardizes X in place and
+#     $restore() undoes the preprocessing exactly. A plain alias (`X_orig <- X`) shares
 #     the same buffer; where a pristine copy is needed, take an explicit deep
 #     copy with `X_orig <- X + 0`.
 #   - Same n / p / M values and seeds as the C++ demo; R's Mersenne-Twister
@@ -64,8 +64,8 @@ demo_pca_fit <- function() {
   X <- matrix(rnorm(n * p), nrow = n, ncol = p)
 
   # Step 2. Construct and fit. center = TRUE subtracts the column means,
-  #         normalize = TRUE scales the columns; both happen in place on X
-  #         and are undone by $restore().
+  #         normalize = TRUE scales the columns; the constructor does both
+  #         in place on X, and $restore() undoes them.
   pca <- MLPCA$new(X, M = M, center = TRUE, normalize = TRUE)
   pca$fit()
 
@@ -81,13 +81,15 @@ demo_pca_fit <- function() {
   cat(sprintf("V dimensions : %d x %d\n", nrow(V), ncol(V)))
   cat(sprintf("explained_variance size: %d\n\n", length(ev)))
 
-  # Step 4. Print explained variance in % (of the retained sum, as in cpp)
-  total_var <- sum(ev)
-  cat("Explained variance per component (%):\n")
+  # Step 4. Explained variance as a share of the total variance of the
+  #         preprocessed X (MLPCA$new() centered and scaled X in place)
+  total_var <- sum(X^2) / (n - 1)
+  pct <- 100 * ev[seq_len(M)] / total_var
+  cat("Explained variance per component (% of total):\n")
   for (k in seq_len(M)) {
-    cat(sprintf("  PC%d: %.2f%%\n", k, 100 * ev[k] / total_var))
+    cat(sprintf("  PC%d: %.2f%%\n", k, pct[k]))
   }
-  cat(sprintf("  Cumulative (all %d): 100.00%% (of retained)\n", M))
+  cat(sprintf("  Cumulative (%d of %d): %.2f%%\n", M, p, sum(pct)))
 
   # Didactic check: components are ordered by decreasing explained variance.
   stopifnot(all(diff(ev) <= 1e-12))
@@ -119,14 +121,14 @@ demo_pca_restore <- function() {
   X <- matrix(rnorm(n * p), nrow = n, ncol = p)
 
   # Step 2. Forced deep copy (`+ 0`): a plain `X_orig <- X` would alias the
-  #         same buffer and be mutated together with X by the in-place fit().
+  #         same buffer and be mutated together with X by MLPCA$new().
   X_orig <- X + 0
 
   pca <- MLPCA$new(X, M = M, center = TRUE, normalize = TRUE)
   pca$fit()
 
-  # At this point X holds the standardized data (in-place preprocessing).
-  cat(sprintf("Max |X - X_orig| after fit()     : %.6e  (X standardized in place)\n",
+  # X holds the standardized data since MLPCA$new() (in-place preprocessing).
+  cat(sprintf("Max |X - X_orig| after fit()     : %.4e  (X standardized in place)\n",
               max(abs(X - X_orig))))
 
   # Step 3. Restore and measure reconstruction error. $restore() undoes the
@@ -139,8 +141,8 @@ demo_pca_restore <- function() {
   mean_error <- mean(abs(X - X_orig))
 
   cat("\nReconstruction error after restore():\n")
-  cat(sprintf("  Max Error  : %.6e\n", max_error))
-  cat(sprintf("  Mean Error : %.6e\n\n", mean_error))
+  cat(sprintf("  Max Error  : %.4e\n", max_error))
+  cat(sprintf("  Mean Error : %.4e\n\n", mean_error))
 
   if (max_error < 1e-10) {
     cat("✓ Restore round-trip passed\n")
@@ -199,7 +201,7 @@ demo_pca_transform <- function() {
   #         fit scores
   Z_train_check <- pca$transform(X_train_orig)
   max_diff <- max(abs(Z_train_check - Z_train))
-  cat(sprintf("Max diff (fit scores vs transform on same data): %.6e\n", max_diff))
+  cat(sprintf("Max diff (fit scores vs transform on same data): %.4e\n", max_diff))
 
   if (max_diff < 1e-10) {
     cat("✓ transform() reproduces fit scores\n")

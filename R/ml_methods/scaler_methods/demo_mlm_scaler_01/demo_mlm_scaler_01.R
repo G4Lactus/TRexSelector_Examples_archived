@@ -191,12 +191,12 @@ demo_scaler_serialization <- function() {
   scaler <- MLZScoreScaler$new()
   scaler$fit(X)
   scaler$save(filename)
-  cat(sprintf("✓ Saved ZScoreScaler to '%s'\n", filename))
+  cat(sprintf("✓ Saved ZScoreScaler to '<tmp>/%s'\n", basename(filename)))
 
   # Step 3. Load and verify
   loaded_scaler <- MLZScoreScaler$new()
   loaded_scaler$load(filename)
-  cat(sprintf("✓ Loaded ZScoreScaler from '%s'\n\n", filename))
+  cat(sprintf("✓ Loaded ZScoreScaler from '<tmp>/%s'\n\n", basename(filename)))
 
   # Verify centers and scales match
   mean_diff  <- sqrt(sum((scaler$get_centers() - loaded_scaler$get_centers())^2))
@@ -274,6 +274,10 @@ demo_scaler_on_mmap_matrix <- function() {
 
 cat("\n")
 print_section_header("DataTransformer Demo Suite")
+
+# Six OpenMP threads, as the C++ demo
+trex_set_num_threads(min(6L, trex_get_max_threads()))
+cat(sprintf("Running with %d threads\n\n", trex_get_max_threads()))
 
 demo_scaler_comparison()
 demo_scaler_inverse_transform()

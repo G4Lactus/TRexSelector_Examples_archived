@@ -2,73 +2,41 @@
 
 ## Overview
 
-This folder contains R examples for the **column-wise scaling and normalization** utilities of the **TRexSelectorNeo**
-package (`ZScoreScaler`, `LpNormScaler`).
+This folder holds the R example for column-wise scaling and normalization in the TRexSelectorNeo package, where the
+R6 classes `MLZScoreScaler` and `MLLpNormScaler` wrap the C++ `ZScoreScaler` and `LpNormScaler`. Both scalers
+subtract a center $c_j$ from every column of $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ and divide it by a scale
+$s_j$,
 
-These preprocessing methods are used to standardize features before downstream tasks such as penalized regression, and
-other numerical linear-algebra workflows. The current demo illustrates both variance-based standardization and
-norm-based normalization. The C++ counterparts live in
-[cpp/ml_methods/scaler_methods/](../../../cpp/ml_methods/scaler_methods/).
+```math
+\tilde{\boldsymbol{x}}_j = \frac{\boldsymbol{x}_j - c_j \mathbf{1}}{s_j},
+```
+
+where $c_j$ is the column mean with centering on and 0 with centering off. `MLZScoreScaler` divides by the root mean
+square around that center, which is the standard deviation with centering on, and `MLLpNormScaler` divides by the
+$L_2$- or $L_1$-norm of the centered column. The preprocessing prepares the features for penalized regression and
+other numerical linear-algebra workflows.
+
+The folder has one demo, `demo_mlm_scaler_01/`, with the script and a README that walks through the console output.
+It compares the `center` and `scale` switches of both scalers, checks the inverse transform, saves and reloads a
+fitted scaler and scales a memory-mapped matrix. The demo prints to the console only and finishes in about a second.
+The C++ and Python packages have the same demo in
+[cpp/ml_methods/scaler_methods/](../../../cpp/ml_methods/scaler_methods/README.md) and
+[Python/ml_methods/scaler_methods/](../../../Python/ml_methods/scaler_methods/README.md).
 
 ---
 
-## Key concepts
-
-Given a data matrix $\boldsymbol{X} \in \mathbb{R}^{n \times p}$, scaling is applied column by column.
-
-Two core transformations are demonstrated:
-
-### Z-score scaling
-
-```math
-\tilde{x}_{ij} = \frac{x_{ij} - \bar{x}_j}{s_j},
-```
-
-where $`\bar{x}_j`$ is the column mean and $s_j$ is the column scale.
-
-### Lp-norm scaling
-
-```math
-\tilde{\boldsymbol{x}}_j =
-\frac{\boldsymbol{x}_j - \bar{x}_j \mathbf{1}}
-{\lVert \boldsymbol{x}_j - \bar{x}_j \mathbf{1} \rVert_p},
-```
-
-when centering is enabled.
-
----
-
-## Start here
+## Demos
 
 | Folder | Purpose |
 | ------ | ------- |
-| [demo_mlm_scaler_01/](demo_mlm_scaler_01/README.md) | Demonstrates `ZScoreScaler` and `LpNormScaler`, including inverse transforms, serialization, and memory-mapped usage |
+| [`demo_mlm_scaler_01/`](demo_mlm_scaler_01/) | `MLZScoreScaler` and `MLLpNormScaler` under the center and scale switches, with inverse transforms, serialization and memory-mapped usage |
 
 ---
 
 ## Running
 
+From the repository root, with the TRexSelectorNeo R package installed:
+
 ```bash
 Rscript R/ml_methods/scaler_methods/demo_mlm_scaler_01/demo_mlm_scaler_01.R
 ```
-
-Console output only.
-
----
-
-## APIs used
-
-- `MLZScoreScaler$new(center, scale)` with `$fit()`, `$transform_inplace()`, `$inverse_transform_inplace()`,
-  `$get_centers()`, `$get_scales()`, `$save()`, `$load()`.
-- `MLLpNormScaler$new(norm_type, center, scale)` with the same method set.
-- `mem_matrix()` for the memory-mapped subproblem; the handle is passed straight to the scaler methods, which bind
-  the disk-backed buffer zero-copy (all scaler methods require `"readwrite"` mode).
-
----
-
-## History note
-
-This folder was previously named `standardization/` and held two flat scripts
-(`demo_standardization_01_in_memory.R`, `demo_standardization_02_mmap.R`) that scaled an 8 x 4 toy matrix. The C++ demo
-covers memory-mapped scaling as Subproblem 4 of `demo_mlm_scaler_01`, so the mmap walkthrough was folded into that demo,
-the standalone mmap variant was retired, and the folder was renamed to match the C++ tree.

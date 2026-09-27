@@ -13,11 +13,10 @@
 #   Demo 1 | Low-dimensional  : n=1000, p=500  (n > p,  10-fold)
 #   Demo 2 | High-dimensional : n=300,  p=500  (p > n,  10-fold)
 #   Demo 3 | Very high-dim    : n=300,  p=1000 (p >> n,  5-fold)
-#   Demo 4 | Memory-mapped    : n=2000, p=500  — the design matrix lives on
+#   Demo 4 | Memory-mapped    : n=5000, p=500  — the design matrix lives on
 #                               disk in an mmap file, is re-opened read-only,
-#                               and is bound zero-copy for the fit. (cpp:
-#                               n = 5,000, ConstMapType via Eigen::Ref; scaled
-#                               to n = 2,000 here.)
+#                               and is bound zero-copy for the fit; grid
+#                               widened to a 1e5 range (n >> p), as in cpp.
 #
 # Algorithm notes:
 #   RidgeCV runs an SVD per fold with per-fold centering and column
@@ -104,22 +103,27 @@ print_cv_summary <- function(cv, step_size = 10L) {
   cat("\n")
 }
 
-# Fit RidgeCV, print the summary, and run the ordering check
+# Fit RidgeCV, print the summary, and run the two checks: the ordering
 # lambda.1se >= lambda.min (the 1se rule always regularizes at least as
-# strongly as the pure minimizer).
-fit_and_report <- function(X, y, num_folds, seed) {
+# strongly as the pure minimizer), and both picks inside the grid.
+fit_and_report <- function(X, y, num_folds, seed, lambda_ratio = 1000) {
   # Grid parameters mirror the C++ fit(): a 100-lambda grid anchored at the
-  # largest useful penalty, spanning a 1000x range; `seed` fixes the fold
-  # assignment.
+  # largest useful penalty, spanning [lambda_max / lambda_ratio, lambda_max];
+  # `seed` fixes the fold assignment.
   cv <- MLRidgeCV$new()
-  cv$fit(X, y, num_folds = num_folds, n_lambda = 100L, lambda_ratio = 1000,
-         seed = seed)
+  cv$fit(X, y, num_folds = num_folds, n_lambda = 100L,
+         lambda_ratio = lambda_ratio, seed = seed)
 
   print_cv_summary(cv, step_size = 10L)
 
   order_ok <- cv$cv_min() <= cv$cv_1se()
-  cat(sprintf("  Ordering check (lambda.min <= lambda.1se): %s\n\n",
+  cat(sprintf("  Ordering check (lambda.min <= lambda.1se): %s\n",
               if (order_ok) "PASS" else "FAIL"))
+  # A pick on the first or last grid point is the grid boundary, not a minimum
+  K <- length(cv$get_lambdas())
+  at_edge <- any(c(cv$index_min(), cv$index_1se()) %in% c(1L, K))
+  cat(sprintf("  Grid-edge check (both picks inside the grid): %s\n\n",
+              if (at_edge) "FAIL" else "PASS"))
   stopifnot(order_ok)
   invisible(cv)
 }
@@ -185,29 +189,30 @@ demo_kfold_very_high_dim <- function() {
 
 
 # ==============================================================================
-# Demo 4: Memory-mapped scenario (n=2000, p=500, 10-fold)
+# Demo 4: Memory-mapped scenario (n=5000, p=500, 10-fold)
 # ==============================================================================
 
 demo_kfold_mmap <- function() {
   print_section_header(
-    "Demo MS-01 | ridge_cv_svd | Memory-Mapped Dataset (n=2000, p=500, 10-fold)")
+    "Demo MS-01 | ridge_cv_svd | Memory-Mapped Dataset (n=5000, p=500, 10-fold)")
 
-  # cpp: n = 5,000; scaled to 2,000 here to keep the demo fast
-  n <- 2000L; p <- 500L; sigma <- 1.0; n_folds <- 10L
+  n <- 5000L; p <- 500L; sigma <- 1.0; n_folds <- 10L
+  # n >> p: the CV optimum lies below lambda_max / 1000, so the grid is widened
+  lambda_ratio <- 1e5
 
   mmap_path <- tempfile(pattern = "trex_mlm_demo_ms01_svd_mmap_",
                         fileext = ".bin")
   on.exit({
     if (file.exists(mmap_path)) {
       unlink(mmap_path)
-      cat(sprintf("Cleaned up mmap file: %s\n\n", mmap_path))
+      cat(sprintf("Cleaned up mmap file: <tmp>/%s\n\n", basename(mmap_path)))
     }
   }, add = TRUE)
 
   dat <- generate_regression_data(n, p, sigma, seed = 444L)
 
   file_bytes <- as.numeric(n) * as.numeric(p) * 8
-  cat(sprintf("Writing X to mmap file: %s\n", mmap_path))
+  cat(sprintf("Writing X to mmap file: <tmp>/%s\n", basename(mmap_path)))
   cat(sprintf("  File size: %.2f MB\n", file_bytes / 2^20))
   cat(sprintf("  Active coefs: %d\n\n", sum(dat$beta_true != 0)))
 
@@ -221,7 +226,7 @@ demo_kfold_mmap <- function() {
               n_folds))
   X_ro <- mem_matrix(mmap_path, rows = n, cols = p, mode = "readonly")
 
-  fit_and_report(X_ro, dat$y, n_folds, seed = 444L)
+  fit_and_report(X_ro, dat$y, n_folds, seed = 444L, lambda_ratio = lambda_ratio)
   invisible(NULL)
 }
 

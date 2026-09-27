@@ -73,7 +73,7 @@ demo_mmap_basics <- function() {
 
   # 2. Temporary file path
   path <- mmap_temp_path("basics")
-  cat(sprintf("2. Temporary file: %s\n\n", path))
+  cat(sprintf("2. Temporary file: <tmp>/%s\n\n", basename(path)))
 
   on.exit(remove_file(path), add = TRUE)
 
@@ -85,7 +85,9 @@ demo_mmap_basics <- function() {
 
   # 4. Inspect metadata through the S3 methods
   cat("4. Metadata:\n")
-  print(mmap_mat)
+  # The S3 print method shows the file path; the temporary folder is shown as <tmp>/
+  printed <- capture.output(print(mmap_mat))
+  cat(sub(path, file.path("<tmp>", basename(path)), printed, fixed = TRUE), sep = "\n")
   cat(sprintf("   dim()  = %d x %d\n", dim(mmap_mat)[1], dim(mmap_mat)[2]))
   cat(sprintf("   size   = %d   (rows * cols)\n\n",
               dim(mmap_mat)[1] * dim(mmap_mat)[2]))
@@ -127,7 +129,7 @@ demo_out_of_core_streaming <- function() {
   n_cols <- 50L
 
   path <- mmap_temp_path("streaming")
-  cat(sprintf("Temporary file: %s\n\n", path))
+  cat(sprintf("Temporary file: <tmp>/%s\n\n", basename(path)))
 
   on.exit(remove_file(path), add = TRUE)
 
@@ -174,7 +176,7 @@ demo_per_column_seeded_fill <- function() {
   n_cols <- 50L
 
   path <- mmap_temp_path("seeded_fill")
-  cat(sprintf("Temporary file: %s\n\n", path))
+  cat(sprintf("Temporary file: <tmp>/%s\n\n", basename(path)))
 
   on.exit(remove_file(path), add = TRUE)
 
@@ -218,7 +220,7 @@ demo_element_wise_access <- function() {
   n_cols <- 8L
 
   path <- mmap_temp_path("element_access")
-  cat(sprintf("Temporary file: %s\n\n", path))
+  cat(sprintf("Temporary file: <tmp>/%s\n\n", basename(path)))
 
   on.exit(remove_file(path), add = TRUE)
 
