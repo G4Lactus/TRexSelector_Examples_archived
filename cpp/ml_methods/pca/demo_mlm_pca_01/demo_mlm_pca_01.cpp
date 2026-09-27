@@ -66,16 +66,17 @@ void demo_pca_fit() {
     std::cout << "V dimensions : " << res.V.rows() << " x " << res.V.cols() << "\n";
     std::cout << "explained_variance size: " << res.explained_variance.size() << "\n\n";
 
-    // Step 4. Print explained variance in %
-    double total_var = res.explained_variance.sum();
-    std::cout << "Explained variance per component (%):\n";
+    // Step 4. Explained variance as a share of the total variance of the preprocessed X
+    const double total_var = X_map.squaredNorm() / static_cast<double>(n - 1);
+    double cumulative = 0.0;
+    std::cout << "Explained variance per component (% of total):\n"
+              << std::fixed << std::setprecision(2);
     for (Eigen::Index k = 0; k < M; ++k) {
-        double pct = 100.0 * res.explained_variance(k) / total_var;
-        std::cout << "  PC" << (k + 1) << ": " << std::fixed << std::setprecision(2)
-                  << pct << "%\n";
+        const double pct = 100.0 * res.explained_variance(k) / total_var;
+        cumulative += pct;
+        std::cout << "  PC" << (k + 1) << ": " << pct << "%\n";
     }
-    std::cout << "  Cumulative (all " << M << "): " << std::fixed
-              << std::setprecision(2) << 100.0 << "% (of retained)\n";
+    std::cout << "  Cumulative (" << M << " of " << p << "): " << cumulative << "%\n";
 
     // Restore X
     pca.restore(X_map);
@@ -119,8 +120,9 @@ void demo_pca_restore() {
     double mean_error = (X - X_orig).cwiseAbs().mean();
 
     std::cout << "Reconstruction error after restore():\n"
-              << "  Max Error  : " << std::scientific << max_error  << "\n"
-              << "  Mean Error : " << std::scientific << mean_error << "\n\n";
+              << std::scientific << std::setprecision(4)
+              << "  Max Error  : " << max_error  << "\n"
+              << "  Mean Error : " << mean_error << "\n\n";
 
     if (max_error < 1e-10) {
         std::cout << "✓ Restore round-trip passed\n";
@@ -186,7 +188,7 @@ void demo_pca_transform() {
     Eigen::MatrixXd Z_train_check = pca.transform(X_train_orig);
     double max_diff = (Z_train_check - res.Z).cwiseAbs().maxCoeff();
     std::cout << "Max diff (fit scores vs transform on same data): "
-              << std::scientific << max_diff << "\n";
+              << std::scientific << std::setprecision(4) << max_diff << "\n";
 
     if (max_diff < 1e-10) {
         std::cout << "✓ transform() reproduces fit scores\n";

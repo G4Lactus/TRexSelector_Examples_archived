@@ -46,7 +46,7 @@ void demo_ridge_primal() {
     const Eigen::Index n = 500, p = 50;
     const double lambda = 1.0;
     std::cout << "Matrix size : " << n << " x " << p << "\n";
-    std::cout << "Lambda      : " << lambda << "\n\n";
+    std::cout << "Lambda      : " << std::defaultfloat << lambda << "\n\n";
 
     std::mt19937 rng(42);
     std::normal_distribution<double> norm_dist(0.0, 1.0);
@@ -69,8 +69,9 @@ void demo_ridge_primal() {
     // Step 3. Report
     double coef_error = (beta_hat - beta_true).norm();
     double residual   = (y - X * beta_hat).norm();
-    std::cout << "||beta_hat - beta_true||_2 : " << std::scientific << coef_error << "\n";
-    std::cout << "Residual ||y - X*beta||_2  : " << std::scientific << residual   << "\n";
+    std::cout << std::scientific << std::setprecision(4);
+    std::cout << "||beta_hat - beta_true||_2 : " << coef_error << "\n";
+    std::cout << "Residual ||y - X*beta||_2  : " << residual   << "\n";
     std::cout << "\n\n";
 }
 
@@ -86,7 +87,7 @@ void demo_ridge_dual() {
     const Eigen::Index n = 80, p = 300;
     const double lambda = 10.0;
     std::cout << "Matrix size : " << n << " x " << p << "\n";
-    std::cout << "Lambda      : " << lambda << "\n\n";
+    std::cout << "Lambda      : " << std::defaultfloat << lambda << "\n\n";
 
     std::mt19937 rng(7);
     std::normal_distribution<double> norm_dist(0.0, 1.0);
@@ -112,8 +113,9 @@ void demo_ridge_dual() {
     // Step 3. Report
     double coef_error = (beta_hat - beta_true).norm();
     double residual   = (y - X * beta_hat).norm();
-    std::cout << "||beta_hat - beta_true||_2 : " << std::scientific << coef_error << "\n";
-    std::cout << "Residual ||y - X*beta||_2  : " << std::scientific << residual   << "\n";
+    std::cout << std::scientific << std::setprecision(4);
+    std::cout << "||beta_hat - beta_true||_2 : " << coef_error << "\n";
+    std::cout << "Residual ||y - X*beta||_2  : " << residual   << "\n";
     std::cout << "\n\n";
 }
 
@@ -155,7 +157,8 @@ void demo_ridge_lambda_sweep() {
         Eigen::VectorXd beta_hat = ridge::RidgeSolver::solve(X, y, lam);
         double coef_error = (beta_hat - beta_true).norm();
         double residual   = (y - X * beta_hat).norm();
-        std::cout << std::setw(12) << std::scientific << lam
+        std::cout << std::scientific
+                  << std::setw(12) << std::setprecision(1) << lam << std::setprecision(4)
                   << std::setw(22) << coef_error
                   << std::setw(22) << residual << "\n";
     }

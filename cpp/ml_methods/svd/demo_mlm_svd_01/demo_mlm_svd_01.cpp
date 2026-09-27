@@ -14,6 +14,7 @@
 // ===================================================================================
 
 // std includes
+#include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <random>
@@ -31,6 +32,32 @@
 
 namespace svd_ns       = trex::ml_methods::svd;
 namespace cdiagnostics = trex::utils::eval::cdiagnostics;
+
+
+// ============================================================================
+// Shared check helper
+// ============================================================================
+
+/**
+ * @brief Compare the truncation error with the Eckart-Young optimum.
+ *
+ * @details The best rank-M approximation in the Frobenius norm leaves exactly the
+ *          energy of the discarded singular values; a full Eigen SVD provides them.
+ *
+ * @param X         Input matrix.
+ * @param M         Retained rank.
+ * @param rel_error Relative Frobenius error ||X_M - X||_F / ||X||_F of the solver.
+ */
+void print_eckart_young_check(const Eigen::MatrixXd& X, Eigen::Index M, double rel_error) {
+    const Eigen::VectorXd s_all = Eigen::JacobiSVD<Eigen::MatrixXd>(X).singularValues();
+    const double optimum = std::sqrt(s_all.tail(s_all.size() - M).squaredNorm()) / X.norm();
+    const double diff    = std::abs(rel_error - optimum);
+
+    std::cout << std::scientific << std::setprecision(4)
+              << "Eckart-Young optimum sqrt(sum_{k>M} s_k^2) / ||X||_F  : " << optimum << "\n"
+              << "Eckart-Young check (|difference| = " << diff << " < 1e-10): "
+              << (diff < 1e-10 ? "PASS" : "FAIL") << "\n";
+}
 
 
 // ============================================================================
@@ -66,9 +93,10 @@ void demo_svd_direct() {
 
     // Step 4. Reconstruction error: ||X_approx - X||_F / ||X||_F
     Eigen::MatrixXd X_approx = res.U * res.S.asDiagonal() * res.V.transpose();
-    double rel_error = (X_approx - X.leftCols(p)).norm() / X.norm();
+    double rel_error = (X_approx - X).norm() / X.norm();
     std::cout << "Relative reconstruction error ||X_M - X||_F / ||X||_F : "
-              << std::scientific << rel_error << "\n";
+              << std::scientific << std::setprecision(4) << rel_error << "\n";
+    print_eckart_young_check(X, M, rel_error);
 
     // Step 5. Singular values
     std::cout << "\nTop " << M << " singular values:\n";
@@ -115,7 +143,9 @@ void demo_svd_gram() {
     Eigen::MatrixXd X_approx = res.U * res.S.asDiagonal() * res.V.transpose();
     double rel_error = (X_approx - X).norm() / X.norm();
     std::cout << "Relative reconstruction error ||X_M - X||_F / ||X||_F : "
-              << std::scientific << rel_error << "\n\n\n";
+              << std::scientific << std::setprecision(4) << rel_error << "\n";
+    print_eckart_young_check(X, M, rel_error);
+    std::cout << "\n\n";
 }
 
 
@@ -151,8 +181,9 @@ void demo_svd_orthogonality() {
     Eigen::MatrixXd VtV = res.V.transpose() * res.V;
     double VtV_error = (VtV - Eigen::MatrixXd::Identity(M, M)).norm();
 
-    std::cout << "||U^T U - I||_F : " << std::scientific << UtU_error << "\n";
-    std::cout << "||V^T V - I||_F : " << std::scientific << VtV_error << "\n\n";
+    std::cout << std::scientific << std::setprecision(4);
+    std::cout << "||U^T U - I||_F : " << UtU_error << "\n";
+    std::cout << "||V^T V - I||_F : " << VtV_error << "\n\n";
 
     if (UtU_error < 1e-10 && VtV_error < 1e-10) {
         std::cout << "✓ U and V are orthonormal\n";
