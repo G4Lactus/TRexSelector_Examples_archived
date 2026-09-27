@@ -229,6 +229,13 @@ def _marker_legend(ax: plt.Axes, family_df: pd.DataFrame, styles: dict[str, tupl
               edgecolor="0.7")
 
 
+def _open_marker_note(fig: plt.Figure) -> None:
+    """Explain the open markers below the panels and lay out the figure around the note."""
+    fig.text(0.5, 0.005, "Open markers: some runs ended before $T$ dummies entered (active set at its size limit).",
+             ha="center", fontsize=9, color="0.3")
+    fig.tight_layout(rect=(0.0, 0.02, 1.0, 1.0))
+
+
 def plot_fdr_tpr_vs_T(df: pd.DataFrame, title: str) -> plt.Figure:
     """FDR (top row) and TPR (bottom row) in % vs. T, one column per solver family."""
     styles = _solver_styles(df)
@@ -257,9 +264,7 @@ def plot_fdr_tpr_vs_T(df: pd.DataFrame, title: str) -> plt.Figure:
     for col, family in enumerate(FAMILIES):
         _marker_legend(axes[1, col], df[df["family"] == family], styles)
     fig.suptitle(f"{title}: FDR and TPR vs. $T$", fontsize=13)
-    fig.text(0.5, 0.005, "Open markers: some runs ended before $T$ dummies entered (active set at its size limit).",
-             ha="center", fontsize=9, color="0.3")
-    fig.tight_layout(rect=(0.0, 0.02, 1.0, 1.0))
+    _open_marker_note(fig)
     return fig
 
 
@@ -284,7 +289,7 @@ def plot_tpr_vs_fdr(df: pd.DataFrame, title: str) -> plt.Figure:
     for col, family in enumerate(FAMILIES):
         _marker_legend(axes[0, col], df[df["family"] == family], styles)
     fig.suptitle(f"{title}: TPR vs. FDR along the $T$ grid", fontsize=13)
-    fig.tight_layout()
+    _open_marker_note(fig)
     return fig
 
 
@@ -348,9 +353,7 @@ def plot_path_stats(df: pd.DataFrame, title: str, n: int | None = None, p: int |
             axes[1, col].legend(handles=limit, loc="upper left", fontsize=8, frameon=True, facecolor="white",
                                 edgecolor="0.7")
     fig.suptitle(f"{title}: selected variables, steps and time vs. $T$", fontsize=13)
-    fig.text(0.5, 0.005, "Open markers: some runs ended before $T$ dummies entered (active set at its size limit).",
-             ha="center", fontsize=9, color="0.3")
-    fig.tight_layout(rect=(0.0, 0.02, 1.0, 1.0))
+    _open_marker_note(fig)
     return fig
 
 
