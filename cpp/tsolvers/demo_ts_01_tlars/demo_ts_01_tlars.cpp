@@ -67,7 +67,7 @@ void demo_TLARS_early_stopping(bool high_dim, bool rnd_coef, std::size_t T_stop)
     cdiagnost::print_section_header("Demo 1: Basic T-LARS with Early Stopping");
 
     // Setup
-    const std::size_t n = high_dim ? 1000 : 5000;;
+    const std::size_t n = high_dim ? 1000 : 5000;
     const std::size_t p = high_dim ? 5000 : 1000;
     const std::size_t num_dummies = 10 * p;
 
@@ -101,9 +101,9 @@ void demo_TLARS_early_stopping(bool high_dim, bool rnd_coef, std::size_t T_stop)
         /*seed=*/42,
         /*X_seed=*/-1,
         /*dummy_seed=*/-1,
-        datagen::predictor_policy::Normal(),         // 1. Predictor Distribution
+        datagen::predictor_policy::Normal(),   // 1. Predictor Distribution
         datagen::dummygen::Distribution::Normal(),   // 2. Dummy Distribution
-        datagen::noisegen::noise_policy::Normal()    // 3. Noise Distribution
+        datagen::noisegen::noise_policy::Normal()  // 3. Noise Distribution
     );
 
     // Create Maps
