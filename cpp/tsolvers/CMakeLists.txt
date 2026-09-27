@@ -52,5 +52,11 @@ add_demo_target(demo_ts_12_tafs
     T_ALGORITHM_LIBS
 )
 
+# Performance demos: all solvers side by side (figures via ts_plt_utils.py)
+add_demo_target(demo_ts_perf_01_fdr_tpr_vs_T
+    demo_ts_perf_01_fdr_tpr_vs_T/demo_ts_perf_01_fdr_tpr_vs_T.cpp
+    T_ALGORITHM_LIBS
+)
+
 # Cross-language validation programs moved to the TRexSelector library test suite
 # (TRexSelector/cpp/tests/validation/); see that folder's CMakeLists.txt.

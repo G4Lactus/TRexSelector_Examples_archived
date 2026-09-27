@@ -27,6 +27,13 @@ The demos run each solver in a standalone way, outside the full T-Rex calibratio
 | 11 | **T-OLS** | [demo_ts_11_tools/](demo_ts_11_tools/README.md) | Orthogonal least squares |
 | 12 | **T-AFS** | [demo_ts_12_tafs/](demo_ts_12_tafs/README.md) | Adaptive forward stepwise |
 
+The performance demos compare all solvers side by side, for example by false discovery rate (FDR) and true
+positive rate (TPR), with figures drawn by `ts_plt_utils.py`:
+
+| # | Folder | Question |
+|---|--------|----------|
+| P1 | [demo_ts_perf_01_fdr_tpr_vs_T/](demo_ts_perf_01_fdr_tpr_vs_T/README.md) | FDR and TPR of the terminated paths vs. $T$ (the simulation of the R tlars vignette) |
+
 ---
 
 ## Key concepts
@@ -98,7 +105,8 @@ refreshes the path data in well under a second without it.
 tsolvers/
   ├── README.md
   ├── CMakeLists.txt
-  ├── ts_perf_utils.hpp      # shared C++ helpers (part selection, path recorder)
+  ├── ts_perf_utils.hpp      # shared C++ helpers (part selection, path recorder, selection)
+  ├── ts_perf_solvers.hpp    # the solvers compared by the performance demos
   ├── ts_plt_utils.py        # shared matplotlib figures
   ├── demo_ts_01_tlars/
   ├── demo_ts_02_tlasso/
@@ -111,5 +119,6 @@ tsolvers/
   ├── demo_ts_09_tmp/
   ├── demo_ts_10_tncgmp/
   ├── demo_ts_11_tools/
-  └── demo_ts_12_tafs/
+  ├── demo_ts_12_tafs/
+  └── demo_ts_perf_01_fdr_tpr_vs_T/
 ```

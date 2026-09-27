@@ -25,6 +25,7 @@
 #define TS_PERF_UTILS_HPP
 
 // std includes
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -32,6 +33,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 // tsolvers includes
 #include <tsolvers/ad/tsolver_base.hpp>
@@ -63,6 +65,28 @@ inline std::string display_path(const std::filesystem::path& path) {
     if (pos != std::string::npos)
         return ".../" + s.substr(pos + 1);
     return path.filename().string();
+}
+
+/**
+ * @brief Selected original variables: nonzero coefficients among the first p.
+ *
+ * @details The T-Rex selector and the tlars vignette select this way. The
+ *          active set can be smaller: T-Stagewise freezes a variable it drops
+ *          from the active set, and the variable keeps its coefficient.
+ *
+ * @param solver Solver after executeStep().
+ * @return 0-based indices of the original variables with a nonzero coefficient.
+ */
+inline std::vector<std::size_t> selected_predictors(const trex::tsolvers::ad::TSolver_Base& solver) {
+    const auto path = solver.getBetaPathSparse();
+    std::vector<std::size_t> selected;
+    if (path.steps.empty()) return selected;
+    const auto& last = path.steps.back();
+    const std::size_t p = solver.getDummyStartIndex();
+    for (std::size_t k = 0; k < last.idx.size(); ++k)
+        if (last.idx[k] < p && last.val[k] != 0.0) selected.push_back(last.idx[k]);
+    std::sort(selected.begin(), selected.end());
+    return selected;
 }
 
 /**

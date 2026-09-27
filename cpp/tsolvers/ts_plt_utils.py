@@ -12,11 +12,15 @@ Plot patterns hosted here:
     plot_path_comparison()   — the same paths for several variants of one
                                solver (T-AFS rho values, T-NCGMP variants), one
                                panel per variant at its largest T_stop.
+    plot_fdr_tpr_vs_T()      — FDR and TPR vs. T per solver, one column per
+                               solver family (demo_ts_perf_01).
+    plot_tpr_vs_fdr()        — TPR vs. FDR along the T grid, same layout.
 
 CLI modes (typically driven from a demo's generate_plots.sh):
     python ts_plt_utils.py paths <stem>_path.csv --solver T-LARS --title "..."
     python ts_plt_utils.py compare --csvs a_path.csv b_path.csv \
         --labels 'rho = 0.1' 'rho = 1' --title "..." --stem my_stem
+    python ts_plt_utils.py fdr-tpr fdr_tpr_vs_T_mc500.csv --title "..."
 
 The path mode reads <stem>_path.csv (T_stop,step,index,is_dummy,beta) and the
 sibling <stem>_actions.csv (T_stop,step,index,is_dummy,added) written by
@@ -33,6 +37,7 @@ matplotlib.use("Agg")  # headless / batch-safe: no display required
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib.colors import to_hex
 from matplotlib.lines import Line2D
 
 # Colours and line styles of the tlars vignette path plot
@@ -176,6 +181,98 @@ def plot_path_comparison(variants: list[tuple[str, pd.DataFrame, pd.DataFrame]],
 
 
 # ==============================================================================
+# FDR and TPR vs. T (demo_ts_perf_01)
+# ==============================================================================
+
+FAMILIES = ["LARS-based", "OMP-based", "AFS-based"]
+MARKERS = ["o", "s", "^", "D", "v", "P", "X"]
+
+
+def _solver_styles(df: pd.DataFrame) -> dict[str, tuple[str, str]]:
+    """Colour (hex) and marker per solver, cycling within each family in file order."""
+    cmap = plt.get_cmap("tab10")
+    styles: dict[str, tuple[str, str]] = {}
+    for family in FAMILIES:
+        names = list(dict.fromkeys(df.loc[df["family"] == family, "solver"]))
+        for k, name in enumerate(names):
+            styles[name] = (to_hex(cmap(k % 10)), MARKERS[k % len(MARKERS)])
+    return styles
+
+
+def _plot_series(ax: plt.Axes, sub: pd.DataFrame, x: str, y: str, color: str,
+                 marker: str, label: str) -> None:
+    """Line with filled markers where every run reached T, open markers elsewhere."""
+    ax.plot(100 * sub[x] if x != "T" else sub[x], 100 * sub[y], color=color, linewidth=1.6, label=label)
+    for reached, face in ((True, color), (False, "white")):
+        part = sub[(sub["reached"] >= 0.99) == reached]
+        ax.scatter(100 * part[x] if x != "T" else part[x], 100 * part[y], marker=marker, s=34,
+                   facecolors=[face] * len(part), edgecolors=[color] * len(part), linewidths=1.2, zorder=3)
+
+
+def _family_legends(axes: list[plt.Axes]) -> None:
+    """One legend per family panel."""
+    for ax in axes:
+        ax.legend(loc="best", fontsize=8, frameon=True, facecolor="white", edgecolor="0.7")
+
+
+def plot_fdr_tpr_vs_T(df: pd.DataFrame, title: str) -> plt.Figure:
+    """FDR (top row) and TPR (bottom row) in % vs. T, one column per solver family."""
+    styles = _solver_styles(df)
+    T_values = sorted(df["T"].unique())
+    fig, axes = plt.subplots(2, len(FAMILIES), figsize=(15, 9), sharex=True, sharey=True, squeeze=False)
+    for col, family in enumerate(FAMILIES):
+        fam = df[df["family"] == family]
+        for name in dict.fromkeys(fam["solver"]):
+            sub = fam[fam["solver"] == name].sort_values("T")
+            color, marker = styles[name]
+            for row, metric in enumerate(("FDR", "TPR")):
+                _plot_series(axes[row, col], sub, "T", metric, color, marker, name)
+        axes[0, col].set_title(family, fontsize=12)
+        for row, metric in enumerate(("FDR", "TPR")):
+            ax = axes[row, col]
+            ax.set_xscale("log")
+            ax.set_xticks(T_values)
+            ax.set_xticklabels([str(int(v)) for v in T_values])
+            ax.minorticks_off()
+            ax.set_ylim(-3, 103)
+            ax.grid(linestyle="--", alpha=0.4)
+            if col == 0:
+                ax.set_ylabel(f"{metric} (%)")
+            if row == 1:
+                ax.set_xlabel("$T$ (number of included dummies)")
+    _family_legends(list(axes[1, :]))
+    fig.suptitle(f"{title}: FDR and TPR vs. $T$", fontsize=13)
+    fig.text(0.5, 0.005, "Open markers: some runs ended before $T$ dummies entered (active set at its size limit).",
+             ha="center", fontsize=9, color="0.3")
+    fig.tight_layout(rect=(0.0, 0.02, 1.0, 1.0))
+    return fig
+
+
+def plot_tpr_vs_fdr(df: pd.DataFrame, title: str) -> plt.Figure:
+    """TPR vs. FDR in % along the T grid, one panel per solver family."""
+    styles = _solver_styles(df)
+    fig, axes = plt.subplots(1, len(FAMILIES), figsize=(15, 5.2), sharex=True, sharey=True, squeeze=False)
+    for col, family in enumerate(FAMILIES):
+        ax = axes[0, col]
+        fam = df[df["family"] == family]
+        for name in dict.fromkeys(fam["solver"]):
+            sub = fam[fam["solver"] == name].sort_values("T")
+            color, marker = styles[name]
+            _plot_series(ax, sub, "FDR", "TPR", color, marker, name)
+        ax.set_title(family, fontsize=12)
+        ax.set_xlim(-3, 103)
+        ax.set_ylim(-3, 103)
+        ax.set_xlabel("FDR (%)")
+        if col == 0:
+            ax.set_ylabel("TPR (%)")
+        ax.grid(linestyle="--", alpha=0.4)
+    _family_legends(list(axes[0, :]))
+    fig.suptitle(f"{title}: TPR vs. FDR along the $T$ grid", fontsize=13)
+    fig.tight_layout()
+    return fig
+
+
+# ==============================================================================
 # CLI
 # ==============================================================================
 
@@ -199,6 +296,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     compare.add_argument("--stem", required=True, help="output stem")
     compare.add_argument("--outdir", type=Path, default=None, help="output folder")
     compare.add_argument("--formats", nargs="+", default=["png", "pdf"], help="output formats")
+    fdr = sub.add_parser("fdr-tpr", help="FDR and TPR vs. T of all solvers (demo_ts_perf_01)")
+    fdr.add_argument("csv", type=Path, help="fdr_tpr_vs_T_mc<N>.csv")
+    fdr.add_argument("--title", required=True, help="base title; each figure adds its subject")
+    fdr.add_argument("--outdir", type=Path, default=None, help="output folder")
+    fdr.add_argument("--formats", nargs="+", default=["png", "pdf"], help="output formats")
+
     args = parser.parse_args(argv)
     if args.mode == "compare" and len(args.csvs) != len(args.labels):
         parser.error("--csvs and --labels need the same number of entries")
@@ -218,6 +321,13 @@ def main(argv: list[str] | None = None) -> None:
         fig = plot_path_comparison(variants, args.title)
         save_figure(fig, args.outdir or default_plots_dir(args.csvs[0]), args.stem, args.formats)
         plt.close(fig)
+    elif args.mode == "fdr-tpr":
+        df = pd.read_csv(args.csv)
+        outdir = args.outdir or default_plots_dir(args.csv)
+        for fig, suffix in ((plot_fdr_tpr_vs_T(df, args.title), "fdr_tpr_vs_T"),
+                            (plot_tpr_vs_fdr(df, args.title), "tpr_vs_fdr")):
+            save_figure(fig, outdir, f"{args.csv.stem}_{suffix}", args.formats)
+            plt.close(fig)
 
 
 if __name__ == "__main__":
