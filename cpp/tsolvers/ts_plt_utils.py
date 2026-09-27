@@ -15,6 +15,9 @@ Plot patterns hosted here:
     plot_fdr_tpr_vs_T()      — FDR and TPR vs. T per solver, one column per
                                solver family (demo_ts_perf_01).
     plot_tpr_vs_fdr()        — TPR vs. FDR along the T grid, same layout.
+    plot_path_stats()        — selected variables, steps and cumulative time
+                               vs. T, same layout, with the exchangeability
+                               line and the step limit as references.
 
 CLI modes (typically driven from a demo's generate_plots.sh):
     python ts_plt_utils.py paths <stem>_path.csv --solver T-LARS --title "..."
@@ -30,6 +33,7 @@ sibling of the data folder; override with --outdir.
 
 import argparse
 from pathlib import Path
+from typing import Literal
 
 import matplotlib
 
@@ -69,6 +73,8 @@ def save_figure(fig: plt.Figure, outdir: Path, stem: str, formats: list[str]) ->
             dpi=300 if extension == "png" else None,
             bbox_inches="tight",
             facecolor="white",
+            # No creation date in the PDF, so an unchanged figure stays byte-identical
+            metadata={"CreationDate": None} if extension == "pdf" else None,
         )
         print(f"Wrote: {output_path}")
 
@@ -188,6 +194,11 @@ FAMILIES = ["LARS-based", "OMP-based", "AFS-based"]
 MARKERS = ["o", "s", "^", "D", "v", "P", "X"]
 
 
+def display_name(name: str) -> str:
+    """Solver label for legends, with its parameter as math: "T-AFS (rho 0.1)" -> "T-AFS ($\\rho$ = 0.1)"."""
+    return name.replace("(rho ", "($\\rho$ = ").replace("(lambda2 ", "($\\lambda_2$ = ")
+
+
 def _solver_styles(df: pd.DataFrame) -> dict[str, tuple[str, str]]:
     """Colour (hex) and marker per solver, cycling within each family in file order."""
     cmap = plt.get_cmap("tab10")
@@ -209,10 +220,13 @@ def _plot_series(ax: plt.Axes, sub: pd.DataFrame, x: str, y: str, color: str,
                    facecolors=[face] * len(part), edgecolors=[color] * len(part), linewidths=1.2, zorder=3)
 
 
-def _family_legends(axes: list[plt.Axes]) -> None:
-    """One legend per family panel."""
-    for ax in axes:
-        ax.legend(loc="best", fontsize=8, frameon=True, facecolor="white", edgecolor="0.7")
+def _marker_legend(ax: plt.Axes, family_df: pd.DataFrame, styles: dict[str, tuple[str, str]],
+                   loc: Literal["best", "upper left"] = "best", extra: list[Line2D] | None = None) -> None:
+    """Legend with the line and the filled marker of every solver in the panel."""
+    handles = [Line2D([], [], color=styles[name][0], marker=styles[name][1], markersize=6, linewidth=1.6,
+                      label=display_name(name)) for name in dict.fromkeys(family_df["solver"])]
+    ax.legend(handles=handles + (extra or []), loc=loc, fontsize=8, frameon=True, facecolor="white",
+              edgecolor="0.7")
 
 
 def plot_fdr_tpr_vs_T(df: pd.DataFrame, title: str) -> plt.Figure:
@@ -240,7 +254,8 @@ def plot_fdr_tpr_vs_T(df: pd.DataFrame, title: str) -> plt.Figure:
                 ax.set_ylabel(f"{metric} (%)")
             if row == 1:
                 ax.set_xlabel("$T$ (number of included dummies)")
-    _family_legends(list(axes[1, :]))
+    for col, family in enumerate(FAMILIES):
+        _marker_legend(axes[1, col], df[df["family"] == family], styles)
     fig.suptitle(f"{title}: FDR and TPR vs. $T$", fontsize=13)
     fig.text(0.5, 0.005, "Open markers: some runs ended before $T$ dummies entered (active set at its size limit).",
              ha="center", fontsize=9, color="0.3")
@@ -266,9 +281,76 @@ def plot_tpr_vs_fdr(df: pd.DataFrame, title: str) -> plt.Figure:
         if col == 0:
             ax.set_ylabel("TPR (%)")
         ax.grid(linestyle="--", alpha=0.4)
-    _family_legends(list(axes[0, :]))
+    for col, family in enumerate(FAMILIES):
+        _marker_legend(axes[0, col], df[df["family"] == family], styles)
     fig.suptitle(f"{title}: TPR vs. FDR along the $T$ grid", fontsize=13)
     fig.tight_layout()
+    return fig
+
+
+def plot_path_stats(df: pd.DataFrame, title: str, n: int | None = None, p: int | None = None,
+                    L: int | None = None, s: int | None = None) -> plt.Figure:
+    """Selected variables, steps and cumulative time (ms) vs. T, one column per solver family.
+
+    With n, p, L and s given, the selected-variables row shows s + (p - s) / (L + 1) * T:
+    the true variables plus the expected number of null variables that enter before the
+    T-th dummy when nulls and dummies are exchangeable (negative hypergeometric mean). The
+    steps row shows the step limit 8 * min(p + L, n) of the LARS and OMP families.
+    """
+    rows = [("avg_selected", "Selected variables"), ("avg_steps", "Steps"),
+            ("avg_ms", "Time from construction (ms)")]
+    styles = _solver_styles(df)
+    T_values = sorted(df["T"].unique())
+    fig, axes = plt.subplots(len(rows), len(FAMILIES), figsize=(15, 12), sharex=True, sharey="row",
+                             squeeze=False)
+    for col, family in enumerate(FAMILIES):
+        fam = df[df["family"] == family]
+        for name in dict.fromkeys(fam["solver"]):
+            sub = fam[fam["solver"] == name].sort_values("T")
+            color, marker = styles[name]
+            for row, (metric, _) in enumerate(rows):
+                ax = axes[row, col]
+                ax.plot(sub["T"], sub[metric], color=color, linewidth=1.6, label=name)
+                for reached, face in ((True, color), (False, "white")):
+                    part = sub[(sub["reached"] >= 0.99) == reached]
+                    ax.scatter(part["T"], part[metric], marker=marker, s=34, facecolors=[face] * len(part),
+                               edgecolors=[color] * len(part), linewidths=1.2, zorder=3)
+        axes[0, col].set_title(family, fontsize=12)
+
+    expected: list[Line2D] = []
+    limit: list[Line2D] = []
+    if n is not None and p is not None and L is not None and s is not None:
+        grid = pd.Series([float(v) for v in T_values])
+        rate = (p - s) / (L + 1)
+        expected = [Line2D([], [], color="0.35", linestyle="--", linewidth=1.2,
+                           label=f"expected: {s} true + {rate:.2f} $T$ null")]
+        limit = [Line2D([], [], color="0.35", linestyle=":", linewidth=1.2,
+                        label=f"step limit {8 * min(p + L, n)}")]
+        for col in range(len(FAMILIES)):
+            axes[0, col].plot(grid, s + rate * grid, color="0.35", linestyle="--", linewidth=1.2, zorder=1)
+            axes[1, col].axhline(8 * min(p + L, n), color="0.35", linestyle=":", linewidth=1.2, zorder=1)
+    for col in range(len(FAMILIES)):
+        for row, (_, label) in enumerate(rows):
+            ax = axes[row, col]
+            ax.set_xscale("log")
+            ax.set_yscale("log")
+            ax.set_xticks(T_values)
+            ax.set_xticklabels([str(int(v)) for v in T_values])
+            ax.minorticks_off()
+            ax.grid(linestyle="--", alpha=0.4, which="both")
+            if col == 0:
+                ax.set_ylabel(label)
+            if row == len(rows) - 1:
+                ax.set_xlabel("$T$ (number of included dummies)")
+    for col, family in enumerate(FAMILIES):
+        _marker_legend(axes[0, col], df[df["family"] == family], styles, loc="upper left", extra=expected)
+        if limit:
+            axes[1, col].legend(handles=limit, loc="upper left", fontsize=8, frameon=True, facecolor="white",
+                                edgecolor="0.7")
+    fig.suptitle(f"{title}: selected variables, steps and time vs. $T$", fontsize=13)
+    fig.text(0.5, 0.005, "Open markers: some runs ended before $T$ dummies entered (active set at its size limit).",
+             ha="center", fontsize=9, color="0.3")
+    fig.tight_layout(rect=(0.0, 0.02, 1.0, 1.0))
     return fig
 
 
@@ -301,6 +383,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     fdr.add_argument("--title", required=True, help="base title; each figure adds its subject")
     fdr.add_argument("--outdir", type=Path, default=None, help="output folder")
     fdr.add_argument("--formats", nargs="+", default=["png", "pdf"], help="output formats")
+    fdr.add_argument("--n", type=int, default=None, help="observations (reference lines)")
+    fdr.add_argument("--p", type=int, default=None, help="original variables (reference lines)")
+    fdr.add_argument("--L", type=int, default=None, help="dummies (reference lines)")
+    fdr.add_argument("--s", type=int, default=None, help="true variables (reference lines)")
 
     args = parser.parse_args(argv)
     if args.mode == "compare" and len(args.csvs) != len(args.labels):
@@ -325,7 +411,8 @@ def main(argv: list[str] | None = None) -> None:
         df = pd.read_csv(args.csv)
         outdir = args.outdir or default_plots_dir(args.csv)
         for fig, suffix in ((plot_fdr_tpr_vs_T(df, args.title), "fdr_tpr_vs_T"),
-                            (plot_tpr_vs_fdr(df, args.title), "tpr_vs_fdr")):
+                            (plot_tpr_vs_fdr(df, args.title), "tpr_vs_fdr"),
+                            (plot_path_stats(df, args.title, args.n, args.p, args.L, args.s), "path_stats")):
             save_figure(fig, outdir, f"{args.csv.stem}_{suffix}", args.formats)
             plt.close(fig)
 

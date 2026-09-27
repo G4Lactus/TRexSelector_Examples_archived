@@ -84,7 +84,7 @@ inline std::vector<SolverSpec> demo_solvers() {
         make_spec<lars::TLARS_Solver>("T-LARS", LARS, Options{.normalize = false, .intercept = false}),
         make_spec<lars::TLASSO_Solver>("T-LASSO", LARS, Options{.normalize = false, .intercept = false}),
         make_spec<lars::TSTEPWISE_Solver>("T-Stepwise", LARS, Options{.normalize = false, .intercept = false}),
-        make_spec<lars::TENET_Solver>("T-ENET", LARS,
+        make_spec<lars::TENET_Solver>("T-ENET (lambda2 0.5)", LARS,
                                       Options{.normalize = false, .intercept = false, .lambda2 = 0.5}),
         make_spec<lars::TSTAGEWISE_Solver>("T-Stagewise", LARS, Options{.normalize = false, .intercept = false}),
         make_spec<omp::TOMP_Solver>("T-OMP", OMP, Options{.normalize = false, .intercept = false}),

@@ -25,6 +25,7 @@
 #include <atomic>
 #include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <fstream>
 #include <iomanip>
@@ -196,6 +197,8 @@ int main(int argc, char** argv) {
                 const auto t0 = std::chrono::steady_clock::now();
                 try {
                     auto solver = solvers[s].make(X_map, D_map, y_map);
+                    // Seed the tie-break engine per run (default: random_device, not reproducible)
+                    solver->setTieSeed(static_cast<std::uint32_t>(data_seed_offset + mc));
                     for (const std::size_t T : T_grid) {
                         solver->executeStep(T, /*early_stop=*/true); // warm start from the previous T
                         const auto selected = ts_perf::selected_predictors(*solver);
@@ -225,11 +228,11 @@ int main(int argc, char** argv) {
 
         std::ostringstream out;
         auto table = [&](const std::string& title, auto member, double scale, int precision) {
-            out << title << "\n" << std::left << std::setw(18) << "solver" << std::right;
+            out << title << "\n" << std::left << std::setw(22) << "solver" << std::right;
             for (const auto T : T_grid) out << std::setw(8) << ("T=" + std::to_string(T));
-            out << "\n" << std::string(18 + 8 * K, '-') << "\n" << std::fixed << std::setprecision(precision);
+            out << "\n" << std::string(22 + 8 * K, '-') << "\n" << std::fixed << std::setprecision(precision);
             for (std::size_t s = 0; s < S; ++s) {
-                out << std::left << std::setw(18) << solvers[s].name << std::right;
+                out << std::left << std::setw(22) << solvers[s].name << std::right;
                 for (std::size_t k = 0; k < K; ++k) out << std::setw(8) << scale * mean(column(s, k, member));
                 out << "\n";
             }
