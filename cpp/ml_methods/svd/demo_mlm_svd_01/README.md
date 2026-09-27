@@ -52,7 +52,7 @@ cpp/build/release/bin/ml_methods/svd/demo_mlm_svd_01/demo_mlm_svd_01
 ```
 
 The demo prints to the console only and finishes in under a second. The output below comes from a run against
-library 8ad3376 on an Apple Silicon machine. The data are drawn with `std::mt19937` and `std::normal_distribution`.
+library b95b984 on an Apple Silicon machine. The data are drawn with `std::mt19937` and `std::normal_distribution`.
 The latter is implementation-defined, so another standard library, such as libstdc++ on Linux, may draw different
 data and print different numbers.
 
@@ -66,7 +66,7 @@ A $300 \times 80$ Gaussian matrix goes through the thin Jacobi SVD with $M = 10$
 sits just below $\sqrt{n} + \sqrt{p} \approx 26.26$, the upper edge for a Gaussian matrix, and the spectrum falls off
 slowly because the matrix has no low-rank structure. The ten leading components therefore keep only
 $1 - 0.8709^2 \approx 24\%$ of the squared Frobenius norm, and the relative error of 0.8709 equals the Eckart-Young
-optimum to within $1.3 \cdot 10^{-14}$.
+optimum to within $1.1 \cdot 10^{-14}$.
 
 ```text
 ============================================================
@@ -81,7 +81,7 @@ V dimensions : 80 x 10
 
 Relative reconstruction error ||X_M - X||_F / ||X||_F : 8.7087e-01
 Eckart-Young optimum sqrt(sum_{k>M} s_k^2) / ||X||_F  : 8.7087e-01
-Eckart-Young check (|difference| = 1.2546e-14 < 1e-10): PASS
+Eckart-Young check (|difference| = 1.1324e-14 < 1e-10): PASS
 
 Top 10 singular values:
   s1 = 25.9719
@@ -102,7 +102,7 @@ For the wide $100 \times 500$ matrix, the solver computes the eigendecomposition
 $\mathbf{X}\mathbf{X}^\top$ instead of working on the 500 columns, at a cost of order $n^2 p + n^3$. Forming
 $\mathbf{X}\mathbf{X}^\top$ squares the condition number and can cost accuracy in the small singular values. For the
 eight retained components, however, the Eckart-Young check finds no loss, as the error of 0.9226 matches the optimum
-to within $1.6 \cdot 10^{-14}$. These eight of 100 components keep about 15% of the squared norm.
+to within $1.5 \cdot 10^{-14}$. These eight of 100 components keep about 15% of the squared norm.
 
 ```text
 ============================================================
@@ -117,13 +117,13 @@ V dimensions : 500 x 8
 
 Relative reconstruction error ||X_M - X||_F / ||X||_F : 9.2257e-01
 Eckart-Young optimum sqrt(sum_{k>M} s_k^2) / ||X||_F  : 9.2257e-01
-Eckart-Young check (|difference| = 1.5543e-14 < 1e-10): PASS
+Eckart-Young check (|difference| = 1.4766e-14 < 1e-10): PASS
 ```
 
 ### Subproblem 3: Orthogonality check
 
 For a $200 \times 150$ matrix with $M = 20$, $\mathbf{U}^\top\mathbf{U}$ and $\mathbf{V}^\top\mathbf{V}$ deviate from
-the $20 \times 20$ identity by $1.4 \cdot 10^{-13}$ and $1.5 \cdot 10^{-13}$ in the Frobenius norm, far below the
+the $20 \times 20$ identity by $1.5 \cdot 10^{-13}$ and $1.6 \cdot 10^{-13}$ in the Frobenius norm, far below the
 threshold of $10^{-10}$.
 
 ```text
@@ -133,8 +133,8 @@ SVDSolver - Orthogonality Check
 Matrix size : 200 x 150
 M           : 20
 
-||U^T U - I||_F : 1.3637e-13
-||V^T V - I||_F : 1.5015e-13
+||U^T U - I||_F : 1.4629e-13
+||V^T V - I||_F : 1.5536e-13
 
 ✓ U and V are orthonormal
 ```

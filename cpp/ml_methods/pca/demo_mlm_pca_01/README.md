@@ -55,7 +55,7 @@ cpp/build/release/bin/ml_methods/pca/demo_mlm_pca_01/demo_mlm_pca_01
 ```
 
 The demo prints to the console only and finishes in under a second. The output below comes from a run against
-library 8ad3376 on an Apple Silicon machine. The data are drawn with `std::mt19937` and `std::normal_distribution`.
+library b95b984 on an Apple Silicon machine. The data are drawn with `std::mt19937` and `std::normal_distribution`.
 The latter is implementation-defined, so another standard library, such as libstdc++ on Linux, may draw different
 data and print different numbers.
 
@@ -99,7 +99,7 @@ Explained variance per component (% of total):
 ### Subproblem 2: Restore round-trip
 
 PCA is fit on a working copy of a $300 \times 100$ matrix, and `restore()` brings the copy back. The largest
-deviation from the original, $8.9 \cdot 10^{-16}$, is one or two units in the last place of the larger entries, so
+deviation from the original, $4.4 \cdot 10^{-16}$, is one unit in the last place of the larger entries, so
 dividing by the column norm and multiplying back is exact up to rounding. The check tests the interface, not the
 low-rank approximation error.
 
@@ -111,8 +111,8 @@ Matrix size  : 300 x 100
 Components M : 5
 
 Reconstruction error after restore():
-  Max Error  : 8.8818e-16
-  Mean Error : 2.7446e-17
+  Max Error  : 4.4409e-16
+  Mean Error : 1.3604e-17
 
 ✓ Restore round-trip passed
 ```
@@ -120,7 +120,7 @@ Reconstruction error after restore():
 ### Subproblem 3: Transform new data
 
 PCA is fit on a $400 \times 80$ training matrix and then applied to 50 new rows, which yields $50 \times 8$ scores.
-On an untouched copy of the training data, `transform()` reproduces the scores of the fit up to $5.0 \cdot 10^{-15}$,
+On an untouched copy of the training data, `transform()` reproduces the scores of the fit up to $3.5 \cdot 10^{-15}$,
 which confirms that it uses the same means, norms and loadings.
 
 ```text
@@ -135,7 +135,7 @@ Train scores Z dimensions: 400 x 8
 Test  scores Z dimensions: 50 x 8
 
 ✓ Transform output shape correct (50 x 8)
-Max diff (fit scores vs transform on same data): 4.9960e-15
+Max diff (fit scores vs transform on same data): 3.4694e-15
 ✓ transform() reproduces fit scores
 ```
 
