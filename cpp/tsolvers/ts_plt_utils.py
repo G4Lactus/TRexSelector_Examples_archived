@@ -18,6 +18,9 @@ Plot patterns hosted here:
     plot_path_stats()        — selected variables, steps and cumulative time
                                vs. T, same layout, with the exchangeability
                                line and the step limit as references.
+    plot_refit_errors()      — prediction RMSE and coefficient error of the
+                               least-squares refit on the selected variables
+                               vs. T, with the refit on the true support.
 
 CLI modes (typically driven from a demo's generate_plots.sh):
     python ts_plt_utils.py paths <stem>_path.csv --solver T-LARS --title "..."
@@ -221,7 +224,8 @@ def _plot_series(ax: plt.Axes, sub: pd.DataFrame, x: str, y: str, color: str,
 
 
 def _marker_legend(ax: plt.Axes, family_df: pd.DataFrame, styles: dict[str, tuple[str, str]],
-                   loc: Literal["best", "upper left"] = "best", extra: list[Line2D] | None = None) -> None:
+                   loc: Literal["best", "upper left", "upper right"] = "best",
+                   extra: list[Line2D] | None = None) -> None:
     """Legend with the line and the filled marker of every solver in the panel."""
     handles = [Line2D([], [], color=styles[name][0], marker=styles[name][1], markersize=6, linewidth=1.6,
                       label=display_name(name)) for name in dict.fromkeys(family_df["solver"])]
@@ -358,6 +362,48 @@ def plot_path_stats(df: pd.DataFrame, title: str, rank: int | None = None, p: in
     return fig
 
 
+def plot_refit_errors(df: pd.DataFrame, title: str) -> plt.Figure:
+    """Prediction RMSE and coefficient error of the post-selection refit vs. T, one column per family."""
+    rows = [("rmse", "oracle_rmse", "Prediction RMSE (test set)"),
+            ("coef_err", "oracle_coef_err", "Coefficient error $\\|\\hat{\\beta} - \\beta\\|_2$")]
+    styles = _solver_styles(df)
+    T_values = sorted(df["T"].unique())
+    fig, axes = plt.subplots(len(rows), len(FAMILIES), figsize=(15, 8.5), sharex=True, sharey="row",
+                             squeeze=False)
+    oracle = [Line2D([], [], color="0.35", linestyle="--", linewidth=1.2,
+                     label="least squares on the true support")]
+    for col, family in enumerate(FAMILIES):
+        fam = df[df["family"] == family]
+        for name in dict.fromkeys(fam["solver"]):
+            sub = fam[fam["solver"] == name].sort_values("T")
+            color, marker = styles[name]
+            for row, (metric, _, _) in enumerate(rows):
+                ax = axes[row, col]
+                ax.plot(sub["T"], sub[metric], color=color, linewidth=1.6)
+                for reached, face in ((True, color), (False, "white")):
+                    part = sub[(sub["reached"] >= 0.99) == reached]
+                    ax.scatter(part["T"], part[metric], marker=marker, s=34, facecolors=[face] * len(part),
+                               edgecolors=[color] * len(part), linewidths=1.2, zorder=3)
+        axes[0, col].set_title(family, fontsize=12)
+        for row, (_, ref, label) in enumerate(rows):
+            ax = axes[row, col]
+            ax.axhline(float(df[ref].iloc[0]), color="0.35", linestyle="--", linewidth=1.2, zorder=1)
+            ax.set_xscale("log")
+            ax.set_yscale("log")
+            ax.set_xticks(T_values)
+            ax.set_xticklabels([str(int(v)) for v in T_values])
+            ax.minorticks_off()
+            ax.grid(linestyle="--", alpha=0.4, which="both")
+            if col == 0:
+                ax.set_ylabel(label)
+            if row == len(rows) - 1:
+                ax.set_xlabel("$T$ (number of included dummies)")
+        _marker_legend(axes[0, col], fam, styles, loc="best", extra=oracle)
+    fig.suptitle(f"{title}: least-squares refit on the selected variables vs. $T$", fontsize=13)
+    _open_marker_note(fig)
+    return fig
+
+
 # ==============================================================================
 # CLI
 # ==============================================================================
@@ -416,7 +462,8 @@ def main(argv: list[str] | None = None) -> None:
         outdir = args.outdir or default_plots_dir(args.csv)
         for fig, suffix in ((plot_fdr_tpr_vs_T(df, args.title), "fdr_tpr_vs_T"),
                             (plot_tpr_vs_fdr(df, args.title), "tpr_vs_fdr"),
-                            (plot_path_stats(df, args.title, args.rank, args.p, args.L, args.s), "path_stats")):
+                            (plot_path_stats(df, args.title, args.rank, args.p, args.L, args.s), "path_stats"),
+                            (plot_refit_errors(df, args.title), "refit_errors")):
             save_figure(fig, outdir, f"{args.csv.stem}_{suffix}", args.formats)
             plt.close(fig)
 

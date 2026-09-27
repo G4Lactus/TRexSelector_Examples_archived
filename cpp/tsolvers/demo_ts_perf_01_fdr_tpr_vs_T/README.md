@@ -5,7 +5,8 @@
 This demo compares the terminated solution paths of all demo T-solvers by their false discovery rate (FDR) and true
 positive rate (TPR) as the number $T$ of included dummies grows. It repeats the simulation study of the R tlars
 vignette, runs it for every solver on the same data, and warm-starts each solver along the $T$ grid instead of
-fitting every $T$ from scratch.
+fitting every $T$ from scratch. A least-squares refit on the selected variables then shows which $T$ gives the best
+estimate.
 
 ---
 
@@ -14,7 +15,8 @@ fitting every $T$ from scratch.
 - $n = 100$ observations and $p = 300$ variables with independent standard normal entries,
 - ten true coefficients equal to 3 on a fixed random support, noise standard deviation about 1 (`snr = 90`),
 - $L = p = 300$ standard normal dummies, drawn fresh in every run,
-- $T \in \lbrace 1, 2, 5, 10, 20, 50, 100 \rbrace$ and 500 Monte Carlo runs.
+- $T \in \lbrace 1, 2, 5, 10, 20, 50, 100 \rbrace$ and 500 Monte Carlo runs,
+- a fresh test set of 1,000 rows per run for the refit.
 
 Each run centers and scales $\mathbf{X}$ and $\mathbf{D}$ and centers $\mathbf{y}$ once, and hands them to all 15
 solver configurations as readers. These are the 12 solvers of the solver demos with their demo settings (T-ENET with
@@ -48,7 +50,7 @@ cpp/tsolvers/demo_ts_perf_01_fdr_tpr_vs_T/generate_plots.sh                     
 ```
 
 The two optional arguments are the number of runs and of threads. The runs are spread over the threads, and each
-solver runs single-threaded inside its run. The 500 runs take about 6 s on an Apple Silicon machine with 6 threads.
+solver runs single-threaded inside its run. The 500 runs take about 7 s on an Apple Silicon machine with 6 threads.
 The result files carry the number of runs in their name (`fdr_tpr_vs_T_mc500.csv` and `.txt`), so a short test run
 does not overwrite the full one. The output below is a run against library b95b984. The data are drawn with
 `std::mt19937` and `std::normal_distribution`, and run $k$ uses the seed $1{,}000 + k$, so the results do not depend
@@ -206,33 +208,92 @@ T-AFS (rho 1)             11.4    13.7    19.6    29.5    49.3    98.3    99.0
 Average time from construction to T (ms, cumulative)
 solver                     T=1     T=2     T=5    T=10    T=20    T=50   T=100
 ------------------------------------------------------------------------------
-T-LARS                    0.17    0.22    0.32    0.49    0.85    2.02    2.06
-T-LASSO                   0.16    0.22    0.33    0.51    0.91    3.41    3.55
-T-Stepwise                0.16    0.19    0.28    0.42    0.73    1.78    1.82
-T-ENET (lambda2 0.5)      0.23    0.31    0.49    0.75    1.29    3.36    8.55
-T-Stagewise               0.17    0.23    0.39    0.68    1.79   31.70   32.84
-T-OMP                     0.16    0.20    0.28    0.43    0.77    1.88    1.92
-T-GP                      0.18    0.21    0.30    0.43    0.72    1.53    1.56
-T-ACGP                    0.18    0.21    0.30    0.44    0.76    1.65    1.68
-T-MP                      0.21    0.26    0.34    0.47    0.75    1.54    1.58
-T-NCGMP                   0.21    0.25    0.33    0.45    0.69    1.33    1.36
-T-OLS                     0.27    0.32    0.46    0.70    1.20    2.79    2.83
-T-AFS (rho 0.1)           0.15    0.19    0.28    0.42    0.74    1.89    1.92
-T-AFS (rho 0.3)           0.16    0.20    0.28    0.42    0.74    1.88    1.91
-T-AFS (rho 0.5)           0.16    0.19    0.28    0.43    0.75    1.88    1.91
-T-AFS (rho 1)             0.16    0.19    0.28    0.42    0.74    1.88    1.91
-
-Failed solver runs: 0
-Wall time: 6.0 s
+T-LARS                    0.17    0.23    0.34    0.52    0.90    2.14    2.18
+T-LASSO                   0.18    0.23    0.35    0.54    0.97    3.61    3.75
+T-Stepwise                0.18    0.21    0.30    0.45    0.77    1.90    1.93
+T-ENET (lambda2 0.5)      0.25    0.34    0.53    0.80    1.38    3.58    9.06
+T-Stagewise               0.18    0.25    0.42    0.73    1.91   32.26   33.42
+T-OMP                     0.17    0.21    0.30    0.45    0.80    1.95    1.99
+T-GP                      0.19    0.23    0.31    0.45    0.75    1.59    1.61
+T-ACGP                    0.19    0.23    0.32    0.47    0.79    1.71    1.74
+T-MP                      0.23    0.27    0.36    0.50    0.79    1.61    1.65
+T-NCGMP                   0.23    0.27    0.35    0.48    0.73    1.40    1.43
+T-OLS                     0.29    0.34    0.48    0.73    1.24    2.88    2.92
+T-AFS (rho 0.1)           0.16    0.21    0.30    0.45    0.79    1.98    2.01
+T-AFS (rho 0.3)           0.17    0.21    0.29    0.45    0.78    1.97    2.00
+T-AFS (rho 0.5)           0.17    0.21    0.29    0.45    0.79    1.97    2.00
+T-AFS (rho 1)             0.17    0.20    0.29    0.44    0.77    1.96    2.00
 ```
 
-Up to $T = 20$, where every path still reaches its $T$, a whole warm-started path takes 0.7 to 1.3 ms for every solver
+Up to $T = 20$, where every path still reaches its $T$, a whole warm-started path takes 0.7 to 1.4 ms for every solver
 except T-Stagewise, and T-OMP needs about 0.8 ms. T-OLS belongs to this group, because the library scores its
-candidates in one pass per step, and needs 1.2 ms to $T = 20$ and 2.8 ms to $T = 100$. T-Stagewise stays fast up to
-$T = 20$ with about 1.8 ms, and its time jumps to 32 ms at $T = 50$, where the capped paths cycle through drops and
+candidates in one pass per step, and needs about 1.2 ms to $T = 20$ and 2.9 ms to $T = 100$. T-Stagewise stays fast up
+to $T = 20$ with about 1.9 ms, and its time jumps to 32 ms at $T = 50$, where the capped paths cycle through drops and
 re-entries for 774 steps on average. T-LASSO shows the same effect more mildly, with 150 steps at $T = 50$ against
 about 99 for T-LARS. The times at $T = 50$ and 100 therefore describe the saturated regime rather than the solvers.
 They are measured inside the parallel loop and serve for comparison only.
+
+### Least-squares refit on the selected variables
+
+After each $T$, the demo drops the dummies from the selection, fits least squares with an intercept on the selected
+original variables of the unscaled data, and scores the fit on a fresh test set of 1,000 rows. The refit on the true
+support is the reference, with a prediction root mean squared error (RMSE) of 1.06 against the noise level
+$\sigma \approx 1$ and a coefficient error of 0.32.
+
+```text
+Prediction RMSE of the least-squares refit on the selected variables (test set)
+solver                     T=1     T=2     T=5    T=10    T=20    T=50   T=100
+------------------------------------------------------------------------------
+T-LARS                    3.71    2.13    1.20    1.25    1.36    1.52    1.53
+T-LASSO                   3.71    2.13    1.20    1.25    1.36    1.53    1.53
+T-Stepwise                1.51    1.20    1.23    1.30    1.36    1.51    1.51
+T-ENET (lambda2 0.5)      5.17    3.82    2.26    1.58    1.36    1.71    8.43
+T-Stagewise               3.71    2.12    1.21    1.27    1.40    9.96   10.05
+T-OMP                     1.51    1.20    1.23    1.30    1.36    1.51    1.51
+T-GP                      1.50    1.20    1.23    1.30    1.36    1.53    1.53
+T-ACGP                    1.47    1.20    1.23    1.30    1.36    1.51    1.52
+T-MP                      1.55    1.18    1.22    1.29    1.37    1.55    1.56
+T-NCGMP                   1.55    1.18    1.22    1.29    1.37    1.55    1.56
+T-OLS                     1.50    1.22    1.23    1.30    1.36    1.54    1.55
+T-AFS (rho 0.1)           3.36    1.72    1.14    1.23    1.37    1.53    1.53
+T-AFS (rho 0.3)           1.55    1.17    1.20    1.28    1.35    1.50    1.50
+T-AFS (rho 0.5)           1.44    1.18    1.21    1.29    1.35    1.50    1.51
+T-AFS (rho 1)             1.51    1.20    1.23    1.30    1.36    1.51    1.51
+
+Coefficient error of the refit, ||beta_hat - beta||_2
+solver                     T=1     T=2     T=5    T=10    T=20    T=50   T=100
+------------------------------------------------------------------------------
+T-LARS                    3.33    1.60    0.60    0.72    0.89    1.13    1.14
+T-LASSO                   3.33    1.60    0.60    0.72    0.90    1.14    1.15
+T-Stepwise                0.87    0.57    0.68    0.80    0.89    1.11    1.11
+T-ENET (lambda2 0.5)      4.97    3.52    1.79    1.03    0.84    1.35    8.33
+T-Stagewise               3.33    1.58    0.63    0.75    0.97    9.73    9.82
+T-OMP                     0.87    0.57    0.68    0.80    0.89    1.11    1.11
+T-GP                      0.86    0.56    0.68    0.79    0.89    1.13    1.14
+T-ACGP                    0.83    0.57    0.68    0.79    0.89    1.11    1.12
+T-MP                      0.91    0.55    0.65    0.78    0.91    1.17    1.17
+T-NCGMP                   0.91    0.55    0.65    0.78    0.91    1.17    1.17
+T-OLS                     0.86    0.60    0.68    0.80    0.90    1.15    1.15
+T-AFS (rho 0.1)           2.93    1.12    0.50    0.69    0.91    1.14    1.14
+T-AFS (rho 0.3)           0.90    0.51    0.62    0.77    0.89    1.10    1.10
+T-AFS (rho 0.5)           0.78    0.54    0.65    0.79    0.89    1.10    1.11
+T-AFS (rho 1)             0.87    0.57    0.68    0.80    0.89    1.11    1.11
+
+Least-squares refit on the true support: prediction RMSE 1.06, coefficient error 0.32
+
+Failed solver runs: 0
+Wall time: 7.3 s
+```
+
+Every solver has a sweet spot at a small $T$. The least-squares refit solvers reach a prediction RMSE of about 1.2
+already at $T = 2$, where they have found about 99% of the true variables with few false ones. T-LARS, T-LASSO and
+T-Stagewise miss a fifth of the true variables at $T = 1$ (RMSE 3.71) and are best at $T = 5$ (1.20), and T-ENET only
+at $T = 20$ (1.36). T-AFS at $\rho = 0.1$ reaches the smallest error of all, 1.14 at $T = 5$, and the coefficient
+error follows the same pattern, with its minimum of 0.50 at the same point. Beyond the sweet spot the errors grow
+slowly, because every further null variable in the refit adds estimation noise, to about 1.5 at the cap. The refit
+does not blow up there, because the dummies are dropped and about 54 variables remain for 100 rows. Only T-Stagewise
+and T-ENET, whose selections grow past $n$, end with a minimum-norm refit that interpolates the training data, with a
+prediction RMSE near 10 and of 8.4.
 
 ---
 
@@ -258,6 +319,12 @@ climbing at saturation. The bottom row shows the jump of T-Stagewise at $T = 50$
 saturation, while the other solvers, T-OLS included, stay within a factor of about two of each other.
 
 ![Selected variables, steps and time vs. T](simulation_results/plots/fdr_tpr_vs_T_mc500_path_stats.png)
+
+The fourth figure shows both errors of the refit against $T$ on log axes, with the refit on the true support as the
+dashed reference. The U shape of every solver marks its sweet spot, and the jumps of T-Stagewise and T-ENET mark their
+selections past $n$.
+
+![Least-squares refit errors vs. T](simulation_results/plots/fdr_tpr_vs_T_mc500_refit_errors.png)
 
 ---
 
