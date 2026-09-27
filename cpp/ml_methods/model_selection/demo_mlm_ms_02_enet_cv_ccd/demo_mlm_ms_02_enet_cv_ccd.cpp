@@ -220,7 +220,7 @@ void demo_path_low_dim() {
               << ", active coefs=" << (beta_true.array() != 0.0).count() << "\n\n";
 
     for (double alpha : {0.0, 0.5, 1.0}) {
-        std::cout << "--- alpha=" << alpha << " ---\n";
+        std::cout << std::fixed << std::setprecision(1) << "--- alpha=" << alpha << " ---\n";
         ms::enet_gaussian en;
         en.fit(X, y, alpha);
         print_path_summary(en, 10);
@@ -246,7 +246,7 @@ void demo_path_high_dim() {
               << ", active coefs=" << (beta_true.array() != 0.0).count() << "\n\n";
 
     for (double alpha : {0.0, 1.0}) {
-        std::cout << "--- alpha=" << alpha << " ---\n";
+        std::cout << std::fixed << std::setprecision(1) << "--- alpha=" << alpha << " ---\n";
         ms::enet_gaussian en;
         en.fit(X, y, alpha);
         print_path_summary(en, 10);
@@ -279,7 +279,7 @@ void demo_cv_low_dim() {
               << ", active coefs=" << (beta_true.array() != 0.0).count() << "\n\n";
 
     for (double alpha : {0.0, 0.5, 1.0}) {
-        std::cout << "--- alpha=" << alpha << " ---\n";
+        std::cout << std::fixed << std::setprecision(1) << "--- alpha=" << alpha << " ---\n";
         ms::enet_cv_ccd cv;
         cv.fit(X, y, alpha, n_folds);
         print_cv_summary(cv, 10);

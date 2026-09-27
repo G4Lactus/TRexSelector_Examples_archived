@@ -19,14 +19,15 @@
  *  2. High-dimensional : n=300,  p=500  (p > n,  10-fold)
  *  3. Very high-dim    : n=300,  p=1000 (p >> n,  5-fold)
  *  4. Memory-mapped    : n=5000, p=500  — dataset lives on disk; fit() reads
- *                        it via ConstMapType (zero-copy Eigen::Ref binding).
+ *                        it via ConstMapType (zero-copy Eigen::Ref binding);
+ *                        grid widened to a 1e5 range (n >> p).
  *
  * Algorithm notes:
  * ----------------
  *   `ridge_cv_svd` uses `Eigen::JacobiSVD` per fold with per-fold centering
  *   and column L2-normalisation.  The lambda grid is anchored at
- *   c_max = max_j |X_{s,c}^T y_c|_j (unit-L2 scale).  JacobiSVD is chosen
- *   over BDCSVD for numerical safety under -O3/-march=native.
+ *   c_max = max_j |X_{s,c}^T y_c|_j (unit-L2 scale); 100 lambdas, 1e3 range.
+ *   JacobiSVD is chosen over BDCSVD for numerical safety under -O3/-march=native.
  */
 // ===================================================================================
 
@@ -153,6 +154,35 @@ void print_cv_summary(const ms::ridge_cv_svd& cv, Eigen::Index step_size = 10) {
     std::cout << "\n";
 }
 
+/**
+ * @brief Fit ridge_cv_svd, print the CV summary and run the two checks.
+ *
+ * @param X            Design matrix (n x p); a mapped matrix binds without a copy.
+ * @param y            Response vector (n).
+ * @param n_folds      Number of CV folds.
+ * @param lambda_ratio Grid range factor: the grid spans [lambda_max / lambda_ratio, lambda_max].
+ */
+void fit_and_report(const Eigen::Ref<const Eigen::MatrixXd>& X,
+                    const Eigen::Ref<const Eigen::VectorXd>& y,
+                    int n_folds,
+                    double lambda_ratio = 1000.0)
+{
+    // 100-lambda grid, as in the Python and R demos.
+    constexpr Eigen::Index n_lambda = 100;
+
+    ms::ridge_cv_svd cv;
+    cv.fit(X, y, n_folds, n_lambda, lambda_ratio);
+
+    print_cv_summary(cv, 10);
+
+    const bool order_ok = cv.cv_min() <= cv.cv_1se();
+    std::cout << "  Ordering check (lambda.min <= lambda.1se): "
+              << (order_ok ? "PASS" : "FAIL") << "\n";
+    // A pick on the first or last grid point is the grid boundary, not a minimum.
+    std::cout << "  Grid-edge check (both picks inside the grid): "
+              << (cv.selection_at_grid_edge() ? "FAIL" : "PASS") << "\n\n";
+}
+
 
 // ===================================================================================
 // Demo 1: Low-dimensional scenario (n=1000, p=500, n > p, 10-fold)
@@ -175,14 +205,7 @@ void demo_kfold_low_dim() {
               << ", folds=" << n_folds
               << ", active coefs=" << (beta_true.array() != 0.0).count() << "\n\n";
 
-    ms::ridge_cv_svd cv;
-    cv.fit(X, y, n_folds);
-
-    print_cv_summary(cv, 10);
-
-    const bool order_ok = cv.cv_min() <= cv.cv_1se();
-    std::cout << "  Ordering check (lambda.min <= lambda.1se): "
-              << (order_ok ? "PASS" : "FAIL") << "\n\n";
+    fit_and_report(X, y, n_folds);
 }
 
 
@@ -207,14 +230,7 @@ void demo_kfold_high_dim() {
               << ", folds=" << n_folds
               << ", active coefs=" << (beta_true.array() != 0.0).count() << "\n\n";
 
-    ms::ridge_cv_svd cv;
-    cv.fit(X, y, n_folds);
-
-    print_cv_summary(cv, 10);
-
-    const bool order_ok = cv.cv_min() <= cv.cv_1se();
-    std::cout << "  Ordering check (lambda.min <= lambda.1se): "
-              << (order_ok ? "PASS" : "FAIL") << "\n\n";
+    fit_and_report(X, y, n_folds);
 }
 
 
@@ -241,14 +257,7 @@ void demo_kfold_very_high_dim() {
     std::cout << "  Note: 5 folds used to ensure each fold's training set is large "
                  "enough relative to n.\n\n";
 
-    ms::ridge_cv_svd cv;
-    cv.fit(X, y, n_folds);
-
-    print_cv_summary(cv, 10);
-
-    const bool order_ok = cv.cv_min() <= cv.cv_1se();
-    std::cout << "  Ordering check (lambda.min <= lambda.1se): "
-              << (order_ok ? "PASS" : "FAIL") << "\n\n";
+    fit_and_report(X, y, n_folds);
 }
 
 
@@ -285,6 +294,8 @@ void demo_kfold_mmap() {
     constexpr Eigen::Index p = 500;
     constexpr double sigma = 1.0;
     constexpr int n_folds = 10;
+    // n >> p: the CV optimum lies below lambda_max / 1000, so the grid is widened.
+    constexpr double lambda_ratio = 1e5;
 
 #ifdef TREX_DEMO_MMAP_PATH
     const std::string MMAP_PATH_X = TREX_DEMO_MMAP_PATH;
@@ -323,14 +334,7 @@ void demo_kfold_mmap() {
                                 memmap::AccessMode::ReadOnly);
         const ConstEigenMap X_ro = mmap_r.getMap();
 
-        ms::ridge_cv_svd cv;
-        cv.fit(X_ro, y, n_folds);
-
-        print_cv_summary(cv, 10);
-
-        const bool order_ok = cv.cv_min() <= cv.cv_1se();
-        std::cout << "  Ordering check (lambda.min <= lambda.1se): "
-                  << (order_ok ? "PASS" : "FAIL") << "\n\n";
+        fit_and_report(X_ro, y, n_folds, lambda_ratio);
     }
 
     {
