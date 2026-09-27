@@ -53,7 +53,7 @@ def demo_ridge_primal():
     n, p = 500, 50
     lam = 1.0
     print(f"Matrix size : {n} x {p}")
-    print(f"Lambda      : {lam}\n")
+    print(f"Lambda      : {lam:g}\n")
 
     rng = np.random.default_rng(42)
     # The solver accesses the matrix through Eigen and therefore requires a
@@ -70,8 +70,8 @@ def demo_ridge_primal():
     #         regularization the estimate lands very close to the ground truth.
     coef_error = np.linalg.norm(beta_hat - beta_true)
     residual = np.linalg.norm(y - X @ beta_hat)
-    print(f"||beta_hat - beta_true||_2 : {coef_error:.6e}")
-    print(f"Residual ||y - X*beta||_2  : {residual:.6e}")
+    print(f"||beta_hat - beta_true||_2 : {coef_error:.4e}")
+    print(f"Residual ||y - X*beta||_2  : {residual:.4e}")
     print("\n")
 
 
@@ -86,7 +86,7 @@ def demo_ridge_dual():
     n, p = 80, 300
     lam = 10.0
     print(f"Matrix size : {n} x {p}")
-    print(f"Lambda      : {lam}\n")
+    print(f"Lambda      : {lam:g}\n")
 
     rng = np.random.default_rng(7)
     X = np.asfortranarray(rng.standard_normal((n, p)))
@@ -105,8 +105,8 @@ def demo_ridge_dual():
     # Step 3. Report
     coef_error = np.linalg.norm(beta_hat - beta_true)
     residual = np.linalg.norm(y - X @ beta_hat)
-    print(f"||beta_hat - beta_true||_2 : {coef_error:.6e}")
-    print(f"Residual ||y - X*beta||_2  : {residual:.6e}")
+    print(f"||beta_hat - beta_true||_2 : {coef_error:.4e}")
+    print(f"Residual ||y - X*beta||_2  : {residual:.4e}")
     print("\n")
 
 
@@ -142,7 +142,7 @@ def demo_ridge_lambda_sweep():
         residual = np.linalg.norm(y - X @ beta_hat)
         beta_norms.append(np.linalg.norm(beta_hat))
         residuals.append(residual)
-        print(f"{lam:>12.4e}{coef_error:>22.6e}{residual:>22.6e}")
+        print(f"{lam:>12.1e}{coef_error:>22.4e}{residual:>22.4e}")
 
     # Python-side sanity check (not in the cpp demo): monotone shrinkage.
     assert np.all(np.diff(beta_norms) < 0), "||beta_hat||_2 must shrink as lambda grows"

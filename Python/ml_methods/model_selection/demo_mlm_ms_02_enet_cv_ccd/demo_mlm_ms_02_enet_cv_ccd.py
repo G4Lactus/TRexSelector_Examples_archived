@@ -149,7 +149,7 @@ def fit_and_print_path(X, y, alpha):
       - fit_grid() at the auto-generated grid reproduces the auto path
         exactly (fit() == fit_grid() when handed the same lambdas).
     """
-    print(f"--- alpha={alpha:g} ---")
+    print(f"--- alpha={alpha:.1f} ---")
     en = ElasticNet().fit(X, y, alpha)
     print_path_summary(en, 10)
 
@@ -217,7 +217,7 @@ def demo_cv_low_dim():
           f"active coefs={int(np.sum(beta_true != 0))}\n")
 
     for alpha in (0.0, 0.5, 1.0):
-        print(f"--- alpha={alpha:g} ---")
+        print(f"--- alpha={alpha:.1f} ---")
         cv = ElasticNetCV().fit(X, y, alpha=alpha, n_folds=n_folds, seed=0)
         print_cv_summary(cv, 10)
 

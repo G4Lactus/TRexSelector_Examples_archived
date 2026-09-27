@@ -74,13 +74,17 @@ def demo_pca_fit():
     print(f"V dimensions : {res.V.shape[0]} x {res.V.shape[1]}")
     print(f"explained_variance size: {res.explained_variance.size}\n")
 
-    # Step 4. Print explained variance in % (of the retained sum, as in cpp)
+    # Step 4. Explained variance as a share of the total variance of the
+    #         preprocessed X (fit() centered and scaled X in place)
     ev = res.explained_variance
-    total_var = ev.sum()
-    print("Explained variance per component (%):")
+    total_var = float(np.sum(X * X)) / (n - 1)
+    cumulative = 0.0
+    print("Explained variance per component (% of total):")
     for k in range(M):
-        print(f"  PC{k + 1}: {100.0 * ev[k] / total_var:.2f}%")
-    print(f"  Cumulative (all {M}): 100.00% (of retained)")
+        pct = 100.0 * ev[k] / total_var
+        cumulative += pct
+        print(f"  PC{k + 1}: {pct:.2f}%")
+    print(f"  Cumulative ({M} of {p}): {cumulative:.2f}%")
 
     # Restore X to its original (pre-preprocessing) state
     pca.restore()
@@ -118,8 +122,8 @@ def demo_pca_restore():
     mean_error = np.mean(np.abs(X - X_orig))
 
     print("Reconstruction error after restore():")
-    print(f"  Max Error  : {max_error:.6e}")
-    print(f"  Mean Error : {mean_error:.6e}\n")
+    print(f"  Max Error  : {max_error:.4e}")
+    print(f"  Mean Error : {mean_error:.4e}\n")
 
     if max_error < 1e-10:
         print("✓ Restore round-trip passed")
@@ -169,7 +173,7 @@ def demo_pca_transform():
     #         fit scores
     Z_train_check = pca.transform(X_train_orig)
     max_diff = np.max(np.abs(Z_train_check - res.Z))
-    print(f"Max diff (fit scores vs transform on same data): {max_diff:.6e}")
+    print(f"Max diff (fit scores vs transform on same data): {max_diff:.4e}")
 
     if max_diff < 1e-10:
         print("✓ transform() reproduces fit scores")

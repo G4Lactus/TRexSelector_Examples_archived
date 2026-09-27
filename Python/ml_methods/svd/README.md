@@ -2,49 +2,38 @@
 
 ## Overview
 
-This folder contains Python examples for the **singular value decomposition (SVD)** implementation in the
-`trex_selector_neo.ml_methods` module.
+This folder holds the Python example for the singular value decomposition (SVD) in the
+`trex_selector_neo.ml_methods` module. For $\mathbf{X} \in \mathbb{R}^{n \times p}$, the truncated SVD keeps the
+leading $M$ singular components,
 
-SVD is used in this project for stable matrix decompositions, dimensionality reduction, and regression-related
-computations. In particular, it is relevant for PCA and for numerically stable ridge-regression workflows.
+```math
+\mathbf{X}_M = \mathbf{U}_M \boldsymbol{\Sigma}_M \mathbf{V}_M^\top,
+```
 
-The C++ counterparts live in [cpp/ml_methods/svd/](../../../cpp/ml_methods/svd/); an equivalent R walkthrough is
-available under `R/ml_methods/svd/`.
+which form the best approximation of rank $M$ in the Frobenius norm. In TRexSelector, SVD underlies principal
+component analysis (PCA) and the numerically stable ridge cross-validation.
+
+The folder has one demo, `demo_mlm_svd_01/`, with the script and a README that walks through the console output. It
+runs `SVDSolver` on the direct path for $n \ge p$ and on the Gram path for $p > 2n$, checks each truncation error
+against the Eckart-Young optimum and tests the singular vectors for orthogonality. As a Python addition, it also checks
+the full-rank reconstruction. The demo prints to the console only and finishes in well under a second. The C++ and R
+packages have the same demo in [cpp/ml_methods/svd/](../../../cpp/ml_methods/svd/README.md) and
+[R/ml_methods/svd/](../../../R/ml_methods/svd/README.md).
 
 ---
 
-## Key concept
-
-Given a matrix $\mathbf{X} \in \mathbb{R}^{n \times p}$, the singular value decomposition is
-
-```math
-\mathbf{X} = \mathbf{U}\boldsymbol{\Sigma}\mathbf{V}^\top,
-```
-
-where
-
-- $\mathbf{U}$ contains left singular vectors,
-- $\boldsymbol{\Sigma}$ contains singular values,
-- $\mathbf{V}$ contains right singular vectors.
-
-A truncated $\textrm{rank-}M$ approximation uses only the leading $M$ singular components:
-
-```math
-\mathbf{X}_M = \mathbf{U}_M \boldsymbol{\Sigma}_M \mathbf{V}_M^\top.
-```
-
----
-
-## Start here
+## Demos
 
 | Folder | Purpose |
 | ------ | ------- |
-| [demo_mlm_svd_01/](demo_mlm_svd_01/README.md) | Demonstrates basic `SVDSolver` usage, truncated reconstruction, and orthogonality checks |
+| [`demo_mlm_svd_01/`](demo_mlm_svd_01/) | Truncated SVD on the direct and Gram paths with Eckart-Young checks, a full-rank reconstruction check and an orthogonality check |
 
 ---
 
 ## Running
 
+From the repository root, with TRexSelectorNeo installed in the repository virtual environment `.venv`:
+
 ```bash
-python demo_mlm_svd_01/demo_mlm_svd_01.py
+.venv/bin/python Python/ml_methods/svd/demo_mlm_svd_01/demo_mlm_svd_01.py
 ```

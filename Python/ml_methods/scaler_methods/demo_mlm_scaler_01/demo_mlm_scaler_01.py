@@ -179,12 +179,12 @@ def demo_scaler_serialization():
         scaler = ZScoreScaler()
         scaler.fit(X)
         scaler.save(filename)
-        print(f"✓ Saved ZScoreScaler to '{filename}'")
+        print(f"✓ Saved ZScoreScaler to '<tmp>/{os.path.basename(filename)}'")
 
         # Step 3. Load and verify
         loaded_scaler = ZScoreScaler()
         loaded_scaler.load(filename)
-        print(f"✓ Loaded ZScoreScaler from '{filename}'\n")
+        print(f"✓ Loaded ZScoreScaler from '<tmp>/{os.path.basename(filename)}'\n")
 
         # Verify means and scales match
         mean_diff = np.linalg.norm(scaler.get_centers() - loaded_scaler.get_centers())

@@ -42,6 +42,20 @@ def print_section_header(title):
     print("=" * 78 + "\n")
 
 
+def print_eckart_young_check(X, M, rel_error):
+    """Compare the truncation error with the Eckart-Young optimum.
+
+    The best rank-M approximation in the Frobenius norm leaves exactly the
+    energy of the discarded singular values; a full LAPACK SVD provides them.
+    """
+    s_all = np.linalg.svd(X, compute_uv=False)
+    optimum = np.sqrt(np.sum(s_all[M:] ** 2)) / np.linalg.norm(X)
+    diff = abs(rel_error - optimum)
+    print(f"Eckart-Young optimum sqrt(sum_{{k>M}} s_k^2) / ||X||_F  : {optimum:.4e}")
+    print(f"Eckart-Young check (|difference| = {diff:.4e} < 1e-10): "
+          f"{'PASS' if diff < 1e-10 else 'FAIL'}")
+
+
 # ==============================================================================
 # Demo 1: Direct / Thin-Jacobi Path (n >= p)
 # ==============================================================================
@@ -74,7 +88,8 @@ def demo_svd_direct():
     #         truncation keeps only the dominant directions.
     X_approx = res.U @ np.diag(res.S) @ res.V.T
     rel_error = np.linalg.norm(X_approx - X) / np.linalg.norm(X)
-    print(f"Relative reconstruction error ||X_M - X||_F / ||X||_F : {rel_error:.6e}")
+    print(f"Relative reconstruction error ||X_M - X||_F / ||X||_F : {rel_error:.4e}")
+    print_eckart_young_check(X, M, rel_error)
 
     # Step 5. Singular values (returned sorted in decreasing order)
     print(f"\nTop {M} singular values:")
@@ -86,7 +101,7 @@ def demo_svd_direct():
     res_full = solver.compute(X, p)
     X_full = res_full.U @ np.diag(res_full.S) @ res_full.V.T
     rel_error_full = np.linalg.norm(X_full - X) / np.linalg.norm(X)
-    print(f"\nFull-rank (M = {p}) reconstruction error: {rel_error_full:.6e}")
+    print(f"\nFull-rank (M = {p}) reconstruction error: {rel_error_full:.4e}")
     assert rel_error_full < 1e-10, "full-rank SVD must reconstruct X exactly"
     print("Full-rank reconstruction check passed")
     print("\n")
@@ -121,7 +136,8 @@ def demo_svd_gram():
     # Step 4. Reconstruction error
     X_approx = res.U @ np.diag(res.S) @ res.V.T
     rel_error = np.linalg.norm(X_approx - X) / np.linalg.norm(X)
-    print(f"Relative reconstruction error ||X_M - X||_F / ||X||_F : {rel_error:.6e}")
+    print(f"Relative reconstruction error ||X_M - X||_F / ||X||_F : {rel_error:.4e}")
+    print_eckart_young_check(X, M, rel_error)
     print("\n")
 
 
@@ -146,8 +162,8 @@ def demo_svd_orthogonality():
     UtU_error = np.linalg.norm(res.U.T @ res.U - np.eye(M))
     VtV_error = np.linalg.norm(res.V.T @ res.V - np.eye(M))
 
-    print(f"||U^T U - I||_F : {UtU_error:.6e}")
-    print(f"||V^T V - I||_F : {VtV_error:.6e}\n")
+    print(f"||U^T U - I||_F : {UtU_error:.4e}")
+    print(f"||V^T V - I||_F : {VtV_error:.4e}\n")
 
     if UtU_error < 1e-10 and VtV_error < 1e-10:
         print("✓ U and V are orthonormal")

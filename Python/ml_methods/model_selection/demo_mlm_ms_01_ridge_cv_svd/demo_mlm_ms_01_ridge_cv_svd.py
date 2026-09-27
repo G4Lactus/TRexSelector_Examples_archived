@@ -13,12 +13,11 @@
 #   Demo 1 | Low-dimensional  : n=1000, p=500  (n > p,  10-fold)
 #   Demo 2 | High-dimensional : n=300,  p=500  (p > n,  10-fold)
 #   Demo 3 | Very high-dim    : n=300,  p=1000 (p >> n,  5-fold)
-#   Demo 4 | Memory-mapped    : n=2000, p=500  — dataset lives on disk; fit()
+#   Demo 4 | Memory-mapped    : n=5000, p=500  — dataset lives on disk; fit()
 #                               reads it through the zero-copy to_numpy() view
-#                               of a MemoryMappedMatrix. (cpp: n = 5,000,
-#                               re-opened read-only via ConstMapType; scaled to
-#                               n = 2,000 here to keep the run fast, and
-#                               re-opened ReadWrite because the Python
+#                               of a MemoryMappedMatrix; grid widened to a 1e5
+#                               range (n >> p). (cpp re-opens the file
+#                               read-only via ConstMapType; the Python
 #                               zero-copy view requires ReadWrite mode.)
 #
 # Notes:
@@ -105,19 +104,24 @@ def print_cv_summary(cv, step_size=10):
     print()
 
 
-def fit_and_report(X, y, n_folds, seed):
-    """Fit RidgeCV, print the summary, and run the ordering check."""
-    # Grid parameters mirror the C++ fit(): a 100-lambda grid anchored at the
-    # largest useful penalty, spanning a 1000x range; `seed` fixes the fold
-    # assignment.
+def fit_and_report(X, y, n_folds, seed, lambda_ratio=1000.0):
+    """Fit RidgeCV, print the summary, and run the two checks.
+
+    The grid mirrors the C++ fit(): 100 lambdas anchored at the largest useful
+    penalty, spanning [lambda_max / lambda_ratio, lambda_max]; `seed` fixes the
+    fold assignment.
+    """
     cv = RidgeCV()
-    cv.fit(X, y, n_folds=n_folds, n_lambda=100, lambda_ratio=1000.0, seed=seed)
+    cv.fit(X, y, n_folds=n_folds, n_lambda=100, lambda_ratio=lambda_ratio, seed=seed)
 
     print_cv_summary(cv, 10)
 
     order_ok = cv.cv_min() <= cv.cv_1se()
     print(f"  Ordering check (lambda.min <= lambda.1se): "
-          f"{'PASS' if order_ok else 'FAIL'}\n")
+          f"{'PASS' if order_ok else 'FAIL'}")
+    # A pick on the first or last grid point is the grid boundary, not a minimum
+    print(f"  Grid-edge check (both picks inside the grid): "
+          f"{'FAIL' if cv.selection_at_grid_edge() else 'PASS'}\n")
     return cv
 
 
@@ -190,10 +194,11 @@ def demo_kfold_mmap():
     sub-matrices in RAM, so there is no out-of-core streaming path.
     """
     print_section_header(
-        "Demo MS-01 | ridge_cv_svd | Memory-Mapped Dataset (n=2000, p=500, 10-fold)")
+        "Demo MS-01 | ridge_cv_svd | Memory-Mapped Dataset (n=5000, p=500, 10-fold)")
 
-    # cpp: n = 5,000; scaled to 2,000 here to keep the demo fast
-    n, p, sigma, n_folds = 2_000, 500, 1.0, 10
+    n, p, sigma, n_folds = 5_000, 500, 1.0, 10
+    # n >> p: the CV optimum lies below lambda_max / 1000, so the grid is widened
+    lambda_ratio = 1e5
 
     fd, mmap_path = tempfile.mkstemp(prefix="trex_mlm_demo_ms01_svd_mmap_",
                                      suffix=".bin")
@@ -202,7 +207,7 @@ def demo_kfold_mmap():
     X_dense, y, beta_true = generate_regression_data(n, p, sigma, seed=444)
 
     file_bytes = n * p * 8
-    print(f"Writing X to mmap file: {mmap_path}")
+    print(f"Writing X to mmap file: <tmp>/{os.path.basename(mmap_path)}")
     print(f"  File size: {file_bytes / (1 << 20):.2f} MB")
     print(f"  Active coefs: {int(np.sum(beta_true != 0))}\n")
 
@@ -216,12 +221,12 @@ def demo_kfold_mmap():
         mmap_r = MemoryMappedMatrix(mmap_path, n, p, AccessMode.ReadWrite)
         X_ro = mmap_r.to_numpy()
 
-        fit_and_report(X_ro, y, n_folds, seed=444)
+        fit_and_report(X_ro, y, n_folds, seed=444, lambda_ratio=lambda_ratio)
         del X_ro, mmap_r  # unmap before the file is removed
     finally:
         try:
             os.unlink(mmap_path)
-            print(f"Cleaned up mmap file: {mmap_path}")
+            print(f"Cleaned up mmap file: <tmp>/{os.path.basename(mmap_path)}")
         except OSError as e:
             print(f"[WARN] Could not remove mmap file: {e}")
     print()

@@ -3,7 +3,7 @@
 ## Overview
 
 This directory contains the standalone Python examples project. It consumes the
-**TRexSelectorNeo** package (v0.2.0), the pybind11 binding layer over the C++
+**TRexSelectorNeo** package (1.0.0), the pybind11 binding layer over the C++
 TRexSelector backend, imported as
 
 ```python

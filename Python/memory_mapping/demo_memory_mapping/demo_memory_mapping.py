@@ -73,7 +73,7 @@ def demo_mmap_basics():
 
     # 2. Temporary file path
     path = mmap_temp_path("basics")
-    print(f"2. Temporary file: {path}\n")
+    print(f"2. Temporary file: <tmp>/{os.path.basename(path)}\n")
 
     try:
         # 3. Write the matrix to a MemoryMappedMatrix
@@ -123,7 +123,7 @@ def demo_out_of_core_streaming():
     n_rows, n_cols = 100, 50
 
     path = mmap_temp_path("streaming")
-    print(f"Temporary file: {path}\n")
+    print(f"Temporary file: <tmp>/{os.path.basename(path)}\n")
 
     try:
         # Stream columns one-by-one into the file. Each column uses an
@@ -163,7 +163,7 @@ def demo_per_column_seeded_fill():
     n_rows, n_cols = 100, 50
 
     path = mmap_temp_path("seeded_fill")
-    print(f"Temporary file: {path}\n")
+    print(f"Temporary file: <tmp>/{os.path.basename(path)}\n")
 
     try:
         # Fill columns through the zero-copy view, one independent RNG per
@@ -203,7 +203,7 @@ def demo_element_wise_access():
     n_rows, n_cols = 10, 8
 
     path = mmap_temp_path("element_access")
-    print(f"Temporary file: {path}\n")
+    print(f"Temporary file: <tmp>/{os.path.basename(path)}\n")
 
     try:
         # 1. Create and populate with seeded data (same pattern as Demo 1)

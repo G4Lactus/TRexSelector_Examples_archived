@@ -2,45 +2,40 @@
 
 ## Overview
 
-This folder contains Python examples for the **ridge regression** implementation in the
-`trex_selector_neo.ml_methods` module.
-
-Ridge regression adds an $\ell_2$-penalty to least squares in order to stabilize estimation and shrink coefficients
-toward zero. The demo in this folder illustrates ridge fitting in both low-dimensional and high-dimensional settings,
-together with the effect of varying the penalty parameter.
-
-The C++ counterparts live in [cpp/ml_methods/ridge_regression/](../../../cpp/ml_methods/ridge_regression/); an
-equivalent R walkthrough is available under `R/ml_methods/ridge_regression/`.
-
----
-
-## Key concept
-
-Given a design matrix $\boldsymbol{X} \in \mathbb{R}^{n \times p}$, response vector $\boldsymbol{y} \in \mathbb{R}^n$,
-and penalty parameter $\lambda \ge 0$, ridge regression estimates
+This folder holds the Python example for ridge regression in the `trex_selector_neo.ml_methods` module. Ridge
+regression adds an $\ell_2$-penalty to least squares, which stabilizes the estimate and shrinks the coefficients
+toward zero:
 
 ```math
-\widehat{\boldsymbol{\beta}}_{\mathrm{ridge}} =
+\widehat{\boldsymbol{\beta}}(\lambda) =
 \arg\min_{\boldsymbol{\beta} \in \mathbb{R}^p}
-\left
 \lVert \boldsymbol{y} - \boldsymbol{X}\boldsymbol{\beta} \rVert_2^2
 +
-\lambda \lVert \boldsymbol{\beta} \rVert_2^2
-\right.
+\lambda \lVert \boldsymbol{\beta} \rVert_2^2 .
 ```
+
+The folder has one demo, `demo_mlm_ridge_01/`, with the script and a README that walks through the console output. It
+runs `RidgeSolver` on the primal path for $n \ge p$, on the dual path for $n < p$ and over a sweep of $\lambda$, and
+the Python version adds a monotone-shrinkage check to the sweep. The demo prints to the console only and finishes in
+well under a second. Choosing $\lambda$ by cross-validation is covered in
+[model_selection/](../model_selection/README.md). The C++ and R packages have the same demo in
+[cpp/ml_methods/ridge_regression/](../../../cpp/ml_methods/ridge_regression/README.md) and
+[R/ml_methods/ridge_regression/](../../../R/ml_methods/ridge_regression/README.md).
 
 ---
 
-## Start here
+## Demos
 
 | Folder | Purpose |
-| ------ | --------- |
-| [demo_mlm_ridge_01/](demo_mlm_ridge_01/README.md) | Demonstrates ridge regression in primal and high-dimensional regimes, plus a lambda sweep |
+| ------ | ------- |
+| [`demo_mlm_ridge_01/`](demo_mlm_ridge_01/) | Ridge regression on the primal ($n \ge p$) and dual ($n < p$) paths, plus a lambda sweep with a monotone-shrinkage check |
 
 ---
 
 ## Running
 
+From the repository root, with TRexSelectorNeo installed in the repository virtual environment `.venv`:
+
 ```bash
-python demo_mlm_ridge_01/demo_mlm_ridge_01.py
+.venv/bin/python Python/ml_methods/ridge_regression/demo_mlm_ridge_01/demo_mlm_ridge_01.py
 ```

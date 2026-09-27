@@ -31,7 +31,7 @@
 #                                 Lance-Williams matrix is intractable at the
 #                                 cpp scale (P = 400,000); the skip is kept to
 #                                 mirror the cpp console output.
-#                              C. Average Linkage  - UPGMA (projected engine)
+#                              C. Average Linkage  - UPGMA [SKIPPED as in cpp]
 #                              D. Ward Linkage     - minimum variance
 #                                                    (projected engine)
 #
@@ -137,7 +137,8 @@ def generate_correlated_variables_to_mmap(view, n_samples, k_clusters,
 
 def standardize_rows_for_correlation(view):
     """In-place mean-centering and L2-normalization, one variable (row) at a
-    time — sequential-streaming-friendly for the memory-mapped file."""
+    time. In the column-major P x N file a row is strided across the whole
+    file, which costs nothing at this size but would not stream at scale."""
     for j in range(view.shape[0]):
         row = view[j, :]
         row -= row.mean()
@@ -194,7 +195,7 @@ def demo_lsh_linkage_comparison_mmap():
     os.close(fd)
     file_bytes = n_samples * p_features * 8
 
-    print(f"Memory-mapped file : {mmap_path}")
+    print(f"Memory-mapped file : <tmp>/{os.path.basename(mmap_path)}")
     print(f"File size          : {file_bytes / (1 << 20):.2f} MB")
     print(f"Latent RAM (N x K) : "
           f"{n_samples * k_clusters * 8 / (1 << 20):.2f} MB\n")
@@ -230,11 +231,11 @@ def demo_lsh_linkage_comparison_mmap():
         print("    Distance policy: Correlation LSH Approximation "
               "(O(1) SimHash)\n")
 
-        def run_test(title, method):
+        def run_test(title, method, X):
             print(f"{title}:")
             t0 = time.perf_counter()
             merges = agglomerative_cluster(
-                X_map, method=method,
+                X, method=method,
                 metric=DistanceMetric.Correlation_LSH_Approx,
                 use_mmap=True)  # backend intermediates also stay on disk
             elapsed = time.perf_counter() - t0
@@ -244,7 +245,7 @@ def demo_lsh_linkage_comparison_mmap():
             print(f"    ARI  : {ari:.4f} / 1.0000\n")
 
         # Test A — Single Linkage (routes to SLINK)
-        run_test("[Test A] Single Linkage (SLINK + LSH)", LinkageMethod.Single)
+        run_test("[Test A] Single Linkage (SLINK + LSH)", LinkageMethod.Single, X_map)
 
         # Test B — Complete Linkage & WPGMA (skipped, mirroring cpp)
         print("[Test B] Complete Linkage & WPGMA:")
@@ -253,13 +254,18 @@ def demo_lsh_linkage_comparison_mmap():
         print("    At the cpp scale (P=400,000) this requires 1.2 TB of NVMe "
               "I/O, which is intractable.\n")
 
-        # Test C — Average Linkage (UPGMA, projected RAM engine)
-        run_test("[Test C] UPGMA Average Linkage "
-                 "(Projected 64D RAM Engine + LSH)", LinkageMethod.Average)
+        # Test C — Average Linkage (UPGMA), skipped as in cpp: the dispatcher
+        # routes Average to the exact Lance-Williams matrix engine for every
+        # metric, and the projected 64D engine is valid for Ward only
+        print("[Test C] UPGMA Average Linkage:")
+        print("    [SKIPPED] Average linkage runs on the O(P^2) Lance-Williams matrix as well;")
+        print("    the geometric centroid update of the projected engine does not implement")
+        print("    the UPGMA formula. At the cpp scale (P=400,000) the matrix is 1.28 TB, which")
+        print("    is intractable.\n")
 
         # Test D — Ward's Minimum Variance (projected RAM engine)
         run_test("[Test D] Ward's Minimum Variance "
-                 "(Projected 64D RAM Engine + LSH)", LinkageMethod.Ward)
+                 "(Projected 64D RAM Engine + LSH)", LinkageMethod.Ward, X_map)
 
         print("[Demo 03 Complete]\n")
 
@@ -270,7 +276,7 @@ def demo_lsh_linkage_comparison_mmap():
         # ---------------------------------------------------------------------
         try:
             os.unlink(mmap_path)
-            print(f"Cleaned up mmap file: {mmap_path}")
+            print(f"Cleaned up mmap file: <tmp>/{os.path.basename(mmap_path)}")
         except OSError as e:
             print(f"[WARN] Could not remove mmap file: {e}")
 
