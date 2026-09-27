@@ -72,6 +72,22 @@ one path to the last digit:
 T-ENET and T-OLS take paths of their own. The T-AFS figure shows four values of $\rho$ from 0.1 to 1,
 and the T-NCGMP figure both variants.
 
+Over full paths an identity holds as far as the rules of the solvers agree. In
+[demo_ts_perf_01](demo_ts_perf_01_fdr_tpr_vs_T/) (100 runs up to $T = 100$, precentered readers, seeded
+tie-breaking):
+
+| Solvers | Full path |
+| ------- | --------- |
+| T-OMP, T-AFS ($\rho = 1$), T-NCGMP (fully corrective) | every step, bit for bit |
+| T-OMP, T-Stepwise | the same steps; coefficients within $1.1 \cdot 10^{-12}$ |
+| T-MP, T-NCGMP (line search) | the same steps; coefficients within $2.1 \cdot 10^{-14}$ (T-NCGMP divides each step by $\lVert x_j \rVert_2^2$, which is 1 up to rounding) |
+| T-LARS, T-LASSO | bit for bit up to the first T-LASSO drop (a coefficient crossing zero) |
+| T-LARS, T-Stagewise | within $2.7 \cdot 10^{-13}$ up to the first T-Stagewise removal (the NNLS reduction) |
+
+After its first drop T-LASSO takes its own path, and so does T-Stagewise after its first removal. A variable
+that T-Stagewise removes keeps its coefficient (frozen), so its selection, read from the coefficient path, can
+exceed the active set; `cdiagnostics::print_selection` lists such variables separately.
+
 ---
 
 ## Building

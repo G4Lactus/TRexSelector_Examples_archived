@@ -238,11 +238,15 @@ macro(add_demo_target target_name demo_file library_set)
         RUNTIME_OUTPUT_DIRECTORY "${_demo_bin_dir}"
     )
 
-    # NOTE: -ffast-math implies -ffinite-math-only, which breaks std::isnan/isfinite.
+    # IEEE 754 conformant, as the library: no -ffast-math. The demos
+    # instantiate header-inline library code (data generation, scalers,
+    # templates), so their numbers stay bit-comparable with the library's own
+    # builds and tests; -ffast-math also implies -ffinite-math-only, which
+    # breaks std::isnan / std::isfinite.
     target_compile_options(${target_name} PRIVATE
         -Wno-deprecated-declarations
         $<$<CONFIG:Debug>:-g -O0 -Wall -Wextra>
-        $<$<CONFIG:Release>:-O3 -DNDEBUG -march=native -ffast-math -funroll-loops>
+        $<$<CONFIG:Release>:-O3 -DNDEBUG -march=native -funroll-loops>
     )
 
     set(ADDITIONAL_INCLUDES "")
