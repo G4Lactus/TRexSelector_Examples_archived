@@ -1,30 +1,26 @@
-Library line:   TRexSelector dev_beyond
-Checkout:       ~/Documents/C++/TRexSelector-beyond
-Last validated: 8ad3376 (2026-09-26, C++ 1.0.0 / R 2.0.0 / Python 1.0.0; library main == dev_beyond.
-                f390bfc..8ad3376: the Linux verification fixes (test budget, OrbStack stage script), the
-                R package's strip-after-link target, HISTORY.md, the comment sweep in the sources;
-                API-neutral for the demos, no behaviour change. Validated here: the C++ SDK rebuilt
-                (release-portable, no warnings), the 53 Examples targets built without warnings,
-                "Paths match" in the 36 T-solver demos (C++, R, Python), demo_trex_01_single_run in all
-                three languages selects the committed sets (the voting-grid rows move one cell at exact
-                ties, the d404033 tie rule), 71 Python files byte-compile, 61 R files parse.
-                Before: f390bfc (2026-09-25 evening: the in-place writer/reader contract of the T-solvers
-                with the shared-buffer claim, a second writer on a held buffer throws; the zero-copy R
-                T-solver binding with $restore(); the memory-mapped ML / Biobank / SPCA entry points; the
-                opt-in low_memory engines; TRexSelector restore(); the 36 T-solver demos' serialization
-                sections pre-scale once and run readers (A')), d404033 (2026-09-25: ad/ vd/ sd/ tree with
-                include paths and namespaces under ad/, (X, D, y, [groups | K,] SolverOptions) solver
-                constructors, R trex_/tsolver_/ml_/mem_ names and ML* classes, Python tsolvers.ad.* /
-                trex_selector_methods.ad, L-loop strategies SEEDED / PERMUTATION_SEEDED, exact vote
-                counts at the voting-grid ties)
-Install:        cpp  -> cd cpp && cmake --preset local-install && cmake --build --preset local-install-build \
-                        && cmake --install build/release-portable          (in the checkout; headers land under
-                        cpp/install/include/TRexSelector/, the Examples presets point at cpp/install)
-                R    -> R CMD INSTALL --preclean --library=~/Rlibs/trex-beyond <checkout>/R/TRexSelectorNeo
-                        demos: R_LIBS=~/Rlibs/trex-beyond Rscript <demo>.R  (or library(TRexSelectorNeo, lib.loc = ...))
-                Python -> python3 -m venv .venv && .venv/bin/pip install <checkout>/Python/TRexSelectorNeo \
-                          pandas matplotlib plotly -r requirements-dev.txt    (at the Examples root; Homebrew
-                          Python 3.14 as in the main checkout; the overnight runners and generate_plots.sh
-                          use .venv/bin/python; a regular install, so rebuild the wheel on every pin bump)
-                        The conda env trex-dev-beyond (pip install -e, numpy only) is the library's own test env;
-                        Linux: a manylinux wheel from <checkout>/tools/orbstack/run_manylinux.sh
+Library line:   TRexSelector dev_beyond (a sibling checkout TRexSelector-beyond next to this repository)
+Pinned commit:  b95b984 (2026-09-27; C++ 1.0.0 / R 2.0.0 / Python 1.0.0)
+Validated C++:  SDK installed from b95b984; the 54 Examples targets built clean without warnings (IEEE 754,
+                no -ffast-math); "Paths match" in the 12 T-solver demos; demo_trex_01_single_run and the
+                Part 5 path data of the 12 T-solver demos reproduce their committed files byte for byte;
+                the ml_methods and memory_mapping short demos pass (PCA and SVD diagnostics differ from the
+                former fast-math build at rounding level only).
+Pending:        Python and R validation on b95b984, after reinstalling both packages from it.
+Previous pins:  8ad3376 (2026-09-26), f390bfc (2026-09-25), d404033 (2026-09-25); what changed between
+                pins is in the git log of this file and in the library's HISTORY.md.
+
+Install:        cpp    -> in <library>/cpp: cmake --preset local-install && cmake --build --preset local-install-build
+                          && cmake --install build/release-portable
+                          (headers under cpp/install/include/TRexSelector/; the Examples presets point at
+                          ../../TRexSelector-beyond/cpp/install)
+                R      -> R CMD INSTALL --preclean --library=<R library> <library>/R/TRexSelectorNeo
+                          demos: R_LIBS=<R library> Rscript <demo>.R
+                Python -> at the Examples root: python3 -m venv .venv
+                          && .venv/bin/pip install <library>/Python/TRexSelectorNeo pandas matplotlib plotly
+                          -r requirements-dev.txt
+                          (a regular install, so rebuild the wheel on every pin bump; the overnight runners and
+                          generate_plots.sh use .venv/bin/python)
+
+Rule:           Bump this pin whenever demos are rebuilt against a new library commit and their results are
+                committed, in the same or a preceding commit. Validate the C++ short demos first, Python and
+                R once their packages are reinstalled from that commit, and list what is still pending.
