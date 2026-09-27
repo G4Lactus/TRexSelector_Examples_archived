@@ -260,6 +260,19 @@ void standardize_for_correlation(Eigen::MatrixBase<Derived>& mat) {
 // ==================================================================================
 
 /**
+ * @brief Path for console output without the machine-specific prefix.
+ * @param path Absolute or relative file path.
+ * @return ".../" plus the part from "cpp/" on, else the bare file name.
+ */
+static std::string display_path(const std::string& path) {
+    const auto pos = path.find("/cpp/");
+    if (pos != std::string::npos)
+        return ".../" + path.substr(pos + 1);
+    const auto slash = path.find_last_of("/\\");
+    return slash == std::string::npos ? path : path.substr(slash + 1);
+}
+
+/**
  * @brief Mmap-backed LSH Linkage Comparison at biobank-representative scale.
  *
  * Generates N=100,000 × P=400,000 correlated variables in K=10 imbalanced blocks,
@@ -323,7 +336,7 @@ void demo_lsh_linkage_comparison_mmap() {
         static_cast<std::size_t>(config.p_features) * sizeof(double);
 
     std::cout << std::fixed << std::setprecision(2);
-    std::cout << "Memory-mapped file : " << MMAP_PATH << "\n";
+    std::cout << "Memory-mapped file : " << display_path(MMAP_PATH) << "\n";
     std::cout << "File size          : "
               << static_cast<double>(file_bytes) / static_cast<double>(1ULL << 30)
               << " GB\n";
@@ -461,7 +474,7 @@ void demo_lsh_linkage_comparison_mmap() {
         namespace fs = std::filesystem;
         std::error_code ec;
         if (fs::remove(MMAP_PATH, ec))
-            std::cout << "Cleaned up mmap file: " << MMAP_PATH << "\n";
+            std::cout << "Cleaned up mmap file: " << display_path(MMAP_PATH) << "\n";
         else
             std::cerr << "[WARN] Could not remove mmap file: " << ec.message() << "\n";
     }

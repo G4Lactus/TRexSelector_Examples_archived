@@ -210,6 +210,19 @@ void demo_scaler_inverse_transform() {
 // Demo 3: Serialization
 // =============================================================================
 
+/**
+ * @brief Path for console output without the machine-specific prefix.
+ * @param path Absolute or relative file path.
+ * @return ".../" plus the part from "cpp/" on, else the bare file name.
+ */
+static std::string display_path(const std::string& path) {
+    const auto pos = path.find("/cpp/");
+    if (pos != std::string::npos)
+        return ".../" + path.substr(pos + 1);
+    const auto slash = path.find_last_of("/\\");
+    return slash == std::string::npos ? path : path.substr(slash + 1);
+}
+
 void demo_scaler_serialization() {
     cdiagnostics::print_section_header("Scaler Serialization");
 
@@ -236,12 +249,12 @@ void demo_scaler_serialization() {
     scaler::ZScoreScaler scaler;
     scaler.fit(X_map);
     scaler.save(filename);
-    std::cout << "✓ Saved ZScoreScaler to '" << filename << "'\n";
+    std::cout << "✓ Saved ZScoreScaler to '" << display_path(filename) << "'\n";
 
     // Step 3. Load and verify
     scaler::ZScoreScaler loaded_scaler;
     loaded_scaler.load(filename);
-    std::cout << "✓ Loaded ZScoreScaler from '" << filename << "'\n\n";
+    std::cout << "✓ Loaded ZScoreScaler from '" << display_path(filename) << "'\n\n";
 
     // Verify means and scales match
     double mean_diff = (scaler.get_centers() - loaded_scaler.get_centers()).norm();

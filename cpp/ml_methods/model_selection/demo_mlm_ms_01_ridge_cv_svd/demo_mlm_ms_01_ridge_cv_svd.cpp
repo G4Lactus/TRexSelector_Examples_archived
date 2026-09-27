@@ -257,6 +257,19 @@ void demo_kfold_very_high_dim() {
 // ===================================================================================
 
 /**
+ * @brief Path for console output without the machine-specific prefix.
+ * @param path Absolute or relative file path.
+ * @return ".../" plus the part from "cpp/" on, else the bare file name.
+ */
+static std::string display_path(const std::string& path) {
+    const auto pos = path.find("/cpp/");
+    if (pos != std::string::npos)
+        return ".../" + path.substr(pos + 1);
+    const auto slash = path.find_last_of("/\\");
+    return slash == std::string::npos ? path : path.substr(slash + 1);
+}
+
+/**
  * @brief Demonstrates K-fold CV when the design matrix is backed by a mmap file.
  *
  * @details `ridge_cv_svd::fit()` accepts `Eigen::Ref<const MatrixXd>`, which binds
@@ -286,7 +299,7 @@ void demo_kfold_mmap() {
     const std::size_t file_bytes =
         static_cast<std::size_t>(n) * static_cast<std::size_t>(p) * sizeof(double);
 
-    std::cout << "Writing X to mmap file: " << MMAP_PATH_X << "\n";
+    std::cout << "Writing X to mmap file: " << display_path(MMAP_PATH_X) << "\n";
     std::cout << "  File size: " << std::fixed << std::setprecision(2)
               << static_cast<double>(file_bytes) / (1 << 20) << " MB\n";
     std::cout << "  Active coefs: " << (beta_true.array() != 0.0).count() << "\n\n";
@@ -324,7 +337,7 @@ void demo_kfold_mmap() {
         namespace fs = std::filesystem;
         std::error_code ec;
         if (fs::remove(MMAP_PATH_X, ec))
-            std::cout << "Cleaned up mmap file: " << MMAP_PATH_X << "\n";
+            std::cout << "Cleaned up mmap file: " << display_path(MMAP_PATH_X) << "\n";
         else
             std::cerr << "[WARN] Could not remove mmap file: " << ec.message() << "\n";
     }
