@@ -27,6 +27,12 @@ Plot patterns hosted here:
     plot_warm_start()        — fresh run to T + 1 over the warm start T -> T + 1.
     plot_memory()            — solver memory and its share of the data vs. n/p
                                (demo_ts_perf_03), with the data size.
+    plot_recovery()          — exact recovery, TPR or FDR at T = 1 vs.
+                               n/(s log p), one panel per solver, one curve
+                               per p (demo_ts_perf_04, Part 1).
+    plot_phase_transition()  — exact recovery over n/p and s/n, one heatmap
+                               per solver, with the l1 phase transition and
+                               the LARS s-step bound (demo_ts_perf_04, Part 2).
 
 CLI modes (typically driven from a demo's generate_plots.sh):
     python ts_plt_utils.py paths <stem>_path.csv --solver T-LARS --title "..."
@@ -35,6 +41,8 @@ CLI modes (typically driven from a demo's generate_plots.sh):
     python ts_plt_utils.py fdr-tpr fdr_tpr_vs_T_mc500.csv --title "..."
     python ts_plt_utils.py runtime runtime_vs_dummies_mc20.csv --title "..." --p 1000
     python ts_plt_utils.py memory memory_vs_np_mc500.csv --title "..."
+    python ts_plt_utils.py recovery recovery_vs_dt_ratio_mc500.csv \
+        --phase phase_transition_mc500.csv --title "..."
 
 The path mode reads <stem>_path.csv (T_stop,step,index,is_dummy,beta) and the
 sibling <stem>_actions.csv (T_stop,step,index,is_dummy,added) written by
@@ -556,6 +564,145 @@ def plot_memory(df: pd.DataFrame, title: str) -> plt.Figure:
 
 
 # ==============================================================================
+# Recovery vs. n/(s log p) and the phase transition (demo_ts_perf_04)
+# ==============================================================================
+
+RECOVERY_METRICS = {
+    "exact": ("Exact recovery (%)", "exact recovery by the first $s$ entries"),
+    "TPR": ("TPR at $T = 1$ (%)", "TPR at the first dummy"),
+    "FDR": ("FDR at $T = 1$ (%)", "FDR at the first dummy"),
+}
+
+
+def plot_recovery(df: pd.DataFrame, metric: str, title: str) -> plt.Figure:
+    """One metric in % vs. n/(s log p), one panel per solver (rows = families), one curve per p."""
+    label, subject = RECOVERY_METRICS[metric]
+    ratios = sorted(float(r) for r in df["ratio"].unique())
+    p_values = sorted(int(p) for p in df["p"].unique())
+    cmap = plt.get_cmap("viridis")
+    colors = {p: to_hex(cmap(0.9 * k / max(1, len(p_values) - 1))) for k, p in enumerate(p_values)}
+    per_family = [list(dict.fromkeys(df.loc[df["family"] == f, "solver"])) for f in FAMILIES]
+    cols = max(len(names) for names in per_family)
+    fig, axes = plt.subplots(len(FAMILIES), cols, figsize=(3.1 * cols, 3.0 * len(FAMILIES)), sharex=True,
+                             sharey=True, squeeze=False)
+    for row, names in enumerate(per_family):
+        for col in range(cols):
+            ax = axes[row, col]
+            if col >= len(names):
+                ax.set_visible(False)
+                continue
+            sub = df[df["solver"] == names[col]]
+            for p in p_values:
+                curve = sub[sub["p"] == p].sort_values("ratio")
+                color = colors[p]
+                ax.plot(curve["ratio"], 100 * curve[metric], color=color, linewidth=1.5)
+                for reached, face in ((True, color), (False, "white")):
+                    part = curve[(curve["reached"] >= 0.99) == reached]
+                    ax.scatter(part["ratio"], 100 * part[metric], s=22, facecolors=[face] * len(part),
+                               edgecolors=[color] * len(part), linewidths=1.1, zorder=3)
+            ax.set_title(display_name(names[col]), fontsize=10)
+            ax.set_xscale("log")
+            ax.set_xticks(ratios)
+            ax.set_xticklabels([f"{r:g}" for r in ratios], fontsize=8)
+            ax.minorticks_off()
+            ax.set_ylim(-3, 103)
+            ax.grid(linestyle="--", alpha=0.4)
+            if col == 0:
+                ax.set_ylabel(f"{FAMILIES[row]}\n{label}", fontsize=9)
+            if row == len(FAMILIES) - 1 or col >= len(per_family[row + 1]):
+                ax.set_xlabel("$n/(s \\log p)$", fontsize=9)
+                ax.xaxis.set_tick_params(labelbottom=True)
+    handles = [Line2D([], [], color=colors[p], marker="o", markersize=5, linewidth=1.5, label=f"$p = {p:,}$".replace(
+        ",", "{,}")) for p in p_values]
+    fig.legend(handles=handles, loc="lower right", bbox_to_anchor=(0.98, 0.06), fontsize=10, frameon=True,
+               facecolor="white", edgecolor="0.7", title="$L = p$, $s = 10$")
+    fig.suptitle(f"{title}: {subject} vs. $n/(s \\log p)$", fontsize=13)
+    if (df["reached"] < 0.99).any():
+        _open_marker_note(fig)
+    else:
+        fig.tight_layout()
+    return fig
+
+
+def _gauss_tail(t: float) -> float:
+    return 0.5 * math.erfc(t / math.sqrt(2.0))
+
+
+def _l1_statistical_dimension(eps: float) -> float:
+    """Statistical dimension over N of the l1 descent cone at an eps N-sparse vector (Amelunxen et al., 2014)."""
+    def bound(t: float) -> float:
+        density = math.exp(-t * t / 2.0) / math.sqrt(2.0 * math.pi)
+        return eps * (1 + t * t) + 2 * (1 - eps) * ((1 + t * t) * _gauss_tail(t) - t * density)
+
+    lo, hi = 0.0, 12.0
+    golden = (math.sqrt(5.0) - 1.0) / 2.0
+    for _ in range(100):  # the bound is convex in t
+        a, b = hi - golden * (hi - lo), lo + golden * (hi - lo)
+        if bound(a) < bound(b):
+            hi = b
+        else:
+            lo = a
+    return bound((lo + hi) / 2.0)
+
+
+def l1_phase_transition(columns_over_p: float) -> tuple[list[float], list[float]]:
+    """Noiseless l1 phase transition in the coordinates n/p and s/n for a design with columns_over_p * p columns."""
+    xs, ys = [], []
+    for k in range(1, 400):
+        eps = 0.5 * k / 400
+        delta = _l1_statistical_dimension(eps)  # n / N at the transition
+        if columns_over_p * delta <= 1.0:
+            xs.append(columns_over_p * delta)
+            ys.append(eps / delta)
+    return xs, ys
+
+
+def plot_phase_transition(df: pd.DataFrame, title: str) -> plt.Figure:
+    """Exact recovery (%) over n/p and s/n, one heatmap per solver, with the l1 and k-step references."""
+    solvers = list(dict.fromkeys(df["solver"]))
+    x_values = sorted(float(v) for v in df["n_over_p"].unique())
+    y_values = sorted(float(v) for v in df["s_over_n"].unique())
+    p = int(df["p"].iloc[0])
+    columns = 2 * p  # L = p
+    step_x, step_y = x_values[1] - x_values[0], y_values[1] - y_values[0]
+    edges_x = [x_values[0] - step_x / 2] + [v + step_x / 2 for v in x_values]
+    edges_y = [y_values[0] - step_y / 2] + [v + step_y / 2 for v in y_values]
+    l1_x, l1_y = l1_phase_transition(columns / p)
+    kstep = 1.0 / (2.0 * math.log(columns))
+    fig, axes = plt.subplots(1, len(solvers), figsize=(5.2 * len(solvers), 5.0), sharex=True, sharey=True,
+                             squeeze=False)
+    mesh = None
+    for col, name in enumerate(solvers):
+        ax = axes[0, col]
+        grid = df[df["solver"] == name].pivot(index="s_over_n", columns="n_over_p", values="exact").sort_index()
+        grid = grid[sorted(grid.columns)]
+        mesh = ax.pcolormesh(edges_x, edges_y, 100 * grid.to_numpy(), cmap="viridis", vmin=0, vmax=100)
+        ax.contour(x_values, y_values, 100 * grid.to_numpy(), levels=[50], colors="white", linewidths=1.4)
+        ax.plot(l1_x, l1_y, color="#d62728", linestyle="--", linewidth=1.6)
+        ax.axhline(kstep, color="#ff7f0e", linestyle=":", linewidth=1.8)
+        ax.set_title(display_name(name), fontsize=12)
+        ax.set_xlim(edges_x[0], edges_x[-1])
+        ax.set_ylim(edges_y[0], edges_y[-1])
+        ax.set_xlabel("$n/p$")
+        if col == 0:
+            ax.set_ylabel("$s/n$")
+    handles = [Line2D([], [], color="white", linewidth=1.4, label="50% contour"),
+               Line2D([], [], color="#d62728", linestyle="--", linewidth=1.6,
+                      label="$\\ell_1$ phase transition, $N = p + L$ (noiseless)"),
+               Line2D([], [], color="#ff7f0e", linestyle=":", linewidth=1.8,
+                      label="$s/n = 1/(2 \\ln N)$ (LARS $s$-step bound)")]
+    legend = axes[0, 0].legend(handles=handles, loc="upper left", fontsize=8, frameon=True, facecolor="0.3",
+                               edgecolor="0.7", labelcolor="white")
+    legend.get_frame().set_alpha(0.85)
+    fig.suptitle(f"{title}: exact recovery by the first $s$ entries", fontsize=13)
+    fig.tight_layout(rect=(0.0, 0.0, 0.93, 1.0))
+    if mesh is not None:
+        bar = fig.colorbar(mesh, ax=axes[0, :].tolist(), fraction=0.025, pad=0.02)
+        bar.set_label("Exact recovery (%)")
+    return fig
+
+
+# ==============================================================================
 # CLI
 # ==============================================================================
 
@@ -602,7 +749,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     mem.add_argument("--outdir", type=Path, default=None, help="output folder")
     mem.add_argument("--formats", nargs="+", default=["png", "pdf"], help="output formats")
 
+    rec = sub.add_parser("recovery", help="recovery vs. n/(s log p) and the phase transition (demo_ts_perf_04)")
+    rec.add_argument("csv", type=Path, nargs="?", default=None, help="recovery_vs_dt_ratio_mc<N>.csv (Part 1)")
+    rec.add_argument("--phase", type=Path, default=None, help="phase_transition_mc<N>.csv (Part 2)")
+    rec.add_argument("--title", required=True, help="base title; each figure adds its subject")
+    rec.add_argument("--outdir", type=Path, default=None, help="output folder")
+    rec.add_argument("--formats", nargs="+", default=["png", "pdf"], help="output formats")
+
     args = parser.parse_args(argv)
+    if args.mode == "recovery" and args.csv is None and args.phase is None:
+        parser.error("recovery needs the Part 1 CSV, --phase, or both")
     if args.mode == "compare" and len(args.csvs) != len(args.labels):
         parser.error("--csvs and --labels need the same number of entries")
     return args
@@ -642,6 +798,18 @@ def main(argv: list[str] | None = None) -> None:
         fig = plot_memory(df, args.title)
         save_figure(fig, args.outdir or default_plots_dir(args.csv), f"{args.csv.stem}_memory", args.formats)
         plt.close(fig)
+    elif args.mode == "recovery":
+        if args.csv is not None:
+            df = pd.read_csv(args.csv)
+            for metric in RECOVERY_METRICS:
+                fig = plot_recovery(df, metric, args.title)
+                save_figure(fig, args.outdir or default_plots_dir(args.csv), f"{args.csv.stem}_{metric.lower()}",
+                            args.formats)
+                plt.close(fig)
+        if args.phase is not None:
+            fig = plot_phase_transition(pd.read_csv(args.phase), args.title)
+            save_figure(fig, args.outdir or default_plots_dir(args.phase), args.phase.stem, args.formats)
+            plt.close(fig)
 
 
 if __name__ == "__main__":

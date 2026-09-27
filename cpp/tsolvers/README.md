@@ -35,6 +35,7 @@ positive rate (TPR), with figures drawn by `ts_plt_utils.py`:
 | P1 | [demo_ts_perf_01_fdr_tpr_vs_T/](demo_ts_perf_01_fdr_tpr_vs_T/README.md) | FDR and TPR of the terminated paths vs. $T$ (the simulation of the R tlars vignette) |
 | P2 | [demo_ts_perf_02_runtime_vs_dummies/](demo_ts_perf_02_runtime_vs_dummies/README.md) | Run time, steps and time per step vs. the number of dummies $L$, and the gain of the warm start |
 | P3 | [demo_ts_perf_03_memory_vs_np/](demo_ts_perf_03_memory_vs_np/README.md) | Solver memory vs. the ratio $n/p$, and its share of the data |
+| P4 | [demo_ts_perf_04_recovery_vs_dt_ratio/](demo_ts_perf_04_recovery_vs_dt_ratio/README.md) | Exact support recovery, TPR and FDR at the first dummy vs. $n/(s \log p)$, and the Donoho–Tanner diagram |
 
 ---
 
@@ -140,5 +141,6 @@ tsolvers/
   ├── demo_ts_12_tafs/
   ├── demo_ts_perf_01_fdr_tpr_vs_T/
   ├── demo_ts_perf_02_runtime_vs_dummies/
-  └── demo_ts_perf_03_memory_vs_np/
+  ├── demo_ts_perf_03_memory_vs_np/
+  └── demo_ts_perf_04_recovery_vs_dt_ratio/
 ```
