@@ -5,17 +5,18 @@
 This demo illustrates how hierarchical agglomerative clustering (HAC) can be applied using memory-mapped storage.
 
 It extends the block-correlated variable-clustering setting from the in-memory HAC examples to a setting where the full
-matrix is too large to allocate in RAM. The demo combines large-scale synthetic data generation, in-place preprocessing,
-and clustering under an LSH-based correlation approximation.
+matrix is too large to allocate in random-access memory (RAM). The demo combines large-scale synthetic data
+generation, in-place preprocessing, and clustering under a locality-sensitive hashing (LSH) approximation of the
+correlation.
 
 The workflow is organized into three phases:
 
 1. **Generation**: write a large correlated matrix directly into a memory-mapped file.
-2. **Standardization**: mean-center and L2-normalize columns in place.
+2. **Standardization**: mean-center the columns and scale them to unit $\ell_2$-norm in place.
 3. **Clustering**: benchmark selected HAC linkage strategies under an LSH-based correlation distance approximation.
 
-Each phase section below ends with the console output of the recorded run (library 8ad3376, 8 OpenMP threads, 12-core
-Apple Silicon, 64 GB RAM, 1 h 17 min in total).
+Each phase section below ends with the console output of the recorded run (library 8ad3376, 8 Open Multi-Processing
+(OpenMP) threads, 12-core Apple Silicon, 64 GB RAM, 1 h 17 min in total).
 
 ---
 
@@ -108,7 +109,8 @@ memory-mapped matrix rather than on a copied in-memory version.
 ### Phases 1 and 2: Console output
 
 Both phases stream through the file once, column by column, with 8 threads; each takes about six minutes, so the
-320 GB are written at roughly 0.9 GB/s and rewritten at 0.8 GB/s. The time goes to the SSD, not to the arithmetic.
+320 GB are written at roughly 0.9 GB/s and rewritten at 0.8 GB/s. The time goes to the solid-state drive (SSD), not
+to the arithmetic.
 
 ```text
 ============================================================
@@ -148,9 +150,9 @@ d_{\mathrm{LSH}}(j,\ell)
 1 - \left| \mathrm{corr}(\boldsymbol{x}_j, \boldsymbol{x}_\ell) \right|.
 ```
 
-The source describes this as a pure $O(1)$ SimHash-based correlation approximation, used to avoid repeatedly evaluating
-full high-dimensional exact correlations at this scale. Every variable is reduced to a 64-bit signature from 64 random
-hyperplanes, so a distance is a Hamming distance between two words.
+The source describes this as a pure $O(1)$ correlation approximation by random-hyperplane similarity hashing
+(SimHash), used to avoid repeatedly evaluating full high-dimensional exact correlations at this scale. Every variable
+is reduced to a 64-bit signature from 64 random hyperplanes, so a distance is a Hamming distance between two words.
 
 ### Subproblem 1: Single linkage
 
@@ -161,14 +163,16 @@ known block labels via ARI.
 ### Subproblem 2: Complete linkage and WPGMA feasibility
 
 The second subproblem is a **feasibility question** rather than a full benchmark run. In the current implementation,
-complete linkage and WPGMA are skipped because they require the $O(p^2)$ Lance-Williams matrix machinery and are
-therefore treated as computationally intractable at $p = 400{,}000$ in this setting.
+complete linkage and the weighted pair group method with arithmetic mean (WPGMA) are skipped because they require the
+$O(p^2)$ Lance-Williams matrix machinery and are therefore treated as computationally intractable at $p = 400{,}000$ in
+this setting.
 
 ### Subproblem 3: Average linkage feasibility
 
-The third subproblem is skipped for the same reason as the second. The dispatcher routes **average linkage (UPGMA)**
-to the exact Lance-Williams matrix engine for every metric, because the geometric centroid update of the projected
-engine does not implement the UPGMA formula and would break the reducibility the NN-chain relies on. At $p = 400{,}000$
+The third subproblem is skipped for the same reason as the second. The dispatcher routes **average linkage**, the
+unweighted pair group method with arithmetic mean (UPGMA), to the exact Lance-Williams matrix engine for every metric,
+because the geometric centroid update of the projected engine does not implement the UPGMA formula and would break the
+reducibility the nearest-neighbor chain (NN-chain) relies on. At $p = 400{,}000$
 that matrix is 1.28 TB, in RAM or on disk. An earlier version of this demo ran UPGMA here in the belief that it used the
 projected engine; the RAM matrix engine zero-fills its buffer before it reports, and the process was killed by memory
 without a message.
@@ -181,8 +185,9 @@ $64 \times p$ matrix of doubles, about 195 MB here, instead of the $p \times p$ 
 
 ### Phase 3: Console output
 
-Single linkage over all 400,000 variables takes 26 minutes: SLINK evaluates each pair once, but with the $O(1)$ Hamming
-distance the 8 x 10^10 evaluations stay affordable; the exact-correlation equivalent would read the 320 GB file
+Single linkage over all 400,000 variables takes 26 minutes: Sibson's single-linkage algorithm (SLINK) evaluates each
+pair once, but with the $O(1)$ Hamming distance the 8 x 10^10 evaluations stay affordable; the exact-correlation
+equivalent would read the 320 GB file
 80 billion times over. Ward projects the file once into the 64-dimensional space (the 195 MB) and then runs its NN-chain
 in RAM for 38 minutes. Both recover the ten imbalanced blocks exactly. The demo unmaps and deletes the file at the end.
 

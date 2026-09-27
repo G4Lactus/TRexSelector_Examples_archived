@@ -5,18 +5,19 @@
 This demo illustrates several in-memory uses of hierarchical agglomerative clustering (HAC) that are relevant for the
 TRexSelector project and, in particular, for grouped variable selection workflows.
 
-Six subproblems run in `main()`:
+Six subproblems, SP1 to SP6 in the section headings below, run in `main()`:
 
 1. clustering samples with Euclidean distance,
 2. clustering variables with correlation-based distance,
 3. accelerating correlation-based clustering with Locality-Sensitive Hashing (LSH),
 4. comparing linkage strategies on structured synthetic data (exact correlation),
 5. comparing linkage strategies under the pure $O(1)$ LSH correlation approximation,
-6. clustering AR(1) Toeplitz block structures, where correlation decays with distance.
+6. clustering first-order autoregressive (AR(1)) Toeplitz block structures, where correlation decays with distance.
 
 Throughout the demo, clustering quality is assessed by the **Adjusted Rand Index (ARI)**, which compares the recovered
 cluster labels against the known ground-truth labels from the synthetic data generator. Each subproblem section below
-ends with the console output of the recorded run (library 8ad3376, 8 OpenMP threads, 12-core Apple Silicon, 64 GB).
+ends with the console output of the recorded run (library 8ad3376, 8 Open Multi-Processing (OpenMP) threads, 12-core
+Apple Silicon, 64 GB).
 
 ---
 
@@ -65,8 +66,8 @@ The goal is to cluster the rows $`\boldsymbol{x}_1, \dots, \boldsymbol{x}_n`$ us
 d(i,i') = \lVert \boldsymbol{x}_i - \boldsymbol{x}_{i'} \rVert_2 .
 ```
 
-A **single-linkage** dendrogram is built with the SLINK algorithm. The dendrogram is then cut to recover $K$ clusters,
-and the predicted labels are compared with the true sample labels using ARI.
+A **single-linkage** dendrogram is built with Sibson's single-linkage algorithm (SLINK). The dendrogram is then cut to
+recover $K$ clusters, and the predicted labels are compared with the true sample labels using ARI.
 
 ### SP1 Console output
 
@@ -190,7 +191,8 @@ This subproblem compares three correlation-based strategies:
 
 1. **Exact correlation**, using the full correlation geometry.
 2. **LSH filter**, where hashing acts as a gatekeeper before more exact comparisons.
-3. **LSH approximation**, where correlation is approximated through a SimHash-style angular sketch.
+3. **LSH approximation**, where correlation is approximated through an angular sketch by random-hyperplane
+   similarity hashing (SimHash).
 
 Conceptually, the LSH approximation replaces expensive high-dimensional similarity comparisons by fast hash-based
 surrogates:
@@ -258,8 +260,10 @@ principles, including:
 
 - **Single linkage**, based on nearest-neighbor inter-cluster distance,
 - **Complete linkage**, based on farthest-neighbor inter-cluster distance,
-- **Average linkage (UPGMA)**, based on average inter-cluster distance,
-- **Weighted average linkage (WPGMA)**, based on weighted average inter-cluster distance,
+- **Average linkage**, the unweighted pair group method with arithmetic mean (UPGMA), based on average inter-cluster
+  distance,
+- **Weighted average linkage**, the weighted pair group method with arithmetic mean (WPGMA), based on weighted average
+  inter-cluster distance,
 - **Ward linkage**, based on minimum increase in within-cluster variance,
 - and additional centroid/median-style variants, which don't have the reducibility property.
 
@@ -278,9 +282,9 @@ property.
 
 Clean blocks, 1,500 samples, 50,000 variables. All eight rules recover the five blocks. The times split into three
 groups: SLINK and the dispatcher's single-linkage route at 125 s; the six matrix-based rules, which first fill the
-50,000 x 50,000 distance matrix (the 19,208 MB buffer) and then run the NN-chain, at 128 to 135 s; and the two rules
-without the reducibility property, centroid and median, which take the generic linkage path at 259 s and 200 s. Ward
-switches to squared Euclidean distance, as its update rule requires.
+50,000 x 50,000 distance matrix (the 19,208 MB buffer) and then run the nearest-neighbor chain (NN-chain), at 128 to
+135 s; and the two rules without the reducibility property, centroid and median, which take the generic linkage path
+at 259 s and 200 s. Ward switches to squared Euclidean distance, as its update rule requires.
 
 ```text
 ============================================================
@@ -520,8 +524,8 @@ runs 53 minutes, and Subproblem 5 needs more than 64 GB for its distance matrix.
   and/or pure $O(1)$ LSH approximation.
 - The matrix-based linkage rules (complete, UPGMA, WPGMA, Ward, centroid, median) fill the full $p \times p$ distance
   matrix as a `double` buffer: 19,208 MB at $p = 50{,}000$, 76,440 MB at $p = 100{,}000$. The dispatcher's `use_mmap`
-  flag would place that buffer in a memory-mapped file instead; the demo leaves it at its default, RAM, in every test,
-  including those whose labels read "Disk/Matrix Bound".
+  flag would place that buffer in a memory-mapped file instead; the demo leaves it at its default, random-access
+  memory (RAM), in every test, including those whose labels read "Disk/Matrix Bound".
 - The parallel work is the data generation, the standardization, the per-column pre-computation and the distance rows;
   the merge loop of every linkage rule is sequential. More threads shorten the former, not the latter: on 6 threads the
   tree builds of Subproblems 2 and 3 took 932 s, 3,595 s and 1,392 s, on 8 threads 806 s, 3,162 s and 1,211 s.

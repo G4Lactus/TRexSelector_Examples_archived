@@ -3,10 +3,10 @@
 ## Purpose
 
 This demo shows `MemoryMappedMatrix<Scalar>` in C++: a file-backed matrix that behaves like an Eigen object, so
-data larger than RAM can be written, read and streamed column by column. It mirrors the R and Python twins
-(`R/memory_mapping/demo_memory_mapping`, `Python/memory_mapping/demo_memory_mapping`) and adds what only C++ offers:
-RAII cleanup of the backing file, direct `Eigen::Map` interoperability, OpenMP-parallel generation and
-element-wise access checks.
+data larger than the random-access memory (RAM) can be written, read and streamed column by column. It mirrors the R
+and Python twins (`R/memory_mapping/demo_memory_mapping`, `Python/memory_mapping/demo_memory_mapping`) and adds what
+only C++ offers: cleanup of the backing file by Resource Acquisition Is Initialization (RAII), direct `Eigen::Map`
+interoperability, Open Multi-Processing (OpenMP) parallel generation and element-wise access checks.
 
 ---
 
@@ -21,7 +21,8 @@ cpp/build/release/bin/memory_mapping/demo_memory_mapping/demo_memory_mapping
 The demo prints to the console only; no `simulation_results/` folder is created. The backing files live in the
 system temporary directory and are removed when each part ends. The output below is a run against library
 8ad3376 on a 12-core Apple Silicon machine; the temporary paths, the `data()` pointer and the thread counts differ
-per machine, everything else is deterministic.
+per machine, everything else is deterministic. The
+temporary folder is shown as `<tmp>/`.
 
 ---
 
@@ -53,7 +54,7 @@ Demo 1: Basics
 ============================================================
 1. Created a 100 x 50 in-memory matrix.
 
-2. Temporary file: "/var/folders/tf/h3185bsj49b76jz5gmytxjp40000gn/T/trex_mmap_demo_basics.bin"
+2. Temporary file: "<tmp>/trex_mmap_demo_basics.bin"
 
 3. Matrix written to MemoryMappedMatrix.
 
@@ -88,7 +89,7 @@ matrix.
 ============================================================
 Demo 2: Out-of-Core Streaming (Serial)
 ============================================================
-Temporary file: "/var/folders/tf/h3185bsj49b76jz5gmytxjp40000gn/T/trex_mmap_demo_streaming.bin"
+Temporary file: "<tmp>/trex_mmap_demo_streaming.bin"
 
 Writing 50 columns serially (O(n_rows) = 100 doubles of working RAM per column)...
 ✓ All columns written.
@@ -110,7 +111,7 @@ time rounds to 0 ms at this size; the point is the mechanism, not the speed.
 ============================================================
 Demo 3: Out-of-Core Parallel Generation (C++ Exclusive)
 ============================================================
-Temporary file: "/var/folders/tf/h3185bsj49b76jz5gmytxjp40000gn/T/trex_mmap_demo_parallel.bin"
+Temporary file: "<tmp>/trex_mmap_demo_parallel.bin"
 Threads available: 6
 
 Filling 50 columns in parallel (#pragma omp parallel for, schedule(static))...
@@ -136,7 +137,7 @@ caught and printed, the demo continues.
 ============================================================
 Demo 4: Element-wise access via operator()(row, col)
 ============================================================
-Temporary file: "/var/folders/tf/h3185bsj49b76jz5gmytxjp40000gn/T/trex_mmap_demo_element_access.bin"
+Temporary file: "<tmp>/trex_mmap_demo_element_access.bin"
 
 1. Created 10 x 8 matrix with seeded data (seed 42).
 
