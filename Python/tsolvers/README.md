@@ -2,21 +2,12 @@
 
 ## Overview
 
-This folder contains the Python demos for the
-**terminating solvers** exposed by `trex_selector_neo.tsolvers`. It mirrors
-[cpp/tsolvers/](../../cpp/tsolvers/README.md) 1:1 (folder-per-demo, same
-numbering and content).
-
-These are variable-selection algorithms designed for high-dimensional
-linear-model problems inside the T-Rex framework. Each solver follows a
-different path-following, greedy, or pursuit-style strategy, but all share the
-same terminating principle: instead of computing a full regularization path,
-they stop early once a prescribed number $T_{\text{stop}}$ of dummy variables
-has entered the active set.
-
-The demos run each solver in a standalone way, outside the full T-Rex
-calibration workflow, so that solver behavior, normalization choices, and
-serialization can be inspected in isolation.
+This folder holds the Python demos of the terminating solvers (T-solvers) exposed by `trex_selector_neo.tsolvers`. They
+mirror [cpp/tsolvers/](../../cpp/tsolvers/README.md) demo by demo, with the same numbering, parts, settings, seeds and
+console format, while NumPy draws the data, so the numbers differ from the C++ runs. The solvers are variable-selection
+algorithms for high-dimensional linear models inside the T-Rex framework. Each one follows its own path-following,
+greedy or pursuit strategy, and all of them share the terminating principle. Instead of the whole path they compute
+only its start, up to the $T$-th dummy that enters the active set.
 
 ---
 
@@ -24,7 +15,7 @@ serialization can be inspected in isolation.
 
 | # | Solver | Folder | Strategy | Binding class |
 |---|--------|--------|----------|---------------|
-| 01 | **T-LARS** | [demo_ts_01_tlars/](demo_ts_01_tlars/README.md) | Least Angle Regression | `tsolvers.ad.lars_based.TLARS_Solver` |
+| 01 | **T-LARS** | [demo_ts_01_tlars/](demo_ts_01_tlars/README.md) | Least angle regression | `tsolvers.ad.lars_based.TLARS_Solver` |
 | 02 | **T-LASSO** | [demo_ts_02_tlasso/](demo_ts_02_tlasso/README.md) | Lasso path | `tsolvers.ad.lars_based.TLASSO_Solver` |
 | 03 | **T-Stepwise** | [demo_ts_03_tstepwise/](demo_ts_03_tstepwise/README.md) | Forward stepwise regression | `tsolvers.ad.lars_based.TSTEPWISE_Solver` |
 | 04 | **T-ENET** | [demo_ts_04_tenet/](demo_ts_04_tenet/README.md) | Elastic net | `tsolvers.ad.lars_based.TENET_Solver` |
@@ -37,18 +28,14 @@ serialization can be inspected in isolation.
 | 11 | **T-OLS** | [demo_ts_11_tools/](demo_ts_11_tools/README.md) | Orthogonal least squares | `tsolvers.ad.omp_based.TOOLS_Solver` |
 | 12 | **T-AFS** | [demo_ts_12_tafs/](demo_ts_12_tafs/README.md) | Adaptive forward stepwise | `tsolvers.ad.afs_based.TAFS_Solver` |
 
-Every demo has the same four parts (mirroring the cpp files):
+Every demo has the five parts of its C++ counterpart:
 
-1. **Early stopping** — internal normalization, high-dimensional $(p > n)$ and
-   low-dimensional $(n > p)$ regimes.
-2. **External normalization** — `LpNormScaler` (center + unit-L2 columns) on
-   X and D plus manual y-centering, solver run with
-   `normalize=False, intercept=False`.
-3. **Serialization & warm start** — save a partial path, reload, continue,
-   and compare against a reference run (steps, RSS, $R^2$, action path).
-4. **Memory-mapped data** — X/D/y written to disk via `numpy_to_memmap()` and
-   solved on the zero-copy mmap views. (cpp generates $p = 500{,}000$ on
-   disk; the port scales this to $p = 5{,}000$.)
+1. early stopping with internal normalization, for $p > n$ and $n > p$,
+2. the same data normalized outside the solver with `LpNormScaler`,
+3. a checkpoint saved to disk, reloaded and continued,
+4. data memory-mapped from disk with `numpy_to_memmap()` (the C++ demos use $p = 500{,}000$, the Python port keeps
+   $p = 5{,}000$),
+5. terminated solution paths of one warm-started object, drawn as a figure.
 
 ---
 
@@ -56,38 +43,67 @@ Every demo has the same four parts (mirroring the cpp files):
 
 ### Terminating principle
 
-A terminating solver runs its selection path with
-`executeStep(T_stop, early_stop=True)`, where $T_{\text{stop}}$ is the
-**number of dummy variables that must enter the active set before the solver
-terminates early**, usually well before the full path is computed. Passing
-`early_stop=False` traces the complete path instead.
+A terminating solver runs its path with `executeStep(T_stop, early_stop=True)` and stops as soon as `T_stop` dummies
+are in the active set, usually long before the whole path. The coefficients along the path serve the selection only.
+
+### Normalization modes
+
+The solvers work in two modes:
+
+- **Writer** (`normalize=True` or `intercept=True`): the solver centers and scales $\mathbf{X}$ and $\mathbf{D}$ in
+  place, restores them when it is released and keeps a centered copy of $\mathbf{y}$. A second writer on an array
+  that another writer holds raises an error.
+- **Reader** (`normalize=False, intercept=False`): the caller prepares the data once, for example with
+  `LpNormScaler`, and any number of solvers share the Fortran-ordered `float64` arrays without copies. With
+  `precentered=True` the solver knows that the data are centered and caps the active set at the rank $n - 1$.
+
+### Checkpoints
+
+The binding saves the solver state with `solver.save(path)`. A new solver constructed on the same arrays loads it with
+`solver.load(path)` and continues from the same point (the C++ demos use the static factory `load(filename, X, D)`).
 
 ### Shared helpers
 
-[`ts_demo_utils.py`](ts_demo_utils.py) replicates the cpp demo utilities:
-`gen_synthetic_data()` (numpy version of `datagen::SyntheticData` with
-SNR-calibrated Gaussian noise) and the `print_*` diagnostics
-(configuration, selection, and TPP/FDP/precision/recall/F1 quality measures
-via `trex_selector_neo.utils`).
+[`ts_demo_utils.py`](ts_demo_utils.py) mirrors the C++ demo utilities. It draws the data (`gen_synthetic_data()`, the
+NumPy version of `datagen::SyntheticData`), prints the configuration, the selection and its quality in the format of
+`cdiagnostics`, reads the selection from the coefficient path as the C++ diagnostics do, and holds `PartSelection`,
+`PathRecorder` and `display_path()` of [`ts_perf_utils.hpp`](../../cpp/tsolvers/ts_perf_utils.hpp). It also sets
+Python's and the C library's standard output to line buffering, so the log lines of the C++ backend appear in their
+place when the output goes to a file or a pipe. [`ts_plt_utils.py`](ts_plt_utils.py) is a byte-identical copy of the
+C++ plotting module.
 
-### Serialization
+### Terminated solution paths
 
-The binding serializes solver state with `solver.save(path)` and hydrates an
-existing instance with `solver.load(path)` (cpp uses a static
-`load(filename, X, D)` factory); the constructor re-binds the data views.
+Part 5 repeats the quick start of the R tlars vignette. One solver object with $n = 150$, $p = 300$, five true
+coefficients equal to 1 and $L = p = 300$ dummies is warm-started $T = 1 \to 2 \to 5$, and `PathRecorder` writes each
+snapshot of its coefficient path in the CSV format of the C++ demos. `generate_plots.sh` then draws the coefficients
+against the number of included dummies, and each demo README embeds its figure. On the Python data several solvers
+share one path, to all ten digits of the written coefficients:
+
+| Shared path | Solvers |
+| ----------- | ------- |
+| T-LARS | T-LARS, T-LASSO, T-Stagewise |
+| T-OMP | T-OMP, T-Stepwise, T-OLS, T-AFS ($\rho = 1$), T-NCGMP (fully corrective variant) |
+| T-MP | T-MP, T-NCGMP (line-search variant) |
+| T-GP (same entries, coefficients within 0.089) | T-GP, T-ACGP |
+
+T-ENET takes a path of its own. The T-AFS figure shows four values of $\rho$ from 0.1 to 1, and the T-NCGMP figure both
+variants. In contrast to the C++ data, T-OLS follows T-OMP to the end here.
 
 ---
 
 ## Running
 
-Run any demo from the repository root, e.g.:
+Run any demo from the repository root, with the package installed in the repository's virtual environment:
 
 ```bash
-.venv/bin/python Python/tsolvers/demo_ts_01_tlars/demo_ts_01_tlars.py
+.venv/bin/python Python/tsolvers/demo_ts_01_tlars/demo_ts_01_tlars.py      # Parts 1-5
+.venv/bin/python Python/tsolvers/demo_ts_01_tlars/demo_ts_01_tlars.py 5    # Part 5 only
+Python/tsolvers/demo_ts_01_tlars/generate_plots.sh                          # path figure from the Part 5 data
 ```
 
-All demos print their diagnostics to the console and clean up any checkpoint
-or mmap files they create inside their own folder.
+Every demo takes the parts to run as optional arguments, and all five parts run in a few seconds. The demos clean up
+the checkpoint and memory-mapped files they create inside their own folder.
 
 ---
 
@@ -96,7 +112,8 @@ or mmap files they create inside their own folder.
 ```txt
 tsolvers/
   ├── README.md
-  ├── ts_demo_utils.py
+  ├── ts_demo_utils.py       # shared helpers (data, diagnostics, part selection, path recorder)
+  ├── ts_plt_utils.py        # shared matplotlib figures (copy of cpp/tsolvers/ts_plt_utils.py)
   ├── demo_ts_01_tlars/
   ├── demo_ts_02_tlasso/
   ├── demo_ts_03_tstepwise/

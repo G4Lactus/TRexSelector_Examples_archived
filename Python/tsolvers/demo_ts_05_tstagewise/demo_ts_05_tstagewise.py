@@ -24,9 +24,15 @@ import sys
 import numpy as np
 
 from trex_selector_neo.ml_methods import LpNormScaler, NormType
-from trex_selector_neo.tsolvers.ad.lars_based import TSTAGEWISE_Solver
 from trex_selector_neo.tsolvers.ad import SolverOptions
-from trex_selector_neo.utils import get_max_threads, numpy_to_memmap, set_num_threads
+from trex_selector_neo.tsolvers.ad.lars_based import TSTAGEWISE_Solver
+from trex_selector_neo.utils import (
+    compute_fdp,
+    compute_tpp,
+    get_max_threads,
+    numpy_to_memmap,
+    set_num_threads,
+)
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _PARENT_DIR = os.path.dirname(_THIS_DIR)
@@ -34,14 +40,17 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from ts_demo_utils import ( # noqa: E402
+from ts_demo_utils import (
+    PartSelection,
+    PathRecorder,
+    display_path,
     gen_synthetic_data,
+    output_dir,
     print_demo_config,
     print_section_header,
     print_selection,
     print_selection_quality,
 )
-
 
 # ==============================================================================
 # Demo 1: Basic T-Stagewise with Early Stopping
@@ -82,7 +91,7 @@ def demo_early_stopping(high_dim, rnd_coef, T_stop):
 # ==============================================================================
 
 def demo_with_external_normalizer(high_dim, rnd_coef, T_stop):
-    print_section_header("Demo 2: T-Stagewise with External Normalization")
+    print_section_header("=== Demo 2: T-Stagewise with External Normalization ===")
 
     n = 1000 if high_dim else 5000
     p = 5000 if high_dim else 1000
@@ -128,7 +137,7 @@ def demo_with_external_normalizer(high_dim, rnd_coef, T_stop):
 # ==============================================================================
 
 def demo_serialization():
-    print_section_header("Demo 3: T-Stagewise Serialization & Warm Start")
+    print_section_header("=== Demo 3: T-Stagewise Serialization & Warm Start ===")
 
     n, p = 100, 50
     num_dummies = p
@@ -169,7 +178,8 @@ def demo_serialization():
     solver_ref.executeStep(T_stop_final, early_stop=True)
     print(f"\u2713 Reference completed with {solver_ref.getNumSteps()} steps\n")
 
-    filename = os.path.join(_THIS_DIR, "tstagewise_checkpoint.bin")
+    # relative to the working directory, so the logs carry no machine path
+    filename = os.path.relpath(os.path.join(_THIS_DIR, "tstagewise_checkpoint.bin"))
 
     # STEP 1: Run partial path and save checkpoint.
     solver1 = TSTAGEWISE_Solver(
@@ -178,7 +188,7 @@ def demo_serialization():
     solver1.executeStep(T_stop_partial, early_stop=True)
     print(f"Checkpoint at partial stop: {solver1.getNumSteps()} steps")
     solver1.save(filename)
-    print(f"\u2713 Checkpoint saved at '{filename}'")
+    print(f"\u2713 Checkpoint saved at '{os.path.basename(filename)}'")
 
     # STEP 2: Load from checkpoint and continue.
     # The Python binding hydrates an existing instance (cpp: static
@@ -195,8 +205,8 @@ def demo_serialization():
     print("\nCOMPARISON:")
     print(f"Reference steps: {solver_ref.getNumSteps()}")
     print(f"Reloaded steps:  {solver2.getNumSteps()}")
-    print(f"RSS diff:   {abs(solver_ref.getRSS()[-1] - solver2.getRSS()[-1])}")
-    print(f"R2 diff:    {abs(solver_ref.getR2()[-1] - solver2.getR2()[-1])}")
+    print(f"RSS diff:   {abs(solver_ref.getRSS()[-1] - solver2.getRSS()[-1]):g}")
+    print(f"R2 diff:    {abs(solver_ref.getR2()[-1] - solver2.getR2()[-1]):g}")
     paths_match = solver_ref.getActions() == solver2.getActions()
     print("\u2713 Paths match" if paths_match else "\u2717 Paths differ!")
 
@@ -215,7 +225,7 @@ def demo_serialization():
 # ==============================================================================
 
 def demo_memory_mapped(high_dim, rnd_coef, T_stop):
-    print_section_header("Demo 4: T-Stagewise with Memory-Mapped Data")
+    print_section_header("=== Demo 4: T-Stagewise with Memory-Mapped Data ===")
 
     n = 1000 if high_dim else 5000
     p = 5000 if high_dim else 1000  # cpp: 500,000 on disk; scaled for the port
@@ -264,28 +274,89 @@ def demo_memory_mapped(high_dim, rnd_coef, T_stop):
         print("\u2713 All files removed\n")
 
 
+
+# ==============================================================================
+# Demo 5: Terminated Solution Paths
+# ==============================================================================
+
+def demo_terminated_paths():
+    """
+    Record the terminated solution paths of one T-Stagewise object that is
+    warm-started T = 1 -> 2 -> 5 (setup of the R tlars vignette). Writes
+    tstagewise_terminated_paths_{path,actions}.csv to simulation_results/data/;
+    generate_plots.sh draws the path figure from them.
+    """
+    print_section_header("=== Demo 5: T-Stagewise Terminated Solution Paths ===")
+
+    # Setup of the tlars vignette: 5 actives with beta = 1 and noise sigma about 1
+    n, p = 150, 300
+    num_dummies = p
+    true_support = [0, 1, 2, 3, 4]
+    true_coefs = [1.0] * 5
+    snr = 5.0  # signal variance 5 over noise variance 1
+    T_stops = [1, 2, 5]
+
+    print_demo_config(n, p, num_dummies, T_stops[-1], true_support, true_coefs, snr)
+
+    X, D, y = gen_synthetic_data(n, p, num_dummies, true_support, true_coefs,
+                                 snr, seed=42)
+
+    # One solver object; every executeStep() call continues its path
+    solver = TSTAGEWISE_Solver(
+        X, D, y,
+        SolverOptions(normalize=True, intercept=True, verbose=False))
+
+    recorder = PathRecorder("tstagewise_terminated_paths", output_dir(_THIS_DIR))
+    for T_stop in T_stops:
+        solver.executeStep(T_stop, early_stop=True)
+        recorder.record(solver, T_stop)
+
+        selected = solver.getActivePredictorIndices()
+        print(f"T_stop = {T_stop}: steps = {solver.getNumSteps():2d}, "
+              f"predictors = {len(selected):2d}, "
+              f"dummies = {len(solver.getActiveDummyIndices())}, "
+              f"FDP = {compute_fdp(selected, true_support):.3f}, "
+              f"TPP = {compute_tpp(selected, true_support):.3f}")
+
+    print_selection(solver, true_support)
+
+    print(f"\nPath data written to:\n  {display_path(recorder.path_file)}"
+          f"\n  {display_path(recorder.actions_file)}\n")
+
 # ==============================================================================
 # Main
 # ==============================================================================
 
 if __name__ == "__main__":
+    print()
     print_section_header("T-Stagewise Demo Suite")
 
     set_num_threads(6)
     print(f"Running with {get_max_threads()} threads\n")
 
+    # Optional arguments: the parts to run (default: all)
+    run = PartSelection()
+
     # Demo 1: Basic usage with internal normalization
-    demo_early_stopping(high_dim=True, rnd_coef=False, T_stop=10)
-    demo_early_stopping(high_dim=False, rnd_coef=False, T_stop=10)
+    if run(1):
+        demo_early_stopping(high_dim=True, rnd_coef=False, T_stop=10)
+        demo_early_stopping(high_dim=False, rnd_coef=False, T_stop=10)
 
     # Demo 2: External normalization
-    demo_with_external_normalizer(high_dim=False, rnd_coef=False, T_stop=10)
-    demo_with_external_normalizer(high_dim=True, rnd_coef=False, T_stop=10)
+    if run(2):
+        demo_with_external_normalizer(high_dim=False, rnd_coef=False, T_stop=10)
+        demo_with_external_normalizer(high_dim=True, rnd_coef=False, T_stop=10)
 
     # Demo 3: Serialization
-    demo_serialization()
+    if run(3):
+        demo_serialization()
 
     # Demo 4: Memory-mapped
-    demo_memory_mapped(high_dim=True, rnd_coef=False, T_stop=10)
+    if run(4):
+        demo_memory_mapped(high_dim=True, rnd_coef=False, T_stop=10)
+
+    # Demo 5: Terminated solution paths (data for the path figure)
+    if run(5):
+        demo_terminated_paths()
 
     print_section_header("\u2713 All demos completed successfully")
