@@ -40,5 +40,5 @@ fi
 
 exec "$venv_python" "$here/../ts_plt_utils.py" fdr-tpr "$csv" \
   --title 'T-solvers ($n = 100$, $L = p = 300$, 10 coefficients of 3, 500 runs)' \
-  --n 100 --p 300 --L 300 --s 10 \
+  --rank 99 --p 300 --L 300 --s 10 \
   "$@"

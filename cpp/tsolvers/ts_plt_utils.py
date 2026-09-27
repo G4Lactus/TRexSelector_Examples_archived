@@ -293,14 +293,15 @@ def plot_tpr_vs_fdr(df: pd.DataFrame, title: str) -> plt.Figure:
     return fig
 
 
-def plot_path_stats(df: pd.DataFrame, title: str, n: int | None = None, p: int | None = None,
+def plot_path_stats(df: pd.DataFrame, title: str, rank: int | None = None, p: int | None = None,
                     L: int | None = None, s: int | None = None) -> plt.Figure:
     """Selected variables, steps and cumulative time (ms) vs. T, one column per solver family.
 
-    With n, p, L and s given, the selected-variables row shows s + (p - s) / (L + 1) * T:
+    With rank, p, L and s given, the selected-variables row shows s + (p - s) / (L + 1) * T:
     the true variables plus the expected number of null variables that enter before the
     T-th dummy when nulls and dummies are exchangeable (negative hypergeometric mean). The
-    steps row shows the step limit 8 * min(p + L, n) of the LARS and OMP families.
+    steps row shows the step limit 8 * min(p + L, rank) of the capped solvers, with rank the
+    active-set cap (n - 1 for centered data).
     """
     rows = [("avg_selected", "Selected variables"), ("avg_steps", "Steps"),
             ("avg_ms", "Time from construction (ms)")]
@@ -324,16 +325,16 @@ def plot_path_stats(df: pd.DataFrame, title: str, n: int | None = None, p: int |
 
     expected: list[Line2D] = []
     limit: list[Line2D] = []
-    if n is not None and p is not None and L is not None and s is not None:
+    if rank is not None and p is not None and L is not None and s is not None:
         grid = pd.Series([float(v) for v in T_values])
         rate = (p - s) / (L + 1)
         expected = [Line2D([], [], color="0.35", linestyle="--", linewidth=1.2,
                            label=f"expected: {s} true + {rate:.2f} $T$ null")]
         limit = [Line2D([], [], color="0.35", linestyle=":", linewidth=1.2,
-                        label=f"step limit {8 * min(p + L, n)}")]
+                        label=f"step limit {8 * min(p + L, rank)}")]
         for col in range(len(FAMILIES)):
             axes[0, col].plot(grid, s + rate * grid, color="0.35", linestyle="--", linewidth=1.2, zorder=1)
-            axes[1, col].axhline(8 * min(p + L, n), color="0.35", linestyle=":", linewidth=1.2, zorder=1)
+            axes[1, col].axhline(8 * min(p + L, rank), color="0.35", linestyle=":", linewidth=1.2, zorder=1)
     for col in range(len(FAMILIES)):
         for row, (_, label) in enumerate(rows):
             ax = axes[row, col]
@@ -386,7 +387,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     fdr.add_argument("--title", required=True, help="base title; each figure adds its subject")
     fdr.add_argument("--outdir", type=Path, default=None, help="output folder")
     fdr.add_argument("--formats", nargs="+", default=["png", "pdf"], help="output formats")
-    fdr.add_argument("--n", type=int, default=None, help="observations (reference lines)")
+    fdr.add_argument("--rank", type=int, default=None, help="active-set cap, n - 1 for centered data (step limit)")
     fdr.add_argument("--p", type=int, default=None, help="original variables (reference lines)")
     fdr.add_argument("--L", type=int, default=None, help="dummies (reference lines)")
     fdr.add_argument("--s", type=int, default=None, help="true variables (reference lines)")
@@ -415,7 +416,7 @@ def main(argv: list[str] | None = None) -> None:
         outdir = args.outdir or default_plots_dir(args.csv)
         for fig, suffix in ((plot_fdr_tpr_vs_T(df, args.title), "fdr_tpr_vs_T"),
                             (plot_tpr_vs_fdr(df, args.title), "tpr_vs_fdr"),
-                            (plot_path_stats(df, args.title, args.n, args.p, args.L, args.s), "path_stats")):
+                            (plot_path_stats(df, args.title, args.rank, args.p, args.L, args.s), "path_stats")):
             save_figure(fig, outdir, f"{args.csv.stem}_{suffix}", args.formats)
             plt.close(fig)
 
