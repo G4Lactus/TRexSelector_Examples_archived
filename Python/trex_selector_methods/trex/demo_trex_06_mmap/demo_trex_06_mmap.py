@@ -205,7 +205,8 @@ def part_b_full_mmap():
             os.close(fd)
 
             try:
-                out(f"Converting X to memory-mapped file ({mmap_path}) ...\n")
+                # The temp path stays out of the output: it is machine-specific.
+                out("Converting X to memory-mapped file (mmap_path) ...\n")
                 X_mmap = numpy_to_memmap(mmap_path, dat["X"])
 
                 out("Running T-Rex Selector ...\n\n")
