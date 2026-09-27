@@ -193,7 +193,7 @@ cluster_and_score <- function(objects, method, metric, true_labels, k_clusters) 
   merges <- ml_agglomerative_cluster(objects, method = method, metric = metric)
   elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   pred_labels <- ml_cut_tree(merges, num_orig_objs = n_objs,
-                          num_clusters = k_clusters)
+                             num_clusters = k_clusters)
   list(elapsed = elapsed,
        ari = compute_ari(true_labels, pred_labels),
        pred_labels = pred_labels)
@@ -219,7 +219,9 @@ demo_slink_sample_clustering <- function() {
   print_section_header("Demo 1: SLINK Sample Clustering (Euclidean)")
 
   # Data setup (cpp: N = 1,500, P = 50,000; scaled to 300 x 1,000)
-  n_samples <- 300L; p_features <- 1000L; k_clusters <- 3L
+  n_samples <- 300L
+  p_features <- 1000L
+  k_clusters <- 3L
   cluster_centers  <- c(0.0, 3.0, 20.0)
   cluster_std_devs <- c(1.0, 1.0, 1.0)
 
@@ -251,7 +253,9 @@ demo_slink_variable_clustering <- function() {
 
   # cpp: N = 10,000, P = 50,000, blocks {20k, 10k, 8k, 7k, 5k};
   # scaled by 1/100 to N = 500, P = 500.
-  n_samples <- 500L; p_features <- 500L; k_clusters <- 5L
+  n_samples <- 500L
+  p_features <- 500L
+  k_clusters <- 5L
   block_sizes <- c(200L, 100L, 80L, 70L, 50L)
   centers     <- c(0.0, 5.0, -5.0, 15.0, -15.0)
   std_devs    <- c(1.0, 1.2, 0.8, 2.0, 3.5)
@@ -284,11 +288,13 @@ demo_slink_variable_clustering <- function() {
 
 
 # Demo 3: SLINK variable clustering with LSH comparison.
-demo_slink_variable_clustering_lsh <- function() {
+demo_slink_variable_clustering_lsh <- function() {  # nolint: object_length_linter. C++ name
   print_section_header("Demo 3: SLINK Variable Clustering (LSH Benchmark)")
 
   # cpp: N = 40,000, P = 50,000; scaled to N = 800, P = 500.
-  n_samples <- 800L; p_features <- 500L; k_clusters <- 5L
+  n_samples <- 800L
+  p_features <- 500L
+  k_clusters <- 5L
   block_sizes <- c(200L, 100L, 80L, 70L, 50L)
   centers     <- c(0.0, 2.5, -2.5, 15.0, -15.0)
   std_devs    <- c(1.0, 1.2, 0.8, 2.0, 3.5)
@@ -333,7 +339,9 @@ demo_compare_linkage <- function() {
   print_section_header("Demo 4: Linkage Comparison")
 
   # cpp: N = 1,500, P = 50,000; scaled to N = 300, P = 500.
-  n_samples <- 300L; p_features <- 500L; k_clusters <- 5L
+  n_samples <- 300L
+  p_features <- 500L
+  k_clusters <- 5L
   block_sizes <- c(200L, 100L, 80L, 70L, 50L)
   centers     <- c(0.0, 5.0, -5.0, 15.0, -15.0)
   std_devs    <- c(1.0, 1.2, 0.8, 2.0, 3.5)
@@ -399,7 +407,9 @@ demo_lsh_linkage_comparison <- function() {
   print_section_header("Demo 5: LSH Approx Linkage Comparison")
 
   # cpp: N = 50,000, P = 100,000; scaled by 1/100 to N = 500, P = 1,000.
-  n_samples <- 500L; p_features <- 1000L; k_clusters <- 5L
+  n_samples <- 500L
+  p_features <- 1000L
+  k_clusters <- 5L
   block_sizes <- c(200L, 150L, 180L, 170L, 300L)
   centers     <- c(0.0, 1.0, -1.0, 5.0, -5.0)
   std_devs    <- c(1.5, 1.2, 0.8, 2.0, 3.5)
@@ -450,7 +460,9 @@ demo_ar1_linkage_comparison <- function() {
   print_section_header("Demo 6: AR(1) Block Linkage Comparison")
 
   # cpp: N = 3,000, P = 50,000; scaled to N = 300, P = 500.
-  n_samples <- 300L; p_features <- 500L; k_clusters <- 5L
+  n_samples <- 300L
+  p_features <- 500L
+  k_clusters <- 5L
   block_sizes <- c(200L, 100L, 80L, 70L, 50L)
   # rhos: correlation between strictly adjacent variables in each block.
   rhos <- c(0.95, 0.90, 0.85, 0.80, 0.75)

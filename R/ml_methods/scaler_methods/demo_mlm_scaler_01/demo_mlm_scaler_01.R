@@ -115,7 +115,7 @@ demo_scaler_comparison <- function() {
   for (case in l_cases) {
     Xt <- X + 0
     lscaler <- MLLpNormScaler$new(norm_type = case$norm, center = case$center,
-                                scale = TRUE)
+                                  scale = TRUE)
     lscaler$fit(Xt)
     Xt <- lscaler$transform_inplace(Xt)
     print_column_stats(case$label, Xt)

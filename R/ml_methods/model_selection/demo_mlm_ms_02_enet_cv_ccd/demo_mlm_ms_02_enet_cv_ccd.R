@@ -157,9 +157,12 @@ fit_path_suite <- function(dat, alphas) {
 # A1: Auto-grid paths for alpha = 0.0 / 0.5 / 1.0, low-dim (n=300, p=100).
 demo_path_low_dim <- function() {
   print_section_header(
-    "Demo MS-02 | enet_gaussian path | Low-Dimensional (n=300, p=100)")
+    "Demo MS-02 | enet_gaussian path | Low-Dimensional (n=300, p=100)"
+  )
 
-  n <- 300L; p <- 100L; sigma <- 1.0
+  n <- 300L
+  p <- 100L
+  sigma <- 1.0
 
   dat <- generate_data(n, p, sigma, seed = 101L)
   cat(sprintf("Data: n=%d, p=%d, active coefs=%d\n\n",
@@ -172,9 +175,12 @@ demo_path_low_dim <- function() {
 # A2: Auto-grid path, high-dimensional (n=200, p=500, p > n).
 demo_path_high_dim <- function() {
   print_section_header(
-    "Demo MS-02 | enet_gaussian path | High-Dimensional (n=200, p=500)")
+    "Demo MS-02 | enet_gaussian path | High-Dimensional (n=200, p=500)"
+  )
 
-  n <- 200L; p <- 500L; sigma <- 1.0
+  n <- 200L
+  p <- 500L
+  sigma <- 1.0
 
   dat <- generate_data(n, p, sigma, seed = 202L)
   cat(sprintf("Data: n=%d, p=%d, active coefs=%d\n\n",
@@ -192,9 +198,13 @@ demo_path_high_dim <- function() {
 # B1: CV lambda selection for alpha = 0.0 / 0.5 / 1.0, low-dim (n=300, p=100).
 demo_cv_low_dim <- function() {
   print_section_header(
-    "Demo MS-02 | enet_cv_ccd | Low-Dimensional CV (n=300, p=100, 10-fold)")
+    "Demo MS-02 | enet_cv_ccd | Low-Dimensional CV (n=300, p=100, 10-fold)"
+  )
 
-  n <- 300L; p <- 100L; sigma <- 1.0; n_folds <- 10L
+  n <- 300L
+  p <- 100L
+  sigma <- 1.0
+  n_folds <- 10L
 
   dat <- generate_data(n, p, sigma, seed = 303L)
   cat(sprintf("Data: n=%d, p=%d, folds=%d, active coefs=%d\n\n",
@@ -225,9 +235,13 @@ demo_cv_low_dim <- function() {
 #     mirroring R's `lm_dummy` and `cv.glmnet(alpha=0)`.
 demo_cv_ridge_lars_conversion <- function() {
   print_section_header(
-    "Demo MS-02 | enet_cv_ccd | Ridge CV + lambda_2_lars Conversion")
+    "Demo MS-02 | enet_cv_ccd | Ridge CV + lambda_2_lars Conversion"
+  )
 
-  n <- 300L; p <- 200L; sigma <- 1.0; n_folds <- 10L
+  n <- 300L
+  p <- 200L
+  sigma <- 1.0
+  n_folds <- 10L
 
   dat <- generate_data(n, p, sigma, seed = 404L)
   cat(sprintf("Data: n=%d, p=%d, folds=%d, active coefs=%d\n\n",

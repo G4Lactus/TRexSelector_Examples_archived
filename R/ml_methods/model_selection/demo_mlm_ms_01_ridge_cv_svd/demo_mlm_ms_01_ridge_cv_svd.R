@@ -135,9 +135,13 @@ fit_and_report <- function(X, y, num_folds, seed, lambda_ratio = 1000) {
 
 demo_kfold_low_dim <- function() {
   print_section_header(
-    "Demo MS-01 | ridge_cv_svd | Low-Dimensional (n=1000, p=500, 10-fold)")
+    "Demo MS-01 | ridge_cv_svd | Low-Dimensional (n=1000, p=500, 10-fold)"
+  )
 
-  n <- 1000L; p <- 500L; sigma <- 1.0; n_folds <- 10L
+  n <- 1000L
+  p <- 500L
+  sigma <- 1.0
+  n_folds <- 10L
 
   dat <- generate_regression_data(n, p, sigma, seed = 111L)
   cat(sprintf("Data: n=%d, p=%d, folds=%d, active coefs=%d\n\n",
@@ -154,9 +158,13 @@ demo_kfold_low_dim <- function() {
 
 demo_kfold_high_dim <- function() {
   print_section_header(
-    "Demo MS-01 | ridge_cv_svd | High-Dimensional (n=300, p=500, 10-fold)")
+    "Demo MS-01 | ridge_cv_svd | High-Dimensional (n=300, p=500, 10-fold)"
+  )
 
-  n <- 300L; p <- 500L; sigma <- 1.0; n_folds <- 10L
+  n <- 300L
+  p <- 500L
+  sigma <- 1.0
+  n_folds <- 10L
 
   dat <- generate_regression_data(n, p, sigma, seed = 222L)
   cat(sprintf("Data: n=%d, p=%d, folds=%d, active coefs=%d\n\n",
@@ -173,9 +181,13 @@ demo_kfold_high_dim <- function() {
 
 demo_kfold_very_high_dim <- function() {
   print_section_header(
-    "Demo MS-01 | ridge_cv_svd | Very High-Dimensional (n=300, p=1000, 5-fold)")
+    "Demo MS-01 | ridge_cv_svd | Very High-Dimensional (n=300, p=1000, 5-fold)"
+  )
 
-  n <- 300L; p <- 1000L; sigma <- 1.0; n_folds <- 5L
+  n <- 300L
+  p <- 1000L
+  sigma <- 1.0
+  n_folds <- 5L
 
   dat <- generate_regression_data(n, p, sigma, seed = 333L)
   cat(sprintf("Data: n=%d, p=%d, folds=%d, active coefs=%d\n",
@@ -194,9 +206,13 @@ demo_kfold_very_high_dim <- function() {
 
 demo_kfold_mmap <- function() {
   print_section_header(
-    "Demo MS-01 | ridge_cv_svd | Memory-Mapped Dataset (n=5000, p=500, 10-fold)")
+    "Demo MS-01 | ridge_cv_svd | Memory-Mapped Dataset (n=5000, p=500, 10-fold)"
+  )
 
-  n <- 5000L; p <- 500L; sigma <- 1.0; n_folds <- 10L
+  n <- 5000L
+  p <- 500L
+  sigma <- 1.0
+  n_folds <- 10L
   # n >> p: the CV optimum lies below lambda_max / 1000, so the grid is widened
   lambda_ratio <- 1e5
 

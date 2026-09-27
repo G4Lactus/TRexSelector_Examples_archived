@@ -98,7 +98,7 @@ build_true_labels <- function(block_sizes) {
 # noise * eps(j, i)] with k = block(j). The mapped matrix is P x N (one
 # variable per row); only the latent matrix (N x K) and one variable at a time
 # are held in R memory.
-generate_correlated_variables_to_mmap <- function(mmap_mat, n_samples,
+generate_correlated_variables_to_mmap <- function(mmap_mat, n_samples,  # nolint: object_length_linter. C++ name
                                                   k_clusters, true_labels,
                                                   centers, std_devs,
                                                   seed = 42L) {
@@ -122,7 +122,7 @@ generate_correlated_variables_to_mmap <- function(mmap_mat, n_samples,
 
 # In-place mean-centering and L2-normalization, one variable (row) at a time —
 # sequential-streaming-friendly for the memory-mapped file.
-standardize_rows_for_correlation <- function(mmap_mat) {
+standardize_rows_for_correlation <- function(mmap_mat) {  # nolint: object_length_linter. C++ name
   dims <- dim(mmap_mat)
   for (j in seq_len(dims[1])) {
     row <- mmap_mat[j, 1:dims[2]]
@@ -144,9 +144,10 @@ standardize_rows_for_correlation <- function(mmap_mat) {
 # Generates P x N correlated variables in K imbalanced blocks directly in a
 # memory-mapped file, standardizes them in place, then benchmarks HAC linkage
 # strategies under the O(1) LSH Correlation Approximation.
-demo_lsh_linkage_comparison_mmap <- function() {
+demo_lsh_linkage_comparison_mmap <- function() {  # nolint: object_length_linter. C++ name
   print_section_header(
-    "Demo 03: LSH Linkage Comparison via Memory-Mapped I/O (N=2k, P=4k, K=10)")
+    "Demo 03: LSH Linkage Comparison via Memory-Mapped I/O (N=2k, P=4k, K=10)"
+  )
 
   # ---------------------------------------------------------------------------
   # 0. Configuration
@@ -154,7 +155,9 @@ demo_lsh_linkage_comparison_mmap <- function() {
 
   # cpp: N = 100,000, P = 400,000 (~298 GB); scaled by 1/50 and 1/100 to
   # N = 2,000, P = 4,000 (~61 MB) here.
-  n_samples <- 2000L; p_features <- 4000L; k_clusters <- 10L
+  n_samples <- 2000L
+  p_features <- 4000L
+  k_clusters <- 10L
 
   # Imbalanced block sizes — 10 blocks summing exactly to 4,000 (cpp block
   # sizes scaled by 1/100). The deliberate imbalance tests robustness of the
@@ -224,10 +227,11 @@ demo_lsh_linkage_comparison_mmap <- function() {
     # variables from disk and keeps its intermediate distance data there too.
     merges <- ml_agglomerative_cluster(
       data = mmap_mat, method = method,
-      metric = ml_distance_metric$Correlation_LSH_Approx)
+      metric = ml_distance_metric$Correlation_LSH_Approx
+    )
     elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
     labels <- ml_cut_tree(merges, num_orig_objs = p_features,
-                       num_clusters = k_clusters)
+                          num_clusters = k_clusters)
     cat(sprintf("    Time : %.4f s\n", elapsed))
     cat(sprintf("    ARI  : %.4f / 1.0000\n\n",
                 compute_ari(true_labels, labels)))
