@@ -61,6 +61,10 @@ add_demo_target(demo_ts_perf_02_runtime_vs_dummies
     demo_ts_perf_02_runtime_vs_dummies/demo_ts_perf_02_runtime_vs_dummies.cpp
     T_ALGORITHM_LIBS
 )
+add_demo_target(demo_ts_perf_03_memory_vs_np
+    demo_ts_perf_03_memory_vs_np/demo_ts_perf_03_memory_vs_np.cpp
+    T_ALGORITHM_LIBS
+)
 
 # Cross-language validation programs moved to the TRexSelector library test suite
 # (TRexSelector/cpp/tests/validation/); see that folder's CMakeLists.txt.

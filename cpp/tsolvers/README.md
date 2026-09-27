@@ -34,6 +34,7 @@ positive rate (TPR), with figures drawn by `ts_plt_utils.py`:
 |---|--------|----------|
 | P1 | [demo_ts_perf_01_fdr_tpr_vs_T/](demo_ts_perf_01_fdr_tpr_vs_T/README.md) | FDR and TPR of the terminated paths vs. $T$ (the simulation of the R tlars vignette) |
 | P2 | [demo_ts_perf_02_runtime_vs_dummies/](demo_ts_perf_02_runtime_vs_dummies/README.md) | Run time, steps and time per step vs. the number of dummies $L$, and the gain of the warm start |
+| P3 | [demo_ts_perf_03_memory_vs_np/](demo_ts_perf_03_memory_vs_np/README.md) | Solver memory vs. the ratio $n/p$, and its share of the data |
 
 ---
 
@@ -122,7 +123,7 @@ refreshes the path data in well under a second without it.
 tsolvers/
   ├── README.md
   ├── CMakeLists.txt
-  ├── ts_perf_utils.hpp      # shared C++ helpers (part selection, path recorder, selection)
+  ├── ts_perf_utils.hpp      # shared C++ helpers (part selection, path recorder, selection, peak memory)
   ├── ts_perf_solvers.hpp    # the solvers compared by the performance demos
   ├── ts_plt_utils.py        # shared matplotlib figures
   ├── demo_ts_01_tlars/
@@ -138,5 +139,6 @@ tsolvers/
   ├── demo_ts_11_tools/
   ├── demo_ts_12_tafs/
   ├── demo_ts_perf_01_fdr_tpr_vs_T/
-  └── demo_ts_perf_02_runtime_vs_dummies/
+  ├── demo_ts_perf_02_runtime_vs_dummies/
+  └── demo_ts_perf_03_memory_vs_np/
 ```

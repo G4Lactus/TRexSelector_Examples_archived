@@ -36,6 +36,9 @@
 #include <string>
 #include <vector>
 
+// POSIX includes
+#include <sys/resource.h>
+
 // tsolvers includes
 #include <tsolvers/ad/tsolver_base.hpp>
 
@@ -81,6 +84,22 @@ inline long parse_positive(const char* text, long fallback) {
     if (end == text || *end != '\0' || value < 1)
         throw std::invalid_argument(std::string("expected a positive integer, got: ") + text);
     return value;
+}
+
+/**
+ * @brief Peak resident set size of this process in MiB.
+ *
+ * @details getrusage() reports bytes on macOS and KiB on Linux. A forked child
+ *          starts its own count, which the memory demo uses.
+ */
+inline double peak_rss_mib() {
+    struct rusage usage {};
+    if (getrusage(RUSAGE_SELF, &usage) != 0) return 0.0;
+#if defined(__APPLE__)
+    return static_cast<double>(usage.ru_maxrss) / (1024.0 * 1024.0);
+#else
+    return static_cast<double>(usage.ru_maxrss) / 1024.0;
+#endif
 }
 
 /**

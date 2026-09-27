@@ -25,6 +25,8 @@ Plot patterns hosted here:
                                number of dummies L (demo_ts_perf_02), with a
                                reference line proportional to p + L.
     plot_warm_start()        — fresh run to T + 1 over the warm start T -> T + 1.
+    plot_memory()            — solver memory and its share of the data vs. n/p
+                               (demo_ts_perf_03), with the data size.
 
 CLI modes (typically driven from a demo's generate_plots.sh):
     python ts_plt_utils.py paths <stem>_path.csv --solver T-LARS --title "..."
@@ -32,6 +34,7 @@ CLI modes (typically driven from a demo's generate_plots.sh):
         --labels 'rho = 0.1' 'rho = 1' --title "..." --stem my_stem
     python ts_plt_utils.py fdr-tpr fdr_tpr_vs_T_mc500.csv --title "..."
     python ts_plt_utils.py runtime runtime_vs_dummies_mc20.csv --title "..." --p 1000
+    python ts_plt_utils.py memory memory_vs_np_mc500.csv --title "..."
 
 The path mode reads <stem>_path.csv (T_stop,step,index,is_dummy,beta) and the
 sibling <stem>_actions.csv (T_stop,step,index,is_dummy,added) written by
@@ -506,6 +509,53 @@ def plot_warm_start(df: pd.DataFrame, title: str) -> plt.Figure:
 
 
 # ==============================================================================
+# Memory vs. n/p (demo_ts_perf_03)
+# ==============================================================================
+
+def plot_memory(df: pd.DataFrame, title: str) -> plt.Figure:
+    """Solver memory (MiB, with the data size) and its share of the data (%) vs. n/p."""
+    styles = _solver_styles(df)
+    ratios = sorted(float(r) for r in df["n_over_p"].unique())
+    n_values = sorted(int(n) for n in df["n"].unique())
+    data = df.drop_duplicates("n").sort_values("n")
+    fig, axes = plt.subplots(2, len(FAMILIES), figsize=(15, 8.5), sharex=True, sharey="row", squeeze=False)
+    reference = [Line2D([], [], color="0.35", linestyle="--", linewidth=1.2, label="data $X$, $D$ and $y$")]
+    for col, family in enumerate(FAMILIES):
+        fam = df[df["family"] == family]
+        for name in dict.fromkeys(fam["solver"]):
+            sub = fam[fam["solver"] == name].sort_values("n")
+            color, marker = styles[name]
+            axes[0, col].plot(sub["n_over_p"], sub["solver_mib"], color=color, marker=marker, markersize=6,
+                              linewidth=1.6)
+            axes[1, col].plot(sub["n_over_p"], 100 * sub["solver_mib"] / sub["data_mib"], color=color,
+                              marker=marker, markersize=6, linewidth=1.6)
+        axes[0, col].plot(data["n_over_p"], data["data_mib"], color="0.35", linestyle="--", linewidth=1.2, zorder=1)
+        axes[0, col].set_title(family, fontsize=12)
+        for row, label in enumerate(("Solver memory (MiB)", "Solver memory / data (%)")):
+            ax = axes[row, col]
+            ax.set_xscale("log")
+            ax.set_xticks(ratios)
+            ax.set_xticklabels([f"{r:g}" for r in ratios])
+            ax.minorticks_off()
+            ax.set_yscale("log")
+            _plain_log_labels(ax)
+            ax.grid(linestyle="--", alpha=0.4, which="both")
+            if col == 0:
+                ax.set_ylabel(label)
+            if row == 1:
+                ax.set_xlabel("$n/p$")
+        top = axes[0, col].secondary_xaxis("top")
+        top.set_xticks(ratios)
+        top.set_xticklabels([f"{n:,}" for n in n_values], fontsize=8)
+        top.minorticks_off()
+        top.set_xlabel("$n$", fontsize=9)
+        _marker_legend(axes[0, col], fam, styles, loc="upper left", extra=reference)
+    fig.suptitle(f"{title}: memory vs. $n/p$", fontsize=13)
+    fig.tight_layout()
+    return fig
+
+
+# ==============================================================================
 # CLI
 # ==============================================================================
 
@@ -546,6 +596,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     run.add_argument("--outdir", type=Path, default=None, help="output folder")
     run.add_argument("--formats", nargs="+", default=["png", "pdf"], help="output formats")
 
+    mem = sub.add_parser("memory", help="solver memory vs. n/p (demo_ts_perf_03)")
+    mem.add_argument("csv", type=Path, help="memory_vs_np_mc<N>.csv")
+    mem.add_argument("--title", required=True, help="base title; the figure adds its subject")
+    mem.add_argument("--outdir", type=Path, default=None, help="output folder")
+    mem.add_argument("--formats", nargs="+", default=["png", "pdf"], help="output formats")
+
     args = parser.parse_args(argv)
     if args.mode == "compare" and len(args.csvs) != len(args.labels):
         parser.error("--csvs and --labels need the same number of entries")
@@ -581,6 +637,11 @@ def main(argv: list[str] | None = None) -> None:
                             (plot_warm_start(df, args.title), "warm_start")):
             save_figure(fig, outdir, f"{args.csv.stem}_{suffix}", args.formats)
             plt.close(fig)
+    elif args.mode == "memory":
+        df = pd.read_csv(args.csv)
+        fig = plot_memory(df, args.title)
+        save_figure(fig, args.outdir or default_plots_dir(args.csv), f"{args.csv.stem}_memory", args.formats)
+        plt.close(fig)
 
 
 if __name__ == "__main__":
