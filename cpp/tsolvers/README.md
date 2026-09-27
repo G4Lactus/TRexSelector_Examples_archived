@@ -33,6 +33,7 @@ positive rate (TPR), with figures drawn by `ts_plt_utils.py`:
 | # | Folder | Question |
 |---|--------|----------|
 | P1 | [demo_ts_perf_01_fdr_tpr_vs_T/](demo_ts_perf_01_fdr_tpr_vs_T/README.md) | FDR and TPR of the terminated paths vs. $T$ (the simulation of the R tlars vignette) |
+| P2 | [demo_ts_perf_02_runtime_vs_dummies/](demo_ts_perf_02_runtime_vs_dummies/README.md) | Run time, steps and time per step vs. the number of dummies $L$, and the gain of the warm start |
 
 ---
 
@@ -136,5 +137,6 @@ tsolvers/
   ├── demo_ts_10_tncgmp/
   ├── demo_ts_11_tools/
   ├── demo_ts_12_tafs/
-  └── demo_ts_perf_01_fdr_tpr_vs_T/
+  ├── demo_ts_perf_01_fdr_tpr_vs_T/
+  └── demo_ts_perf_02_runtime_vs_dummies/
 ```

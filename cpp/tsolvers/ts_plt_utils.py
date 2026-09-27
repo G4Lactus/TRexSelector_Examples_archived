@@ -21,12 +21,17 @@ Plot patterns hosted here:
     plot_refit_errors()      — prediction RMSE and coefficient error of the
                                least-squares refit on the selected variables
                                vs. T, with the refit on the true support.
+    plot_runtime()           — time to T, steps and time per step vs. the
+                               number of dummies L (demo_ts_perf_02), with a
+                               reference line proportional to p + L.
+    plot_warm_start()        — fresh run to T + 1 over the warm start T -> T + 1.
 
 CLI modes (typically driven from a demo's generate_plots.sh):
     python ts_plt_utils.py paths <stem>_path.csv --solver T-LARS --title "..."
     python ts_plt_utils.py compare --csvs a_path.csv b_path.csv \
         --labels 'rho = 0.1' 'rho = 1' --title "..." --stem my_stem
     python ts_plt_utils.py fdr-tpr fdr_tpr_vs_T_mc500.csv --title "..."
+    python ts_plt_utils.py runtime runtime_vs_dummies_mc20.csv --title "..." --p 1000
 
 The path mode reads <stem>_path.csv (T_stop,step,index,is_dummy,beta) and the
 sibling <stem>_actions.csv (T_stop,step,index,is_dummy,added) written by
@@ -35,6 +40,7 @@ sibling of the data folder; override with --outdir.
 """
 
 import argparse
+import math
 from pathlib import Path
 from typing import Literal
 
@@ -46,6 +52,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.colors import to_hex
 from matplotlib.lines import Line2D
+from matplotlib.ticker import FuncFormatter
 
 # Colours and line styles of the tlars vignette path plot
 COLOR_ORIGINAL = "black"
@@ -405,6 +412,100 @@ def plot_refit_errors(df: pd.DataFrame, title: str) -> plt.Figure:
 
 
 # ==============================================================================
+# Runtime vs. number of dummies (demo_ts_perf_02)
+# ==============================================================================
+
+def _plain_log_labels(ax: plt.Axes) -> None:
+    """Plain tick labels on a log y-axis (20, 300, 1,000) instead of 2 x 10^1.
+
+    Minor ticks are labelled only at 2, 3 and 5 times a power of ten, so the axis stays readable.
+    """
+    def plain(v: float) -> str:
+        return f"{v:,.0f}" if v >= 1 else f"{v:g}"
+
+    def minor(v: float, _: object) -> str:
+        mantissa = round(v / 10 ** math.floor(math.log10(v))) if v > 0 else 0
+        return plain(v) if mantissa in (2, 3, 5) else ""
+
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: plain(v)))
+    ax.yaxis.set_minor_formatter(FuncFormatter(minor))
+
+
+def _L_axis(ax: plt.Axes, factors: list[int]) -> None:
+    """Log x-axis over the dummy factors, labelled p, 2p, 5p, ..."""
+    ax.set_xscale("log")
+    ax.set_xticks(factors)
+    ax.set_xticklabels(["$p$" if f == 1 else f"${f}p$" for f in factors])
+    ax.minorticks_off()
+
+
+def plot_runtime(df: pd.DataFrame, title: str, p: int) -> plt.Figure:
+    """Time to T, steps to T and time per step vs. L/p, one column per solver family."""
+    rows = [("ms", "Time to $T$ (ms)"), ("steps", "Steps to $T$"), ("us_per_step", "Time per step ($\\mu$s)")]
+    styles = _solver_styles(df)
+    factors = sorted(int(f) for f in df["L_factor"].unique())
+    fig, axes = plt.subplots(len(rows), len(FAMILIES), figsize=(15, 12), sharex=True, sharey="row", squeeze=False)
+    scaling = [Line2D([], [], color="0.35", linestyle="--", linewidth=1.2, label="$\\propto p + L$")]
+    for col, family in enumerate(FAMILIES):
+        fam = df[df["family"] == family]
+        for name in dict.fromkeys(fam["solver"]):
+            sub = fam[fam["solver"] == name].sort_values("L_factor")
+            color, marker = styles[name]
+            for row, (metric, _) in enumerate(rows):
+                axes[row, col].plot(sub["L_factor"], sub[metric], color=color, marker=marker, markersize=6,
+                                    linewidth=1.6)
+        # Reference: cost per step proportional to the number of columns p + L, anchored at L = p
+        start = float(fam.loc[fam["L_factor"] == factors[0], "us_per_step"].median())
+        grid = pd.Series([float(f) for f in factors])
+        axes[2, col].plot(grid, start * (p + grid * p) / (2 * p), color="0.35", linestyle="--", linewidth=1.2,
+                          zorder=1)
+        axes[0, col].set_title(family, fontsize=12)
+        for row, (_, label) in enumerate(rows):
+            ax = axes[row, col]
+            _L_axis(ax, factors)
+            ax.set_yscale("log")
+            _plain_log_labels(ax)
+            ax.grid(linestyle="--", alpha=0.4, which="both")
+            if col == 0:
+                ax.set_ylabel(label)
+            if row == len(rows) - 1:
+                ax.set_xlabel("$L$ (number of dummies)")
+        _marker_legend(axes[0, col], fam, styles, loc="upper left")
+        axes[2, col].legend(handles=scaling, loc="upper left", fontsize=8, frameon=True, facecolor="white",
+                            edgecolor="0.7")
+    fig.suptitle(f"{title}: runtime vs. the number of dummies", fontsize=13)
+    fig.tight_layout()
+    return fig
+
+
+def plot_warm_start(df: pd.DataFrame, title: str) -> plt.Figure:
+    """Fresh run to T + 1 over the warm start T -> T + 1 vs. L/p, one panel per solver family."""
+    styles = _solver_styles(df)
+    factors = sorted(int(f) for f in df["L_factor"].unique())
+    fig, axes = plt.subplots(1, len(FAMILIES), figsize=(15, 5), sharex=True, sharey=True, squeeze=False)
+    for col, family in enumerate(FAMILIES):
+        ax = axes[0, col]
+        fam = df[df["family"] == family]
+        for name in dict.fromkeys(fam["solver"]):
+            sub = fam[fam["solver"] == name].sort_values("L_factor")
+            color, marker = styles[name]
+            ax.plot(sub["L_factor"], sub["fresh_over_warm"], color=color, marker=marker, markersize=6,
+                    linewidth=1.6)
+        ax.set_title(family, fontsize=12)
+        _L_axis(ax, factors)
+        ax.set_yscale("log")
+        _plain_log_labels(ax)
+        ax.grid(linestyle="--", alpha=0.4, which="both")
+        ax.set_xlabel("$L$ (number of dummies)")
+        if col == 0:
+            ax.set_ylabel("Fresh run to $T + 1$ / warm start $T \\to T + 1$")
+        _marker_legend(ax, fam, styles)
+    fig.suptitle(f"{title}: gain of the warm start", fontsize=13)
+    fig.tight_layout()
+    return fig
+
+
+# ==============================================================================
 # CLI
 # ==============================================================================
 
@@ -438,6 +539,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     fdr.add_argument("--L", type=int, default=None, help="dummies (reference lines)")
     fdr.add_argument("--s", type=int, default=None, help="true variables (reference lines)")
 
+    run = sub.add_parser("runtime", help="runtime vs. number of dummies (demo_ts_perf_02)")
+    run.add_argument("csv", type=Path, help="runtime_vs_dummies_mc<N>.csv")
+    run.add_argument("--title", required=True, help="base title; each figure adds its subject")
+    run.add_argument("--p", type=int, required=True, help="original variables (x-axis in multiples of p)")
+    run.add_argument("--outdir", type=Path, default=None, help="output folder")
+    run.add_argument("--formats", nargs="+", default=["png", "pdf"], help="output formats")
+
     args = parser.parse_args(argv)
     if args.mode == "compare" and len(args.csvs) != len(args.labels):
         parser.error("--csvs and --labels need the same number of entries")
@@ -464,6 +572,13 @@ def main(argv: list[str] | None = None) -> None:
                             (plot_tpr_vs_fdr(df, args.title), "tpr_vs_fdr"),
                             (plot_path_stats(df, args.title, args.rank, args.p, args.L, args.s), "path_stats"),
                             (plot_refit_errors(df, args.title), "refit_errors")):
+            save_figure(fig, outdir, f"{args.csv.stem}_{suffix}", args.formats)
+            plt.close(fig)
+    elif args.mode == "runtime":
+        df = pd.read_csv(args.csv)
+        outdir = args.outdir or default_plots_dir(args.csv)
+        for fig, suffix in ((plot_runtime(df, args.title, args.p), "runtime"),
+                            (plot_warm_start(df, args.title), "warm_start")):
             save_figure(fig, outdir, f"{args.csv.stem}_{suffix}", args.formats)
             plt.close(fig)
 

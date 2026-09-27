@@ -30,6 +30,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
+#include <limits>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -65,6 +66,35 @@ inline std::string display_path(const std::filesystem::path& path) {
     if (pos != std::string::npos)
         return ".../" + s.substr(pos + 1);
     return path.filename().string();
+}
+
+/**
+ * @brief Parse an optional positive integer command-line argument.
+ * @param text     Argument text, or nullptr when the argument is missing.
+ * @param fallback Value when the argument is missing.
+ * @throws std::invalid_argument if @p text is not a positive integer.
+ */
+inline long parse_positive(const char* text, long fallback) {
+    if (text == nullptr) return fallback;
+    char* end = nullptr;
+    const long value = std::strtol(text, &end, 10);
+    if (end == text || *end != '\0' || value < 1)
+        throw std::invalid_argument(std::string("expected a positive integer, got: ") + text);
+    return value;
+}
+
+/**
+ * @brief Median of @p values (the mean of the two middle values for an even count).
+ * @return NaN for an empty input.
+ */
+inline double median(std::vector<double> values) {
+    if (values.empty()) return std::numeric_limits<double>::quiet_NaN();
+    const auto mid = values.begin() + static_cast<std::ptrdiff_t>(values.size() / 2);
+    std::nth_element(values.begin(), mid, values.end());
+    if (values.size() % 2 == 1) return *mid;
+    const double upper = *mid;
+    const double lower = *std::max_element(values.begin(), mid);
+    return 0.5 * (lower + upper);
 }
 
 /**
