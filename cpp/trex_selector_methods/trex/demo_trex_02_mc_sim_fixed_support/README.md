@@ -2,8 +2,9 @@
 
 ## Purpose
 
-The demo evaluates the T-Rex selector performance (FDR and TPR) across a range of **Signal-to-Noise Ratios (SNR)**
-with a fixed true support structure, comparing many base solvers.
+The demo evaluates the T-Rex selector performance, measured by the false discovery rate (FDR) and the true positive
+rate (TPR), across a range of **Signal-to-Noise Ratios (SNR)** with a fixed true support structure, comparing many
+base solvers.
 This is the foundational empirical validation demo for the classical T-Rex algorithm.
 
 ---
@@ -11,18 +12,18 @@ This is the foundational empirical validation demo for the classical T-Rex algor
 ## Data Generation Parameters
 
 - **Sample size**: $n = 300$
-- **Number of features**: $p = 1000$
-- **True support**: a set of **10 unique random indices** drawn once (before the MC loop) from
-  `std::mt19937 rng(24)` via a uniform distribution over $\lbrace0, \ldots, p-1\rbrace$; the same support
+- **Number of features**: $p = 1{,}000$
+- **True support**: a set of **10 unique random indices** drawn once (before the Monte Carlo (MC) loop) from
+  `std::mt19937 rng(24)` via a uniform distribution over $\lbrace0, \ldots, p-1\rbrace$. The same support
    is reused across every solver, SNR level, and MC trial. It is **not** the first 10 features.
 - **True coefficients**: fixed $\beta_j = 1$ (`rnd_coef = false`)
 - **SNR range**: $\lbrace0.1, 0.5, 1.0, 2.0, 5.0\rbrace$
 - **Monte Carlo repetitions**: `num_MC = 200` trials per solver × SNR level
-- **DGP**:
+- **Data-generating process (DGP)**:
   $\mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\epsilon}$, $\boldsymbol{\epsilon} \sim N(0, \sigma^2 I_n)$
 
-`main()` runs only the high-dimensional configuration ($n = 300$, $p = 1000$); the low-dimensional
- call ($n = 1000$, $p = 300$) is compiled but guarded by `if (false)`.
+`main()` runs only the high-dimensional configuration ($n = 300$, $p = 1{,}000$), while the low-dimensional
+ call ($n = 1{,}000$, $p = 300$) is compiled but guarded by `if (false)`.
 
 ---
 
@@ -42,7 +43,7 @@ use_memory_mapping = false       # In-memory data
 tFDR = 0.1                       # Target FDR control level
 ```
 
-The MC loop itself is parallelized with OpenMP (`omp_set_num_threads(6)`).
+The MC loop itself is parallelized with Open Multi-Processing (OpenMP) (`omp_set_num_threads(6)`).
 
 ---
 
@@ -53,7 +54,7 @@ terminating base solvers for the T-Rex selector.
 We benchmarked them, and their selections are **not** identical — each solver
 drives a different underlying path/pursuit algorithm, so FDR/TPR differ across solvers:
 
-- **TLARS** — least-angle regression
+- **TLARS** — least-angle regression (LARS)
 - **TLASSO** — lasso
 - **TENET** — elastic net ($\lambda_2 = 0.1$)
 - **TSTAGEWISE** — forward stagewise
@@ -117,7 +118,7 @@ TLARS,TPR,0.500000,...
 ## Results Visualization
 
 The suite-level plotting module [../trex_plt_utils.py](../trex_plt_utils.py)
-renders the tidy CSV three ways (all written to `simulation_results/plots/`).
+renders the tidy comma-separated values (CSV) file three ways (all written to `simulation_results/plots/`).
 
 ### Overview (all 14 solvers)
 
@@ -143,7 +144,7 @@ up. Both FDR panels share a y-scale for comparison:
 values and **click a solver in the legend to isolate its curve** in both panels.
 Open it directly in a browser (it is not rendered inline on GitHub).
 The `.html` figures are not committed to the repository (each embeds a full copy of
-plotly.js); run `./generate_plots.sh` to produce them locally.
+plotly.js). Run `./generate_plots.sh` to produce them locally.
 
 ```bash
 open simulation_results/plots/demo_trex_02_mc_sim_fixed_support_trex_results_n300_p1000_stagnation_window_7_fdr_tpr_vs_snr.html
@@ -186,7 +187,8 @@ python ../trex_plt_utils.py path/to/results.csv --title "..." --legend-title "..
 ./build/debug/bin/trex_selector_methods/trex/demo_trex_02_mc_sim_fixed_support/demo_trex_02_mc_sim_fixed_support
 ```
 
-The MC loop runs 200 trials × 5 SNR levels × 14 solvers, so wall-clock time depends heavily on the machine and thread count.
+The MC loop runs 200 trials × 5 SNR levels × 14 solvers, so wall-clock time depends heavily on the machine and thread
+count.
 
 ---
 
@@ -195,7 +197,7 @@ The MC loop runs 200 trials × 5 SNR levels × 14 solvers, so wall-clock time de
 ### FDR Control
 
 - FDR is **maintained near or below target tFDR = 0.1** across SNR levels for the LARS-path solvers.
-- At low SNR, FDR tends to be conservative due to few selections; it stabilizes as SNR increases.
+- At low SNR, FDR tends to be conservative due to few selections, and it stabilizes as SNR increases.
 
 ### Power (TPR)
 
@@ -205,7 +207,7 @@ The MC loop runs 200 trials × 5 SNR levels × 14 solvers, so wall-clock time de
 
 ### Solver Comparison
 
-- The 14 solvers do **not** produce identical selections; FDR/TPR curves differ between them.
+- The 14 solvers do **not** produce identical selections, so FDR/TPR curves differ between them.
 - This lets you compare the statistical behaviour of the different base solvers under a shared DGP and FDR target.
 
 ---

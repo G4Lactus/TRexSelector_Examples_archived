@@ -108,7 +108,7 @@ memory-mapped matrix rather than on a copied in-memory version.
 
 ### Phases 1 and 2: Console output
 
-Both phases stream through the file once, column by column, with 8 threads; each takes about six minutes, so the
+Both phases stream through the file once, column by column, with 8 threads. Each takes about six minutes, so the
 320 GB are written at roughly 0.9 GB/s and rewritten at 0.8 GB/s. The time goes to the solid-state drive (SSD), not
 to the arithmetic.
 
@@ -174,22 +174,22 @@ unweighted pair group method with arithmetic mean (UPGMA), to the exact Lance-Wi
 because the geometric centroid update of the projected engine does not implement the UPGMA formula and would break the
 reducibility the nearest-neighbor chain (NN-chain) relies on. At $p = 400{,}000$
 that matrix is 1.28 TB, in RAM or on disk. An earlier version of this demo ran UPGMA here in the belief that it used the
-projected engine; the RAM matrix engine zero-fills its buffer before it reports, and the process was killed by memory
+projected engine. The RAM matrix engine zero-fills its buffer before it reports, and the process was killed by memory
 without a message.
 
 ### Subproblem 4: Ward linkage
 
 The fourth subproblem applies **Ward’s minimum-variance linkage** under the same large-scale setup. Ward with the LSH
-approximation is the one route the dispatcher sends to the projected 64-dimensional engine: the clustering runs on a
+approximation is the one route the dispatcher sends to the projected 64-dimensional engine, so the clustering runs on a
 $64 \times p$ matrix of doubles, about 195 MB here, instead of the $p \times p$ distance matrix.
 
 ### Phase 3: Console output
 
-Single linkage over all 400,000 variables takes 26 minutes: Sibson's single-linkage algorithm (SLINK) evaluates each
-pair once, but with the $O(1)$ Hamming distance the 8 x 10^10 evaluations stay affordable; the exact-correlation
-equivalent would read the 320 GB file
-80 billion times over. Ward projects the file once into the 64-dimensional space (the 195 MB) and then runs its NN-chain
-in RAM for 38 minutes. Both recover the ten imbalanced blocks exactly. The demo unmaps and deletes the file at the end.
+Single linkage over all 400,000 variables takes 26 minutes. Sibson's single-linkage algorithm (SLINK) evaluates each
+pair once, but with the $O(1)$ Hamming distance the 8 x 10^10 evaluations stay affordable, while the exact-correlation
+equivalent would read the 320 GB file 80 billion times over. Ward projects the file once into the 64-dimensional
+space (the 195 MB) and then runs its NN-chain in RAM for 38 minutes. Both recover the ten imbalanced blocks exactly.
+The demo unmaps and deletes the file at the end.
 
 ```text
 === Phase 3: Reopening mmap for clustering ===
@@ -274,7 +274,7 @@ The demo prints to the console only. It needs 320 GB of free disk for the durati
   is written, a run that is interrupted mid-generation can leave behind a same-sized but incomplete file that this
   check cannot distinguish from a valid one.
 - Cleanup is handled automatically on normal exit by unmapping first and then removing the backing file. A run that is
-  killed leaves the file behind; move it to the Trash or let the next run reuse it.
+  killed leaves the file behind, so move it to the Trash or let the next run reuse it.
 - Resident memory during the run reaches the size of the machine, because the operating system keeps the touched pages
-  of the mapped file in the page cache. Those pages are file-backed and reclaimable; the process's own allocations are
-  the latent matrix (7.6 MB), the LSH signatures and planes, and Ward's 64 x p projection (195 MB).
+  of the mapped file in the page cache. Those pages are file-backed and reclaimable, while the process's own allocations
+  are the latent matrix (7.6 MB), the LSH signatures and planes, and Ward's 64 x p projection (195 MB).

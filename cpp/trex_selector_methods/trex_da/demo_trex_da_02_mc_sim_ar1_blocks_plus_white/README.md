@@ -1,18 +1,19 @@
 # Demo 02: DA-TRex+BT (Binary-Tree Dependency-Aware T-Rex) on Block AR(1) + White-Noise Data
 
-Monte-Carlo results for **DA-TRex+BT** — the Binary-Tree Dependency-Aware T-Rex selector
-(`DAMethod::BT`) — on a block-diagonal AR(1) design diluted by a large block of i.i.d. white-noise
-columns, sweeping SNR, $\rho$, block size $Q$, and number of blocks $M$, each across the three HAC
+Monte-Carlo (MC) results for **DA-TRex+BT** — the Binary-Tree (BT) Dependency-Aware (DA) T-Rex selector
+(`DAMethod::BT`) — on a block-diagonal first-order autoregressive (AR(1)) design diluted by a large block of
+independent and identically distributed (i.i.d.) white-noise columns, sweeping the signal-to-noise ratio (SNR),
+$\rho$, block size $Q$, and number of blocks $M$, each across the three hierarchical agglomerative clustering (HAC)
 linkage methods (Single / Complete / Average).
-Common setup: $n=300$, $p_{\text{total}}=1000$, amplitude $1.0$, $\mathrm{tFDR}=0.1$, $K=20$ random
-experiments, $\mathrm{MC}=200$ per grid point; solvers TLARS / TAFS / TOMP.
+Common setup: $n=300$, $p_{\text{total}}=1{,}000$, amplitude $1.0$, target false discovery rate (FDR)
+$\mathrm{tFDR}=0.1$, $K=20$ random experiments, $\mathrm{MC}=200$ per grid point, and solvers TLARS / TAFS / TOMP.
 Corresponds to R reference `demo_trex_da_06_bt_ar1_plus_white_block_sweeps.R` (numbered "06" in the
 R suite but "02" in this C++ folder — a naming lineage quirk, not a bug).
 
 The greedy solvers use *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for TAFS/TOMP, `0` for
-TLARS); see `Exchangeable_Tie_Breaking_DA_TRex.md` in the TRex_Research documentation.
-TAFS additionally runs with its AFS correlation parameter `rho_afs = 0.3` (`0` for TLARS/TOMP), which
-is why the figures label it `TAFS (rho = 0.3)`.
+TLARS). See `Exchangeable_Tie_Breaking_DA_TRex.md` in the TRex_Research documentation.
+TAFS additionally runs with its adaptive forward-selection (AFS) correlation parameter `rho_afs = 0.3`
+(`0` for TLARS/TOMP), which is why the figures label it `TAFS (rho = 0.3)`.
 
 ---
 
@@ -35,17 +36,18 @@ variables,
 ```
 
 but — unlike the correlation-threshold group design of DA-TRex+NN (Demo 07) — the **BT group design**
-obtains $\mathrm{Gr}(j)$ from a **binary tree**: variables are clustered by hierarchical agglomerative
-clustering (HAC) on the dissimilarity $`1 - |\mathrm{corr}(\boldsymbol{x}_j, \boldsymbol{x}_{j'})|`$,
+obtains $\mathrm{Gr}(j)$ from a **binary tree**. Variables are clustered by hierarchical agglomerative
+clustering (HAC) on the dissimilarity $1 - |\mathrm{corr}(\boldsymbol x_j, \boldsymbol x_{j'})|$,
 and the dendrogram cut defines disjoint variable groups. The **linkage method** sets the
 between-cluster distance during agglomeration:
 
-- **Single** — $d(A,B) = \min_{j \in A,\, j' \in B} d(j, j')$ (nearest member; prone to chaining),
-- **Complete** — $d(A,B) = \max_{j \in A,\, j' \in B} d(j, j')$ (farthest member; compact clusters),
-- **Average** — $`d(A,B) = \operatorname{mean}_{j \in A,\, j' \in B}\, d(j, j')`$ (UPGMA).
+- **Single** — $d(A,B) = \min_{j \in A,\, j' \in B} d(j, j')$ (nearest member, prone to chaining),
+- **Complete** — $d(A,B) = \max_{j \in A,\, j' \in B} d(j, j')$ (farthest member, compact clusters),
+- **Average** — $d(A,B) = \underset{j \in A,\, j' \in B}{\operatorname{mean}}\, d(j, j')$
+  (unweighted pair group method with arithmetic mean (UPGMA)).
 
-Whether this choice materially changes FDR/TPR on a clean block design is this demo's core question,
-so every sweep below is run once per linkage.
+Whether this choice materially changes the FDR or the true positive rate (TPR) on a clean block design is this demo's
+core question, so every sweep below is run once per linkage.
 
 ## Setup — data generating process (`dgp_ar1_block_white`)
 
@@ -70,7 +72,7 @@ giving the block-diagonal total covariance
 & & \boldsymbol{\Sigma}_M(\rho) & \\
 & & & \boldsymbol{I}_{p_{\text{white}}}
 \end{bmatrix} \in \mathbb{R}^{p_{\text{total}} \times p_{\text{total}}},
-\qquad p_{\text{total}} = p_{\text{ar}} + p_{\text{white}} = 1000 \text{ fixed}.
+\qquad p_{\text{total}} = p_{\text{ar}} + p_{\text{white}} = 1{,}000 \text{ fixed}.
 ```
 
 **Support (`OnePerBlock`).** The true support draws exactly one representative per AR(1) block,
@@ -122,8 +124,8 @@ the four grids embedded below.
 - **FDR is very tightly controlled**: at most $0.044$ across every linkage × solver × SNR cell —
   far below the (already stricter) $\mathrm{tFDR}=0.1$ target. With $975$ uncorrelated null columns
   diluting the design, there is little correlated structure for false discoveries to latch onto.
-- TPR: TOMP is essentially perfect from $\mathrm{SNR}=1$ on ($0.98\text{–}1.0$); TLARS plateaus around
-  $0.9$; TAFS peaks at $\mathrm{SNR}=1$ ($0.94\text{–}0.95$) and then *declines* to $\approx 0.73$ at
+- TPR: TOMP is essentially perfect from $\mathrm{SNR}=1$ on ($0.98\text{–}1.0$), while TLARS plateaus around
+  $0.9$. TAFS peaks at $\mathrm{SNR}=1$ ($0.94\text{–}0.95$) and then *declines* to $\approx 0.73$ at
   $\mathrm{SNR}=5$ — a notable non-monotonicity unique to TAFS in this design.
 - The choice of linkage barely matters at the base point ($M=5$, $Q=5$, $\rho=0.7$).
 
@@ -133,13 +135,13 @@ the four grids embedded below.
 
 ## Part 2 — $\rho$ sweep ($\rho \in \lbrace0.0, 0.1, \ldots, 0.9\rbrace$)
 
-- **This is where linkage matters most — at *low* $\rho$**: with Single linkage, TPR drops to
+- **This is where linkage matters most — at *low* $\rho$**. With Single linkage, TPR drops to
   $\approx 0.60\text{–}0.65$ for all solvers at $\rho \leq 0.1$, while Complete/Average hold
   $\approx 0.91\text{–}0.97$. With weak within-block correlation there is no clean chain for
-  single-linkage to follow, so the dendrogram cut mis-groups the blocks; compact-cluster linkages are
+  single-linkage to follow, so the dendrogram cut mis-groups the blocks, while compact-cluster linkages are
   robust. From $\rho \geq 0.3$ all three linkages coincide.
-- FDR stays controlled over the whole grid (max $0.085$, TLARS at $\rho=0$ under Average linkage);
-  at $\rho=0.9$ all solvers tick up to $\approx 0.04$ but remain well under target.
+- FDR stays controlled over the whole grid (max $0.085$, TLARS at $\rho=0$ under Average linkage).
+  At $\rho=0.9$ all solvers tick up to $\approx 0.04$ but remain well under target.
 - At high correlation TPR declines moderately ($\rho=0.9$: TLARS $0.70$, TAFS $0.75$,
   TOMP $\approx 0.96$) — the within-block shadows become harder to separate, and the DA deflation
   spends power to keep FDR down.
@@ -148,10 +150,10 @@ the four grids embedded below.
 
 ---
 
-## Part 3 — Block-size $Q$ sweep ($Q \in \lbrace5, 10, \ldots, 50\rbrace$; $p_{\text{ar}} = 5Q$, $p_{\text{white}} = 1000 - 5Q$)
+## Part 3 — Block-size $Q$ sweep ($Q \in \lbrace5, 10, \ldots, 50\rbrace$, $p_{\text{ar}} = 5Q$, $p_{\text{white}} = 1{,}000 - 5Q$)
 
 - FDR is controlled everywhere (max $0.093$, TLARS with Single linkage at large $Q$).
-- **Single linkage costs power as blocks grow**: at $Q = 40\text{–}50$ it reaches only TPR
+- **Single linkage costs power as blocks grow**. At $Q = 40\text{–}50$ it reaches only TPR
   $\approx 0.83\text{–}0.91$ (TOMP), $0.74\text{–}0.78$ (TLARS), $0.67\text{–}0.74$ (TAFS), while Complete/Average
   keep TOMP at $1.0$ and TLARS/TAFS near their $\text{small-}Q$ levels ($\approx 0.9$ / $0.83$). Larger
   in-block chains give single-linkage more opportunities to merge blocks with the white pool.
@@ -160,9 +162,9 @@ the four grids embedded below.
 
 ---
 
-## Part 4 — Number-of-blocks $M$ sweep ($M \in \lbrace1, 3, 5, 10, 15, 20, 30\rbrace$; $s = M$)
+## Part 4 — Number-of-blocks $M$ sweep ($M \in \lbrace1, 3, 5, 10, 15, 20, 30\rbrace$, $s = M$)
 
-- This is the stress dimension: $s = M$ grows while $n = 300$ and the amplitude ($1.0$) stay fixed,
+- This is the stress dimension. Here $s = M$ grows while $n = 300$ and the amplitude ($1.0$) stay fixed,
   so the per-signal SNR shrinks. **TPR collapses once $M \gtrsim 20$** ($\approx 0.34\text{–}0.51$ at
   $M=20$, $\approx 0.1$ at $M=30$) for every solver and linkage.
 - At $M=15$ the greedy solvers clearly outlast TLARS (TAFS/TOMP $\approx 0.86\text{–}0.90$ vs. TLARS
@@ -178,11 +180,11 @@ the four grids embedded below.
 ## Interpretation
 
 - Compare directly against **Demo 03** (same block AR(1) core, *no* white-noise columns) to isolate
-  the effect of a much larger overall $p$ with mostly-null structure: the white padding *helps* FDR
+  the effect of a much larger overall $p$ with mostly-null structure. The white padding *helps* FDR
   control (max realized FDR $\approx 0.09$ here vs. hovering around target in Demo 03) without
   hurting the detection of the true blocks at the base point.
-- The linkage question gets a two-sided answer: linkage is irrelevant at the well-correlated base
+- The linkage question gets a two-sided answer. Linkage is irrelevant at the well-correlated base
   point, but **Single linkage is fragile** exactly where the block structure is weak (low $\rho$) or
-  large (high $Q$) — Complete or Average are the safer defaults for this DGP.
+  large (high $Q$) — Complete or Average are the safer defaults for this data-generating process (DGP).
 - The $M$ sweep shows a graceful, FDR-safe power collapse as the signal budget is spread over more
   and more active variables.

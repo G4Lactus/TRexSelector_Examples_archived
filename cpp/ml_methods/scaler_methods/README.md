@@ -22,7 +22,7 @@ Two core transformations are demonstrated:
 \tilde{x}_{ij} = \frac{x_{ij} - \bar{x}_j}{s_j},
 ```
 
-where $`\bar{x}_j`$ is the column mean and $s_j$ is the column scale.
+where $\bar x_j$ is the column mean and $s_j$ is the column scale.
 
 ### Lp-norm scaling
 

@@ -7,14 +7,14 @@ builds a tree of successive merges and recovers cluster assignments by cutting t
 TRexSelector the Grouped Variable Selection (GVS) workflow uses it to form variable groups from a dendrogram cut.
 
 The folder has two demos, each in its own subfolder with the source file and a README that walks through the
-console output: `demo_mlm_hac_01/` clusters samples and variables in memory, compares distance and linkage choices
-and shows the locality-sensitive hashing (LSH) approximation on problems up to n = 50,000 x p = 100,000;
+console output. `demo_mlm_hac_01/` clusters samples and variables in memory, compares distance and linkage choices
+and shows the locality-sensitive hashing (LSH) approximation on problems up to n = 50,000 x p = 100,000, while
 `demo_mlm_hac_02_mmap/` repeats the LSH linkage comparison at biobank scale (n = 100,000 x p = 400,000) on a
 memory-mapped matrix that is never held in random-access memory (RAM). Both are benchmarks with runtimes of hours,
 print to the console only and take an optional first argument, the Open Multi-Processing (OpenMP) thread count
-(default 6). The Python and R packages have the same demos; see
+(default 6). The Python and R packages have the same demos (see
 [Python/ml_methods/hac_clustering/](../../../Python/ml_methods/hac_clustering/README.md) and
-[R/ml_methods/hac_clustering/](../../../R/ml_methods/hac_clustering/README.md). Cross-language correctness checks
+[R/ml_methods/hac_clustering/](../../../R/ml_methods/hac_clustering/README.md)). Cross-language correctness checks
 against R references live in the library's test suite (`cpp/tests/validation/`), not in these examples.
 
 ---

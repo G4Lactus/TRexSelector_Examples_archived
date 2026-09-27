@@ -2,21 +2,28 @@
 
 ## Purpose
 
-Investigate T-Rex selector performance (FDR, TPR, average dummy multiplier $L$, average stopping time $T$) when the **positions** of the active variables are redrawn on every Monte Carlo trial, while the **number** of active variables stays fixed. This isolates the effect of support location (rather than support size) and complements the fixed-support study in Demo 02.
+Investigate T-Rex selector performance, measured by the false discovery rate (FDR), the true positive rate (TPR), the
+average dummy multiplier $L$ and the average stopping time $T$, when the **positions** of the active variables are
+redrawn on every Monte Carlo (MC) trial, while the **number** of active variables stays fixed. This isolates the effect
+of support location (rather than support size) and complements the fixed-support study in Demo 02.
 
 ---
 
 ## Data Generation Parameters
 
 - **Sample size**: $n = 300$
-- **Number of features**: $p = 1000$
-- **True support cardinality**: fixed at $s = 10$ on every trial. The support **size does not vary**; only the **indices** change — each trial shuffles $\lbrace0, \ldots, p-1\rbrace$ with `std::mt19937(seed + 500000)`, keeps the first 10, and sorts them.
+- **Number of features**: $p = 1{,}000$
+- **True support cardinality**: fixed at $s = 10$ on every trial. The support **size does not vary**, and only the
+  **indices** change — each trial shuffles $\lbrace0, \ldots, p-1\rbrace$ with `std::mt19937(seed + 500000)`, keeps
+  the first 10, and sorts them.
 - **True coefficients**: fixed $\beta_j = 1$ (`rnd_coef = false`)
-- **SNR grid**: a **21-point grid** — $\lbrace0.1, 0.2, \ldots, 2.0\rbrace$ (step $0.1$) plus $5.0$
+- **Signal-to-noise ratio (SNR) grid**: a **21-point grid** — $\lbrace0.1, 0.2, \ldots, 2.0\rbrace$ (step $0.1$)
+  plus $5.0$
 - **Monte Carlo repetitions**: `num_MC = 10` trials per solver × SNR level
-- **DGP**: $\mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\epsilon}$, $\boldsymbol{\epsilon} \sim N(0, \sigma^2 I_n)$, Normal predictors and Normal noise
+- **Data-generating process (DGP)**: $\mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\epsilon}$,
+  $\boldsymbol{\epsilon} \sim N(0, \sigma^2 I_n)$, Normal predictors and Normal noise
 
-`main()` runs only the high-dimensional configuration ($n = 300$, $p = 1000$).
+`main()` runs only the high-dimensional configuration ($n = 300$, $p = 1{,}000$).
 
 ---
 
@@ -33,19 +40,22 @@ tloop_max_stagnant_steps = 5     # Stagnation window (5 consecutive unchanged it
 tFDR = 0.1                       # Target FDR control level
 ```
 
-The MC loop is parallelized with OpenMP (`omp_set_num_threads(6)`).
+The MC loop is parallelized with Open Multi-Processing (OpenMP) (`omp_set_num_threads(6)`).
 
 ---
 
 ## Solvers Compared
 
-The same **14** T-Rex base solvers as Demo 02, via the shared `make_default_solvers_to_test()` list (TLARS, TLASSO, TENET, TSTAGEWISE, TSTEPWISE, TOMP, TGP, TACGP, TMP, TAFS_rho_0.3, TAFS_rho_1.0, TNCGMP_v1, TNCGMP_v0, TOOLS). Unlike Demo 02, this demo also records the averaged dummy multiplier $L$ and stopping time $T$ per solver × SNR.
+The same **14** T-Rex base solvers as Demo 02, via the shared `make_default_solvers_to_test()` list (TLARS, TLASSO,
+TENET, TSTAGEWISE, TSTEPWISE, TOMP, TGP, TACGP, TMP, TAFS_rho_0.3, TAFS_rho_1.0, TNCGMP_v1, TNCGMP_v0, TOOLS). Unlike
+Demo 02, this demo also records the averaged dummy multiplier $L$ and stopping time $T$ per solver × SNR.
 
 ---
 
 ## Output Files
 
-Both files are written to `simulation_results/data/`. The stem uses `tloop_max_stagnant_steps = 5` (hence `stagnation_window_5`), prefixed with `demo_trex_03_mc_sim_variable_support_`.
+Both files are written to `simulation_results/data/`. The stem uses `tloop_max_stagnant_steps = 5` (hence
+`stagnation_window_5`), prefixed with `demo_trex_03_mc_sim_variable_support_`.
 
 ### Main Result File
 **`demo_trex_03_mc_sim_variable_support_trex_results_n300_p1000_stagnation_window_5.txt`**
@@ -55,7 +65,8 @@ Aligned table with four metric rows per solver — FDR, TPR, Avg L, Avg T — ac
 ### Tidy-Format CSV
 **`demo_trex_03_mc_sim_variable_support_trex_results_n300_p1000_stagnation_window_5.csv`**
 
-Long/stacked format, header column order **`solver,metric,snr,value`**, with `FDR`, `TPR`, `AvgL`, and `AvgT` rows per solver and SNR:
+Long/stacked format, header column order **`solver,metric,snr,value`**, with `FDR`, `TPR`, `AvgL`, and `AvgT` rows
+per solver and SNR:
 ```
 solver,metric,snr,value
 TLARS,FDR,0.100000,...
@@ -70,8 +81,8 @@ TLARS,AvgT,0.100000,...
 ## Results Visualization
 
 The suite-level plotting module [../trex_plt_utils.py](../trex_plt_utils.py)
-renders the tidy CSV three ways (all written to `simulation_results/plots/`).
-Only the `FDR` and `TPR` rows are plotted; the `AvgL` / `AvgT` rows are ignored
+renders the tidy comma-separated values (CSV) file three ways (all written to `simulation_results/plots/`).
+Only the `FDR` and `TPR` rows are plotted, while the `AvgL` / `AvgT` rows are ignored
 by the plotter.
 
 ### Overview (all 14 solvers)
@@ -102,7 +113,7 @@ up. Both FDR panels share a y-scale for comparison:
 values and **click a solver in the legend to isolate its curve** in both panels.
 Open it directly in a browser (it is not rendered inline on GitHub).
 The `.html` figures are not committed to the repository (each embeds a full copy of
-plotly.js); run `./generate_plots.sh` to produce them locally.
+plotly.js). Run `./generate_plots.sh` to produce them locally.
 
 ```bash
 open simulation_results/plots/demo_trex_03_mc_sim_variable_support_trex_results_n300_p1000_stagnation_window_5_fdr_tpr_vs_snr.html
@@ -142,9 +153,15 @@ With older library builds, the `TNCGMP_v0` (LineSearch / Matching Pursuit) block
 [TNCGMP_LineSearch] [WARNING] LineSearch worst-case beta path is ~1.34 GiB (3000 x 60000 doubles); rely on T_stop early stopping.
 ```
 
-This is **not** an error and does **not** indicate a failed run — the reported results are correct. It is a *worst-case* memory estimate: the LineSearch variant allows atom re-selection and therefore uses a uniquely large step ceiling (`20 · p_tot`, vs `8 · min(...)` for the OMP-family solvers). The beta-path buffer is allocated **incrementally** and bounded by `T_stop` / stagnation stopping, so the full worst case is virtually never reached. Only `v0` reports it; `TNCGMP_v1` (FullyCorrective) does not. The message also fires once per solver construction (i.e. per MC trial), which is why it can repeat.
+This is **not** an error and does **not** indicate a failed run — the reported results are correct. It is a
+*worst-case* memory estimate, because the LineSearch variant allows atom re-selection and therefore uses a uniquely
+large step ceiling (`20 · p_tot`, vs `8 · min(...)` for the orthogonal matching pursuit (OMP) family of solvers). The
+beta-path buffer is allocated **incrementally** and bounded by `T_stop` / stagnation stopping, so the full worst case is
+virtually never reached. Only `v0` reports it, while `TNCGMP_v1` (FullyCorrective) does not. The message also fires
+once per solver construction (i.e. per MC trial), which is why it can repeat.
 
-Upstream this has been reclassified from an unconditional `logWarning` to a verbose-only `logInfo`, so recent library builds are silent here unless verbosity is enabled.
+Upstream this has been reclassified from an unconditional `logWarning` to a verbose-only `logInfo`, so recent library
+builds are silent here unless verbosity is enabled.
 
 ---
 
@@ -170,4 +187,5 @@ Upstream this has been reclassified from an unconditional `logWarning` to a verb
 
 **Comparison with Demo 02:**
 - Demo 02 (fixed support indices) is the baseline.
-- Demo 03 (support indices redrawn per trial, fixed cardinality) tests robustness to support location. Note the smaller MC count (`num_MC = 10`) — averages are noisier than Demo 02's 200 trials.
+- Demo 03 (support indices redrawn per trial, fixed cardinality) tests robustness to support location. Note the
+  smaller MC count (`num_MC = 10`) — averages are noisier than Demo 02's 200 trials.

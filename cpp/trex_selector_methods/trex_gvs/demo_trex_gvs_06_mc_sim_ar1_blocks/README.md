@@ -2,8 +2,8 @@
 
 ## Purpose
 
-Evaluate T-Rex+GVS when within-block correlation follows an **AR(1) time-series structure** instead of
- equicorrelation.
+Evaluate the T-Rex selector with Grouped Variable Selection (T-Rex+GVS) when within-block correlation follows a
+ **first-order autoregressive (AR(1)) time-series structure** instead of equicorrelation.
  This uses the same four-block active/trap geometry as Demo 03, but replaces the shared-latent-factor
  equicorrelated model with an AR(1) Toeplitz covariance within each block, testing robustness to more realistic,
  decaying correlation patterns.
@@ -24,12 +24,12 @@ We consider again the linear model:
 - $\boldsymbol{y} \in \mathbb{R}^n$ is the response vector.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ is the design matrix.
 - $\boldsymbol{\beta} \in \mathbb{R}^p$ is the coefficient vector, with $s$ nonzero entries.
-- $\boldsymbol{\epsilon}$ is the noise vector, i.i.d. standard normal.
+- $\boldsymbol{\epsilon}$ is the noise vector, independent and identically distributed (i.i.d.) standard normal.
 - $\sigma_{\varepsilon}^2$ is the noise variance, calibrated to achieve a target linear signal-to-noise ratio (SNR).
 - $n = 200$, $p = 500$, $s = 150$ (the sum of the three active blocks).
 
-Unlike Demos 01–05, the within-block structure is **not** equicorrelated: each block $k$ follows an AR(1) Toeplitz
- covariance,
+Unlike Demos 01–05, the within-block structure is **not** equicorrelated.
+ Each block $k$ follows an AR(1) Toeplitz covariance,
 
 ```math
 \Sigma_k(i,j) = \rho^{\lvert i-j \rvert},
@@ -39,7 +39,7 @@ generated as $X_{\text{block}} = Z L^\top$, where $Z \sim \mathcal{N}(0, I_{n \t
  Cholesky factor of $\Sigma_k$.
 
 - Same 4-block geometry as Demo 03: sizes $\lbrace20, 50, 80, 65\rbrace$ (215 grouped columns in total).
-- **Blocks 0–2 are active** ($\beta_j = 3$); **block 3 is an inactive AR(1) trap** ($\beta_j = 0$).
+- **Blocks 0–2 are active** ($\beta_j = 3$), while **block 3 is an inactive AR(1) trap** ($\beta_j = 0$).
 - Gap columns (between and around the blocks) are i.i.d. $\mathcal{N}(0,1)$.
 - Correlation between two variables in the same block decays with their column distance, so a block no longer
    behaves like a single tight cluster — variables at opposite ends of a large block can be nearly uncorrelated.
@@ -63,8 +63,8 @@ MC = 200                        # Monte Carlo repetitions per grid point
 
 Three T-Rex+GVS solver variants: **TENET** (elastic net) [[3]](#references),
 **TENET_AUG** (row-augmented elastic net) [[1]](#references), and **TIENET_AUG** (informed
-elastic net) [[2]](#references). All use single-linkage HAC grouping
-and `CV_1SE_CCD` for the $\lambda_2$ selection.
+elastic net) [[2]](#references). All use single-linkage hierarchical agglomerative clustering
+(HAC) grouping and `CV_1SE_CCD` for the $\lambda_2$ selection.
 
 ---
 
@@ -72,8 +72,8 @@ and `CV_1SE_CCD` for the $\lambda_2$ selection.
 
 A single **2-D SNR $\times$ $\rho$ grid**, over
 $\mathrm{SNR} \in \lbrace0.2, 0.5, 1, 2, 5\rbrace$ and
-$\rho \in \lbrace0.30, 0.50, 0.70, 0.85, 0.90, 0.99\rbrace$, 200 MC trials per cell. Here $\rho$ is the AR(1)
-coefficient of the within-block Toeplitz covariance, so it controls how fast correlation decays
+$\rho \in \lbrace0.30, 0.50, 0.70, 0.85, 0.90, 0.99\rbrace$, 200 Monte Carlo (MC) trials per cell. Here $\rho$ is the
+AR(1) coefficient of the within-block Toeplitz covariance, so it controls how fast correlation decays
 with column distance rather than a uniform within-block correlation level.
 
 ---
@@ -82,7 +82,8 @@ with column distance rather than a uniform within-block correlation level.
 
 Written to `simulation_results/data/`:
 
-- `gvs_ar1_blocks_2d.txt` / `.csv` — mean FDP/TPP over the SNR $\times$ $\rho$ grid.
+- `gvs_ar1_blocks_2d.txt` / `.csv` — mean false discovery proportion (FDP) / true positive proportion (TPP) over the SNR
+  $\times$ $\rho$ grid.
 
 Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
 
@@ -99,20 +100,20 @@ Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_p
 
 ## Simulation Results
 
-- FDR stays under control everywhere (no cyan cells): **TENET** and **TENET_AUG** track each other and peak near
-   $0.09$, just below the $\mathrm{tFDR} = 0.1$ target, while **TIENET_AUG** is markedly more conservative
-   (FDR $\le 0.04$).
-- **TPR recovers much more slowly with SNR than in the equicorrelated Hastie/Mixed-Blocks demos.** AR(1) decay
-   means only nearby columns within a block stay strongly correlated, weakening the group-level evidence
-   aggregation that HAC clustering relies on — full recovery needs both high $\rho$ and high SNR, and even at
+- The false discovery rate (FDR) stays under control everywhere (no cyan cells). **TENET** and **TENET_AUG** track
+   each other and peak near $0.09$, just below the $\mathrm{tFDR} = 0.1$ target, while **TIENET_AUG** is markedly more
+   conservative (FDR $\le 0.04$).
+- **The true positive rate (TPR) recovers much more slowly with SNR than in the equicorrelated Hastie/Mixed-Blocks
+   demos.** AR(1) decay means only nearby columns within a block stay strongly correlated, weakening the group-level
+   evidence aggregation that HAC clustering relies on — full recovery needs both high $\rho$ and high SNR, and even at
    $\mathrm{SNR} = 5$ the $\text{low-}\rho$ columns barely lift off zero.
-- **TIENET_AUG** sits between the near-zero TPR of the equicorrelated Gaussian demos and the TENET-based methods:
-   it shows real (though smaller) power gains as SNR increases rather than staying flat — except in the
+- **TIENET_AUG** sits between the near-zero TPR of the equicorrelated Gaussian demos and the TENET-based methods.
+   It shows real (though smaller) power gains as SNR increases rather than staying flat — except in the
    $\rho = 0.99$ near-collinear column, where its TPR collapses.
-- The $\rho$ axis is the most informative view of this demo: watch how quickly recovery degrades as $\rho$
+- The $\rho$ axis is the most informative view of this demo. Watch how quickly recovery degrades as $\rho$
    decreases and the AR(1) decay becomes steeper (correlation vanishing faster with column distance).
 
-TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver;
+TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver.
 FDR cells above the $\mathrm{tFDR} = 0.1$ target are outlined in cyan.
 
 ![AR(1) blocks SNR × rho sweep](simulation_results/plots/gvs_ar1_blocks_2d.png)

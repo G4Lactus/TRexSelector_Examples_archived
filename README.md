@@ -11,26 +11,26 @@ Each demo is a small, self-contained script or program that generates data, runs
 
 ## About the T-Rex Selector
 
-The T-Rex (Terminating-Random EXperiments) selector performs fast, FDR-controlled variable
-selection in high-dimensional regression problems (Machkour, Muma, and Palomar, 2022+). It runs
+The T-Rex (Terminating-Random EXperiments) selector performs fast variable selection with false discovery rate
+(FDR) control in high-dimensional regression problems (Machkour, Muma, and Palomar, 2022+). It runs
 K random experiments in which the design matrix is augmented with computer-generated dummy
-variables and a terminating solver (e.g. T-LARS) stops early once enough dummies enter the path;
-a calibration procedure then selects a voting threshold that provably controls the false
+variables and a terminating solver (e.g. T-LARS) stops early once enough dummies enter the path.
+A calibration procedure then selects a voting threshold that provably controls the false
 discovery rate at a user-chosen target level while maximizing the number of selected variables.
 
 The software implements the classical T-Rex selector plus several extensions:
 
-- **T-Rex DA** — dependency-aware variants for correlated designs (AR(1), equicorrelation,
-  nearest-neighbor, and binary-tree/dendrogram corrections).
-- **T-Rex GVS** — grouped variable selection with elastic-net-type solvers and
+- **T-Rex DA** — dependency-aware (DA) variants for correlated designs, with first-order autoregressive (AR(1)),
+  equicorrelation, nearest-neighbor, and binary-tree/dendrogram corrections.
+- **T-Rex GVS** — grouped variable selection (GVS) with elastic-net-type solvers and
   clustering-informed dummies.
 - **T-Rex Screening / Biobank Screening** — ultra-high-dimensional screening workflows.
-- **T-Rex SPCA** — sparse principal component analysis with FDR control on the loadings.
+- **T-Rex SPCA** — sparse principal component analysis (SPCA) with FDR control on the loadings.
 - **Terminating solvers (tsolvers)** — T-LARS, T-LASSO, T-ENET, matching-pursuit and stepwise
   families, all with early termination at a dummy-count threshold.
-- **ML methods** — the numerical building blocks (scalers, PCA, SVD, ridge, elastic-net CV,
-  hierarchical agglomerative clustering) and disk-backed memory-mapped matrices for
-  larger-than-RAM problems.
+- **ML methods** — the numerical machine learning (ML) building blocks (scalers, principal component analysis (PCA),
+  singular value decomposition (SVD), ridge, elastic-net cross-validation (CV), hierarchical agglomerative clustering)
+  and disk-backed memory-mapped matrices for problems larger than the random-access memory (RAM).
 
 ---
 
@@ -38,8 +38,8 @@ The software implements the classical T-Rex selector plus several extensions:
 
 | Folder | Language | Status | Description |
 |---|---|---|---|
-| [cpp/](cpp/) | C++20 | reference | All selector variants, all terminating solvers, ML building blocks, memory mapping, and validation programs. Has its own CMake build; see [cpp/README.md](cpp/README.md). |
-| [R/](R/) | R ≥ 4.3 | mirrors cpp | Demos for the `TRexSelectorNeo` R package (R6 API): all selector suites (trex, trex_da, trex_gvs, trex_spca, trex_screening), all terminating-solver demos (`tsolvers/`) + validation, memory mapping, and the full ml_methods set. CRAN `TRexSelector` 1.0.0 is used only as an independent reference in the tsolvers cross-check. See [R/README.md](R/README.md). |
+| [cpp/](cpp/) | C++20 | reference | All selector variants, all terminating solvers, ML building blocks, memory mapping, and validation programs. Has its own CMake build (see [cpp/README.md](cpp/README.md)). |
+| [R/](R/) | R ≥ 4.3 | mirrors cpp | Demos for the `TRexSelectorNeo` R package with its R6 application programming interface (API): all selector suites (trex, trex_da, trex_gvs, trex_spca, trex_screening), all terminating-solver demos (`tsolvers/`) + validation, memory mapping, and the full ml_methods set. The Comprehensive R Archive Network (CRAN) package `TRexSelector` 1.0.0 is used only as an independent reference in the tsolvers cross-check. See [R/README.md](R/README.md). |
 | [Python/](Python/) | Python ≥ 3.10 | mirrors cpp | Demos for the `TRexSelectorNeo` Python package (`import trex_selector_neo`): all selector suites (trex, trex_da, trex_gvs, trex_spca, trex_screening), all terminating-solver demos (`tsolvers/`) + validation, memory mapping, and the full ml_methods set. Only the `ml_methods/validation/` reference programs are not ported. See [Python/README.md](Python/README.md). |
 
 Demo naming follows the C++ convention `demo_<area>_NN_<topic>`.
@@ -49,8 +49,8 @@ R and Python demos refer to their C++ counterpart in the file header, which simp
 
 ## Overview of supported Languages and Packages
 
-All three languages are backed by the same C++ core; results agree across languages up to the
-documented RNG and indexing conventions (C++/Python are 0-based, R is 1-based).
+All three languages are backed by the same C++ core, so results agree across languages up to the
+documented random number generator (RNG) and indexing conventions (C++/Python are 0-based, R is 1-based).
 
 ### R Package
 
@@ -76,5 +76,5 @@ Typical usage: `trex_selector_neo.TRexSelector(X, y, tFDR=0.1, trex_control=ctrl
 ### Cpp Package
 
 The C++ library `TRexSelector` is consumed via CMake (`find_package(TRexSelector REQUIRED)`).
-The [cpp/](cpp/) folder is a standalone CMake project; build it with the provided presets
+The [cpp/](cpp/) folder is a standalone CMake project. Build it with the provided presets
 (see [cpp/README.md](cpp/README.md)) and run the demo executables from `bin/`.

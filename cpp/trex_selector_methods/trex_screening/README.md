@@ -8,10 +8,10 @@ This folder contains C++ example programs for **Screen-TRex**, the T-Rex Selecto
 Screen-TRex targets settings where $p$ is so large that running the classical T-Rex selector directly is
  impractical — genome-wide or biobank-scale designs — by first thresholding a dummy-based voting statistic
  to reduce the candidate set.
- Unlike the classical T-Rex selector, **screening has no target-FDR parameter**: it thresholds the voting
- statistic instead of calibrating to a user-specified level, and reports its own *estimated FDR* alongside
- the selection. Whether that self-estimate can be trusted is a central question of this suite, and the
- answer depends sharply on the correlation structure of the design (see Demos 01 and 03).
+ Unlike the classical T-Rex selector, **screening has no target parameter for the false discovery rate (FDR)**.
+ It thresholds the voting statistic instead of calibrating to a user-specified level, and reports its own
+ *estimated FDR* alongside the selection. Whether that self-estimate can be trusted is a central question of this
+ suite, and the answer depends sharply on the correlation structure of the design (see Demos 01 and 03).
 
 The demos in this folder are designed to help users understand:
 
@@ -31,10 +31,12 @@ If you are new to this folder, start with **Demo 01** for the baseline compariso
 
 ## What this folder covers
 
-- **Baseline screening** (Demos 01–02): Ordinary vs. Bootstrap-CI on an i.i.d. Gaussian design, in memory
+- **Baseline screening** (Demos 01–02): Ordinary vs. Bootstrap-CI on an independent and identically
+   distributed (i.i.d.) Gaussian design, in memory
    and memory-mapped.
-- **Correlation robustness** (Demo 03): plain screening vs. the dependency-aware variants under AR(1),
-   equicorrelated, and block-equicorrelated designs, swept over both SNR and correlation strength.
+- **Correlation robustness** (Demo 03): plain screening vs. the dependency-aware variants under first-order
+   autoregressive (AR(1)), equicorrelated, and block-equicorrelated designs, swept over both signal-to-noise ratio (SNR)
+   and correlation strength.
 - **Multi-phenotype biobank screening** (Demos 04–05): Algorithm 1's adaptive routing applied to several
    phenotypes sharing one design matrix, in memory and memory-mapped.
 - **Solver sensitivity** (Demo 06): whether the T-Rex backend (TLARS, TAFS, TOMP) changes screening
@@ -58,7 +60,7 @@ All demos use the same Gaussian linear model as the classical T-Rex selector:
 
 - $n$: number of observations, $p$: number of variables, $s$: number of truly active variables.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$: design matrix, $\boldsymbol{y} \in \mathbb{R}^n$: response.
-- $\mathcal{A} = \lbrace j : \beta_j \neq 0 \rbrace$: true active support; $\widehat{\mathcal{A}}$: selected set.
+- $\mathcal{A} = \lbrace j : \beta_j \neq 0 \rbrace$: true active support, $\widehat{\mathcal{A}}$: selected set.
 - $\Phi_j$: dummy-based voting proportion for variable $j$ — the evidence T-Rex accumulates internally.
 - $\rho$: correlation strength (AR(1) lag-1, equicorrelation, or within-block equicorrelation).
 - $\sigma_{\varepsilon}^2$: noise variance, calibrated to a target SNR.
@@ -91,7 +93,7 @@ As elsewhere in this project,
 
 > **Screening returns a candidate set, and every rate is evaluated on individual variables.** The quantity
 > Screen-TRex thresholds is the voting proportion $\Phi_j$, and what it returns is a set of variable
-> indices; $\widehat{\mathcal{A}}$ and $\mathcal{A}$ above are therefore sets of *variables*. A false
+> indices. $\widehat{\mathcal{A}}$ and $\mathcal{A}$ above are therefore sets of *variables*. A false
 > discovery is a selected variable that is not truly active.
 >
 > Screen-TRex additionally reports an **estimated FDR** — its own internal assessment of the selection's
@@ -99,9 +101,9 @@ As elsewhere in this project,
 > two can diverge severely: conservative on i.i.d. designs, but wildly optimistic under equicorrelation
 > (Demo 03).
 >
-> In the biobank demos, FDR/TPR are accumulated **conditionally** on which method a phenotype was routed
-> to, alongside the unconditional **Usage %**. A conditional rate over a route that handled no phenotypes
-> at a given SNR is an average over an empty set, not a failure.
+> In the biobank demos, the FDR and the true positive rate (TPR) are accumulated **conditionally** on which method a
+> phenotype was routed to, alongside the unconditional **Usage %**. A conditional rate over a route that handled no
+> phenotypes at a given SNR is an average over an empty set, not a failure.
 
 ---
 
@@ -111,14 +113,14 @@ As elsewhere in this project,
    the bootstrap rule) and the dependency-aware variants `TREX_DA_AR1`, `TREX_DA_EQUI`,
    `TREX_DA_BLOCK_EQUI` (Demo 03).
 - **Ordinary vs. Bootstrap-CI** (`ScreenTRexControlParameter::use_bootstrap_CI`) — the **Ordinary** rule
-   thresholds at $\Phi_j > 0.5$; the **Bootstrap-CI** rule builds a bootstrap confidence band
+   thresholds at $\Phi_j > 0.5$, while the **Bootstrap-CI** rule builds a bootstrap confidence band
    (`R_boot = 1000` replicates, grid granularity `ci_grid_step = 0.001`) around the estimated FDR curve and
    picks its threshold from that band.
 - **Dependency-aware (DA) screening** (`rho_thr_DA`, `n_blocks`) — pre-groups strongly correlated variables
    before voting, so redundant correlated variables do not split the evidence.
 - **Biobank / "Algorithm 1"** (`BiobankScreenTRexControl`, Demos 04–05) — screens **multiple phenotypes
-   against one shared design matrix**. Per phenotype it tries Screen-TRex Ordinary; if the estimated FDR
-   falls outside `[lower_bound_FDR, upper_bound_FDR]` it tries Bootstrap-CI; failing that it falls back to
+   against one shared design matrix**. Per phenotype it tries Screen-TRex Ordinary. If the estimated FDR
+   falls outside `[lower_bound_FDR, upper_bound_FDR]` it tries Bootstrap-CI, and failing that it falls back to
    the classical T-Rex selector at `target_FDR_trex`. The share routed to each method is reported as
    **Usage %**.
 
@@ -155,7 +157,7 @@ trex_screening/
           └── plots/
 ```
 
-All six demos are Monte Carlo studies (200 repetitions per grid point); every result in this folder was
+All six demos are Monte Carlo studies (200 repetitions per grid point), and every result in this folder was
  produced by the committed sources.
 
 ---
@@ -197,8 +199,8 @@ Note that the selector draws its dummies from a nondeterministic seed, so re-run
 
 ### Figures
 
-Each demo folder has a `generate_plots.sh` that renders its figures from the saved CSVs into
-`simulation_results/plots/` using the shared `trex_scr_plt_utils.py` and the repo-root `.venv`
+Each demo folder has a `generate_plots.sh` that renders its figures from the saved comma-separated values (CSV) files
+into `simulation_results/plots/` using the shared `trex_scr_plt_utils.py` and the repo-root `.venv`
 (matplotlib + pandas + numpy):
 
 ```bash
@@ -206,7 +208,7 @@ cd demo_trex_scr_01_mc_sim_screen_trex
 ./generate_plots.sh
 ```
 
-`trex_scr_plt_utils.py` auto-detects the CSV shape: sweep results render as a TPR panel and an FDR panel
+`trex_scr_plt_utils.py` auto-detects the CSV shape, so sweep results render as a TPR panel and an FDR panel
 (realized solid, estimated dashed), while the biobank results add a third Usage-% panel and shade the
 routing window.
 

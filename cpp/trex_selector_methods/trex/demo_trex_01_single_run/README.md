@@ -2,8 +2,8 @@
 
 ## Purpose
 
-The demo demonstrates the basic T-Rex selector as single run example, illustrating correct API usage and the resulting
-console/file output.
+The demo demonstrates the basic T-Rex selector as single run example, illustrating correct application programming
+interface (API) usage and the resulting console/file output.
 Suppose we have $n$ observations and $p$ predictors, with a true support $\mathcal{S}^*$ of size $s$
 and fixed coefficients $\beta_j = 1$ for all active variables.
 We present two contrasting scenarios:
@@ -13,8 +13,8 @@ We present two contrasting scenarios:
 
 This demo introduce a small single run example for the classical T-Rex selector.
 It verifies correct API usage and produces as result a human-readable console/file output for inspection.
-The `main()` runs the high-dimensional scenario first, then the low-dimensional one;
-both use fixed $+1$ coefficients (`rnd_coef = false`).
+The `main()` runs the high-dimensional scenario first, then the low-dimensional one.
+Both use fixed $+1$ coefficients (`rnd_coef = false`).
 
 ---
 
@@ -26,7 +26,7 @@ Both scenarios consider the linear model
 \mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\epsilon}, \quad \boldsymbol{\epsilon} \sim N(0, \sigma^2 I_n)
 ```
 
-and share the same true support and coefficients; only the dimensions differ.
+and share the same true support and coefficients. Only the dimensions differ.
 
 ### Scenario A: High-Dimensional ($p > n$)
 
@@ -34,12 +34,12 @@ and share the same true support and coefficients; only the dimensions differ.
 - $p = 300$ features
 - True support: $\mathcal{S}^* = \lbrace27, 149, 43, 128, 42, 4\rbrace$ ($s = 6$ true actives)
 - True coefficients: fixed $\beta_j = 1$ for all active variables
-- SNR (linear): $1.0$
+- Linear signal-to-noise ratio (SNR): $1.0$
 
 ### Scenario B: Low-Dimensional ($n > p$)
 
-- $n = 5000$ observations
-- $p = 1000$ features
+- $n = 5{,}000$ observations
+- $p = 1{,}000$ features
 - True support: Same as scenario A
 - True coefficients: Same as scenario A
 - SNR (linear): $1.0$
@@ -71,13 +71,15 @@ tFDR = 0.1                       # Target FDR control level
 
 ## Output Files
 
-Two output files are generated in `simulation_results/`, one per scenario. The file stem is built as `d01_trex_basic_n{n}_p{p}.txt`:
+Two output files are generated in `simulation_results/`, one per scenario. The file stem is built as
+`d01_trex_basic_n{n}_p{p}.txt`:
 
 ### `d01_trex_basic_n150_p300.txt`
 
 **Scenario A output** (high-dimensional case)
 
-The program prints (both to console and file), in order: the selected indices, FDP, TPP, and the internal T-Rex matrices.
+The program prints (both to console and file), in order: the selected indices, the false discovery proportion (FDP),
+the true positive proportion (TPP), and the internal T-Rex matrices.
 Actual contents:
 
 ```txt
@@ -128,9 +130,9 @@ Output appears on the console and is simultaneously written to the files above.
 
 ## Expected Results
 
-- **FDP** is well controlled: the committed high-dimensional run reports $\text{FDP} = 0.0$ (no false selections).
+- **FDP** is well controlled. The committed high-dimensional run reports $\text{FDP} = 0.0$ (no false selections).
 - **TPP** at SNR $= 1.0$ is partial in the harder high-dimensional case (the committed run recovers 3 of the 6 actives,
-   $\text{TPP} = 0.5$); the easier low-dimensional case recovers more.
+   $\text{TPP} = 0.5$), while the easier low-dimensional case recovers more.
 - The **voting grid** spans $\lbrace0.5, 0.55, \ldots, 0.95\rbrace$ and the **R** / **FDP_hat** matrices show how the
    relative-occurrence threshold and dummy multiplier $L$ evolve across the T-loop.
 
@@ -140,6 +142,7 @@ Output appears on the console and is simultaneously written to the files above.
 
 - **Console output** shows real-time progress and the final selection summary.
 - **File output** provides a permanent record for the single run.
-- This demo is NOT a Monte Carlo study; results are from a single random seed and should not be interpreted as
+- This demo is NOT a Monte Carlo study. Results are from a single random seed and should not be interpreted as
    population averages.
-- Compare FDR/TPR with Demos 02–04 for empirical performance over many repetitions.
+- Compare the false discovery rate (FDR) and the true positive rate (TPR) with Demos 02–04 for empirical performance
+   over many repetitions.

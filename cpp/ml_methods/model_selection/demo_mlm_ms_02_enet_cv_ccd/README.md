@@ -42,7 +42,7 @@ The synthetic data follow the Gaussian linear model
 ```
 
 The entries of $\boldsymbol{X}$ are independent standard normal. As in the ridge demo, ten coefficients of
-$`\boldsymbol{\beta}_{\mathrm{true}}`$ are set to 1 at evenly spaced positions and the rest are zero, so the response
+$\boldsymbol\beta_{\mathrm{true}}$ are set to 1 at evenly spaced positions and the rest are zero, so the response
 variance is about $10 + \sigma^2 = 11$ and the true fraction of explained variance is $10/11 \approx 0.91$.
 
 ---
@@ -66,7 +66,7 @@ For fixed $\alpha$ and $\lambda$, the elastic-net estimator solves
 \right\rbrace.
 ```
 
-The residual sum of squares carries glmnet's $1/(2n)$ normalization; the $\lambda$ grid and the conversion in
+The residual sum of squares carries glmnet's $1/(2n)$ normalization, and the $\lambda$ grid and the conversion in
 Scenario 4 are defined on this scale. The parameter $\alpha$ sets the penalty type: $\alpha = 0$ is ridge regression,
 $\alpha = 1$ the lasso, and $0 < \alpha < 1$ the elastic net.
 
@@ -75,11 +75,11 @@ $\alpha = 1$ the lasso, and $0 < \alpha < 1$ the elastic net.
 ## Path fitting
 
 For a fixed $\alpha$, `enet_gaussian` fits a decreasing sequence $\lambda_1 > \lambda_2 > \cdots > \lambda_K$ and
-returns the coefficient vectors $`\widehat{\boldsymbol{\beta}}(\lambda_k,\alpha)`$. As in glmnet:
+returns the coefficient vectors $\widehat{\boldsymbol\beta}(\lambda_k,\alpha)$. As in glmnet:
 
 - the grid holds up to 100 values from $\lambda_{\max}$, the smallest penalty that keeps all coefficients at zero, down
-  to $\lambda_{\max}/10{,}000$ for $n > p$ or $\lambda_{\max}/100$ for $n < p$;
-- for ridge, $\lambda_{\max}$ is computed as for $\alpha = 0.001$, since no finite penalty zeroes a ridge fit;
+  to $\lambda_{\max}/10{,}000$ for $n > p$ or $\lambda_{\max}/100$ for $n < p$,
+- for ridge, $\lambda_{\max}$ is computed as for $\alpha = 0.001$, since no finite penalty zeroes a ridge fit,
 - a sequential strong rule screens coefficients, and the path stops early once the explained fraction of the null
   deviance exceeds 0.999 or grows by less than a relative $10^{-5}$ between neighbors.
 
@@ -127,7 +127,7 @@ cpp/build/release/bin/ml_methods/model_selection/demo_mlm_ms_02_enet_cv_ccd/demo
 ```
 
 The demo prints to the console only and finishes in under a second. The output below is a run against library
-8ad3376 on an Apple Silicon machine. The data come from `std::mt19937` and `std::normal_distribution`; the latter is
+8ad3376 on an Apple Silicon machine. The data come from `std::mt19937` and `std::normal_distribution`. The latter is
 implementation-defined, so another standard library (libstdc++ on Linux, for example) may draw different data and
 print different numbers.
 
@@ -138,11 +138,11 @@ print different numbers.
 ### Scenario 1: Low-dimensional path fitting
 
 With $n = 300 > p = 100$, the ridge path keeps all 100 coefficients nonzero from its first point on and only shrinks
-them; its $\lambda_{\max}$ of 1,173.7 is 1,000 times the lasso's because of the $\alpha = 0.001$ rule. The elastic-net
-and lasso paths start empty and hold 10 nonzeros, the number of active coefficients, at the second printed point,
-before a slower spread to 97 and 96 nonzeros. They stop early after 72 and 71 points, when the deviance ratio no
-longer grows. All three paths end at a deviance ratio of 0.94, above the true 0.91: at the small-$\lambda$ end, 100
-coefficients also fit part of the noise. The `-0.00000` at the first point is a rounded tiny negative value; the
+them. Its $\lambda_{\max}$ of 1,173.7 is 1,000 times the lasso's because of the $\alpha = 0.001$ rule. The elastic-net
+and lasso paths start empty and hold 10 nonzeros, the number of active coefficients, at the second printed point, before
+a slower spread to 97 and 96 nonzeros. They stop early after 72 and 71 points, when the deviance ratio no longer grows.
+All three paths end at a deviance ratio of 0.94, above the true 0.91, because at the small end of the $\lambda$ grid,
+100 coefficients also fit part of the noise. The `-0.00000` at the first point is a rounded tiny negative value. The
 empty model explains no deviance.
 
 ```text
@@ -195,9 +195,9 @@ Data: n=300, p=100, active coefs=10
 ### Scenario 2: High-dimensional path fitting
 
 With $p = 500 > n = 200$, the grid ends at $\lambda_{\max}/100$. The ridge path reaches a deviance ratio of only 0.68
-there: ridge needs a far smaller penalty to fit 500 coefficients to 200 rows. The lasso path runs its full 100 points,
-holds 10 nonzeros at $\lambda = 0.501$, and ends with 172 nonzeros and a deviance ratio of 0.997, close to
-interpolation; a lasso fit has at most $n = 200$ nonzero coefficients.
+there, because ridge needs a far smaller penalty to fit 500 coefficients to 200 rows. The lasso path runs its full 100
+points, holds 10 nonzeros at $\lambda = 0.501$, and ends with 172 nonzeros and a deviance ratio of 0.997, close to
+interpolation. A lasso fit has at most $n = 200$ nonzero coefficients.
 
 ```text
 ============================================================
@@ -236,15 +236,15 @@ Data: n=200, p=500, active coefs=10
   0.01270     172     18.17358    0.99693
 ```
 
-The printout counts nonzero coefficients; it does not show which ones entered the path.
+The printout counts nonzero coefficients but does not show which ones entered the path.
 
 ### Scenario 3: Low-dimensional cross-validation
 
-The three penalties see the same data. Lasso and elastic net reach a minimum CV-MSE of 1.30 and 1.34, close to the
-noise floor of 1, because the truth is sparse; ridge keeps all 100 coefficients and stays at 1.81. The ridge pick
+The three penalties see the same data. Lasso and elastic net reach a minimum CV-MSE of 1.30 and 1.34, close to the noise
+floor of 1, because the truth is sparse. Ridge keeps all 100 coefficients and stays at 1.81. The ridge pick
 $\lambda_{\min} = 0.1252$ agrees with the reference value $100 \cdot 3.3/(270 \cdot 10) \approx 0.12$. It is the
-second-to-last grid point: the $n > p$ grid ends at $\lambda_{\max}/10{,}000 \approx 0.114$, just below the ridge
-optimum. The elastic-net and lasso picks lie well inside their grids.
+second-to-last grid point, because the $n > p$ grid ends at $\lambda_{\max}/10{,}000 \approx 0.114$, just below the
+ridge optimum. The elastic-net and lasso picks lie well inside their grids.
 
 ```text
 ============================================================
@@ -370,8 +370,8 @@ Data: n=300, p=200, folds=10, active coefs=10
 ## Technical notes
 
 - `enet_gaussian` uses pathwise cyclic coordinate descent with glmnet's path construction, strong rule and stopping
-  rules; `n_lambda` and `lambda_min_ratio` override the grid defaults.
+  rules, while `n_lambda` and `lambda_min_ratio` override the grid defaults.
 - `enet_cv_ccd` builds the $\lambda$ grid once on the full dataset and reuses it across folds, rather than rebuilding a
   grid for every fold.
-- The demo explains path behavior and penalty selection; it does not benchmark prediction accuracy over replicated
+- The demo explains path behavior and penalty selection but does not benchmark prediction accuracy over replicated
   simulations.

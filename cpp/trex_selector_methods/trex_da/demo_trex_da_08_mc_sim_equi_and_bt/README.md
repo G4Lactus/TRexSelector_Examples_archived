@@ -1,28 +1,26 @@
 # Demo 08: DA-TRex+EQUI on Equicorrelated (EQUI) Data — 2D SNR × ρ Sweep
 
-Monte-Carlo results for **DA-TRex+EQUI** vs. the **classical (no-DA) T-Rex selector**
-on equicorrelated data. One 2D sweep: for each SNR column in $\lbrace0.5, 1, 2, 5\rbrace$, a full
-$\rho$ sweep over $\lbrace0, 0.025, 0.05, 0.1, 0.2, 0.4, 0.7, 0.9\rbrace$ — dense near $0$ to locate the DA
-suppression cliff. Common configuration: $n=300$, $p=1000$, $s=10$, amplitude $3.0$,
-$\mathrm{tFDR}=0.2$, $K=20$ random experiments, $\mathrm{MC}=200$ per grid point, `Random` support
-with a full redraw per trial; solvers TLARS / TAFS / TOMP with *exchangeable tie-breaking*
-(`exch_tie_alpha = 0.25` for the greedy solvers TAFS/TOMP, `0` for the path solver TLARS), each
-with its base (no-DA) T-Rex comparison row — 6 method rows per grid point. TAFS additionally runs
-with its AFS correlation parameter `rho_afs = 0.3` (`0` for TLARS/TOMP), which is why the figures
-label it `TAFS (rho = 0.3)`.
+Monte-Carlo (MC) results for the dependency-aware (DA) selector **DA-TRex+EQUI** vs. the **classical (no-DA) T-Rex
+selector** on equicorrelated (EQUI) data. One 2D sweep: for each signal-to-noise ratio (SNR) column in
+$\lbrace0.5, 1, 2, 5\rbrace$, a full $\rho$ sweep over $\lbrace0, 0.025, 0.05, 0.1, 0.2, 0.4, 0.7, 0.9\rbrace$ — dense
+near $0$ to locate the DA suppression cliff. Common configuration: $n=300$, $p=1{,}000$, $s=10$, amplitude $3.0$, target
+false discovery rate (FDR) $\mathrm{tFDR}=0.2$, $K=20$ random experiments, $\mathrm{MC}=200$ per grid point, `Random`
+support with a full redraw per trial, and solvers TLARS / TAFS / TOMP with *exchangeable tie-breaking*
+(`exch_tie_alpha = 0.25` for the greedy solvers TAFS/TOMP, `0` for the path solver TLARS), each with its base (no-DA)
+T-Rex comparison row — 6 method rows per grid point. TAFS additionally runs with its adaptive forward-selection (AFS)
+correlation parameter `rho_afs = 0.3` (`0` for TLARS/TOMP), which is why the figures label it `TAFS (rho = 0.3)`.
 
-Corresponds to the R reference `demo_trex_da_02_equi.R` (legacy CRAN runs used $n=150$, $p=500$,
-$s=5$; this demo runs at the common $n=300$, $p=1000$, $s=10$ scale of the C++ suite).
+Corresponds to the R reference `demo_trex_da_02_equi.R` (legacy Comprehensive R Archive Network (CRAN) runs used
+$n=150$, $p=500$, $s=5$, while this demo runs at the common $n=300$, $p=1{,}000$, $s=10$ scale of the C++ suite).
 
 > **Purpose**: Equicorrelation is the stress case of the `trex_da` framework — every column loads
-> on one shared factor, so there is no "distance" to exploit the way AR(1) has, and **individual
-> variable selection is structurally infeasible for any method**. The 2D layout shows the three
-> facts that make this demo worth keeping: (1) the DA suppression cliff sits at very small $\rho$,
-> (2) it is SNR-independent — signal strength never rescues it, and (3) at $\rho = 0$ everything
-> works, anchoring the comparison. DA-EQUI fails *safe* (selects nothing), base T-Rex fails
-> *unsafe* (FDR far above target).
+> on one shared factor, so there is no "distance" to exploit the way the first-order autoregressive (AR(1)) model has,
+> and **individual variable selection is structurally infeasible for any method**. The 2D layout shows the three facts
+> that make this demo worth keeping: (1) the DA suppression cliff sits at very small $\rho$, (2) it is SNR-independent —
+> signal strength never rescues it, and (3) at $\rho = 0$ everything works, anchoring the comparison. DA-EQUI fails
+> *safe* (selects nothing), base T-Rex fails *unsafe* (FDR far above target).
 >
-> **Scope note**: earlier revisions of this demo also carried BT (hierarchical-block) SNR and
+> **Scope note**: earlier revisions of this demo also carried binary-tree (BT) hierarchical-block SNR and
 > linkage sweeps on block-equicorrelated data. They were dropped as redundant — the BT method is
 > exercised on better-suited block designs throughout Demos 02–05 (legacy reference:
 > `Results_trex_da_03_bt_equi_blocks.md`).
@@ -73,7 +71,8 @@ with all variables mutually independent. Each row
 \boldsymbol{x}_i = (X_{i,1},\ldots,X_{i,p})^\top
 ```
 
-is then an i.i.d. draw from a zero-mean Gaussian with **compound symmetry** covariance
+is then an independent and identically distributed (i.i.d.) draw from a zero-mean Gaussian with **compound symmetry**
+covariance
 
 ```math
 \boldsymbol{\Sigma}_{\text{equi}} =
@@ -94,7 +93,7 @@ eigenstructure is fully explicit:
 When $\rho \leq \rho_{\text{thr\_DA}}$ the single factor is negligible. As $\rho \to 1$ the $p-1$
 minor eigenvalues collapse to zero, the predictor matrix becomes rank-1, and the regression is
 unidentifiable — unlike AR(1), the correlation is *uniform* across all variable pairs, so there is
-no isolation of actives by index distance: the shared factor puts every variable inside every
+no isolation of actives by index distance. The shared factor puts every variable inside every
 other variable's DA correction set, and the correction deflates all candidates at once.
 
 ### Sweep design
@@ -110,13 +109,13 @@ other variable's DA correction set, and the correction deflates all candidates a
 ## Reference behavior (previous runs)
 
 - **Legacy R CRAN** (`Results_trex_da_02_equi.md`, $n=150$, $p=500$, $s=5$): total suppression at
-  every grid point except $\rho = 0$ — TPP $=$ FDP $= 0$ across all SNRs at $\rho = 0.25$, and
-  power only at $\rho = 0.0$ in the $\rho$ sweep (TPP $\approx 1.0$, FDP $\approx 0.13$).
+  every grid point except $\rho = 0$ — true positive proportion (TPP) $=$ false discovery proportion (FDP) $= 0$ across
+  all SNRs at $\rho = 0.25$, and power only at $\rho = 0.0$ in the $\rho$ sweep (TPP $\approx 1.0$, FDP $\approx 0.13$).
 - **C++ 1D sweeps (2026-07-15, superseded by this 2D sweep)**: reproduced the legacy behavior
-  exactly at $n=300$, $p=1000$ — at $\rho = 0$ all six methods controlled
-  (FDR $\approx 0.12\text{–}0.14$, TPR $\approx 1$); from $\rho = 0.1$ on, DA in total suppression
-  (TLARS consuming all $T = 150$ dummies without votes) while base TLARS jumped to
-  FDR $0.73$ and climbed to $0.96$ at $\rho = 0.9$.
+  exactly at $n=300$, $p=1{,}000$ — at $\rho = 0$ all six methods controlled
+  (FDR $\approx 0.12\text{–}0.14$, true positive rate (TPR) $\approx 1$). From $\rho = 0.1$ on, DA was in total
+  suppression (TLARS consuming all $T = 150$ dummies without votes) while base TLARS jumped to FDR $0.73$ and climbed to
+  $0.96$ at $\rho = 0.9$.
 
 ---
 
@@ -165,21 +164,21 @@ The single figure goes to `simulation_results/plots/`:
   SNR $5$, $\rho = 0.4$ it finds essentially all actives (TPR $0.99$) buried in garbage
   (FDR $0.84$).
 - **High-SNR nuance on the greedy base side**: at SNR $= 5$, base TOMP is FDR-controlled at
-  *every* $\rho$ (FDR $\le 0.13$) with full power through $\rho = 0.2$ (TPR $1.0$; $0.64$ at
+  *every* $\rho$ (FDR $\le 0.13$) with full power through $\rho = 0.2$ (TPR $1.0$, and $0.64$ at
   $\rho = 0.4$), and base TAFS is at/near the limit up to $\rho \approx 0.2\text{–}0.4$
   (FDR $\approx 0.19\text{–}0.22$). At SNR $\le 1$ both violate from $\rho = 0.05$ on. So for
   moderate equicorrelation and strong signal, plain greedy T-Rex (TOMP) is the only usable
   selector — the DA-EQUI correction never is.
-- **DA-TOMP lone-survivor FPs at high $\rho$** (e.g. $0.23/0.21$ at SNR $0.5$,
+- **DA-TOMP lone-survivor false positives (FPs) at high $\rho$** (e.g. $0.23/0.21$ at SNR $0.5$,
   $\rho = 0.7/0.9$, TPR $\approx 0.001$, binary per-trial FDP): investigated 2026-07-16 with a
-  one-off probe (MC $=1000$, fresh seeds; removed after the investigation closed).
+  one-off probe (MC $=1{,}000$ and fresh seeds, removed after the investigation closed).
   **Mechanism confirmed, not a bug**: every such selection is a singleton, and $628$ of $629$
   selected variables are exactly the rank-1 column of the marginal $|\mathrm{corr}(x_j, y)|$
-  ordering — the extreme order statistic of $1000$ factor-loaded real columns beating the
+  ordering — the extreme order statistic of $1{,}000$ factor-loaded real columns beating the
   i.i.d. dummies through the DA deflation, then certified by TOMP's greedy winner-take-all
-  (the equi analogue of the AR(1) shadow-FP mechanism; TLARS/TAFS spread or threshold it away).
-  Rates at MC $=1000$: $(\mathrm{SNR}\,0.5, \rho\,0.7) = 0.176$ — the demo's $0.23$ was MC noise
-  on a controlled cell; $(\mathrm{SNR}\,1, \rho\,0.9) = 0.177$; only
+  (the equi analogue of the AR(1) shadow-FP mechanism, which TLARS/TAFS spread or threshold away).
+  Rates at MC $=1{,}000$: $(\mathrm{SNR}\,0.5, \rho\,0.7) = 0.176$ (the demo's $0.23$ was MC noise
+  on a controlled cell) and $(\mathrm{SNR}\,1, \rho\,0.9) = 0.177$. Only
   $(\mathrm{SNR}\,0.5, \rho\,0.9) = 0.227 \pm 0.013$ sits marginally above target — the
   mechanism hovers *at* the tFDR boundary in the zero-power regime, where FDR $\approx$
   P(select anything at all).

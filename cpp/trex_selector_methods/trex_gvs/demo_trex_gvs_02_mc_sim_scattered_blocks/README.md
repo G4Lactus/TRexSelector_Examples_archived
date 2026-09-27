@@ -3,7 +3,8 @@
 ## Purpose
 
 Test whether spatially **scattering** the members of a correlated group across the design matrix — rather than
- keeping them contiguous — affects T-Rex+GVS group recovery.
+ keeping them contiguous — affects the group recovery of the T-Rex selector with Grouped Variable Selection
+ (T-Rex+GVS).
  This isolates the effect of column layout from the effect of correlation strength, since the underlying group
   structure is otherwise identical to Demo 01.
  Selection and evaluation are per variable (see
@@ -23,7 +24,7 @@ We consider again the linear model:
 - $\boldsymbol{y} \in \mathbb{R}^n$ is the response vector.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ is the design matrix.
 - $\boldsymbol{\beta} \in \mathbb{R}^p$ is the coefficient vector, with $s$ nonzero entries.
-- $\boldsymbol{\epsilon}$ is the noise vector, i.i.d. standard normal.
+- $\boldsymbol{\epsilon}$ is the noise vector, independent and identically distributed (i.i.d.) standard normal.
 - $\sigma_{\varepsilon}^2$ is the noise variance, calibrated to achieve a target linear signal-to-noise ratio (SNR).
 - $n = 200$, $p = 500$, $s = 150$.
 
@@ -33,11 +34,11 @@ The design matrix $\boldsymbol{X}$ is generated from a latent-factor model with 
 X_{ij} = Z_{i,\,g(j)} + \sigma_x\, \xi_{ij}, \qquad \xi_{ij} \sim \mathcal{N}(0,1),
 ```
 
-- `n_groups` correlated groups of `group_size` variables each; here 3 groups of 50 variables,
-   matching Demo 01's Hastie design.
+- `n_groups` correlated groups of `group_size` variables each (here 3 groups of 50 variables,
+   matching Demo 01's Hastie design).
 - Group membership is assigned via a **random column permutation** instead of contiguous
    blocks — group members can be spread arbitrarily across the $p$ columns.
-- All grouped variables are active, $\beta_j = 3$; background columns are i.i.d.
+- All grouped variables are active, $\beta_j = 3$, while background columns are i.i.d.
    $\mathcal{N}(0,1)$, $\beta_j = 0$.
 - Within-group correlation $\rho = 1/(1 + \sigma_x^2)$, same convention as Demo 01.
 
@@ -60,8 +61,8 @@ MC = 200                        # Monte Carlo repetitions per grid point
 
 Three T-Rex+GVS solver variants: **TENET** (elastic net) [[3]](#references),
 **TENET_AUG** (row-augmented elastic net) [[1]](#references), and **TIENET_AUG** (informed
-elastic net) [[2]](#references). All use single-linkage HAC grouping
-and `CV_1SE_CCD` for the $\lambda_2$ selection.
+elastic net) [[2]](#references). All use single-linkage hierarchical agglomerative clustering
+(HAC) grouping and `CV_1SE_CCD` for the $\lambda_2$ selection.
 
 ---
 
@@ -70,7 +71,7 @@ and `CV_1SE_CCD` for the $\lambda_2$ selection.
 A single **2-D SNR $\times$ $\rho$ grid**, over
 $\mathrm{SNR} \in \lbrace0.2, 0.5, 1, 2, 5\rbrace$ and
 $\rho \in \lbrace0.30, 0.50, 0.70, 0.90, 0.95, 0.99\rbrace$
-(with $\sigma_x = \sqrt{(1-\rho)/\rho}$), 200 MC trials per cell.
+(with $\sigma_x = \sqrt{(1-\rho)/\rho}$), 200 Monte Carlo (MC) trials per cell.
 
 ---
 
@@ -78,7 +79,8 @@ $\rho \in \lbrace0.30, 0.50, 0.70, 0.90, 0.95, 0.99\rbrace$
 
 Written to `simulation_results/data/`:
 
-- `gvs_scattered_grouped_2d.txt` / `.csv` — mean FDP/TPP over the SNR $\times$ $\rho$ grid.
+- `gvs_scattered_grouped_2d.txt` / `.csv` — mean false discovery proportion (FDP) / true positive proportion (TPP) over
+  the SNR $\times$ $\rho$ grid.
 
 Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
 
@@ -95,17 +97,17 @@ Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_p
 
 ## Simulation Results
 
-- **TENET** and **TENET_AUG** track each other closely and keep FDR below the $\mathrm{tFDR} = 0.1$ target
-   everywhere; **TIENET_AUG** is markedly more conservative (lower FDR), and its power collapses in the extreme
-   $\rho = 0.99$ column where the within-group columns become nearly collinear.
+- **TENET** and **TENET_AUG** track each other closely and keep the false discovery rate (FDR) below the
+   $\mathrm{tFDR} = 0.1$ target everywhere. **TIENET_AUG** is markedly more conservative (lower FDR), and its power
+   collapses in the extreme $\rho = 0.99$ column where the within-group columns become nearly collinear.
 - Because HAC-based grouping clusters columns by **correlation**, not by column adjacency, scattering group members
-   across the design leaves the FDR/TPR pattern very close to Demo 01's contiguous-block results — the clustering
-   step is insensitive to column order by construction.
-- Best read side-by-side with Demo 01: matching results confirm that group *discovery* depends on correlation
+   across the design leaves the FDR and true positive rate (TPR) pattern very close to Demo 01's contiguous-block
+   results — the clustering step is insensitive to column order by construction.
+- Best read side-by-side with Demo 01. Matching results confirm that group *discovery* depends on correlation
    structure rather than spatial layout, while a noticeable divergence would point to a layout-sensitive bug or
    clustering limitation.
 
-TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver;
+TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver.
 FDR cells above the $\mathrm{tFDR} = 0.1$ target would be outlined in cyan.
 
 ![Scattered-grouped SNR × rho sweep](simulation_results/plots/gvs_scattered_grouped_2d.png)

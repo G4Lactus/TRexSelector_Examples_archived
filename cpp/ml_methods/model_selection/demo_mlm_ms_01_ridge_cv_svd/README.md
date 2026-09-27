@@ -36,9 +36,9 @@ The synthetic data follow the Gaussian linear model
 \sigma = 1.
 ```
 
-The entries of $\boldsymbol{X}$ are independent standard normal. Ten entries of $`\boldsymbol{\beta}_{\mathrm{true}}`$
+The entries of $\boldsymbol{X}$ are independent standard normal. Ten entries of $\boldsymbol\beta_{\mathrm{true}}$
 are set to 1 at evenly spaced coordinates, the rest are zero, so
-$`\lVert \boldsymbol{\beta}_{\mathrm{true}} \rVert_2^2 = 10`$ and the response variance is about $10 + \sigma^2 = 11$.
+$\lVert \boldsymbol\beta_{\mathrm{true}} \rVert_2^2 = 10$ and the response variance is about $10 + \sigma^2 = 11$.
 That is the prediction error of the null model, which predicts the mean only.
 
 ---
@@ -63,7 +63,7 @@ $\lambda$ lives on that unit-norm scale. The fold solve uses `Eigen::JacobiSVD`.
 
 ## Cross-validation criterion
 
-The data are split into $K$ folds; for every $\lambda$ on the grid the model is fit on $K-1$ folds and the prediction
+The data are split into $K$ folds. For every $\lambda$ on the grid the model is fit on $K-1$ folds and the prediction
 error is measured on the held-out fold. Averaging over the folds gives the curve $\mathrm{CV\text{-}MSE}(\lambda)$ of
 the cross-validated mean squared error (MSE), with a standard error (SE) per grid point. The demo reports
 
@@ -71,13 +71,13 @@ the cross-validated mean squared error (MSE), with a standard error (SE) per gri
 - $\lambda_{1\mathrm{se}}$: the largest value of $\lambda$ whose CV-MSE lies within one SE of the minimum.
 
 The grid holds 100 values, geometrically spaced from
-$`\lambda_{\max} = \max_j \lvert \boldsymbol{x}_{s,j}^\top \boldsymbol{y}_c \rvert`$, the largest absolute inner
+$\lambda_{\max} = \max_j \lvert \boldsymbol x_{s,j}^\top \boldsymbol y_c \rvert$, the largest absolute inner
 product between a centered unit-norm column and the centered response, down to $\lambda_{\max}/1{,}000$. Scenario 4
 widens the range to $\lambda_{\max}/100{,}000$. Two checks close every scenario: the ordering
 $\lambda_{\min} \le \lambda_{1\mathrm{se}}$, and the library's grid-edge check `selection_at_grid_edge()`, which fails
 when a pick lands on the first or last grid point. Such a pick is the end of the grid, not a minimum.
 
-A reference value for $\lambda_{\min}$ comes from ridge theory: for an isotropic Gaussian design, the penalty that
+A reference value for $\lambda_{\min}$ comes from ridge theory. For an isotropic Gaussian design, the penalty that
 minimizes the prediction error is about
 
 ```math
@@ -97,8 +97,8 @@ From the repository root, after `cmake --preset release && cmake --build --prese
 cpp/build/release/bin/ml_methods/model_selection/demo_mlm_ms_01_ridge_cv_svd/demo_mlm_ms_01_ridge_cv_svd
 ```
 
-The demo prints to the console only. The output below is a run against library 8ad3376 on an Apple Silicon machine;
-it takes about 37 s on a single core. The data come from `std::mt19937` and `std::normal_distribution`; the latter
+The demo prints to the console only. The output below is a run against library 8ad3376 on an Apple Silicon machine,
+and it takes about 37 s on a single core. The data come from `std::mt19937` and `std::normal_distribution`. The latter
 is implementation-defined, so another standard library (libstdc++ on Linux, for example) may draw different data and
 print different numbers.
 
@@ -111,7 +111,7 @@ The CV-MSE curve lists every tenth grid point in increasing $\lambda$, followed 
 ### Scenario 1: Low-dimensional ($n > p$)
 
 With $n = 1{,}000 > p = 500$, the problem is overdetermined and the penalty only adds shrinkage. Each fold trains on
-900 rows, so the reference value is $\lambda^\ast \approx 500/(900 \cdot 10) = 0.056$; CV picks
+900 rows, so the reference value is $\lambda^\ast \approx 500/(900 \cdot 10) = 0.056$, and CV picks
 $\lambda_{\min} = 0.0551$. The CV-MSE of 2.28 is more than twice the noise variance, the price of estimating 500
 coefficients from 900 rows. $\lambda_{1\mathrm{se}}$ about doubles the penalty for an error still within one SE.
 
@@ -145,11 +145,11 @@ Data: n=1000, p=500, folds=10, active coefs=10
 
 ### Scenario 2: High-dimensional ($p > n$)
 
-With $p = 500 > n = 300$, the unpenalized least-squares problem has no unique solution; the penalty makes it well
+With $p = 500 > n = 300$, the unpenalized least-squares problem has no unique solution, and the penalty makes it well
 posed. Ridge spreads the fit over all 500 coefficients and cannot single out the ten active ones from 270 training
-rows. The minimum CV-MSE of 7.36 removes only about a third of the signal variance: the null model errs by about 11,
-the noise floor is 1. The reference value 0.19 lies below $\lambda_{\min} = 0.3082$, but the curve is flat there:
-at $\lambda = 0.1891$ the CV-MSE is 7.42, less than a tenth of one SE above the minimum.
+rows. The minimum CV-MSE of 7.36 removes only about a third of the signal variance. The null model errs by about 11,
+and the noise floor is 1. The reference value 0.19 lies below $\lambda_{\min} = 0.3082$, but the curve is flat there.
+At $\lambda = 0.1891$ the CV-MSE is 7.42, less than a tenth of one SE above the minimum.
 
 ```text
 ============================================================
@@ -226,8 +226,8 @@ training and test fold into random-access memory (RAM), so the demo is not out-o
 With $n = 10p$, the reference value is $\lambda^\ast \approx 500/(4{,}500 \cdot 10) = 0.011$, while the default grid
 would end at $\lambda_{\max}/1{,}000 \approx 0.075$. On that grid, $\lambda_{\min}$ lands on the first grid point,
 which the grid-edge check flags, so this scenario widens the range to $\lambda_{\max}/100{,}000$. The minimum now sits
-inside the grid at $\lambda_{\min} = 0.0109$. Below it the curve flattens at about 1.14: the fit approaches ordinary
-least squares (OLS), which is already close to the noise floor $\sigma^2 = 1$ at this sample size.
+inside the grid at $\lambda_{\min} = 0.0109$. Below it the curve flattens at about 1.14, because the fit approaches
+ordinary least squares (OLS), which is already close to the noise floor $\sigma^2 = 1$ at this sample size.
 
 ```text
 ============================================================
@@ -279,9 +279,9 @@ Cleaned up mmap file: .../cpp/ml_methods/model_selection/demo_mlm_ms_01_ridge_cv
 ## Technical notes
 
 - `ridge_cv_svd` uses `Eigen::JacobiSVD` rather than `BDCSVD` for numerical safety under `-O3 -march=native`.
-- The grid settings are the `fit()` arguments `n_lambda` (100 here; the library default is 1,000) and `lambda_ratio`
-  (1,000, Scenario 4: 100,000). The fold permutation uses the default seed 0.
-- For $p \ge n_{\mathrm{train}}$, `interpolates()` reports that the low end of the grid is an interpolation regime;
-  together with `selection_at_grid_edge()` it tells whether $\lambda_{\min}$ is a real minimum.
+- The grid settings are the `fit()` arguments `n_lambda` (100 here, while the library default is 1,000) and
+  `lambda_ratio` (1,000, Scenario 4: 100,000). The fold permutation uses the default seed 0.
+- For $p \ge n_{\mathrm{train}}$, `interpolates()` reports that the low end of the grid is an interpolation regime,
+  and together with `selection_at_grid_edge()` it tells whether $\lambda_{\min}$ is a real minimum.
 - The backing file path is injected through `TREX_DEMO_MMAP_PATH` when the build defines it, with a file name in the
   working directory as the fallback. The file is removed at the end of Scenario 4.

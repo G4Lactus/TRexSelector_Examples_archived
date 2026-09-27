@@ -5,8 +5,8 @@
 This folder contains the `trex::ml_methods` layer of the C++ project.
 
 It provides the numerical and preprocessing components that support higher-level T-Rex workflows, including column
-scaling, singular value decomposition, principal component analysis, ridge regression, model parameter selection based
-on k-fold cross-validation, and hierarchical agglomerative clustering.
+scaling, singular value decomposition (SVD), principal component analysis (PCA), ridge regression, model parameter
+selection based on k-fold cross-validation, and hierarchical agglomerative clustering (HAC).
 
 Each method family has its own subfolder. Demo programs illustrate usage and interface behavior. Cross-language
 correctness checks against R references live in the TRexSelector library's own test suite (`cpp/tests/validation/`),
@@ -39,7 +39,7 @@ In particular:
 
 - scaler methods support feature normalization before downstream modeling,
 - SVD and ridge-related tools support stable regression and dimensionality-reduction workflows,
-- HAC clustering supports grouped-variable workflows such as GVS.
+- HAC clustering supports grouped-variable workflows such as grouped variable selection (GVS).
 
 ---
 

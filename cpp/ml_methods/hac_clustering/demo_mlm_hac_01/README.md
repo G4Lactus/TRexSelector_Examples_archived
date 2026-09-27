@@ -60,7 +60,7 @@ Here, $\mu_{z_i}$ is the cluster-specific mean and $\sigma_{z_i}$ is the cluster
 
 ### SP1 Mathematical approach
 
-The goal is to cluster the rows $`\boldsymbol{x}_1, \dots, \boldsymbol{x}_n`$ using Euclidean distance,
+The goal is to cluster the rows $\boldsymbol x_1, \dots, \boldsymbol x_n$ using Euclidean distance,
 
 ```math
 d(i,i') = \lVert \boldsymbol{x}_i - \boldsymbol{x}_{i'} \rVert_2 .
@@ -209,7 +209,7 @@ approximated rather than computed exactly.
 ### SP3 Console output
 
 Same block model, now 40,000 samples, which makes every exact dot product four times as expensive as in Subproblem 2.
-The three strategies recover the blocks perfectly and differ only in cost: the exact baseline needs 53 minutes, the LSH
+The three strategies recover the blocks perfectly and differ only in cost. The exact baseline needs 53 minutes, the LSH
 filter (Hamming gate, exact recheck of the survivors) 20 minutes, the pure $O(1)$ SimHash estimate 16 seconds.
 
 ```text
@@ -281,10 +281,10 @@ property.
 ### SP4 Console output
 
 Clean blocks, 1,500 samples, 50,000 variables. All eight rules recover the five blocks. The times split into three
-groups: SLINK and the dispatcher's single-linkage route at 125 s; the six matrix-based rules, which first fill the
-50,000 x 50,000 distance matrix (the 19,208 MB buffer) and then run the nearest-neighbor chain (NN-chain), at 128 to
-135 s; and the two rules without the reducibility property, centroid and median, which take the generic linkage path
-at 259 s and 200 s. Ward switches to squared Euclidean distance, as its update rule requires.
+groups. SLINK and the dispatcher's single-linkage route take 125 s. The six matrix-based rules, which first fill the
+50,000 x 50,000 distance matrix (the 19,208 MB buffer) and then run the nearest-neighbor chain (NN-chain), take 128 to
+135 s. The two rules without the reducibility property, centroid and median, take the generic linkage path and need
+259 s and 200 s. Ward switches to squared Euclidean distance, as its update rule requires.
 
 ```text
 ============================================================
@@ -369,9 +369,9 @@ correct structure at a substantially reduced per-distance cost.
 
 ### SP5 Console output
 
-The largest case: 50,000 samples, 100,000 variables. With the $O(1)$ distance, single linkage over all pairs takes 57 s;
-the three matrix-based rules fill a 100,000 x 100,000 buffer of 76,440 MB before the NN-chain runs. The buffer is
-allocated lazily, so the operating system backs only the pages that are touched; in this run that still exceeded the
+The largest case: 50,000 samples, 100,000 variables. With the $O(1)$ distance, single linkage over all pairs takes 57 s,
+while the three matrix-based rules fill a 100,000 x 100,000 buffer of 76,440 MB before the NN-chain runs. The buffer is
+allocated lazily, so the operating system backs only the pages that are touched. In this run that still exceeded the
 64 GB of the machine and put about 37 GB into swap for the duration of tests B to D, which is the price of the exact
 $O(p^2)$ matrix machinery at this size. All four rules recover the blocks.
 
@@ -416,8 +416,8 @@ ARI:  1.0000 / 1.0000
 
 Here the variables are generated with a **block-diagonal AR(1) Toeplitz** correlation structure. Each block $k$ is built
 by the stationary recursion
-$`\boldsymbol{x}_{j} = \rho_{k}\,\boldsymbol{x}_{j-1} + \sqrt{1 - \rho_{k}^{2}}\,\boldsymbol{\varepsilon}_{j}`$ with
-$`\boldsymbol{\varepsilon}_{j}`$ standard normal, which leaves every column at unit variance. The correlation therefore
+$\boldsymbol x_j = \rho_k\,\boldsymbol x_{j-1} + \sqrt{1 - \rho_k^2}\,\boldsymbol\varepsilon_j$ with
+$\boldsymbol\varepsilon_j$ standard normal, which leaves every column at unit variance. The correlation therefore
 decays *exactly* with the index separation inside a block, and vanishes between blocks:
 
 ```math
@@ -511,21 +511,22 @@ Or directly, the OpenMP thread count as the optional first argument (default 6):
 cpp/build/release/bin/ml_methods/hac_clustering/demo_mlm_hac_01/demo_mlm_hac_01 8
 ```
 
-The demo prints to the console only. Plan for hours, not minutes: the exact-correlation baseline of Subproblem 3 alone
-runs 53 minutes, and Subproblem 5 needs more than 64 GB for its distance matrix.
+The demo prints to the console only. Plan for hours, not minutes, because the exact-correlation baseline of Subproblem 3
+alone runs 53 minutes, and Subproblem 5 needs more than 64 GB for its distance matrix.
 
 ---
 
 ## Technical notes
 
-- All six subproblems are enabled in `main()`; each is guarded by its own `if(true)` toggle so an individual part can be
-  switched off while iterating on another.
+- All six subproblems are enabled in `main()`, and each is guarded by its own `if(true)` toggle so an individual part
+  can be switched off while iterating on another.
 - Subproblems 4 and 6 use the exact Pearson-correlation distance, while Subproblems 3 and 5 exercise the LSH filter
   and/or pure $O(1)$ LSH approximation.
 - The matrix-based linkage rules (complete, UPGMA, WPGMA, Ward, centroid, median) fill the full $p \times p$ distance
   matrix as a `double` buffer: 19,208 MB at $p = 50{,}000$, 76,440 MB at $p = 100{,}000$. The dispatcher's `use_mmap`
-  flag would place that buffer in a memory-mapped file instead; the demo leaves it at its default, random-access
+  flag would place that buffer in a memory-mapped file instead, but the demo leaves it at its default, random-access
   memory (RAM), in every test, including those whose labels read "Disk/Matrix Bound".
-- The parallel work is the data generation, the standardization, the per-column pre-computation and the distance rows;
-  the merge loop of every linkage rule is sequential. More threads shorten the former, not the latter: on 6 threads the
-  tree builds of Subproblems 2 and 3 took 932 s, 3,595 s and 1,392 s, on 8 threads 806 s, 3,162 s and 1,211 s.
+- The parallel work is the data generation, the standardization, the per-column pre-computation and the distance
+  rows, while the merge loop of every linkage rule is sequential. More threads shorten the former, not the latter. On 6
+  threads the tree builds of Subproblems 2 and 3 took 932 s, 3,595 s and 1,392 s, and on 8 threads 806 s, 3,162 s and
+  1,211 s.

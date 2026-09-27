@@ -6,7 +6,7 @@ This directory contains the standalone C++ examples project. It consumes the
 installed **TRexSelector** library via CMake's `find_package()` and covers the
 full library stack: data-preprocessing utilities, T-Algorithm solvers, and T-Rex
 selector variants. Demos that produce output files write them to a
-`simulation_results/` folder next to their source; the `ml_methods` and
+`simulation_results/` folder next to their source, while the `ml_methods` and
 `memory_mapping` demos print to the console.
 
 ---
@@ -55,7 +55,7 @@ All demo executables are registered through the
 `add_demo_target(target_name source_file library_set)` macro in
 [CMakeLists.txt](CMakeLists.txt). It:
 
-- Creates the executable and links Eigen3, OpenMP, and a chosen library set
+- Creates the executable and links Eigen3, Open Multi-Processing (OpenMP), and a chosen library set
 - Routes each binary into a mirrored sub-tree under `build/<type>/bin/`
   (e.g. `tsolvers/demo_ts_01_tlars/demo_ts_01_tlars`)
 - Injects `DEMO_OUTPUT_DIR` as a compile-time constant pointing to the
@@ -77,7 +77,7 @@ All demo executables are registered through the
 
 Memory-mapped matrix demos using disk-backed `Eigen::Map`. Demonstrates
 out-of-core matrix creation, zero-copy read/write access, and OpenMP parallel
-filling via POSIX `mmap`.
+filling via Portable Operating System Interface (POSIX) `mmap`.
 
 | Demo | Description |
 | --- | --- |
@@ -97,7 +97,7 @@ selector layers.
 | `demo_mlm_svd_01` | Singular value decomposition (SVD) |
 | `demo_mlm_ridge_01` | Ridge regression (L2-penalized least squares) |
 | `demo_mlm_ms_01_ridge_cv_svd` | Cross-validated ridge regression via SVD |
-| `demo_mlm_ms_02_enet_cv_ccd` | Cross-validated elastic net via CCD |
+| `demo_mlm_ms_02_enet_cv_ccd` | Cross-validated elastic net via cyclic coordinate descent (CCD) |
 | `demo_mlm_hac_01` | Hierarchical agglomerative clustering (HAC) |
 | `demo_mlm_hac_02_mmap` | HAC on a memory-mapped design matrix |
 
@@ -147,14 +147,14 @@ with fixed and variable support, l-loop strategies, and memory-mapped designs
 
 #### `trex_da/`
 
-Dependency-Aware T-Rex. Demos explore AR(1), equicorrelated, nearest-neighbor,
+Dependency-Aware T-Rex. Demos explore first-order autoregressive (AR(1)), equicorrelated, nearest-neighbor,
 block-diagonal, and group correlation structures (8 demos).
 
 #### `trex_gvs/`
 
-Grouped Variable Selection T-Rex. Demos benchmark EN, EN-AUG, and IEN grouping
-strategies across Hastie, scattered, mixed, negative-trap, t-distributed, AR(1),
-ARMA, and block-benchmark designs (8 demos).
+Grouped Variable Selection T-Rex. Demos benchmark elastic net (EN), EN in augmented-lasso form (EN-AUG), and
+informed elastic net (IEN) grouping strategies across Hastie, scattered, mixed, negative-trap, t-distributed, AR(1),
+autoregressive moving-average (ARMA), and block-benchmark designs (8 demos).
 
 #### `trex_screening/`
 

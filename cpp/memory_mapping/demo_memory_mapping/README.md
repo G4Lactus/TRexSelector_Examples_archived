@@ -18,11 +18,10 @@ From the repository root, after `cmake --preset release && cmake --build --prese
 cpp/build/release/bin/memory_mapping/demo_memory_mapping/demo_memory_mapping
 ```
 
-The demo prints to the console only; no `simulation_results/` folder is created. The backing files live in the
+The demo prints to the console only, so no `simulation_results/` folder is created. The backing files live in the
 system temporary directory and are removed when each part ends. The output below is a run against library
-8ad3376 on a 12-core Apple Silicon machine; the temporary paths, the `data()` pointer and the thread counts differ
-per machine, everything else is deterministic. The
-temporary folder is shown as `<tmp>/`.
+8ad3376 on a 12-core Apple Silicon machine. The temporary paths, the `data()` pointer and the thread counts differ
+per machine, while everything else is deterministic. The temporary folder is shown as `<tmp>/`.
 
 ---
 
@@ -102,10 +101,10 @@ C++ advantage: no full-matrix allocation; O(n_rows) working memory per column.
 
 ### Demo 3: Out-of-core parallel generation (C++ only)
 
-Same idea with `#pragma omp parallel for`: the columns are filled by 6 threads at once. Because every column
+Same idea with `#pragma omp parallel for`, so the columns are filled by 6 threads at once. Because every column
 derives its random stream from its own seed (3000 + column index), the result does not depend on which thread
 handled which column or in what order. The two spot checks at both ends of the matrix confirm this. The fill
-time rounds to 0 ms at this size; the point is the mechanism, not the speed.
+time rounds to 0 ms at this size. The point is the mechanism, not the speed.
 
 ```text
 ============================================================
@@ -129,9 +128,9 @@ results regardless of OpenMP thread scheduling order.
 ### Demo 4: Element-wise access
 
 `operator()(row, col)` gives scalar reads and writes on the mapped file, including compound assignment. The last
-two steps are the guard rails: an index past the last row throws `std::out_of_range` with the offending element
+two steps are the guard rails. An index past the last row throws `std::out_of_range` with the offending element
 and the matrix shape, and a write on a matrix opened in `ReadOnly` mode throws `std::runtime_error`. Both are
-caught and printed, the demo continues.
+caught and printed, and the demo continues.
 
 ```text
 ============================================================
@@ -169,4 +168,4 @@ Temporary file: "<tmp>/trex_mmap_demo_element_access.bin"
   before it removes the file.
 - All random data is drawn per column from a deterministic seed, so serial and parallel generation produce the
   same bytes and any column can be regenerated for a check.
-- The parallel part uses OpenMP with `schedule(static)`; the thread count is capped at 6 by the demo.
+- The parallel part uses OpenMP with `schedule(static)`, and the thread count is capped at 6 by the demo.

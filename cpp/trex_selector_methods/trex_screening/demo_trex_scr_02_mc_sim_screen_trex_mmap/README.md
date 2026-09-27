@@ -3,14 +3,16 @@
 ## Purpose
 
 The demo shows that the **memory-mapped Screen-TRex workflow** reproduces the in-memory baseline while keeping the
- dummy (D) matrices on disk instead of in RAM.
+ dummy (D) matrices on disk instead of in random-access memory (RAM).
 The study is the same experiment as [Demo 01](../demo_trex_scr_01_mc_sim_screen_trex/README.md) — same
- i.i.d. Gaussian design, same SNR sweep, same two thresholding rules (**Ordinary** and **Bootstrap-CI**) —
- with the single change `TRexControlParameter::use_memory_mapping = true`.
+ independent and identically distributed (i.i.d.) Gaussian design, same signal-to-noise ratio (SNR) sweep, same two
+ thresholding rules (**Ordinary** and **Bootstrap-CI**) — with the single change
+ `TRexControlParameter::use_memory_mapping = true`.
 The point of this demo is therefore *equivalence at a lower memory footprint*, not a different statistical
- regime: memory mapping is what makes very large $p$ feasible on machines that cannot hold the dummy
+ regime, because memory mapping is what makes very large $p$ feasible on machines that cannot hold the dummy
  matrices in RAM.
-Screening returns a *candidate set*, and FDR/TPR are evaluated on the individual selected variables
+Screening returns a *candidate set*, and the false discovery rate (FDR) and the true positive rate (TPR) are evaluated
+ on the individual selected variables
  (see [What is actually measured](../README.md#what-is-actually-measured-in-these-demos)).
 
 ---
@@ -28,8 +30,8 @@ We consider the linear model:
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ is the design matrix.
 - $\boldsymbol{\beta} \in \mathbb{R}^p$ is the coefficient vector, with $s$ nonzero entries.
 - $\boldsymbol{\epsilon}$ is the noise vector, i.i.d. standard normal.
-- $\sigma_{\varepsilon}^2$ is the noise variance, calibrated to achieve a target linear signal-to-noise ratio (SNR).
-- $n = 300$, $p = 1000$, $s = 10$ (high-dimensional, $p > n$).
+- $\sigma_{\varepsilon}^2$ is the noise variance, calibrated to achieve a target linear SNR.
+- $n = 300$, $p = 1{,}000$, $s = 10$ (high-dimensional, $p > n$).
 
 The design matrix has **no correlation structure**:
 
@@ -37,10 +39,10 @@ The design matrix has **no correlation structure**:
 X_{ij} \sim \mathcal{N}(0,1) \quad \text{i.i.d.}
 ```
 
-- The active support is drawn uniformly at random *per Monte Carlo trial*, so the results are not tied to
+- The active support is drawn uniformly at random *per Monte Carlo (MC) trial*, so the results are not tied to
    one support pattern.
-- All active coefficients are $\beta_j = 1$; the support-selection and coefficient RNGs are offset from the
-   trial seed so they stay independent of the design and noise draws.
+- All active coefficients are $\beta_j = 1$, and the support-selection and coefficient random number generators
+   (RNGs) are offset from the trial seed so they stay independent of the design and noise draws.
 
 ---
 
@@ -55,7 +57,7 @@ solver = TLARS               # T-Rex solver backend
 MC = 200                     # Monte Carlo repetitions per grid point
 ```
 
-Note that Screen-TRex has **no target-FDR parameter**: unlike the classical T-Rex selector, screening
+Note that Screen-TRex has **no target-FDR parameter**, because unlike the classical T-Rex selector, screening
  thresholds the voting statistic instead of calibrating to a user-specified level.
 
 ---
@@ -103,7 +105,7 @@ Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_p
 ## Simulation Results
 
 - **Memory mapping changes the memory footprint, not the statistical behaviour.** Across the sweep the
-   memory-mapped curves track the in-memory Demo 01 curves closely: for $\mathrm{SNR} \ge 0.5$ the largest
+   memory-mapped curves track the in-memory Demo 01 curves closely. For $\mathrm{SNR} \ge 0.5$ the largest
    TPR difference is about $0.03$ (Bootstrap at $\mathrm{SNR} = 5$: $0.840$ here vs. $0.865$ in Demo 01) and
    the largest FDR difference about $0.01$. It is the same procedure on the same statistics — only the D
    matrices live on disk.
@@ -121,7 +123,7 @@ Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_p
    realized FDR for both rules (e.g. $0.114$ vs. $0.071$ for Ordinary at $\mathrm{SNR} = 1$), over-stating
    the error rate rather than hiding it. At the lowest SNR points it becomes unreliable in both directions.
 
-TPR (left) and FDR (right) vs. SNR, one line per thresholding rule; on the FDR panel the solid
+TPR (left) and FDR (right) vs. SNR, one line per thresholding rule. On the FDR panel the solid
 line is the realized FDR and the dashed line the procedure's own estimated FDR.
 
 ![Memory-mapped Screen-TRex on an i.i.d. design: TPR/FDR vs SNR](simulation_results/plots/scr_screen_trex_mmap_snr_n300_p1000.png)

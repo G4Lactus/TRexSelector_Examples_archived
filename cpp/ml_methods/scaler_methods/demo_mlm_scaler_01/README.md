@@ -15,7 +15,7 @@ parameters, and scaling on a memory-mapped matrix.
 ## Mathematical setup
 
 Let $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ denote a data matrix with columns
-$`\boldsymbol{x}_1, \dots, \boldsymbol{x}_p`$.
+$\boldsymbol x_1, \dots, \boldsymbol x_p$.
 
 ### Z-score scaling
 
@@ -26,7 +26,7 @@ For each column $j$, the transformed column is
 \frac{\boldsymbol{x}_j - \bar{x}_j \mathbf{1}}{s_j},
 ```
 
-where $`\bar{x}_j`$ is the sample mean and $s_j$ is the stored scale parameter.
+where $\bar x_j$ is the sample mean and $s_j$ is the stored scale parameter.
 
 ### Lp-norm scaling
 
@@ -48,7 +48,7 @@ example.
 The first part of the demo generates a dense random matrix with
 
 ```math
-n = 2000, \qquad p = 10000,
+n = 2{,}000, \qquad p = 10{,}000,
 ```
 
 fits three scalers on the same data, and then applies them to separate working copies:
@@ -67,7 +67,7 @@ The second part tests whether scaling can be numerically reversed after an in-pl
 matrix with
 
 ```math
-n = 1000, \qquad p = 5000,
+n = 1{,}000, \qquad p = 5{,}000,
 ```
 
 then applies `fit()`, `transform_inplace()`, and `inverse_transform_inplace()` for both `ZScoreScaler` and the
@@ -83,7 +83,7 @@ interface correctness and numerical reversibility rather than downstream modelin
 The third part demonstrates persistence of a fitted scaler. A `ZScoreScaler` is fit on synthetic data with
 
 ```math
-n = 1000, \qquad p = 500,
+n = 1{,}000, \qquad p = 500,
 ```
 
 saved to disk, loaded back into a fresh scaler object, and then compared through the norms of the differences in stored
@@ -99,7 +99,7 @@ when training and deployment happen in separate stages.
 The fourth part applies scaling to a memory-mapped matrix with
 
 ```math
-n = 20000, \qquad p = 100000.
+n = 20{,}000, \qquad p = 100{,}000.
 ```
 
 The source creates a writable mapped matrix, fills it deterministically, fits an $L_2$-based `LpNormScaler`, performs

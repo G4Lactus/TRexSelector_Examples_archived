@@ -2,7 +2,8 @@
 
 ## Purpose
 
-Evaluate T-Rex+GVS on a more realistic grouped design: four contiguous equicorrelated blocks of unequal size,
+Evaluate the T-Rex selector with Grouped Variable Selection (T-Rex+GVS) on a more realistic grouped design:
+ four contiguous equicorrelated blocks of unequal size,
  placed in **random order** with **random noise gaps** between and around them, and including one **inactive
  equicorrelated trap block**.
  The design stresses whether the pipeline can recover the active groups while correctly rejecting a null block that
@@ -24,7 +25,7 @@ We consider again the linear model:
 - $\boldsymbol{y} \in \mathbb{R}^n$ is the response vector.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ is the design matrix.
 - $\boldsymbol{\beta} \in \mathbb{R}^p$ is the coefficient vector, with $s$ nonzero entries.
-- $\boldsymbol{\epsilon}$ is the noise vector, i.i.d. standard normal.
+- $\boldsymbol{\epsilon}$ is the noise vector, independent and identically distributed (i.i.d.) standard normal.
 - $\sigma_{\varepsilon}^2$ is the noise variance, calibrated to achieve a target linear signal-to-noise ratio (SNR).
 - $n = 200$, $p = 500$, $s = 150$ (the sum of the three active blocks).
 
@@ -35,7 +36,7 @@ X_{ij} = Z_{i,\,g(j)} + \sigma_x\, \xi_{ij}, \qquad \xi_{ij} \sim \mathcal{N}(0,
 ```
 
 - Four contiguous blocks of sizes $\lbrace20, 50, 80, 65\rbrace$ (215 grouped columns in total).
-- **Blocks 0–2 are active** ($\beta_j = 3$); **block 3 is an inactive trap** ($\beta_j = 0$) carrying the same
+- **Blocks 0–2 are active** ($\beta_j = 3$), while **block 3 is an inactive trap** ($\beta_j = 0$) carrying the same
    equicorrelated structure as the active blocks.
 - Blocks are placed in a **random order** with **random-width noise gaps** (5 gap slots: before, between, and after
    the blocks) filled with i.i.d. $\mathcal{N}(0,1)$ background columns.
@@ -60,8 +61,8 @@ MC = 200                        # Monte Carlo repetitions per grid point
 
 Three T-Rex+GVS solver variants: **TENET** (elastic net) [[3]](#references),
 **TENET_AUG** (row-augmented elastic net) [[1]](#references), and **TIENET_AUG** (informed
-elastic net) [[2]](#references). All use single-linkage HAC grouping
-and `CV_1SE_CCD` for the $\lambda_2$ selection.
+elastic net) [[2]](#references). All use single-linkage hierarchical agglomerative clustering
+(HAC) grouping and `CV_1SE_CCD` for the $\lambda_2$ selection.
 
 ---
 
@@ -70,7 +71,7 @@ and `CV_1SE_CCD` for the $\lambda_2$ selection.
 A single **2-D SNR $\times$ $\rho$ grid**, over
 $\mathrm{SNR} \in \lbrace0.2, 0.5, 1, 2, 5\rbrace$ and
 $\rho \in \lbrace0.30, 0.50, 0.70, 0.85, 0.90, 0.95, 0.99\rbrace$
-(with $\sigma_x = \sqrt{(1-\rho)/\rho}$), 200 MC trials per cell. The seven $\rho$ levels span
+(with $\sigma_x = \sqrt{(1-\rho)/\rho}$), 200 Monte Carlo (MC) trials per cell. The seven $\rho$ levels span
 weak to near-collinear within-block correlation.
 
 ---
@@ -79,7 +80,8 @@ weak to near-collinear within-block correlation.
 
 Written to `simulation_results/data/`:
 
-- `gvs_mixed_blocks_2d.txt` / `.csv` — mean FDP/TPP over the SNR $\times$ $\rho$ grid.
+- `gvs_mixed_blocks_2d.txt` / `.csv` — mean false discovery proportion (FDP) / true positive proportion (TPP) over the
+  SNR $\times$ $\rho$ grid.
 
 Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
 
@@ -96,18 +98,18 @@ Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_p
 
 ## Simulation Results
 
-- **TENET** and **TENET_AUG** track each other closely and keep FDR controlled (roughly $0.05\text{–}0.08$, everywhere
-   below target) — the inactive equicorrelated trap block does **not** inflate FDR, since its group is identified
-   as null and excluded.
-- **TIENET_AUG** is far more conservative (FDR near $0$, lower TPR), with a TPR collapse in the extreme
-   $\rho = 0.99$ column where the within-block columns become nearly collinear.
+- **TENET** and **TENET_AUG** track each other closely and keep the false discovery rate (FDR) controlled (roughly
+   $0.05\text{–}0.08$, everywhere below target) — the inactive equicorrelated trap block does **not** inflate FDR, since
+   its group is identified as null and excluded.
+- **TIENET_AUG** is far more conservative (FDR near $0$, lower true positive rate (TPR)), with a TPR collapse in the
+   extreme $\rho = 0.99$ column where the within-block columns become nearly collinear.
 - The random gaps and random block order mainly test that the grouping/clustering logic is invariant to block
-   *placement*: TPR rises with SNR just as in the contiguous designs, so placement does not materially change
+   *placement*. TPR rises with SNR just as in the contiguous designs, so placement does not materially change
    detection power.
 - Sweeping $\rho$ from $0.30$ up to $0.99$ shows how detection power and FDR control respond as within-block
    correlation strengthens, all else equal.
 
-TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver;
+TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver.
 FDR cells above the $\mathrm{tFDR} = 0.1$ target are outlined in cyan.
 
 ![Mixed-blocks SNR × rho sweep](simulation_results/plots/gvs_mixed_blocks_2d.png)

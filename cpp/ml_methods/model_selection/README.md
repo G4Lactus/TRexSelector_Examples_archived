@@ -16,12 +16,12 @@ with ten active coefficients, and report the CV-optimal penalty $\lambda_{\min}$
 regularized one-standard-error pick $\lambda_{1\mathrm{se}}$.
 
 The folder has two demos, each in its own subfolder with the source file and a README that walks through the
-console output: `demo_mlm_ms_01_ridge_cv_svd/` runs ridge CV with a singular value decomposition (SVD) per fold, from
-$n > p$ to $p \gg n$ and on a memory-mapped design matrix; `demo_mlm_ms_02_enet_cv_ccd/` fits elastic-net paths by
+console output. `demo_mlm_ms_01_ridge_cv_svd/` runs ridge CV with a singular value decomposition (SVD) per fold, from
+$n > p$ to $p \gg n$ and on a memory-mapped design matrix, while `demo_mlm_ms_02_enet_cv_ccd/` fits elastic-net paths by
 cyclic coordinate descent (CCD) and selects $\lambda$ for ridge, elastic net and lasso, including the ridge conversion
 used by GVS. Both print to the console only and finish in under a minute. The Python and R packages have the same
-demos; see [Python/ml_methods/model_selection/](../../../Python/ml_methods/model_selection/README.md) and
-[R/ml_methods/model_selection/](../../../R/ml_methods/model_selection/README.md).
+demos (see [Python/ml_methods/model_selection/](../../../Python/ml_methods/model_selection/README.md) and
+[R/ml_methods/model_selection/](../../../R/ml_methods/model_selection/README.md)).
 
 ---
 

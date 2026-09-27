@@ -8,7 +8,8 @@ Two thresholding rules are compared — the **Ordinary** majority-vote rule ($\P
  **Bootstrap-CI** rule — over a signal-to-noise sweep.
 Everything the later demos add (correlation, dependency-aware corrections, biobank routing, solver
  backends) is measured against the numbers established here.
-Screening returns a *candidate set*, and FDR/TPR are evaluated on the individual selected variables
+Screening returns a *candidate set*, and the false discovery rate (FDR) and the true positive rate (TPR) are evaluated
+ on the individual selected variables
  (see [What is actually measured](../README.md#what-is-actually-measured-in-these-demos)).
 
 ---
@@ -25,9 +26,9 @@ We consider the linear model:
 - $\boldsymbol{y} \in \mathbb{R}^n$ is the response vector.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ is the design matrix.
 - $\boldsymbol{\beta} \in \mathbb{R}^p$ is the coefficient vector, with $s$ nonzero entries.
-- $\boldsymbol{\epsilon}$ is the noise vector, i.i.d. standard normal.
+- $\boldsymbol{\epsilon}$ is the noise vector, independent and identically distributed (i.i.d.) standard normal.
 - $\sigma_{\varepsilon}^2$ is the noise variance, calibrated to achieve a target linear signal-to-noise ratio (SNR).
-- $n = 300$, $p = 1000$, $s = 10$ (high-dimensional, $p > n$).
+- $n = 300$, $p = 1{,}000$, $s = 10$ (high-dimensional, $p > n$).
 
 The design matrix has **no correlation structure**:
 
@@ -35,10 +36,10 @@ The design matrix has **no correlation structure**:
 X_{ij} \sim \mathcal{N}(0,1) \quad \text{i.i.d.}
 ```
 
-- The active support is drawn uniformly at random *per Monte Carlo trial*, so the results are not tied to
+- The active support is drawn uniformly at random *per Monte Carlo (MC) trial*, so the results are not tied to
    one support pattern.
-- All active coefficients are $\beta_j = 1$; the support-selection and coefficient RNGs are offset from the
-   trial seed so they stay independent of the design and noise draws.
+- All active coefficients are $\beta_j = 1$, and the support-selection and coefficient random number generators
+   (RNGs) are offset from the trial seed so they stay independent of the design and noise draws.
 
 ---
 
@@ -52,7 +53,7 @@ solver = TLARS               # T-Rex solver backend
 MC = 200                     # Monte Carlo repetitions per grid point
 ```
 
-Note that Screen-TRex has **no target-FDR parameter**: unlike the classical T-Rex selector, screening
+Note that Screen-TRex has **no target-FDR parameter**, because unlike the classical T-Rex selector, screening
  thresholds the voting statistic instead of calibrating to a user-specified level.
 
 ---
@@ -114,7 +115,7 @@ Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_p
    over-states the error rate rather than hiding it. At the lowest SNR points it becomes unreliable in both
    directions. Demo 03 shows this same estimate failing far more dramatically under correlation.
 
-TPR (left) and FDR (right) vs. SNR, one line per thresholding rule; on the FDR panel the solid
+TPR (left) and FDR (right) vs. SNR, one line per thresholding rule. On the FDR panel the solid
 line is the realized FDR and the dashed line the procedure's own estimated FDR.
 
 ![Screen-TRex on an i.i.d. design: TPR/FDR vs SNR](simulation_results/plots/scr_screen_trex_snr_n300_p1000.png)

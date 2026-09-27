@@ -8,15 +8,15 @@ according to [[1,2]](#references).
 T-Rex+GVS extends the classical T-Rex selector (see [../trex/](../trex/README.md)) to settings where predictors
  form known or discoverable **groups** of correlated variables.
  Examples are genes in the same pathway, or sensor channels driven by a shared latent signal.
- The selector aggregates the evidence of the random experiments at the group level while it runs, so that correlated variables
- reinforce each other instead of splitting the vote.
- However, the selection is based on individual variables, and that is also the level at which FDR and TPR are evaluated
-  (see [What is actually measured](#what-is-actually-measured-in-these-demos)).
+ The selector aggregates the evidence of the random experiments at the group level while it runs, so that correlated
+ variables reinforce each other instead of splitting the vote. However, the selection is based on individual variables,
+ and that is also the level at which false discovery rate (FDR) and true positive rate (TPR) are evaluated
+ (see [What is actually measured](#what-is-actually-measured-in-these-demos)).
 
 The demos in this folder are designed to help users understand:
 
-1. how grouped-signal recovery behaves under different within-group correlation structures (equicorrelated, AR(1),
-    ARMA, heavy-tailed),
+1. how grouped-signal recovery behaves under different within-group correlation structures (equicorrelated, first-order
+    autoregressive (AR(1)), autoregressive moving-average (ARMA), heavy-tailed),
 2. how group *discovery* via hierarchical agglomerative clustering (HAC) compares to using known ("oracle") groups,
 3. how the elastic-net-based (`EN`) and informed-elastic-net-based (`IEN`) group solvers behave under scattered
     layouts, correlation traps, and negative correlation structure.
@@ -61,34 +61,35 @@ We work with the same Gaussian linear model as the classical T-Rex selector, but
 - $n$: Number of observations, $p$: Number of variables.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$: Design matrix, $\boldsymbol{y} \in \mathbb{R}^n$: Response vector.
 - $\boldsymbol{\beta} \in \mathbb{R}^p$: Regression coefficient vector.
-- $g(j) \in \lbrace1, \dots, G\rbrace$: Group assignment of variable $j$ (the `prior_groups` vector); background/i.i.d. variables
-   each receive a unique singleton group ID.
+- $g(j) \in \lbrace1, \dots, G\rbrace$: Group assignment of variable $j$ (the `prior_groups` vector), and background or
+  independent and identically distributed (i.i.d.) variables each receive a unique singleton group ID.
 - $G$ (or $M$): Number of groups.
-- $\mathcal{A} = \lbrace j : \beta_j \neq 0 \rbrace$: True active-variable support; the corresponding set of **active groups** is
-   $\lbrace g(j) : j \in \mathcal{A} \rbrace$.
-- $\rho$: Within-group correlation (equicorrelated DGPs), induced through a shared latent factor per group.
-- $Z_{\cdot,k}$: Latent factor shared by group $k$; $\xi_{ij}$: idiosyncratic per-entry term of the design matrix.
-- $\sigma_x$: Idiosyncratic scale in the latent-factor design; $\sigma_{\varepsilon}^2$: noise variance.
+- $\mathcal{A} = \lbrace j : \beta_j \neq 0 \rbrace$: True active-variable support, and the corresponding set of
+  **active groups** is $\lbrace g(j) : j \in \mathcal{A} \rbrace$.
+- $\rho$: Within-group correlation in equicorrelated data-generating processes (DGPs), induced through a shared latent
+  factor per group.
+- $Z_{\cdot,k}$: Latent factor shared by group $k$, $\xi_{ij}$: idiosyncratic per-entry term of the design matrix.
+- $\sigma_x$: Idiosyncratic scale in the latent-factor design, $\sigma_{\varepsilon}^2$: noise variance.
 
 ### Within-group correlation models
 
 - **Equicorrelated, unnormalized latent factor** (Demos 01–04):
   $X_{ij} = Z_{i,g(j)} + \sigma_x\, \xi_{ij}$, with $Z_{\cdot,k}, \xi_{ij} \sim \mathcal{N}(0,1)$.
-  This induces within-group correlation $\rho = 1/(1+\sigma_x^2)$; the columns are *not* unit-variance
+  This induces within-group correlation $\rho = 1/(1+\sigma_x^2)$. The columns are *not* unit-variance
   (they have variance $1+\sigma_x^2$). To target a given $\rho$, set $\sigma_x = \sqrt{(1-\rho)/\rho}$.
 - **Equicorrelated, unit-variance** (Demo 08, and the heavy-tailed blocks of Demo 05):
   $X_{ij} = \sqrt{\rho}\, Z_{i,g(j)} + \sqrt{1-\rho}\, \xi_{ij}$, giving exactly unit-variance columns with
   within-group correlation $\rho$.
 - **AR(1) Toeplitz** (Demo 06): within-block covariance $\Sigma_k(i,j) = \rho^{|i-j|}$, generated via a Cholesky
   factor.
-- **Heterogeneous ARMA** (Demo 07): each block follows a different ARMA specification (AR(1), MA(3), ARMA(2,1)),
-  swept over an AR coefficient `ar_coef` instead of $\rho$.
+- **Heterogeneous ARMA** (Demo 07): each block follows a different ARMA specification (AR(1), moving-average (MA(3)),
+  ARMA(2,1)), swept over an AR coefficient `ar_coef` instead of $\rho$.
 - **Heavy-tailed** (Demo 05): the same latent-factor construction as the equicorrelated model, but with
   $\text{Student-}t(3)/\sqrt{3}$ (unit-variance) latent factors and noise.
 
 ### Signal-to-noise ratio
 
-As in the classical T-Rex demos,
+As in the classical T-Rex demos, the signal-to-noise ratio (SNR) is
  $\mathrm{SNR} = \mathrm{Var}(\boldsymbol{X}\boldsymbol{\beta}) / \mathrm{Var}(\boldsymbol{\varepsilon})$,
  with $\sigma_{\varepsilon}^2$ calibrated to hit a target SNR for a fixed $(\boldsymbol{X}, \boldsymbol{\beta})$.
 
@@ -114,14 +115,14 @@ The same FDR and TPR definitions from the classical T-Rex demos apply here, with
 > A genuinely **group-level FDR** — treating a whole group as the unit of discovery — is a
 > different quantity and needs its own definition of what counts as a false discovery (e.g. a
 > selected group containing no active variable), together with a matching notion of the group
-> null hypothesis; see [[3]](#references) for such a formulation in the knockoff setting. It is
+> null hypothesis. See [[3]](#references) for such a formulation in the knockoff setting. It is
 > *not* obtainable by reinterpreting the coordinate-level numbers.
 
 Demo 08 is the only demo that additionally reports block-level diagnostics: **block hit rate** (share of
  active blocks with at least one selected variable — a block-level TPR), **block FDR** (share of hit blocks that
  are actually null), **full-block rate** (share of active blocks recovered in their entirety), and a
  **block-purity** diagnostic (how consistently a true block maps to a single discovered group — always $1.0$ for
- oracle groups). These are descriptive only: the selector controls the coordinate-level FDR, and no guarantee
+ oracle groups). These are descriptive only. The selector controls the coordinate-level FDR, and no guarantee
  attaches to any block-level rate.
 
 ---
@@ -136,9 +137,10 @@ Grouped selection introduces a few additional control parameters and types beyon
   - `IEN`: informed (iterative) elastic-net-based grouped selection [[2]](#references).
 - **`ENSolverType`** (only applies to `GVSType::EN`) — which elastic-net solver drives the random experiments:
   - `TENET`: the base Gram-based elastic-net solver,
-  - `TENET_AUG`: the augmented-LASSO formulation of the elastic net.
+  - `TENET_AUG`: the augmented least absolute shrinkage and selection operator (LASSO) formulation of the
+    elastic net.
 - **`LambdaSelectionMethod`** — how the elastic-net penalty $\lambda_2$ is chosen: `CV_1SE_CCD` (cross-validation,
-   1-SE rule, via coordinate descent) or `CV_1SE_SVD` (via SVD).
+   one-standard-error (1-SE) rule, via coordinate descent) or `CV_1SE_SVD` (via singular value decomposition (SVD)).
 - **`prior_groups`** — the 0-based per-column group-ID vector. When groups are known in advance (an "oracle" run),
    this vector is taken directly from the data-generating process. When groups must be discovered from the data,
    HAC clustering (with a `corr_max` correlation threshold and a chosen linkage method) is used to build
