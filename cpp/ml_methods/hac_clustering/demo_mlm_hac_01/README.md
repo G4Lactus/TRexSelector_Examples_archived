@@ -480,7 +480,7 @@ ARI:  0.1089 / 1.0000
 | --- | --- | --- | --- | --- | --- |
 | 1 Sample clustering | 1,500 x 50,000 | Euclidean | SLINK | 3.7 s | 1.000 |
 | 2 Variable clustering | 10,000 x 50,000 | exact correlation | SLINK | 806 s | 1.000 |
-| 3 LSH benchmark | 40,000 x 50,000 | exact / LSH filter / LSH approx | SLINK | 3162 s / 1211 s / 16 s | 1.000 each |
+| 3 LSH benchmark | 40,000 x 50,000 | exact / LSH filter / LSH approx | SLINK | 3,162 s / 1,211 s / 16 s | 1.000 each |
 | 4 Linkage comparison | 1,500 x 50,000 | exact correlation | 8 rules | 125 to 259 s | 1.000 each |
 | 5 LSH linkage comparison | 50,000 x 100,000 | LSH approx | SLINK, complete, UPGMA, WPGMA | 57 / 235 / 382 / 385 s | 1.000 each |
 | 6 AR(1) Toeplitz blocks | 3,000 x 50,000 | exact correlation | SLINK / complete / UPGMA | 250 / 243 / 244 s | 1.000 / 0.005 / 0.109 |
@@ -524,4 +524,4 @@ runs 53 minutes, and Subproblem 5 needs more than 64 GB for its distance matrix.
   including those whose labels read "Disk/Matrix Bound".
 - The parallel work is the data generation, the standardization, the per-column pre-computation and the distance rows;
   the merge loop of every linkage rule is sequential. More threads shorten the former, not the latter: on 6 threads the
-  tree builds of Subproblems 2 and 3 took 932 s, 3595 s and 1392 s, on 8 threads 806 s, 3162 s and 1211 s.
+  tree builds of Subproblems 2 and 3 took 932 s, 3,595 s and 1,392 s, on 8 threads 806 s, 3,162 s and 1,211 s.

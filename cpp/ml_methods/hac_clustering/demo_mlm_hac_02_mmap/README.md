@@ -32,7 +32,7 @@ Let
 In this demo, the dimensions are
 
 ```math
-n = 100000, \qquad p = 400000, \qquad K = 10.
+n = 100{,}000, \qquad p = 400{,}000, \qquad K = 10.
 ```
 
 The quality of the recovered clustering is assessed with the Adjusted Rand Index (ARI), where $\mathrm{ARI} = 1$
@@ -162,13 +162,13 @@ known block labels via ARI.
 
 The second subproblem is a **feasibility question** rather than a full benchmark run. In the current implementation,
 complete linkage and WPGMA are skipped because they require the $O(p^2)$ Lance-Williams matrix machinery and are
-therefore treated as computationally intractable at $p = 400000$ in this setting.
+therefore treated as computationally intractable at $p = 400{,}000$ in this setting.
 
 ### Subproblem 3: Average linkage feasibility
 
 The third subproblem is skipped for the same reason as the second. The dispatcher routes **average linkage (UPGMA)**
 to the exact Lance-Williams matrix engine for every metric, because the geometric centroid update of the projected
-engine does not implement the UPGMA formula and would break the reducibility the NN-chain relies on. At $p = 400000$
+engine does not implement the UPGMA formula and would break the reducibility the NN-chain relies on. At $p = 400{,}000$
 that matrix is 1.28 TB, in RAM or on disk. An earlier version of this demo ran UPGMA here in the belief that it used the
 projected engine; the RAM matrix engine zero-fills its buffer before it reports, and the process was killed by memory
 without a message.
@@ -226,10 +226,10 @@ Demo 03 completed successfully
 | --- | --- | --- | --- |
 | 1 Generation | 400,000 columns x 100,000 rows into the mapped file | 356 s | 320 GB file |
 | 2 Standardization | mean 0, unit L2 norm, in place | 392 s | |
-| 3 Test A | single linkage, SLINK + LSH | 1568 s | ARI 1.000 |
+| 3 Test A | single linkage, SLINK + LSH | 1,568 s | ARI 1.000 |
 | 3 Test B | complete linkage, WPGMA | skipped | $O(p^2)$ matrix, 1.2 TB |
 | 3 Test C | average linkage (UPGMA) | skipped | $O(p^2)$ matrix, 1.28 TB |
-| 3 Test D | Ward, projected 64-D engine + LSH | 2306 s | ARI 1.000 |
+| 3 Test D | Ward, projected 64-D engine + LSH | 2,306 s | ARI 1.000 |
 
 You can compare the large-scale behavior with the in-memory HAC examples in
 [demo_mlm_hac_01](../demo_mlm_hac_01/README.md), where Subproblem 5 runs the same LSH linkage comparison on
