@@ -1,71 +1,241 @@
-# Demo: T-MP (Matching Pursuit) Solver
+# Demo: T-MP Solver
 
 ## Purpose
 
-This demo illustrates the **T-MP (Terminating Matching Pursuit)** solver.
+This demo runs the terminating matching pursuit (T-MP) solver on its own, outside the T-Rex selector. Matching pursuit
+updates only the coefficient of the selected variable by its correlation with the residual, without a refit, so a
+variable can be selected again in a later step.
 
-T-MP is the simplest pursuit-style greedy method in this group: it repeatedly selects a variable based on residual correlation and updates coefficients incrementally without performing a full orthogonal refit on the active set. The demo shows how the solver is used in five settings:
+The demo has five parts:
 
-1. basic execution with early stopping,
-2. external versus internal normalization,
-3. serialization and warm-start continuation,
-4. operation on memory-mapped data,
+1. early stopping with internal normalization, for $p > n$ and $n > p$,
+2. the same data normalized outside the solver,
+3. a checkpoint saved to disk, reloaded and continued,
+4. data memory-mapped from disk,
 5. terminated solution paths of one warm-started object, drawn as a figure.
 
 ---
 
 ## Key idea
 
-Like the other terminating solvers, T-MP stops early once a prescribed number $T_{\text{stop}}$ of dummy variables has entered the active set:
+A terminating solver does not compute the whole path. It stops once $T$ dummies have entered the active set:
 
 ```math
-\hat{\boldsymbol{\beta}}^{(T)} = \mathrm{TMP}(\mathbf{X}, \mathbf{D}, \mathbf{y}; T_{\text{stop}}).
+\hat{\boldsymbol{\beta}}^{(T)} = \mathrm{TMP}(\mathbf{X}, \mathbf{D}, \mathbf{y}; T).
 ```
 
-In the demo, this is done through calls of the form
+The demo calls
 
 ```cpp
 executeStep(T_stop, /*early_stop=*/true)
 ```
 
-so, with `early_stop=true`, the solver terminates early once the number of dummy variables in the active set reaches $T_{\text{stop}}$.
+and the path stops as soon as the number of active dummies reaches `T_stop`.
 
 ---
 
-## Demo structure
+## Running the demo
 
-### 1. Basic T-MP with early stopping
+From the repository root, after `cmake --preset release && cmake --build --preset release-build` in `cpp/`:
 
-The first part runs T-MP with **internal normalization** and an intercept on synthetic data, in both a high-dimensional regime $(p > n)$ and a low-dimensional regime $(n > p)$.
+```bash
+cpp/build/release/bin/tsolvers/demo_ts_09_tmp/demo_ts_09_tmp        # Parts 1-5
+cpp/build/release/bin/tsolvers/demo_ts_09_tmp/demo_ts_09_tmp 1 2 3  # Parts 1 to 3, as below
+cpp/build/release/bin/tsolvers/demo_ts_09_tmp/demo_ts_09_tmp 5      # Part 5 only
+cpp/tsolvers/demo_ts_09_tmp/generate_plots.sh                       # path figure from the Part 5 data
+```
 
-After execution, the demo prints the selected variables and selection-quality diagnostics relative to the known true support.
+The optional arguments select the parts to run. Part 4 writes about 44 GB of temporary files, so `1 2 3` and `5` leave
+it out. `generate_plots.sh` uses the repository's `.venv` and writes the figure as PNG and PDF to
+`simulation_results/plots/`. The output below is a run against library b95b984.
 
-### 2. External normalization
+---
 
-The second part applies external L2 normalization to both the signal matrix and the dummy matrix, centers the response manually, and then runs T-MP with internal normalization disabled.
+## Console walk-through
 
-This demonstrates the externally normalized workflow and allows it to be compared conceptually with the internally normalized workflow from the first part.
+### Part 1: early stopping
 
-### 3. Serialization and warm start
+Part 1 draws $n = 1{,}000$ observations of $p = 5{,}000$ variables and then $n = 5{,}000$ observations of $p = 1{,}000$
+variables, each time with $L = 10p$ standard normal dummies (seed 42). Five true coefficients equal to 1 sit on the
+variables 4, 27, 149, 398 and 420, and `snr = 1` gives a noise standard deviation of about 2.2. T-MP centers and scales
+the data itself (`.normalize = true, .intercept = true`) and runs to $T = 10$.
 
-The third part runs a reference fit to a final stopping level, then separately runs a shorter partial fit, saves the solver state to disk, reloads it, and continues from the checkpoint to the same final stopping level.
+```text
+============================================================
+Demo 1: Basic T-MP with Early Stopping
+============================================================
+High-dimensional (p > n)
+Configuration:
+  n = 1000, p = 5000
+  num_dummies = 50000
+  T_stop = 10
+  True support size = 5
+  True support: 27 149 398 420 4
+  True coefficients: 1 1 1 1 1
+  SNR = 1
 
-The data are normalized once in front (`scaler::LpNormScaler` on `X` and `D`, `y` centered) and the reference, checkpoint and resumed solvers run as readers (`.normalize = false, .intercept = false`), so the three solvers share the data without copies and the paths are bit-identical. Three writer solvers on the same data would each center and scale it in place, which moves the data by rounding and made the paths differ (the 2026-09-25 finding). Under the library's in-place contract, a second writer on a held buffer now raises an error instead.
+[Info] TMP sequence
+  Samples (n): 1000
+  Features (p): 55000 (5000 real + 50000 dummies)
+  Max steps: 7992
 
-The reloaded run is compared against the reference path using the final number of steps, the final RSS difference, the final $R^2$ difference, and equality of the recorded action path.
+Selection:
+  Predictors: {149, 398, 27, 4, 420}
+  Dummies: {50753, 5513, 22780, 14004, 19036, 13141, 30587, 9284, 25555, 50308}
+  Path: [+v149, +v398, +v27, +v4, +v420, +D45753, +D513, +D17780, +D9004, +D14036, +D8141, +D25587, +D4284, +D20555, +D45308]
 
-### 4. Memory-mapped data
+Selection Quality:
+  True Positives:  5
+  False Positives: 0
+  False Negatives: 0
+  FDP:             0
+  TPP:             1
+  Precision:       1
+  Recall:          1
+  F1 Score:        1
 
-The fourth part generates synthetic data directly on disk, retrieves memory-mapped views of $X$, $D$, and $y$, and runs T-MP on those mapped objects.
+============================================================
+Demo 1: Basic T-MP with Early Stopping
+============================================================
+Low-dimensional (n > p)
+Configuration:
+  n = 5000, p = 1000
+  num_dummies = 10000
+  T_stop = 10
+  True support size = 5
+  True support: 27 149 398 420 4
+  True coefficients: 1 1 1 1 1
+  SNR = 1
 
-This shows that the solver can also be used in workflows where large matrices are stored on disk rather than held entirely in ordinary in-memory matrices.
+[Info] TMP sequence
+  Samples (n): 5000
+  Features (p): 11000 (1000 real + 10000 dummies)
+  Max steps: 39992
 
-### 5. Terminated solution paths
+Selection:
+  Predictors: {149, 27, 420, 398, 4}
+  Dummies: {9675, 5174, 9011, 3702, 3412, 1358, 5655, 7113, 4658, 4089}
+  Path: [+v149, +v27, +v420, +v398, +v4, +D8675, +D4174, +D8011, +D2702, +D2412, +D358, +D4655, +D6113, +D3658, +D3089]
 
-The fifth part repeats the quick start of the R tlars vignette. With $n = 150$, $p = 300$, five true coefficients
-equal to 1 and $L = p = 300$ dummies, one T-MP object runs to $T = 1$ and is then warm-started to $T = 2$ and $T = 5$.
-Each call continues the stored path, and a snapshot of the path after each call goes to `simulation_results/data/`.
-The setting `snr = 5` gives a noise standard deviation of about 1, as in the vignette.
+Selection Quality:
+  True Positives:  5
+  False Positives: 0
+  False Negatives: 0
+  FDP:             0
+  TPP:             1
+  Precision:       1
+  Recall:          1
+  F1 Score:        1
+```
+
+For $p > n$ T-MP takes the path of T-OMP. For $n > p$ the five true variables enter in the same order as with T-OMP, and
+the dummies differ from the fifth dummy on. In both cases the selection is exactly the true support, with a false
+discovery proportion (FDP) of 0 and a true positive proportion (TPP) of 1.
+
+The `Dummies` line counts the columns of the combined matrix $[\mathbf{X}, \mathbf{D}]$ from 0, while the `Path` line
+numbers the dummies on their own, so column `50753` is dummy `D45753`, because the $p = 5{,}000$ columns of $\mathbf{X}$
+come first. The step limit `Max steps` is $8 \min(n - 1, p + L)$, because the intercept takes one degree of freedom,
+which gives 7,992 and 39,992.
+
+### Part 2: external normalization
+
+Part 2 uses the same data but centers and scales $\mathbf{X}$ and $\mathbf{D}$ outside the solver with `LpNormScaler`
+(unit $L_2$ norm) and centers $\mathbf{y}$. T-MP then runs without its own normalization and intercept
+(`.normalize = false, .intercept = false`). The part starts with the case $n > p$.
+
+```text
+============================================================
+=== Demo 2: T-MP with External Normalization ===
+============================================================
+Low-dimensional (n > p)
+Configuration:
+  n = 5000, p = 1000
+  num_dummies = 10000
+  T_stop = 10
+  True support size = 5
+  True support: 4 27 149 398 420
+  True coefficients: 1 1 1 1 1
+  SNR = 1
+
+Applying external L2 normalization...
+[Info] TMP sequence
+  Samples (n): 5000
+  Features (p): 11000 (1000 real + 10000 dummies)
+  Max steps: 40000
+
+Selection:
+  Predictors: {149, 27, 420, 398, 4}
+  Dummies: {9675, 5174, 9011, 3702, 3412, 1358, 5655, 7113, 4658, 4089}
+  Path: [+v149, +v27, +v420, +v398, +v4, +D8675, +D4174, +D8011, +D2702, +D2412, +D358, +D4655, +D6113, +D3658, +D3089]
+
+Selection Quality:
+  True Positives:  5
+  False Positives: 0
+  False Negatives: 0
+  FDP:             0
+  TPP:             1
+  Precision:       1
+  Recall:          1
+  F1 Score:        1
+```
+
+The selection and the path equal those of Part 1, and the case $p > n$ that follows repeats the Part 1 path as well. So
+the external normalization and the internal one lead to the same solver run. Only the step limit changes to 40,000 and
+8,000, because the data are not marked as precentered and the solver takes the rank as $n$ instead of $n - 1$.
+
+### Part 3: checkpoint and warm start
+
+Part 3 uses a small problem with $n = 100$, $p = 50$, $L = 50$ and the three true coefficients 2.5, −1.8 and 3.2 on the
+variables 10, 25 and 40. It scales the data once in front, and three solvers read the same buffers without copies. A
+reference solver runs to $T = 15$. A second solver runs to $T = 7$ and saves its state to `tmp_checkpoint.bin`, and a
+third one loads that file and continues to $T = 15$.
+
+```text
+============================================================
+=== Demo 3: T-MP Serialization & Warm Start ===
+============================================================
+Configuration:
+  n = 100, p = 50
+  num_dummies = 50
+  T_stop = 15
+  True support size = 3
+  True support: 10 25 40
+  True coefficients: 2.5 -1.8 3.2
+  SNR = 1
+
+✓ Reference completed with 36 steps
+
+Checkpoint at partial stop: 17 steps
+✓ Checkpoint saved at 'tmp_checkpoint.bin'
+Loaded from checkpoint: 17 steps
+
+COMPARISON:
+Reference steps: 36
+Reloaded steps:  36
+RSS diff:   0
+R2 diff:    0
+✓ Paths match
+✓ Checkpoint file removed
+```
+
+The checkpoint holds the first 17 steps, up to $T = 7$. The reloaded solver continues to the same 36 steps as the
+reference, with differences of exactly 0 in the residual sum of squares (RSS) and in $R^2$ and the same actions. T-OMP
+needs 31 steps on the same data, and the 5 extra steps come from variables that matching pursuit selects again. Writers
+would not work here, because each of them centers and scales the buffers in place, and a second writer on a held buffer
+raises an error under the in-place contract of the library.
+
+### Part 4: memory-mapped data
+
+Part 4 generates $n = 1{,}000$ observations of $p = 500{,}000$ variables with $L = 10p = 5{,}000{,}000$ dummies directly
+on disk, about 44 GB, and runs T-MP as a writer on memory-mapped views of the files to $T = 10$. It then removes the
+files. Its output has the form of Part 1, and it is left out here because of the disk space and the time it takes.
+
+### Part 5: terminated solution paths
+
+Part 5 repeats the quick start of the R tlars vignette. With $n = 150$, $p = 300$, five true coefficients equal to 1 and
+$L = p = 300$ dummies, one T-MP object runs to $T = 1$ and is then warm-started to $T = 2$ and $T = 5$. Each call
+continues the stored path, and a snapshot of the path after each call goes to `simulation_results/data/`. The setting
+`snr = 5` gives a noise standard deviation of about 1, as in the vignette.
 
 ```text
 === Demo 5: T-MP Terminated Solution Paths ===
@@ -93,55 +263,22 @@ Path data written to:
   .../cpp/tsolvers/demo_ts_09_tmp/simulation_results/data/tmp_terminated_paths_actions.csv
 ```
 
-Matching pursuit (MP) adds the variable most correlated with the residual and updates only that variable's
-coefficient. Each coefficient is therefore set once, when its variable enters, and then stays flat, and the five true
-ones keep their values of 0.87 to 1.06 from $T = 1$ to $T = 5$. Without refits, MP is the cheapest solver of its
-family per step. The entry order equals T-OMP up to the first dummy, which gives a false discovery proportion (FDP) of
-0.286 at $T = 1$. At $T = 5$ the FDP is 0.500, and the true positive proportion (TPP) stays at 1. T-NCGMP in its
-line-search variant follows the same path to the last digit. The figure shows the three snapshots. Original variables
-are black, dummies red and dashed, a red vertical line marks each included dummy, and the top axis names the variable
-that enters at each step.
+Matching pursuit (MP) adds the variable most correlated with the residual and updates only that variable's coefficient.
+Each coefficient is therefore set once, when its variable enters, and then stays flat, and the five true ones keep their
+values of 0.87 to 1.06 from $T = 1$ to $T = 5$. Without refits, MP is the cheapest solver of its family per step. The
+entry order equals T-OMP up to the first dummy, which gives a FDP of 0.286 at $T = 1$. At $T = 5$ the FDP is 0.500, and
+the TPP stays at 1. T-NCGMP in its line-search variant follows the same path to the last digit. The figure shows the
+three snapshots. Original variables are black, dummies red and dashed, a red vertical line marks each included dummy,
+and the top axis names the variable that enters at each step.
 
 ![T-MP terminated solution paths for T = 1, 2 and 5](simulation_results/plots/tmp_terminated_paths.png)
 
 ---
 
-## Running
+## Technical notes
 
-From the repository root, after `cmake --preset release && cmake --build --preset release-build` in `cpp/`:
-
-```bash
-cpp/build/release/bin/tsolvers/demo_ts_09_tmp/demo_ts_09_tmp      # Parts 1-5
-cpp/build/release/bin/tsolvers/demo_ts_09_tmp/demo_ts_09_tmp 5    # Part 5 only
-cpp/tsolvers/demo_ts_09_tmp/generate_plots.sh                        # path figure from the Part 5 data
-```
-
-The optional arguments select the parts to run. Part 4 writes about 44 GB of temporary files, so `5` refreshes the
-path data in well under a second without it. `generate_plots.sh` uses the repository's `.venv` and writes the figure
-as PNG and PDF to `simulation_results/plots/`.
-
-The demo prints its diagnostics to the console, including configuration summaries, selected variables, selection-quality measures, serialization checks, and memory-mapped execution status messages.
-
----
-
-## What to look for
-
-When reading the console output, focus on the following points:
-
-- whether the selected variables recover the known true support reasonably well,
-- how the solver behaves under both high-dimensional and low-dimensional settings,
-- whether externally normalized and internally normalized workflows both execute successfully,
-- whether the serialized solver state can be reloaded and continued without changing the final path,
-- whether the memory-mapped workflow completes successfully and cleans up its temporary files,
-- how the terminated path grows with $T$ when the same object is warm-started.
-
-Compared with T-OMP, T-MP does not perform a full orthogonal refit on the active set, so it can converge more slowly and may revisit the same variable multiple times. It therefore serves as a useful baseline for comparison against more elaborate pursuit variants.
-
----
-
-## Notes
-
-- The synthetic data are generated with known support and coefficients, so the selected path can be compared against ground truth.
-- The serialization example writes a temporary checkpoint file named `tmp_checkpoint.bin` and removes it afterward.
-- The memory-mapped example writes temporary files for $X$, $D$, and $y$, runs T-MP on those mapped views, and removes those files at the end.
+- Part 3 writes the checkpoint `tmp_checkpoint.bin` into the working directory and removes it after the
+  comparison.
+- Part 4 writes $\mathbf{X}$, $\mathbf{D}$ and $\mathbf{y}$ into three temporary files of about 44 GB in total in the
+  working directory, runs the solver on memory-mapped views and removes the files at the end.
 - The path data and figures under `simulation_results/` are committed, so the figure is visible without a run.

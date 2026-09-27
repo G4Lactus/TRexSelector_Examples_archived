@@ -2,11 +2,14 @@
 
 ## Overview
 
-This folder contains demos for the **terminating solvers** in `tsolvers/`.
+This folder holds the demos of the terminating solvers (T-solvers) in `tsolvers/` of the TRexSelector library. They
+are variable-selection algorithms for high-dimensional linear models inside the T-Rex framework. Each one follows its
+own path-following, greedy or pursuit strategy, and all of them share the terminating principle. Instead of the whole
+path they compute only its start, up to the $T$-th dummy that enters the active set.
 
-These are variable-selection algorithms designed for high-dimensional linear-model problems inside the T-Rex framework. Each solver follows a different path-following, greedy, or pursuit-style strategy, but all share the same terminating principle: instead of computing a full regularization path, they stop early once a prescribed number $T_{\text{stop}}$ of dummy variables has entered the active set.
-
-The demos run each solver in a standalone way, outside the full T-Rex calibration workflow, so that solver behavior, normalization choices, and serialization can be inspected in isolation.
+The solver demos run each solver on its own, outside the calibration of the T-Rex selector, so its behavior, the
+normalization modes and the checkpoints can be inspected in isolation. The performance demos compare all solvers side
+by side.
 
 ---
 
@@ -14,7 +17,7 @@ The demos run each solver in a standalone way, outside the full T-Rex calibratio
 
 | # | Solver | Folder | Strategy |
 |---|--------|--------|----------|
-| 01 | **T-LARS** | [demo_ts_01_tlars/](demo_ts_01_tlars/README.md) | Least Angle Regression |
+| 01 | **T-LARS** | [demo_ts_01_tlars/](demo_ts_01_tlars/README.md) | Least angle regression |
 | 02 | **T-LASSO** | [demo_ts_02_tlasso/](demo_ts_02_tlasso/README.md) | Lasso path |
 | 03 | **T-Stepwise** | [demo_ts_03_tstepwise/](demo_ts_03_tstepwise/README.md) | Forward stepwise regression |
 | 04 | **T-ENET** | [demo_ts_04_tenet/](demo_ts_04_tenet/README.md) | Elastic net |
@@ -43,19 +46,27 @@ positive rate (TPR), with figures drawn by `ts_plt_utils.py`:
 
 ### Terminating principle
 
-A terminating solver runs its selection path with `executeStep(T_stop, early_stop=true)`, where $T_{\text{stop}}$ is the **number of dummy variables that must enter the active set before the solver terminates early** (it stops once the count of active dummies reaches $T_{\text{stop}}$), usually well before the full path is computed.
-The actual coefficient vector is computed internally, but serves only as tool for the selection process.
+A terminating solver runs its path with `executeStep(T_stop, /*early_stop=*/true)` and stops as soon as `T_stop`
+dummies are in the active set, usually long before the whole path. The coefficients along the path serve the
+selection only.
 
 ### Normalization modes
 
-The demos are organized around two common usage patterns:
+The solvers work in two modes:
 
-- **External normalization**: the caller preprocesses $\mathbf{X}$ before passing it to the solver.
-- **Internal normalization**: the solver handles normalization itself and may expose both normalized and raw coefficient views.
+- **Writer** (`.normalize = true` or `.intercept = true`): the solver centers and scales $\mathbf{X}$ and
+  $\mathbf{D}$ in place and restores them when it is released, and it keeps a centered copy of $\mathbf{y}$. A
+  second writer on a buffer that another writer holds raises an error.
+- **Reader** (`.normalize = false, .intercept = false`): the caller prepares the data once, for example with
+  `LpNormScaler`, and any number of solvers share the buffers without copies. With `.precentered = true` the solver
+  knows that the data are centered and caps the active set at the rank $n - 1$.
 
-### Serialization
+Part 1 of every solver demo runs a writer, and Part 2 runs a reader on the same data.
 
-Several solver demos also illustrate Cereal-based serialization workflows such as `save(...)` and reload operations, which are relevant for checkpointing and repeated solver use inside larger pipelines.
+### Checkpoints
+
+Every solver can save its state with `save(...)` and continue after `load(...)` from the same point. Part 3 of every
+solver demo checks this against an uninterrupted run.
 
 ### Terminated solution paths
 
@@ -82,14 +93,14 @@ tie-breaking):
 | Solvers | Full path |
 | ------- | --------- |
 | T-OMP, T-AFS ($\rho = 1$), T-NCGMP (fully corrective) | every step, bit for bit |
-| T-OMP, T-Stepwise | the same steps; coefficients within $1.1 \cdot 10^{-12}$ |
-| T-MP, T-NCGMP (line search) | the same steps; coefficients within $2.1 \cdot 10^{-14}$ (T-NCGMP divides each step by $\lVert x_j \rVert_2^2$, which is 1 up to rounding) |
+| T-OMP, T-Stepwise | the same steps, coefficients within $1.1 \cdot 10^{-12}$ |
+| T-MP, T-NCGMP (line search) | the same steps, coefficients within $2.1 \cdot 10^{-14}$ (T-NCGMP divides each step by $\lVert x_j \rVert_2^2$, which is 1 up to rounding) |
 | T-LARS, T-LASSO | bit for bit up to the first T-LASSO drop (a coefficient crossing zero) |
-| T-LARS, T-Stagewise | within $2.7 \cdot 10^{-13}$ up to the first T-Stagewise removal (the NNLS reduction) |
+| T-LARS, T-Stagewise | within $2.7 \cdot 10^{-13}$ up to the first T-Stagewise removal (the nonnegative least-squares reduction) |
 
 After its first drop T-LASSO takes its own path, and so does T-Stagewise after its first removal. A variable
 that T-Stagewise removes keeps its coefficient (frozen), so its selection, read from the coefficient path, can
-exceed the active set; `cdiagnostics::print_selection` lists such variables separately.
+exceed the active set, and `cdiagnostics::print_selection` lists such variables separately.
 
 ---
 

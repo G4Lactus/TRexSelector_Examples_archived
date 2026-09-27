@@ -72,9 +72,9 @@ void demo_TSTEPWISE_early_stopping(bool high_dim, bool rnd_coef, std::size_t T_s
 
     const std::vector<std::size_t> true_support = {27, 149, 398, 420, 4};
     const std::vector<double> true_coefs = rnd_coef ?
-                                           std::vector<double>{-0.4, -0.2, -0.8, 1.1, 2.5} :
-                                           std::vector<double>{0.5, 1, 1, 1, 0.5};
-    const double snr = 0.1;
+                            std::vector<double>{-0.4, -0.2, -0.8, 1.1, 2.5} :
+                            std::vector<double>{1, 1, 1, 1, 1};
+    const double snr = 1.0;
 
     std::cout << (high_dim ? "High-dimensional (p > n)" : "Low-dimensional (n > p)") << "\n";
 
