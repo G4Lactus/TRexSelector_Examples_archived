@@ -1,0 +1,80 @@
+# ==============================================================================
+# ts_perf_utils.py
+# ==============================================================================
+#
+# Shared helpers for the performance demos (demo_ts_perf_*), mirroring the
+# corresponding parts of cpp/tsolvers/ts_perf_utils.hpp: the fixed random
+# support, reader-ready data, the selection read from the coefficients, the
+# peak resident set size, positive integer arguments and the worker pool.
+#
+# ==============================================================================
+
+import resource
+import sys
+from multiprocessing import Pool
+
+import numpy as np
+from ts_demo_utils import gen_synthetic_data
+
+from trex_selector_neo.ml_methods import LpNormScaler, NormType
+from trex_selector_neo.utils import set_num_threads
+
+
+def draw_support(p, s, seed):
+    """Fixed random support: s of the p indices, sorted (NumPy draw of the C++ std::sample)."""
+    rng = np.random.default_rng(seed)
+    return sorted(int(j) for j in rng.choice(p, size=s, replace=False))
+
+
+def reader_data(n, p, num_dummies, support, coefs, snr, seed):
+    """
+    Draw X, D and y and prepare them once for precentered readers: X and D
+    centered and scaled to unit L2 norm in place, y centered.
+    """
+    X, D, y = gen_synthetic_data(n, p, num_dummies, support, coefs, snr, seed=seed)
+    LpNormScaler(NormType.L2, center=True).fit_transform_inplace(X)
+    if num_dummies > 0:
+        LpNormScaler(NormType.L2, center=True).fit_transform_inplace(D)
+    y -= y.mean()
+    return X, D, y
+
+
+def selected_predictors(solver, p):
+    """
+    Selected original variables: nonzero coefficients among the first p, as the
+    T-Rex selector reads them (T-Stagewise keeps the coefficient of a variable
+    it removes from the active set, so the active set can be smaller).
+    """
+    beta = np.asarray(solver.getBeta()).ravel()[:p]
+    return [int(j) for j in np.flatnonzero(beta)]
+
+
+def peak_rss_mib():
+    """Peak resident set size of this process in MiB (getrusage: bytes on macOS, KiB on Linux)."""
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    return peak / (1024.0 * 1024.0) if sys.platform == "darwin" else peak / 1024.0
+
+
+def parse_positive(argv, index, fallback):
+    """Optional positive integer argument argv[index], or fallback when it is missing."""
+    if len(argv) <= index:
+        return fallback
+    text = argv[index]
+    if not text.isdigit() or int(text) < 1:
+        raise SystemExit(f"expected a positive integer, got: {text}")
+    return int(text)
+
+
+def _init_worker():
+    """Single-threaded solvers in every worker, so the runs share the cores (6-core rule)."""
+    set_num_threads(1)
+
+
+def run_parallel(func, tasks, workers, chunksize=1):
+    """Map func over tasks on `workers` processes with single-threaded solvers, in task order."""
+    if workers == 1:
+        _init_worker()
+        return [func(t) for t in tasks]
+    with Pool(processes=workers, initializer=_init_worker) as pool:
+        return pool.map(func, tasks, chunksize=chunksize)
+

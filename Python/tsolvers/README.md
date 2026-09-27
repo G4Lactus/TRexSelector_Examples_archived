@@ -37,6 +37,16 @@ Every demo has the five parts of its C++ counterpart:
    $p = 5{,}000$),
 5. terminated solution paths of one warm-started object, drawn as a figure.
 
+The performance demos compare all solvers side by side, for example by false discovery rate (FDR) and true positive
+rate (TPR), with the designs, seeds and CSV columns of the C++ ones and figures drawn by `ts_plt_utils.py`:
+
+| # | Folder | Question |
+|---|--------|----------|
+| P1 | [demo_ts_perf_01_fdr_tpr_vs_T/](demo_ts_perf_01_fdr_tpr_vs_T/README.md) | FDR and TPR of the terminated paths vs. $T$ (the simulation of the R tlars vignette) |
+| P2 | [demo_ts_perf_02_runtime_vs_dummies/](demo_ts_perf_02_runtime_vs_dummies/README.md) | Run time, steps and time per step vs. the number of dummies $L$, and the gain of the warm start |
+| P3 | [demo_ts_perf_03_memory_vs_np/](demo_ts_perf_03_memory_vs_np/README.md) | Solver memory vs. the ratio $n/p$ and its share of the data, including what the binding allocates |
+| P4 | [demo_ts_perf_04_recovery_vs_dt_ratio/](demo_ts_perf_04_recovery_vs_dt_ratio/README.md) | Exact support recovery, TPR and FDR at the first dummy vs. $n/(s \log p)$, and the Donoho–Tanner diagram |
+
 ---
 
 ## Key concepts
@@ -70,7 +80,10 @@ NumPy version of `datagen::SyntheticData`), prints the configuration, the select
 `PathRecorder` and `display_path()` of [`ts_perf_utils.hpp`](../../cpp/tsolvers/ts_perf_utils.hpp). It also sets
 Python's and the C library's standard output to line buffering, so the log lines of the C++ backend appear in their
 place when the output goes to a file or a pipe. [`ts_plt_utils.py`](ts_plt_utils.py) is a byte-identical copy of the
-C++ plotting module.
+C++ plotting module. The performance demos add [`ts_perf_solvers.py`](ts_perf_solvers.py), the 15 compared solver
+configurations of [`ts_perf_solvers.hpp`](../../cpp/tsolvers/ts_perf_solvers.hpp), and
+[`ts_perf_utils.py`](ts_perf_utils.py) with the fixed random support, reader-ready data, the selection read from the
+coefficients, the peak resident set size and a pool of worker processes with single-threaded solvers.
 
 ### Terminated solution paths
 
@@ -102,8 +115,9 @@ Run any demo from the repository root, with the package installed in the reposit
 Python/tsolvers/demo_ts_01_tlars/generate_plots.sh                          # path figure from the Part 5 data
 ```
 
-Every demo takes the parts to run as optional arguments, and all five parts run in a few seconds. The demos clean up
-the checkpoint and memory-mapped files they create inside their own folder.
+Every solver demo takes the parts to run as optional arguments, and all five parts run in a few seconds. The demos
+clean up the checkpoint and memory-mapped files they create inside their own folder. The performance demos take the
+number of runs and of worker processes (500 and 6 by default), and their READMEs give the run times.
 
 ---
 
@@ -114,6 +128,8 @@ tsolvers/
   ├── README.md
   ├── ts_demo_utils.py       # shared helpers (data, diagnostics, part selection, path recorder)
   ├── ts_plt_utils.py        # shared matplotlib figures (copy of cpp/tsolvers/ts_plt_utils.py)
+  ├── ts_perf_solvers.py     # the solvers compared by the performance demos
+  ├── ts_perf_utils.py       # shared helpers of the performance demos
   ├── demo_ts_01_tlars/
   ├── demo_ts_02_tlasso/
   ├── demo_ts_03_tstepwise/
@@ -125,5 +141,9 @@ tsolvers/
   ├── demo_ts_09_tmp/
   ├── demo_ts_10_tncgmp/
   ├── demo_ts_11_tools/
-  └── demo_ts_12_tafs/
+  ├── demo_ts_12_tafs/
+  ├── demo_ts_perf_01_fdr_tpr_vs_T/
+  ├── demo_ts_perf_02_runtime_vs_dummies/
+  ├── demo_ts_perf_03_memory_vs_np/
+  └── demo_ts_perf_04_recovery_vs_dt_ratio/
 ```
