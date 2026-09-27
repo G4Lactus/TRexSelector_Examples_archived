@@ -7,14 +7,14 @@
  * @brief LSH Linkage Comparison at biobank-representative scale via memory-mapped I/O.
  *
  * @details Replicates the geometry of demo_02_hac's `demo_lsh_linkage_comparison` at
- * extreme scale (N=100,000 samples, P=400,000 variables, K=10 clusters) without ever
- * allocating the full ~298 GB matrix in RAM. The dataset is generated and standardised
- * in-place via a memory-mapped file; the OS page cache streams data on demand.
+ * extreme scale (N=100,000 samples, P=400,000 variables, K=10 clusters).
+ * The full ~298 GB matrix is never allocated in RAM. The dataset is generated and standardised
+ * in-place via a memory-mapped file, and the OS page cache streams data on demand.
  *
  * The demo is organised into three sequential phases:
  *
  *   Phase 1 | Generation   : Latent-factor correlated blocks are written column-by-column
- *                            into the mmap file in parallel.  RAM cost is bounded by the
+ *                            into the mmap file in parallel. RAM cost is bounded by the
  *                            latent signal matrix (N × K ≈ 8 MB) and the OS page cache.
  *
  *   Phase 2 | Standardise  : Each column is mean-centred and L2-normalised in-place
@@ -30,8 +30,9 @@
  *                            WPGMA is likewise skipped as intractable at p = 400,000.
  *
  * Expected result: the executed methods achieve ARI ≈ 1.0000 because the block geometry
- * creates well-separated clusters in correlation space; the O(1) SimHash approximation
- * recovers the exact solution without paying the O(P) exact-distance cost.
+ * creates well-separated clusters in correlation space.
+ * The O(1) SimHash approximation recovers the exact solution without paying the O(P)
+ * exact-distance cost.
  *
  * @note  The memory-mapped file path is injected at compile time via the CMake
  *        TREX_DEMO_MMAP_PATH definition (defaults to a relative path if not set).
@@ -274,7 +275,7 @@ void demo_lsh_linkage_comparison_mmap() {
     // 0. Configuration
     // -------------------------------------------------------------------------
 
-    // File path injected by CMake; falls back to relative path if not set.
+    // File path injected by CMake with fall back to relative path if not set.
 #ifdef TREX_DEMO_MMAP_PATH
     const std::string MMAP_PATH = TREX_DEMO_MMAP_PATH;
 #else
@@ -333,7 +334,7 @@ void demo_lsh_linkage_comparison_mmap() {
 
 
     // -------------------------------------------------------------------------
-    // Phase 1 — Data generation (ReadWrite)
+    // Phase 1 — Data generation (ReadWrite) &
     // Phase 2 — Standardisation (in-place, same ReadWrite mapping)
     // Skipped when the mmap file already exists and has the expected size.
     // Note: MmapMatrix pre-allocates the file to its full size up front, so this
@@ -375,7 +376,7 @@ void demo_lsh_linkage_comparison_mmap() {
 
 
     // -------------------------------------------------------------------------
-    // Phase 3 — Clustering (reopen ReadWrite; HAC does not mutate the data)
+    // Phase 3 — Clustering (reopen ReadWrite, since HAC does not mutate the data)
     // -------------------------------------------------------------------------
     std::cout << "=== Phase 3: Reopening mmap for clustering ===\n";
 
@@ -421,7 +422,7 @@ void demo_lsh_linkage_comparison_mmap() {
 
     // Test C — Average Linkage (UPGMA): skipped at this scale.
     // The dispatcher routes Average to the exact Lance-Williams matrix engine
-    // for every metric; the projected 64D engine is valid for Ward only.
+    // for every metric and the projected 64D engine is valid for Ward only.
     // -------------------------------------------------------------------------
     {
         std::cout << "[Test C] UPGMA Average Linkage:\n";
@@ -432,7 +433,7 @@ void demo_lsh_linkage_comparison_mmap() {
 
     // Test D — Ward's Minimum Variance via Dispatcher
     // Ward + LSH_Approx is the one route the dispatcher sends to the projected
-    // 64D engine: a 64 x P matrix of doubles in RAM (205 MB here).
+    // 64D engine: a 64 x P matrix of doubles in RAM (~205 MB for set dimensions here).
     // -------------------------------------------------------------------------
     {
         std::cout << "[Test D] Ward's Minimum Variance (Projected 64D RAM Engine + LSH):\n";
