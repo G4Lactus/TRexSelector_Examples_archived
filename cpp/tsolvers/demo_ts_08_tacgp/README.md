@@ -265,9 +265,9 @@ Path data written to:
 Approximate conjugate gradient pursuit (ACGP) replaces the plain gradient step of gradient pursuit by an approximate
 conjugate-gradient step. In this run it takes the same entry order as T-GP in
 [demo_ts_07_tgp](../demo_ts_07_tgp/README.md), and the coefficients of the two paths differ by at most 0.074. The five
-true coefficients reach 0.78 to 1.02 at $T = 5$. The FDP is 0.375 at $T = 1$ and 0.545 at $T = 5$, and the TPP stays at
-1. The figure shows the three snapshots. Original variables are black, dummies red and dashed, a red vertical line marks
-each included dummy, and the top axis names the variable that enters at each step.
+true coefficients reach 0.78 to 1.02 at $T = 5$. The FDP is 0.375 at $T = 1$ and 0.545 at $T = 5$, and the TPP stays
+at 1. The figure shows the three snapshots. Original variables are black, dummies red and dashed, a red vertical line
+marks each included dummy, and the top axis names the variable that enters at each step.
 
 ![T-ACGP terminated solution paths for T = 1, 2 and 5](simulation_results/plots/tacgp_terminated_paths.png)
 

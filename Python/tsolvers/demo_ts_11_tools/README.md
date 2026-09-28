@@ -133,8 +133,8 @@ Selection Quality:
 ```
 
 For $p > n$ T-OLS follows T-GP up to the seventh dummy and then takes other dummies, while the selection holds the same
-six variables as T-OMP, with a false discovery proportion (FDP) of $1/6 = 0.167$ and a true positive proportion (TPP) of
-1. For $n > p$ T-OLS takes exactly the path of T-OMP, so the selection is exactly the true support.
+six variables as T-OMP, with a false discovery proportion (FDP) of $1/6 = 0.167$ and a true positive proportion (TPP)
+of 1. For $n > p$ T-OLS takes exactly the path of T-OMP, so the selection is exactly the true support.
 
 The `Dummies` line counts the columns of the combined matrix $[\mathbf{X}, \mathbf{D}]$ from 0, while the `Path` line
 numbers the dummies on their own, so column `21446` is dummy `D16446`, because the $p = 5{,}000$ columns of $\mathbf{X}$

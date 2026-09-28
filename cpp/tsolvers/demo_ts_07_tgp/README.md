@@ -265,8 +265,8 @@ Path data written to:
 Gradient pursuit (GP) selects like orthogonal matching pursuit (OMP) but replaces the exact least-squares refit by a
 single gradient step on the active set, which saves the solve. The coefficients stay close to the OMP values, with the
 five true ones at 0.78 to 1.03 at $T = 5$. The entry order equals T-OMP for the first six variables. Then variable 272
-enters before 183, and the later order differs. The FDP is 0.375 at $T = 1$ and 0.545 at $T = 5$, and the TPP stays at
-1. T-ACGP in [demo_ts_08_tacgp](../demo_ts_08_tacgp/README.md) takes the same entry order. The figure shows the three
+enters before 183, and the later order differs. The FDP is 0.375 at $T = 1$ and 0.545 at $T = 5$, and the TPP stays
+at 1. T-ACGP in [demo_ts_08_tacgp](../demo_ts_08_tacgp/README.md) takes the same entry order. The figure shows the three
 snapshots. Original variables are black, dummies red and dashed, a red vertical line marks each included dummy, and the
 top axis names the variable that enters at each step.
 
