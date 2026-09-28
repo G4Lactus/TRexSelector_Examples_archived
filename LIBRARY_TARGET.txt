@@ -1,18 +1,21 @@
 Library line:   TRexSelector dev_beyond (a sibling checkout TRexSelector-beyond next to this repository)
-Pinned commit:  b95b984 (2026-09-27; C++ 1.0.0 / R 2.0.0 / Python 1.0.0)
-Validated C++:  SDK installed from b95b984; the 54 Examples targets built clean without warnings (IEEE 754,
-                no -ffast-math); "Paths match" in the 12 T-solver demos; demo_trex_01_single_run and the
-                Part 5 path data of the 12 T-solver demos reproduce their committed files byte for byte;
-                the ml_methods and memory_mapping short demos pass (PCA and SVD diagnostics differ from the
-                former fast-math build at rounding level only).
-Validated Py:   TRexSelectorNeo 1.0.0 reinstalled from b95b984; the ml_methods, memory_mapping and tsolvers
-                demos (incl. the performance demos P1-P4) rerun and their results committed.
-Validated R:    TRexSelectorNeo 2.0.0 reinstalled from b95b984; the ml_methods and memory_mapping demos
-                rerun and their results committed.
-Pending:        the R tsolvers demos (incl. the performance demos P1-P4); the Python and R
-                trex_selector_methods demos.
-Previous pins:  8ad3376 (2026-09-26), f390bfc (2026-09-25), d404033 (2026-09-25); what changed between
-                pins is in the git log of this file and in the library's HISTORY.md.
+Pinned commit:  44cf1ab (2026-09-28; C++ 1.0.0 / R 2.0.0 / Python 1.0.0): the T-solver memory report
+                (memoryBytes(), R $get_memory_bytes(), Python getMemoryBytes()) and optional OpenMP in every
+                build (one OpenMP runtime in the R package on macOS). No solver result changes.
+Validated C++:  SDK installed from 44cf1ab (OpenMP 5.1, BLAS/LAPACK); the Examples targets built clean without
+                warnings; "Paths match" in the 12 T-solver demos; demo_trex_01_single_run and the Part 5 path
+                data of the 12 T-solver demos reproduce their committed files byte for byte; the ml_methods
+                and memory_mapping short demos pass.
+Validated Py:   TRexSelectorNeo 1.0.0 reinstalled from 44cf1ab; the Part 5 path data of the 12 T-solver
+                demos reproduce their committed files byte for byte; getMemoryBytes() available. The results
+                committed on b95b984 stand.
+Validated R:    TRexSelectorNeo 2.0.0 reinstalled from 44cf1ab (links R's own libomp only); the Part 5 path
+                data of the 12 T-solver demos reproduce the b95b984 run byte for byte; get_memory_bytes()
+                available. The ml_methods and memory_mapping results committed on b95b984 stand.
+Pending:        the memory demo demo_ts_perf_03 in C++, Python and R on the new memory report (all three
+                rerun); the R tsolvers demos (incl. P1, P2, P4); the Python and R trex_selector_methods demos.
+Previous pins:  b95b984 (2026-09-27), 8ad3376 (2026-09-26), f390bfc (2026-09-25), d404033 (2026-09-25); what
+                changed between pins is in the git log of this file and in the library's HISTORY.md.
 
 Install:        cpp    -> in <library>/cpp: cmake --preset local-install && cmake --build --preset local-install-build
                           && cmake --install build/release-portable
