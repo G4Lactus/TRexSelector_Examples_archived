@@ -57,12 +57,14 @@ demo_early_stopping <- function(high_dim, rnd_coef, T_stop) {
   dat <- gen_synthetic_data(n, p, num_dummies, true_support, true_coefs,
                             snr, seed = 42)
 
-  solver <- TNCGMP_Solver$new(dat$X, dat$D, dat$y,
-      options = tsolver_options(ncgmp_variant = "line_search", normalize = TRUE, intercept = TRUE, verbose = TRUE))
+  solver <- TNCGMP_Solver$new(
+    dat$X, dat$D, dat$y,
+    options = tsolver_options(ncgmp_variant = "line_search", normalize = TRUE, intercept = TRUE, verbose = TRUE)
+  )
   solver$execute_step(T_stop, early_stop = TRUE)
 
-  print_selection(solver, true_support, p)
-  print_selection_quality(solver, true_support, p)
+  print_selection(solver, true_support)
+  print_selection_quality(solver, true_support)
   cat("\n\n")
 }
 
@@ -72,7 +74,7 @@ demo_early_stopping <- function(high_dim, rnd_coef, T_stop) {
 # ==============================================================================
 
 demo_with_external_normalizer <- function(high_dim, rnd_coef, T_stop) {
-  print_section_header("Demo 2: T-NCGMP with External Normalization")
+  print_section_header("=== Demo 2: T-NCGMP with External Normalization ===")
 
   n <- if (high_dim) 1000L else 5000L
   p <- if (high_dim) 5000L else 1000L
@@ -104,12 +106,14 @@ demo_with_external_normalizer <- function(high_dim, rnd_coef, T_stop) {
   # The data was already externally L2-normalized and y centered above, so
   # the solver's own normalization and intercept are disabled here —
   # enabling them would normalize twice and fit an intercept on centered y.
-  solver <- TNCGMP_Solver$new(dat$X, dat$D, dat$y,
-      options = tsolver_options(ncgmp_variant = "line_search", normalize = FALSE, intercept = FALSE, verbose = TRUE))
+  solver <- TNCGMP_Solver$new(
+    dat$X, dat$D, dat$y,
+    options = tsolver_options(ncgmp_variant = "line_search", normalize = FALSE, intercept = FALSE, verbose = TRUE)
+  )
   solver$execute_step(T_stop, early_stop = TRUE)
 
-  print_selection(solver, true_support, p)
-  print_selection_quality(solver, true_support, p)
+  print_selection(solver, true_support)
+  print_selection_quality(solver, true_support)
   cat("\n\n")
 }
 
@@ -119,7 +123,7 @@ demo_with_external_normalizer <- function(high_dim, rnd_coef, T_stop) {
 # ==============================================================================
 
 demo_serialization <- function() {
-  print_section_header("Demo 3: T-NCGMP Serialization & Warm Start")
+  print_section_header("=== Demo 3: T-NCGMP Serialization & Warm Start ===")
 
   n <- 100L
   p <- 50L
@@ -155,29 +159,36 @@ demo_serialization <- function() {
   dat$y <- dat$y - y_mean
 
   # Reference solver: run until T_stop_final.
-  solver_ref <- TNCGMP_Solver$new(dat$X, dat$D, dat$y,
-      options = tsolver_options(ncgmp_variant = "line_search", normalize = FALSE, intercept = FALSE, verbose = TRUE))
+  solver_ref <- TNCGMP_Solver$new(
+    dat$X, dat$D, dat$y,
+    options = tsolver_options(ncgmp_variant = "line_search", normalize = FALSE, intercept = FALSE, verbose = TRUE)
+  )
   solver_ref$execute_step(T_stop_final, early_stop = TRUE)
   cat(sprintf("\u2713 Reference completed with %d steps\n\n",
               solver_ref$get_num_steps()))
 
-  filename <- file.path(this_dir_, "tncgmp_checkpoint.bin")
+  # relative to the working directory, so the logs carry no machine path
+  filename <- relative_path(file.path(this_dir_, "tncgmp_checkpoint.bin"))
 
   # STEP 1: Run partial path and save checkpoint.
-  solver1 <- TNCGMP_Solver$new(dat$X, dat$D, dat$y,
-      options = tsolver_options(ncgmp_variant = "line_search", normalize = FALSE, intercept = FALSE, verbose = TRUE))
+  solver1 <- TNCGMP_Solver$new(
+    dat$X, dat$D, dat$y,
+    options = tsolver_options(ncgmp_variant = "line_search", normalize = FALSE, intercept = FALSE, verbose = TRUE)
+  )
   solver1$execute_step(T_stop_partial, early_stop = TRUE)
   cat(sprintf("Checkpoint at partial stop: %d steps\n", solver1$get_num_steps()))
   solver1$save(filename)
-  cat(sprintf("\u2713 Checkpoint saved at '%s'\n", filename))
+  cat(sprintf("\u2713 Checkpoint saved at '%s'\n", basename(filename)))
 
   # STEP 2: Load from checkpoint and continue.
   # The R binding hydrates an existing instance (cpp: static
   # load(filename, X, D)); $new() re-binds the data views. The receiving
   # solver is a reader on the pre-scaled data, the state the checkpoint
   # was saved in.
-  solver2 <- TNCGMP_Solver$new(dat$X, dat$D, dat$y,
-      options = tsolver_options(ncgmp_variant = "line_search", normalize = FALSE, intercept = FALSE, verbose = TRUE))
+  solver2 <- TNCGMP_Solver$new(
+    dat$X, dat$D, dat$y,
+    options = tsolver_options(ncgmp_variant = "line_search", normalize = FALSE, intercept = FALSE, verbose = TRUE)
+  )
   solver2$load(filename)
   cat(sprintf("Loaded from checkpoint: %d steps\n", solver2$get_num_steps()))
   solver2$execute_step(T_stop_final, early_stop = TRUE)
@@ -209,7 +220,7 @@ demo_serialization <- function() {
 # ==============================================================================
 
 demo_memory_mapped <- function(high_dim, rnd_coef, T_stop) {
-  print_section_header("Demo 4: T-NCGMP with Memory-Mapped Data")
+  print_section_header("=== Demo 4: T-NCGMP with Memory-Mapped Data ===")
 
   n <- if (high_dim) 1000L else 5000L
   p <- if (high_dim) 5000L else 1000L  # cpp: 500,000 on disk; scaled here
@@ -242,15 +253,70 @@ demo_memory_mapped <- function(high_dim, rnd_coef, T_stop) {
   cat("\u2713 Data generated on disk\n\n")
 
   cat("Running T-NCGMP on memory-mapped data...\n")
-  solver <- TNCGMP_Solver$new(X_mmap, dat$D, dat$y,
-      options = tsolver_options(ncgmp_variant = "line_search", normalize = TRUE, intercept = TRUE, verbose = TRUE))
+  solver <- TNCGMP_Solver$new(
+    X_mmap, dat$D, dat$y,
+    options = tsolver_options(ncgmp_variant = "line_search", normalize = TRUE, intercept = TRUE, verbose = TRUE)
+  )
   solver$execute_step(T_stop, early_stop = TRUE)
   cat("\u2713 T-NCGMP completed\n\n")
 
-  print_selection(solver, true_support, p)
-  print_selection_quality(solver, true_support, p)
+  print_selection(solver, true_support)
+  print_selection_quality(solver, true_support)
 }
 
+
+
+# ==============================================================================
+# Demo 5: Terminated Solution Paths
+# ==============================================================================
+
+# Record the terminated solution paths of one T-NCGMP object that is
+# warm-started T = 1 -> 2 -> 5 (setup of the R tlars vignette). Writes
+# tncgmp_<variant>_terminated_paths_{path,actions}.csv to simulation_results/data/;
+# generate_plots.sh draws the path figure from them.
+demo_terminated_paths <- function(variant) {
+  line_search <- variant == "line_search"
+  variant_label <- if (line_search) "line search" else "fully corrective"
+  variant_stem <- if (line_search) "linesearch" else "fullycorrective"
+  print_section_header(paste0("=== Demo 5: T-NCGMP Terminated Solution Paths (", variant_label, ") ==="))
+
+  # Setup of the tlars vignette: 5 actives with beta = 1 and noise sigma about 1
+  n <- 150L
+  p <- 300L
+  num_dummies <- p
+  true_support <- 1:5
+  true_coefs <- rep(1, 5)
+  snr <- 5.0  # signal variance 5 over noise variance 1
+  T_stops <- c(1L, 2L, 5L)
+
+  print_demo_config(n, p, num_dummies, max(T_stops), true_support, true_coefs, snr)
+
+  dat <- gen_synthetic_data(n, p, num_dummies, true_support, true_coefs,
+                            snr, seed = 42)
+
+  # One solver object; every execute_step() call continues its path
+  solver <- TNCGMP_Solver$new(
+    dat$X, dat$D, dat$y,
+    options = tsolver_options(ncgmp_variant = variant, normalize = TRUE, intercept = TRUE, verbose = FALSE)
+  )
+
+  recorder <- path_recorder(paste0("tncgmp_", variant_stem, "_terminated_paths"), output_dir(this_dir_))
+  for (T_stop in T_stops) {
+    solver$execute_step(T_stop, early_stop = TRUE)
+    recorder$record(solver, T_stop)
+
+    selected <- solver$get_active_predictor_indices()
+    cat(sprintf("T_stop = %d: steps = %2d, predictors = %2d, dummies = %d, FDP = %.3f, TPP = %.3f\n",
+                T_stop, solver$get_num_steps(), length(selected),
+                length(solver$get_active_dummy_indices()),
+                trex_fdp(selected, true_support), trex_tpp(selected, true_support)))
+  }
+
+  print_selection(solver, true_support)
+
+  cat(sprintf("\nPath data written to:\n  %s\n  %s\n\n", display_path(recorder$path_file),
+              display_path(recorder$actions_file)))
+}
 
 # ==============================================================================
 # Main
@@ -258,18 +324,38 @@ demo_memory_mapped <- function(high_dim, rnd_coef, T_stop) {
 
 print_section_header("T-NCGMP Demo Suite")
 
+# Six OpenMP threads, as the C++ demo
+trex_set_num_threads(6L)
+cat(sprintf("Running with %d threads\n\n", trex_get_max_threads()))
+
+# Optional arguments: the parts to run (default: all)
+run <- part_selection()
+
 # Demo 1: Basic usage with internal normalization
-demo_early_stopping(high_dim = TRUE, rnd_coef = FALSE, T_stop = 10L)
-demo_early_stopping(high_dim = FALSE, rnd_coef = FALSE, T_stop = 10L)
+if (run(1)) {
+  demo_early_stopping(high_dim = TRUE, rnd_coef = FALSE, T_stop = 10L)
+  demo_early_stopping(high_dim = FALSE, rnd_coef = FALSE, T_stop = 10L)
+}
 
 # Demo 2: External normalization
-demo_with_external_normalizer(high_dim = FALSE, rnd_coef = FALSE, T_stop = 10L)
-demo_with_external_normalizer(high_dim = TRUE, rnd_coef = FALSE, T_stop = 10L)
+if (run(2)) {
+  demo_with_external_normalizer(high_dim = FALSE, rnd_coef = FALSE, T_stop = 10L)
+  demo_with_external_normalizer(high_dim = TRUE, rnd_coef = FALSE, T_stop = 10L)
+}
 
 # Demo 3: Serialization
-demo_serialization()
+if (run(3)) {
+  demo_serialization()
+}
 
 # Demo 4: Memory-mapped
-demo_memory_mapped(high_dim = TRUE, rnd_coef = FALSE, T_stop = 10L)
+if (run(4)) {
+  demo_memory_mapped(high_dim = TRUE, rnd_coef = FALSE, T_stop = 10L)
+}
+
+# Demo 5: Terminated solution paths (data for the path figure)
+if (run(5)) {
+  for (variant in c("line_search", "fully_corrective")) demo_terminated_paths(variant)
+}
 
 print_section_header("\u2713 All demos completed successfully")
