@@ -44,7 +44,7 @@ rate (TPR), with the designs, seeds and CSV columns of the C++ ones and figures 
 |---|--------|----------|
 | P1 | [demo_ts_perf_01_fdr_tpr_vs_T/](demo_ts_perf_01_fdr_tpr_vs_T/README.md) | FDR and TPR of the terminated paths vs. $T$ (the simulation of the R tlars vignette) |
 | P2 | [demo_ts_perf_02_runtime_vs_dummies/](demo_ts_perf_02_runtime_vs_dummies/README.md) | Run time, steps and time per step vs. the number of dummies $L$, and the gain of the warm start |
-| P3 | [demo_ts_perf_03_memory_vs_np/](demo_ts_perf_03_memory_vs_np/README.md) | Solver memory vs. the ratio $n/p$ and its share of the data, including what the binding allocates |
+| P3 | [demo_ts_perf_03_memory_vs_np/](demo_ts_perf_03_memory_vs_np/README.md) | Solver memory vs. the ratio $n/p$, and its share of the data |
 | P4 | [demo_ts_perf_04_recovery_vs_dt_ratio/](demo_ts_perf_04_recovery_vs_dt_ratio/README.md) | Exact support recovery, TPR and FDR at the first dummy vs. $n/(s \log p)$, and the Donoho–Tanner diagram |
 
 ---
@@ -83,7 +83,7 @@ place when the output goes to a file or a pipe. [`ts_plt_utils.py`](ts_plt_utils
 C++ plotting module. The performance demos add [`ts_perf_solvers.py`](ts_perf_solvers.py), the 15 compared solver
 configurations of [`ts_perf_solvers.hpp`](../../cpp/tsolvers/ts_perf_solvers.hpp), and
 [`ts_perf_utils.py`](ts_perf_utils.py) with the fixed random support, reader-ready data, the selection read from the
-coefficients, the peak resident set size and a pool of worker processes with single-threaded solvers.
+coefficients and a pool of worker processes with single-threaded solvers.
 
 ### Terminated solution paths
 

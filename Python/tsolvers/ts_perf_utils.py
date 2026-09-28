@@ -4,13 +4,15 @@
 #
 # Shared helpers for the performance demos (demo_ts_perf_*), mirroring the
 # corresponding parts of cpp/tsolvers/ts_perf_utils.hpp: the fixed random
-# support, reader-ready data, the selection read from the coefficients, the
-# peak resident set size, positive integer arguments and the worker pool.
+# support, reader-ready data, the selection read from the coefficients,
+# positive integer arguments and the worker pool.
+#
+# The memory demo reads the solvers' own memory report (getMemoryBytes())
+# instead of a peak resident set, so no helper here needs the Unix-only
+# resource module: portable to Windows, and deterministic for given data.
 #
 # ==============================================================================
 
-import resource
-import sys
 from multiprocessing import Pool
 
 import numpy as np
@@ -47,12 +49,6 @@ def selected_predictors(solver, p):
     """
     beta = np.asarray(solver.getBeta()).ravel()[:p]
     return [int(j) for j in np.flatnonzero(beta)]
-
-
-def peak_rss_mib():
-    """Peak resident set size of this process in MiB (getrusage: bytes on macOS, KiB on Linux)."""
-    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    return peak / (1024.0 * 1024.0) if sys.platform == "darwin" else peak / 1024.0
 
 
 def parse_positive(argv, index, fallback):

@@ -7,25 +7,23 @@
 # Mirrors cpp/tsolvers/demo_ts_perf_03_memory_vs_np/demo_ts_perf_03_memory_vs_np.cpp:
 # p = 1,000, L = p, n in {50, 100, 200, 500, 1,000, 2,000}, 10 true
 # coefficients equal to 3 on a fixed random support, noise sigma about 1,
-# T = 10. Per run and n the parent draws and scales the data once; every solver
-# then runs in a forked child as a precentered reader. The child first reads
-# every page of X, D and y and solves a small warm-up problem, so its baseline
-# counts the data, the solver code and the interpreter, and reports its peak
-# resident set minus that baseline as the solver memory. In Python this also
-# includes what the binding allocates around the C++ solver.
+# T = 10. Per run and n the data are drawn and scaled once, and every solver
+# runs on them as a precentered reader. The solver memory is the library's
+# memory report getMemoryBytes() after T = 10, the heap bytes the C++ solver
+# holds without the borrowed X and D (the binding and the interpreter are not
+# counted). Unlike the peak resident set of a forked child, the report is
+# portable (no fork, no getrusage()) and deterministic for given data, so the
+# runs go to worker processes with single-threaded solvers.
 #
-# Usage: demo_ts_perf_03_memory_vs_np.py [num_MC] [parallel children]   (default 500, 6)
+# Usage: demo_ts_perf_03_memory_vs_np.py [num_MC] [workers]   (default 500, 6)
 #
 # ==============================================================================
 
 import os
-import struct
 import sys
 import time
 
 import numpy as np
-
-from trex_selector_neo.utils import set_num_threads
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _PARENT_DIR = os.path.dirname(_THIS_DIR)
@@ -37,8 +35,8 @@ from ts_perf_solvers import demo_solvers
 from ts_perf_utils import (
     draw_support,
     parse_positive,
-    peak_rss_mib,
     reader_data,
+    run_parallel,
 )
 
 # Setup
@@ -51,64 +49,36 @@ T_stop = 10
 support_seed = 12345
 data_seed_offset = 1000       # run mc uses seed data_seed_offset + mc
 n_grid = [50, 100, 200, 500, 1_000, 2_000]
-REPORT = struct.Struct("ddi")  # solver memory (MiB), steps, ok
+BYTES_PER_MIB = 1024.0 * 1024.0
 
 SUPPORT = draw_support(p, num_active, support_seed)
 COEFS = [beta_active] * num_active
 
 
-def warm_up(spec):
-    """Solve a small problem, so the baseline holds the solver's code pages and a warm allocator."""
-    X, D, y = reader_data(20, 30, 30, [0, 1], [1.0, 1.0], 10.0, seed=1)
-    solver = spec.make(X, D, y)
-    solver.setTieSeed(1)
-    solver.executeStep(2, True)
-
-
-def launch(spec, s, X, D, y, seed):
-    """Run one solver in a forked child and return (pid, read end of its pipe, solver index)."""
-    r, w = os.pipe()
-    pid = os.fork()
-    if pid == 0:
-        os.close(r)
-        memory, steps, ok = 0.0, 0.0, 0
-        _ = float(X.sum() + D.sum() + y.sum())  # touch every data page
-        try:
-            warm_up(spec)
-        except (RuntimeError, ValueError):
-            pass  # the measured run below reports a failing solver
-        baseline = peak_rss_mib()
-        try:
-            solver = spec.make(X, D, y)
-            solver.setTieSeed(seed)
-            solver.executeStep(T_stop, True)
-            steps = float(solver.getNumSteps())
-            memory = peak_rss_mib() - baseline
-            ok = 1
-        except (RuntimeError, ValueError):
-            ok = 0
-        os.write(w, REPORT.pack(memory, steps, ok))
-        os._exit(0)
-    os.close(w)
-    return pid, r, s
-
-
-def collect(running):
-    """Wait for one of the children and read its report: (solver index, memory, steps, ok)."""
-    pid, _ = os.wait()
-    k = next(i for i, c in enumerate(running) if c[0] == pid)
-    _, fd, s = running.pop(k)
-    data = os.read(fd, REPORT.size)
-    os.close(fd)
-    if len(data) != REPORT.size:
-        return s, 0.0, 0.0, 0
-    return (s, *REPORT.unpack(data))
+def run_one(mc):
+    """
+    One run: every solver on the data of every n. Returns records[s][k] as
+    (memory in MiB, steps), or None when the solver fails.
+    """
+    seed = data_seed_offset + mc
+    solvers = demo_solvers()
+    records = [[None] * len(n_grid) for _ in solvers]
+    for k, n in enumerate(n_grid):
+        X, D, y = reader_data(n, p, num_dummies, SUPPORT, COEFS, snr, seed=seed)
+        for s, spec in enumerate(solvers):
+            try:
+                solver = spec.make(X, D, y)
+                solver.setTieSeed(seed)
+                solver.executeStep(T_stop, True)
+                records[s][k] = (solver.getMemoryBytes() / BYTES_PER_MIB, float(solver.getNumSteps()))
+            except (RuntimeError, ValueError):  # a failing solver is left out of its medians
+                records[s][k] = None
+    return records
 
 
 def main():
     num_MC = parse_positive(sys.argv, 1, 500)
-    parallel = parse_positive(sys.argv, 2, 6)
-    set_num_threads(1)  # single-threaded parent and solvers, so fork() stays safe with OpenMP
+    workers = parse_positive(sys.argv, 2, 6)
     solvers = demo_solvers()
     S, K = len(solvers), len(n_grid)
 
@@ -116,38 +86,20 @@ def main():
     print_section_header("T-Solver Performance: Memory vs. n/p")
     print(f"p = {p}, L = p, n in {{50, 100, 200, 500, 1000, 2000}}, T = {T_stop}, true coefficients: "
           f"{num_active} x {beta_active:g}, SNR = {snr:g}")
-    print(f"{S} solvers, {num_MC} runs, {parallel} children at a time (one forked child per solver)\n")
+    print(f"Solver memory: held heap bytes after T = {T_stop} (getMemoryBytes; X, D borrowed, not counted)")
+    print(f"{S} solvers, {num_MC} runs on {workers} worker processes (single-threaded solvers)\n")
 
-    memory = [[[] for _ in range(K)] for _ in range(S)]
-    steps = [[[] for _ in range(K)] for _ in range(S)]
-    failures = 0
     t_start = time.perf_counter()
-    for mc in range(num_MC):
-        for k, n in enumerate(n_grid):
-            X, D, y = reader_data(n, p, num_dummies, SUPPORT, COEFS, snr, seed=data_seed_offset + mc)
-            running = []
-
-            def store(result, k=k):
-                nonlocal failures
-                s, mem, st, ok = result
-                if ok:
-                    memory[s][k].append(mem)
-                    steps[s][k].append(st)
-                else:
-                    failures += 1
-
-            for s, spec in enumerate(solvers):
-                if len(running) >= parallel:
-                    store(collect(running))
-                running.append(launch(spec, s, X, D, y, data_seed_offset + mc))
-            while running:
-                store(collect(running))
-        if (mc + 1) % 50 == 0 or mc + 1 == num_MC:
-            print(f"  runs done: {mc + 1} of {num_MC}")
+    runs = run_parallel(run_one, range(num_MC), workers)
     wall = time.perf_counter() - t_start
 
+    # memory[s][k] and steps[s][k] collect the finished runs in run order
+    memory = [[[r[s][k][0] for r in runs if r[s][k] is not None] for k in range(K)] for s in range(S)]
+    steps = [[[r[s][k][1] for r in runs if r[s][k] is not None] for k in range(K)] for s in range(S)]
+    failures = sum(rec is None for r in runs for row in r for rec in row)
+
     # Data size per n: X, D and y as doubles
-    data_mib = [8.0 * n * (p + num_dummies + 1) / (1024.0 * 1024.0) for n in n_grid]
+    data_mib = [8.0 * n * (p + num_dummies + 1) / BYTES_PER_MIB for n in n_grid]
 
     def header(title):
         return [title, f"{'solver':<22}" + "".join(f"{'n=' + str(n):>9}" for n in n_grid), "-" * (22 + 9 * K)]
@@ -165,9 +117,9 @@ def main():
     def largest(s, k):
         return max(memory[s][k]) if memory[s][k] else 0.0
 
-    table("Median solver memory (MiB)", lambda s, k: float(np.median(memory[s][k])), 2)
-    table("Largest solver memory over the runs (MiB)", largest, 2)
-    table("Median solver memory relative to the data (%)",
+    table("Median solver memory: held heap after T = 10 (MiB)", lambda s, k: float(np.median(memory[s][k])), 2)
+    table("Largest solver memory over the runs: held heap after T = 10 (MiB)", largest, 2)
+    table("Median solver memory relative to the data X, D and y (%)",
           lambda s, k: 100.0 * float(np.median(memory[s][k])) / data_mib[k], 1)
     table("Median steps to T = 10", lambda s, k: float(np.median(steps[s][k])), 1)
     out.append(f"Failed solver runs: {failures}")

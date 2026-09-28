@@ -521,7 +521,7 @@ def plot_warm_start(df: pd.DataFrame, title: str) -> plt.Figure:
 # ==============================================================================
 
 def plot_memory(df: pd.DataFrame, title: str) -> plt.Figure:
-    """Solver memory (MiB, with the data size) and its share of the data (%) vs. n/p."""
+    """Held solver heap (MiB, with the data size) and its share of the data (%) vs. n/p."""
     styles = _solver_styles(df)
     ratios = sorted(float(r) for r in df["n_over_p"].unique())
     n_values = sorted(int(n) for n in df["n"].unique())
@@ -539,7 +539,7 @@ def plot_memory(df: pd.DataFrame, title: str) -> plt.Figure:
                               marker=marker, markersize=6, linewidth=1.6)
         axes[0, col].plot(data["n_over_p"], data["data_mib"], color="0.35", linestyle="--", linewidth=1.2, zorder=1)
         axes[0, col].set_title(family, fontsize=12)
-        for row, label in enumerate(("Solver memory (MiB)", "Solver memory / data (%)")):
+        for row, label in enumerate(("Held solver heap (MiB)", "Held solver heap / data (%)")):
             ax = axes[row, col]
             ax.set_xscale("log")
             ax.set_xticks(ratios)
