@@ -97,10 +97,10 @@ From the repository root, after `cmake --preset release && cmake --build --prese
 cpp/build/release/bin/ml_methods/model_selection/demo_mlm_ms_01_ridge_cv_svd/demo_mlm_ms_01_ridge_cv_svd
 ```
 
-The demo prints to the console only. The output below is a run against library 8ad3376 on an Apple Silicon machine,
-and it takes about 37 s on a single core. The data come from `std::mt19937` and `std::normal_distribution`. The latter
-is implementation-defined, so another standard library (libstdc++ on Linux, for example) may draw different data and
-print different numbers.
+The demo prints to the console only. The output below is a run against library 44cf1ab on an Apple Silicon machine (the
+earlier run against 8ad3376 printed the same lines), and it takes about 40 s on a single core. The data come from
+`std::mt19937` and `std::normal_distribution`. The latter is implementation-defined, so another standard library
+(libstdc++ on Linux, for example) may draw different data and print different numbers.
 
 ---
 

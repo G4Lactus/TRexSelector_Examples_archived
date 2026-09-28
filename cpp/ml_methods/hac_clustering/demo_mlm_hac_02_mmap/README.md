@@ -15,8 +15,8 @@ The workflow is organized into three phases:
 2. **Standardization**: mean-center the columns and scale them to unit $\ell_2$-norm in place.
 3. **Clustering**: benchmark selected HAC linkage strategies under an LSH-based correlation distance approximation.
 
-Each phase section below ends with the console output of the recorded run (library 8ad3376, 8 Open Multi-Processing
-(OpenMP) threads, 12-core Apple Silicon, 64 GB RAM, 1 h 17 min in total).
+Each phase section below ends with the console output of the recorded run (library 44cf1ab, 8 Open Multi-Processing
+(OpenMP) threads, 12-core Apple Silicon, 64 GB RAM, 1 h 16 min in total).
 
 ---
 
@@ -132,10 +132,10 @@ Latent RAM (N x K)   : 7.63 MB
 
 === Phase 1: Generating correlated variables into mmap ===
     N=100000, P=400000, K=10
-    Done. (355.6 s)
+    Done. (335.5 s)
 
 === Phase 2: Standardising columns (mean=0, L2=1) in-place ===
-    Done. (392.4 s)
+    Done. (390.3 s)
 ```
 
 ---
@@ -196,7 +196,7 @@ The demo unmaps and deletes the file at the end.
     Distance policy: Correlation LSH Approximation (O(1) SimHash)
 
 [Test A] Single Linkage (SLINK + LSH):
-    Time : 1568.1046 s
+    Time : 1548.6098 s
     ARI  : 1.0000 / 1.0000
 
 [Test B] Complete Linkage & WPGMA:
@@ -211,7 +211,7 @@ The demo unmaps and deletes the file at the end.
 
 [Test D] Ward's Minimum Variance (Projected 64D RAM Engine + LSH):
   -> [Backend] Projecting data to 64D (195 MB RAM)...
-    Time : 2306.0468 s
+    Time : 2292.2481 s
     ARI  : 1.0000 / 1.0000
 
 [Demo 03 Complete]
@@ -229,12 +229,12 @@ Demo 03 completed successfully
 
 | Phase | Work | Time | Result |
 | --- | --- | --- | --- |
-| 1 Generation | 400,000 columns x 100,000 rows into the mapped file | 356 s | 320 GB file |
-| 2 Standardization | mean 0, unit L2 norm, in place | 392 s | |
-| 3 Test A | single linkage, SLINK + LSH | 1,568 s | ARI 1.000 |
+| 1 Generation | 400,000 columns x 100,000 rows into the mapped file | 336 s | 320 GB file |
+| 2 Standardization | mean 0, unit L2 norm, in place | 390 s | |
+| 3 Test A | single linkage, SLINK + LSH | 1,549 s | ARI 1.000 |
 | 3 Test B | complete linkage, WPGMA | skipped | $O(p^2)$ matrix, 1.2 TB |
 | 3 Test C | average linkage (UPGMA) | skipped | $O(p^2)$ matrix, 1.28 TB |
-| 3 Test D | Ward, projected 64-D engine + LSH | 2,306 s | ARI 1.000 |
+| 3 Test D | Ward, projected 64-D engine + LSH | 2,292 s | ARI 1.000 |
 
 You can compare the large-scale behavior with the in-memory HAC examples in
 [demo_mlm_hac_01](../demo_mlm_hac_01/README.md), where Subproblem 5 runs the same LSH linkage comparison on

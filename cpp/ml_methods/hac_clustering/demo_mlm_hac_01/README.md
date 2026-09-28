@@ -16,7 +16,7 @@ Six subproblems, SP1 to SP6 in the section headings below, run in `main()`:
 
 Throughout the demo, clustering quality is assessed by the **Adjusted Rand Index (ARI)**, which compares the recovered
 cluster labels against the known ground-truth labels from the synthetic data generator. Each subproblem section below
-ends with the console output of the recorded run (library 8ad3376, 8 Open Multi-Processing (OpenMP) threads, 12-core
+ends with the console output of the recorded run (library 44cf1ab, 8 Open Multi-Processing (OpenMP) threads, 12-core
 Apple Silicon, 64 GB).
 
 ---
@@ -82,7 +82,7 @@ Generating Row-Major data (N=1500, P=50000)...
 Creating transposed view for column-wise clustering...
 Set distance policy for sample clustering...
 Building Single Linkage tree (SLINK)...
-✓ Tree built successfully in 3.703249 seconds.
+✓ Tree built successfully in 3.832167 seconds.
 
 Cutting tree to form 3 clusters...
 Resulting Variable Clustering:
@@ -150,7 +150,7 @@ resulting block assignments are compared against the known true block labels.
 ### SP2 Console output
 
 50,000 variables in five imbalanced blocks (20,000 down to 5,000) over 10,000 samples, exact Pearson correlation. SLINK
-evaluates every pair once, so the 13.4 minutes here are the exact-distance baseline that Subproblem 3 speeds up.
+evaluates every pair once, so the 13.6 minutes here are the exact-distance baseline that Subproblem 3 speeds up.
 
 ```text
 ============================================================
@@ -160,7 +160,7 @@ Generating Correlated Variables (N=10000, P=50000)...
 Standardizing variables (Mean=0, L2=1) for correlation...
 Set distance policy for variable clustering (Correlation)...
 Building Single Linkage tree for Variables...
-✓ Tree built successfully in 805.6827 seconds.
+✓ Tree built successfully in 817.2539 seconds.
 
 Cutting tree to form 5 clusters...
 Resulting Variable Cluster Sizes:
@@ -209,8 +209,8 @@ approximated rather than computed exactly.
 ### SP3 Console output
 
 Same block model, now 40,000 samples, which makes every exact dot product four times as expensive as in Subproblem 2.
-The three strategies recover the blocks perfectly and differ only in cost. The exact baseline needs 53 minutes, the LSH
-filter (Hamming gate, exact recheck of the survivors) 20 minutes, the pure $O(1)$ SimHash estimate 16 seconds.
+The three strategies recover the blocks perfectly and differ only in cost. The exact baseline needs 54 minutes, the LSH
+filter (Hamming gate, exact recheck of the survivors) 20 minutes, the pure $O(1)$ SimHash estimate 14 seconds.
 
 ```text
 ============================================================
@@ -221,17 +221,17 @@ Standardizing variables (Mean=0, L2=1) for correlation...
 
 ------------------------------------------------------------
 [Test A] Exact Pearson Correlation (The Baseline)
-✓ Tree built successfully in 3161.6318 seconds.
+✓ Tree built successfully in 3216.7012 seconds.
 ARI: 1.0000 / 1.0000
 
 ------------------------------------------------------------
 [Test B] LSH Filter (Gatekeeper to Exact Dot Product)
-✓ Tree built successfully in 1210.5001 seconds.
+✓ Tree built successfully in 1208.2715 seconds.
 ARI: 1.0000 / 1.0000
 
 ------------------------------------------------------------
 [Test C] LSH Approx (Pure O(1) SimHash Angular Estimation)
-✓ Tree built successfully in 15.9493 seconds.
+✓ Tree built successfully in 14.0692 seconds.
 
 Resulting Variable Cluster Sizes (Approx):
   Predicted Cluster 0: 20000 variables
@@ -281,10 +281,10 @@ property.
 ### SP4 Console output
 
 Clean blocks, 1,500 samples, 50,000 variables. All eight rules recover the five blocks. The times split into three
-groups. SLINK and the dispatcher's single-linkage route take 125 s. The six matrix-based rules, which first fill the
-50,000 x 50,000 distance matrix (the 19,208 MB buffer) and then run the nearest-neighbor chain (NN-chain), take 128 to
-135 s. The two rules without the reducibility property, centroid and median, take the generic linkage path and need
-259 s and 200 s. Ward switches to squared Euclidean distance, as its update rule requires.
+groups. SLINK and the dispatcher's single-linkage route take 126 s. The four matrix-based rules (complete, UPGMA, WPGMA
+and Ward), which first fill the 50,000 x 50,000 distance matrix (the 19,208 MB buffer) and then run the nearest-neighbor
+chain (NN-chain), take 129 to 134 s. The two rules without the reducibility property, centroid and median, take the
+generic linkage path and need 258 s and 198 s. Ward switches to squared Euclidean distance, as its update rule requires.
 
 ```text
 ============================================================
@@ -295,48 +295,48 @@ Demo 4: Linkage Comparison
 3. Setting distance policy (Correlation)...
 
 [TEST A] SLINK:
-Time: 125.4618 seconds
+Time: 126.3434 seconds
 ARI:  1.0000 / 1.0000
 
 [Test B] Single Linkage (via Dispatcher):
-Time: 125.4572 seconds
+Time: 126.2766 seconds
 ARI:  1.0000 / 1.0000
 
 [Test C] Complete Linkage (via Dispatcher -> Disk/Matrix Bound):
   -> [Backend] RAM allocated 19208 MB.
 
-Time: 129.1597 seconds
+Time: 129.3926 seconds
 ARI:  1.0000 / 1.0000
 
 [Test D] UPGMA (via Dispatcher -> RAM/Geometric Bound):
   -> [Backend] RAM allocated 19208 MB.
 
-Time: 129.4517 seconds
+Time: 129.7831 seconds
 ARI:  1.0000 / 1.0000
 
 [Test E] WPGMA (via Dispatcher -> Disk/Matrix Bound):
   -> [Backend] RAM allocated 19208 MB.
 
-Time: 128.4328 seconds
+Time: 131.3563 seconds
 ARI:  1.0000 / 1.0000
 
 [Test F] WARD (via Dispatcher -> RAM/Geometric Bound):
  -> Note: Switching to Squared Euclidean Distance!
   -> [Backend] RAM allocated 19208 MB.
 
-Time: 135.4874 seconds
+Time: 133.8609 seconds
 ARI:  1.0000 / 1.0000
 
 [Test G] Centroid Linkage (via Dispatcher -> Generic Linkage):
   -> [Backend] RAM allocated 19208 MB.
 
-Time: 259.0649 seconds
+Time: 258.0248 seconds
 ARI:  1.0000 / 1.0000
 
 [Test H] Median Linkage (via Dispatcher -> Generic Linkage):
   -> [Backend] RAM allocated 19208 MB.
 
-Time: 200.3145 seconds
+Time: 198.4196 seconds
 ARI:  1.0000 / 1.0000
 
 [Demo 4 Complete]
@@ -369,11 +369,11 @@ correct structure at a substantially reduced per-distance cost.
 
 ### SP5 Console output
 
-The largest case: 50,000 samples, 100,000 variables. With the $O(1)$ distance, single linkage over all pairs takes 57 s,
+The largest case: 50,000 samples, 100,000 variables. With the $O(1)$ distance, single linkage over all pairs takes 53 s,
 while the three matrix-based rules fill a 100,000 x 100,000 buffer of 76,440 MB before the NN-chain runs. The buffer is
-allocated lazily, so the operating system backs only the pages that are touched. In this run that still exceeded the
-64 GB of the machine and put about 37 GB into swap for the duration of tests B to D, which is the price of the exact
-$O(p^2)$ matrix machinery at this size. All four rules recover the blocks.
+allocated lazily, so the operating system backs only the pages that are touched. That still exceeds the 64 GB of the
+machine, and the earlier run on library 8ad3376 measured about 37 GB of swap for the duration of tests B to D, which is
+the price of the exact $O(p^2)$ matrix machinery at this size. All four rules recover the blocks.
 
 ```text
 ============================================================
@@ -384,25 +384,25 @@ Demo 5: LSH Approx Linkage Comparison
 3. Setting distance policy (Pure O(1) Correlation LSH Approx)...
 
 [TEST A] Single Linkage (via SLINK with LSH):
-Time: 56.6953 seconds
+Time: 53.0438 seconds
 ARI:  1.0000 / 1.0000
 
 [Test B] Complete Linkage (via Dispatcher -> Disk/Matrix Bound):
   -> [Backend] RAM allocated 76440 MB.
 
-Time: 235.1925 seconds
+Time: 264.5265 seconds
 ARI:  1.0000 / 1.0000
 
 [Test C] UPGMA (via Dispatcher -> RAM/Geometric Bound):
   -> [Backend] RAM allocated 76440 MB.
 
-Time: 381.8243 seconds
+Time: 401.4530 seconds
 ARI:  1.0000 / 1.0000
 
 [Test D] WPGMA (via Dispatcher -> Disk/Matrix Bound):
   -> [Backend] RAM allocated 76440 MB.
 
-Time: 384.7498 seconds
+Time: 372.5687 seconds
 ARI:  1.0000 / 1.0000
 
 [Demo 5 Complete]
@@ -458,19 +458,19 @@ Demo 6: AR(1) Block Linkage Comparison
 3. Setting distance policy (Exact Pearson Correlation)...
 
 [TEST A] Single Linkage (via SLINK):
-Time: 250.4720 seconds
+Time: 248.2509 seconds
 ARI:  1.0000 / 1.0000
 
 [Test B] Complete Linkage (via Dispatcher -> Disk/Matrix Bound):
   -> [Backend] RAM allocated 19208 MB.
 
-Time: 242.9061 seconds
+Time: 242.1064 seconds
 ARI:  0.0047 / 1.0000
 
 [Test C] UPGMA (via Dispatcher -> RAM/Geometric Bound):
   -> [Backend] RAM allocated 19208 MB.
 
-Time: 243.8951 seconds
+Time: 244.8480 seconds
 ARI:  0.1089 / 1.0000
 
 [Demo 6 Complete]
@@ -482,12 +482,12 @@ ARI:  0.1089 / 1.0000
 
 | Subproblem | Size (n x p) | Distance | Rule | Time | ARI |
 | --- | --- | --- | --- | --- | --- |
-| 1 Sample clustering | 1,500 x 50,000 | Euclidean | SLINK | 3.7 s | 1.000 |
-| 2 Variable clustering | 10,000 x 50,000 | exact correlation | SLINK | 806 s | 1.000 |
-| 3 LSH benchmark | 40,000 x 50,000 | exact / LSH filter / LSH approx | SLINK | 3,162 s / 1,211 s / 16 s | 1.000 each |
-| 4 Linkage comparison | 1,500 x 50,000 | exact correlation | 8 rules | 125 to 259 s | 1.000 each |
-| 5 LSH linkage comparison | 50,000 x 100,000 | LSH approx | SLINK, complete, UPGMA, WPGMA | 57 / 235 / 382 / 385 s | 1.000 each |
-| 6 AR(1) Toeplitz blocks | 3,000 x 50,000 | exact correlation | SLINK / complete / UPGMA | 250 / 243 / 244 s | 1.000 / 0.005 / 0.109 |
+| 1 Sample clustering | 1,500 x 50,000 | Euclidean | SLINK | 3.8 s | 1.000 |
+| 2 Variable clustering | 10,000 x 50,000 | exact correlation | SLINK | 817 s | 1.000 |
+| 3 LSH benchmark | 40,000 x 50,000 | exact / LSH filter / LSH approx | SLINK | 3,217 s / 1,208 s / 14 s | 1.000 each |
+| 4 Linkage comparison | 1,500 x 50,000 | exact correlation | 8 rules | 126 to 258 s | 1.000 each |
+| 5 LSH linkage comparison | 50,000 x 100,000 | LSH approx | SLINK, complete, UPGMA, WPGMA | 53 / 265 / 401 / 373 s | 1.000 each |
+| 6 AR(1) Toeplitz blocks | 3,000 x 50,000 | exact correlation | SLINK / complete / UPGMA | 248 / 242 / 245 s | 1.000 / 0.005 / 0.109 |
 
 The whole suite took 2 h 20 min on 8 threads. The same scenarios are also implemented in
 [Python](../../../../Python/ml_methods/hac_clustering/demo_mlm_hac_01/) and
@@ -512,7 +512,7 @@ cpp/build/release/bin/ml_methods/hac_clustering/demo_mlm_hac_01/demo_mlm_hac_01 
 ```
 
 The demo prints to the console only. Plan for hours, not minutes, because the exact-correlation baseline of Subproblem 3
-alone runs 53 minutes, and Subproblem 5 needs more than 64 GB for its distance matrix.
+alone runs 54 minutes, and Subproblem 5 needs more than 64 GB for its distance matrix.
 
 ---
 
@@ -528,5 +528,5 @@ alone runs 53 minutes, and Subproblem 5 needs more than 64 GB for its distance m
   memory (RAM), in every test, including those whose labels read "Disk/Matrix Bound".
 - The parallel work is the data generation, the standardization, the per-column pre-computation and the distance
   rows, while the merge loop of every linkage rule is sequential. More threads shorten the former, not the latter. On 6
-  threads the tree builds of Subproblems 2 and 3 took 932 s, 3,595 s and 1,392 s, and on 8 threads 806 s, 3,162 s and
-  1,211 s.
+  threads the tree builds of Subproblems 2 and 3 took 932 s, 3,595 s and 1,392 s (library 8ad3376), and on 8 threads
+  817 s, 3,217 s and 1,208 s.
