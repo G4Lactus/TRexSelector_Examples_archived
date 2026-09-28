@@ -135,7 +135,7 @@ refreshes the path data in well under a second without it.
 tsolvers/
   ├── README.md
   ├── CMakeLists.txt
-  ├── ts_perf_utils.hpp      # shared C++ helpers (part selection, path recorder, selection, peak memory)
+  ├── ts_perf_utils.hpp      # shared C++ helpers (part selection, path recorder, selection, medians)
   ├── ts_perf_solvers.hpp    # the solvers compared by the performance demos
   ├── ts_plt_utils.py        # shared matplotlib figures
   ├── demo_ts_01_tlars/
