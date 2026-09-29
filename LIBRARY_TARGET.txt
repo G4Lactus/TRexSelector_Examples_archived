@@ -23,8 +23,8 @@ Install:        cpp    -> in <library>/cpp: cmake --preset local-install && cmak
                           && cmake --install build/release-portable
                           (headers under cpp/install/include/TRexSelector/; the Examples presets point at
                           ../../TRexSelector-beyond/cpp/install)
-                R      -> R CMD INSTALL --preclean --library=<R library> <library>/R/TRexSelectorNeo
-                          demos: R_LIBS=<R library> Rscript <demo>.R
+                R      -> R CMD INSTALL --preclean <library>/R/TRexSelectorNeo
+                          (into R's default library; demos: Rscript <demo>.R, no R_LIBS)
                 Python -> at the Examples root: python3 -m venv .venv
                           && .venv/bin/pip install <library>/Python/TRexSelectorNeo pandas matplotlib plotly
                           -r requirements-dev.txt
