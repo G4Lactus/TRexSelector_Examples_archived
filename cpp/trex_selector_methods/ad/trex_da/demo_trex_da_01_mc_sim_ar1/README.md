@@ -1,10 +1,9 @@
 # Demo 01: DA-TRex+AR1 on AR(1) Toeplitz Data
 
-The following demo presents Monte-Carlo (MC) results for **DA-TRex+AR1** —
-the dependency-aware (DA) T-Rex selector for the first-order autoregressive (AR(1)) model — vs. the
-**classical (no-DA) T-Rex selector** on AR(1) Toeplitz data
-($n=300$, $p=1{,}000$, $s=10$, amplitude $3.0$, target false discovery rate (FDR) $\mathrm{tFDR}=0.2$,
-$K=20$ random experiments, $\mathrm{MC}=200$ per grid point, and solvers TLARS / TAFS / TOMP).
+The following demo presents Monte-Carlo (MC) results for **DA-TRex+AR1** — the dependency-aware (DA) Terminating Random
+Experiments (T-Rex) selector for the first-order autoregressive (AR(1)) model — vs. the **classical (no-DA) T-Rex
+selector** on AR(1) Toeplitz data ($n=300$, $p=1{,}000$, $s=10$, amplitude $3.0$, target false discovery rate (FDR)
+$\mathrm{tFDR}=0.2$, $K=20$ random experiments, $\mathrm{MC}=200$ per grid point, and solvers TLARS / TAFS / TOMP).
 
 The greedy solvers use *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for TAFS/TOMP, `0` for TLARS).
 Look up `Exchangeable_Tie_Breaking_DA_TRex.md` in the TRex_Research documentation.
@@ -43,12 +42,15 @@ so that
 ```math
 \Sigma_{jk} = \rho^{|j-k|}
 ```
-— neighboring columns are the strongest-correlated, decaying geometrically with index distance.
+
+Neighboring columns are the strongest-correlated, and the correlation decays geometrically with index distance.
 
 In the following we refer to a linear signal to noise ratio
+
 ```math
 \mathrm{SNR} = \frac{\mathrm{Var}(X\beta)}{\sigma^2}
 ```
+
 to assess the performance of the method.
 
 ---
@@ -59,7 +61,8 @@ to assess the performance of the method.
 ./build/release/bin/trex_selector_methods/ad/trex_da/demo_trex_da_01_mc_sim_ar1/demo_trex_da_01_mc_sim_ar1
 ```
 
-Afterwards, regenerate the figures from the CSVs with [`generate_plots.sh`](generate_plots.sh).
+Afterwards, regenerate the figures from the comma-separated values (CSV) files with
+[`generate_plots.sh`](generate_plots.sh).
 
 ---
 
@@ -73,9 +76,9 @@ Data tables are written to `simulation_results/data/` (`.txt` pretty-printed, `.
 - `da_trex_mc_da_ar1_rho_random.txt` / `.csv`
 - `da_trex_mc_da_ar1_gap_rho.txt` / `.csv`
 
-Figures (PNG/PDF, plus interactive Plotly `.html` for the per-CSV overviews) go to `simulation_results/plots/`.
-The `.html` files are not committed to the repository (each embeds a full copy of plotly.js),
-and `./generate_plots.sh` produces them locally alongside the PNG/PDF.
+Figures (`.png` and `.pdf`, plus interactive Plotly `.html` for the per-CSV overviews) go to
+`simulation_results/plots/`. The `.html` files are not committed to the repository (each embeds a full copy of
+plotly.js), and `./generate_plots.sh` produces them locally alongside the `.png` and `.pdf` files.
 
 ---
 

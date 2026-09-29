@@ -1,17 +1,16 @@
 # Demo 04: DA-TRex+BT (Binary-Tree Dependency-Aware T-Rex) on Heavy-Tailed Block Data
 
-Monte-Carlo (MC) results for **DA-TRex+BT** — the Binary-Tree (BT) Dependency-Aware (DA) T-Rex selector
-(`DAMethod::BT`) — on a **heavy-tailed** block-diagonal Toeplitz design, where the predictors always follow
-a multivariate $\text{Student-}t(\nu{=}3)$ law, and the response noise is either Gaussian (**s1_Gauss**) or
-$t(\nu{=}3)$ (**s2_Heavy**). Five ceteris-paribus sweeps (signal-to-noise ratio (SNR), $\rho$, block size $Q$,
-number of blocks $M$, target false discovery rate (FDR)) plus a dedicated linkage sweep are each run under both noise
-scenarios and the three hierarchical agglomerative clustering (HAC) linkage methods (Single / Complete / Average).
-Common setup: $n=150$, amplitude $1.0$, $\rho=0.8$, $\nu=3$, $\mathrm{tFDR}=0.2$, $K=20$ random
-experiments, $\mathrm{MC}=200$ per grid point, and solvers TLARS / TAFS / TOMP.
-This is the heavy-tailed analogue of the Gaussian block design in the R legacy reference
-[`Results_trex_da_05_bt_ar1_block_sweeps`](#references), and it corresponds to the R script
-`demo_trex_da_07_bt_heavy_tailed_sweeps.R` (numbered "07" in the R suite but "04" in this C++ folder
-— a naming lineage quirk, not a bug).
+Monte-Carlo (MC) results for **DA-TRex+BT** — the Binary-Tree (BT) Dependency-Aware (DA) Terminating Random Experiments
+(T-Rex) selector (`DAMethod::BT`) — on a **heavy-tailed** block-diagonal Toeplitz design, where the predictors always
+follow a multivariate $\text{Student-}t(\nu{=}3)$ law, and the response noise is either Gaussian (**s1_Gauss**) or
+$t(\nu{=}3)$ (**s2_Heavy**). Five ceteris-paribus sweeps (signal-to-noise ratio (SNR), $\rho$, block size $Q$, number of
+blocks $M$, target false discovery rate (FDR)) plus a dedicated linkage sweep are each run under both noise scenarios
+and the three hierarchical agglomerative clustering (HAC) linkage methods (Single / Complete / Average). Common setup:
+$n=150$, amplitude $1.0$, $\rho=0.8$, $\nu=3$, $\mathrm{tFDR}=0.2$, $K=20$ random experiments, $\mathrm{MC}=200$ per
+grid point, and solvers TLARS / TAFS / TOMP. This is the heavy-tailed analogue of the Gaussian block design in the R
+legacy reference [`Results_trex_da_05_bt_ar1_block_sweeps`](#references), and it corresponds to the R script
+`demo_trex_da_07_bt_heavy_tailed_sweeps.R` (numbered "07" in the R suite but "04" in this C++ folder — a naming lineage
+quirk, not a bug).
 
 The greedy solvers use *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for TAFS/TOMP, `0` for
 TLARS). See `Exchangeable_Tie_Breaking_DA_TRex.md` in the TRex_Research documentation.
@@ -107,7 +106,8 @@ $s=5$), $\rho=0.8$, $\nu=3$, $\mathrm{SNR}=2.0$, seed $2026$.
 ./build/release/bin/trex_selector_methods/ad/trex_da/demo_trex_da_04_mc_sim_ht_blocks/demo_trex_da_04_mc_sim_ht_blocks
 ```
 
-Afterwards, regenerate the figures from the CSVs with [`generate_plots.sh`](generate_plots.sh).
+Afterwards, regenerate the figures from the comma-separated values (CSV) files with
+[`generate_plots.sh`](generate_plots.sh).
 
 ---
 
@@ -121,10 +121,10 @@ the dedicated linkage-sweep section's 2 stems
 `da_trex_mc_da_ht_blocks_linkage_{s1_Gauss|s2_Heavy}.{txt,csv}` (which omit the trailing linkage suffix
 since linkage itself is the swept variable).
 
-Figures go to `simulation_results/plots/`: per-CSV FDR and true positive rate (TPR) overviews (PNG/PDF + interactive
-Plotly HTML), one linkage-comparison grid per (sweep × scenario), and — embedded below — one **Gaussian-vs-heavy
-scenario grid** per sweep (at Average linkage), the figure for this demo's core question: how much do heavy tails cost
-in FDR control and power?
+Figures go to `simulation_results/plots/`: per-CSV FDR and true positive rate (TPR) overviews (`.png`, `.pdf` and an
+interactive Plotly `.html` page), one linkage-comparison grid per (sweep × scenario), and — embedded below — one
+**Gaussian-vs-heavy scenario grid** per sweep (at Average linkage). The scenario grid is the figure for this demo's core
+question, namely how much heavy tails cost in FDR control and power.
 
 ---
 
@@ -173,7 +173,7 @@ in FDR control and power?
 
 ## Part 4 — Number-of-blocks $M$ sweep ($M \in \lbrace1, 3, 5, 10, 15, 20, 30\rbrace$, $s = M$, $p = 5M$)
 
-- The stress dimension: $s = M$ grows while $n=150$ and the amplitude stay fixed. **TPR collapses for
+- This is the stress dimension. Here $s = M$ grows while $n=150$ and the amplitude stay fixed. **TPR collapses for
   $M \gtrsim 15\text{–}20$** ($\approx 0.18\text{–}0.27$ at $M=20$, $\leq 0.08$ at $M=30$, where $p = n$),
   while FDR climbs to $\approx 0.23\text{–}0.27$ at $M=20$ (all three solvers breach the target there).
 - The $M=1$ corner is degenerate ($p=5$, a single active variable), and TAFS selects nothing at all
@@ -187,7 +187,7 @@ in FDR control and power?
 
 ## Part 5 — Target-FDR sweep ($\mathrm{tFDR} \in \lbrace0.05, 0.10, \ldots, 0.50\rbrace$)
 
-Unique to Demos 04–05: sweeping the *target* FDR to check calibration of the realized FDR.
+Unique to Demos 04–05, this part sweeps the *target* FDR to check calibration of the realized FDR.
 
 - **Realized FDR increases monotonically with the target**, as it should, but each solver has a
   floor it cannot dip below. **TLARS is the least conservative** — its realized FDR *exceeds* the
@@ -221,10 +221,10 @@ open up mainly at *low* $\rho$ and *large* $Q$, where the correlation signal HAC
   variance-matched $t(3)$ *noise* on top changes little. The real cost of heavy tails is visible only
   against the fully-Gaussian Demo 03 — most clearly in TLARS's FDR, which is loose here
   ($\approx 0.25$ on the $Q$ sweep) where Demo 03 stayed near $0.10$.
-- **Solver ranking is consistent** with the other block demos: **TOMP is the most robust** (highest
+- **Solver ranking is consistent** with the other block demos. **TOMP is the most robust** (highest
   TPR *and* lowest FDR in nearly every cell), TAFS sits in between with its high-SNR power decline,
   and **TLARS is the most FDR-fragile** — it breaches the target at high $\rho$, across the whole $Q$
-  sweep, and is the least conservative on the tFDR sweep (cannot reach low realized FDR).
+  sweep, and is the least conservative on the target FDR (tFDR) sweep (cannot reach low realized FDR).
 - The failure modes are *safe*. Where the problem becomes too hard ($M \to 30$, $p \to n$), power
   collapses toward zero rather than FDR exploding.
 - **Linkage** is a minor knob at this correlation level, while Complete or Average remain the safe defaults

@@ -1,13 +1,12 @@
 # Demo 03: DA-TRex+BT (Binary-Tree Dependency-Aware T-Rex) on Block-Diagonal AR(1) Data
 
-Monte-Carlo (MC) results for **DA-TRex+BT** — the Binary-Tree (BT) Dependency-Aware (DA) T-Rex selector
-(`DAMethod::BT`) — on a clean block-diagonal first-order autoregressive (AR(1)) design (no white-noise padding),
-sweeping the signal-to-noise ratio (SNR), $\rho$, block size $Q$, and number of blocks $M$, each across the three
-hierarchical agglomerative clustering (HAC) linkage methods (Single / Complete / Average).
-Common setup: $n=150$, amplitude $1.0$, target false discovery rate (FDR) $\mathrm{tFDR}=0.2$, $K=20$ random
-experiments, $\mathrm{MC}=200$ per grid point, and solvers TLARS / TAFS / TOMP.
-Corresponds to R reference `demo_trex_da_05_bt_ar1_block_sweeps.R` (numbered "05" in the R suite but
-"03" in this C++ folder — a naming lineage quirk, not a bug).
+Monte-Carlo (MC) results for **DA-TRex+BT** — the Binary-Tree (BT) Dependency-Aware (DA) Terminating Random Experiments
+(T-Rex) selector (`DAMethod::BT`) — on a clean block-diagonal first-order autoregressive (AR(1)) design (no white-noise
+padding), sweeping the signal-to-noise ratio (SNR), $\rho$, block size $Q$, and number of blocks $M$, each across the
+three hierarchical agglomerative clustering (HAC) linkage methods (Single / Complete / Average). Common setup: $n=150$,
+amplitude $1.0$, target false discovery rate (FDR) $\mathrm{tFDR}=0.2$, $K=20$ random experiments, $\mathrm{MC}=200$ per
+grid point, and solvers TLARS / TAFS / TOMP. Corresponds to R reference `demo_trex_da_05_bt_ar1_block_sweeps.R`
+(numbered "05" in the R suite but "03" in this C++ folder — a naming lineage quirk, not a bug).
 
 The greedy solvers use *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for TAFS/TOMP, `0` for
 TLARS). See `Exchangeable_Tie_Breaking_DA_TRex.md` in the TRex_Research documentation.
@@ -85,7 +84,8 @@ $s=5$), $\rho=0.7$, $\mathrm{SNR}=2.0$, seed $2026$.
 ./build/release/bin/trex_selector_methods/ad/trex_da/demo_trex_da_03_mc_sim_ar1_blocks/demo_trex_da_03_mc_sim_ar1_blocks
 ```
 
-Afterwards, regenerate the figures from the CSVs with [`generate_plots.sh`](generate_plots.sh).
+Afterwards, regenerate the figures from the comma-separated values (CSV) files with
+[`generate_plots.sh`](generate_plots.sh).
 
 ---
 
@@ -99,9 +99,9 @@ Data tables are written to `simulation_results/data/` (24 files = 12 scenario st
 - `da_trex_mc_da_ar1_blocks_Q_{Single,Complete,Average}.txt` / `.csv`
 - `da_trex_mc_da_ar1_blocks_M_{Single,Complete,Average}.txt` / `.csv`
 
-Figures go to `simulation_results/plots/`: one overview of the FDR and the true positive rate (TPR) per
-sweep × linkage (PNG/PDF + interactive Plotly HTML), plus one linkage-comparison grid (Single/Complete/Average columns)
-per sweep — the four grids embedded below.
+Figures go to `simulation_results/plots/`: one overview of the FDR and the true positive rate (TPR) per sweep × linkage
+(`.png`, `.pdf` and an interactive Plotly `.html` page), plus one linkage-comparison grid (Single/Complete/Average
+columns) per sweep — the four grids embedded below.
 
 ---
 
@@ -152,7 +152,7 @@ per sweep — the four grids embedded below.
 
 ## Part 4 — Number-of-blocks $M$ sweep ($M \in \lbrace1, 3, 5, 10, 15, 20, 30\rbrace$, $s = M$, $p = 5M$)
 
-- The stress dimension: $s = M$ grows while $n = 150$ and the amplitude stay fixed. **TPR collapses
+- This is the stress dimension. Here $s = M$ grows while $n = 150$ and the amplitude stay fixed. **TPR collapses
   for $M \gtrsim 20$** ($\approx 0.18\text{–}0.26$ at $M=20$, $\leq 0.07$ at $M=30$, where $p = n$),
   while FDR stays below target throughout (max $0.175$) — the selector fails *safe*.
 - The $M=1$ corner is degenerate ($p=5$, one active variable), so all solvers are weak

@@ -2,7 +2,8 @@
 
 ## Purpose
 
-Evaluate the T-Rex selector with Grouped Variable Selection (T-Rex+GVS) when within-block correlation follows a
+Evaluate the Terminating Random Experiments (T-Rex) selector with Grouped Variable Selection (T-Rex+GVS) when
+within-block correlation follows a
  **first-order autoregressive (AR(1)) time-series structure** instead of equicorrelation.
  This uses the same four-block active/trap geometry as Demo 03, but replaces the shared-latent-factor
  equicorrelated model with an AR(1) Toeplitz covariance within each block, testing robustness to more realistic,
@@ -38,7 +39,7 @@ Unlike Demos 01–05, the within-block structure is **not** equicorrelated.
 generated as $X_{\text{block}} = Z L^\top$, where $Z \sim \mathcal{N}(0, I_{n \times b_k})$ and $L$ is the
  Cholesky factor of $\Sigma_k$.
 
-- Same 4-block geometry as Demo 03: sizes $\lbrace20, 50, 80, 65\rbrace$ (215 grouped columns in total).
+- Same 4-block geometry as Demo 03, with sizes $\lbrace20, 50, 80, 65\rbrace$ (215 grouped columns in total).
 - **Blocks 0–2 are active** ($\beta_j = 3$), while **block 3 is an inactive AR(1) trap** ($\beta_j = 0$).
 - Gap columns (between and around the blocks) are i.i.d. $\mathcal{N}(0,1)$.
 - Correlation between two variables in the same block decays with their column distance, so a block no longer
@@ -85,7 +86,8 @@ Written to `simulation_results/data/`:
 - `gvs_ar1_blocks_2d.txt` / `.csv` — mean false discovery proportion (FDP) / true positive proportion (TPP) over the SNR
   $\times$ $\rho$ grid.
 
-Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
+Figures in Portable Network Graphics (PNG) and Portable Document Format (PDF) go to `simulation_results/plots/`,
+produced by `./generate_plots.sh`.
 
 ---
 

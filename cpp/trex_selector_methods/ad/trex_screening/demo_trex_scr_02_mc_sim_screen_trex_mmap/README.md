@@ -57,7 +57,8 @@ solver = TLARS               # T-Rex solver backend
 MC = 200                     # Monte Carlo repetitions per grid point
 ```
 
-Note that Screen-TRex has **no target-FDR parameter**, because unlike the classical T-Rex selector, screening
+Note that Screen-TRex has **no target-FDR parameter**, because unlike the classical Terminating Random Experiments
+(T-Rex) selector, screening
  thresholds the voting statistic instead of calibrating to a user-specified level.
 
 ---
@@ -89,7 +90,8 @@ Written to `simulation_results/data/`:
 
 - `scr_screen_trex_mmap_snr_n300_p1000.txt` / `.csv` — FDR, TPR, and estimated FDR per method and SNR level.
 
-Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
+Figures in Portable Network Graphics (PNG) and Portable Document Format (PDF) go to `simulation_results/plots/`,
+produced by `./generate_plots.sh`.
 
 ---
 
@@ -116,7 +118,7 @@ Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_p
    $\mathrm{SNR} \le 0.2$ the realized FDR runs between $0.19$ and $0.44$ with TPR $\le 0.12$ — and both
    rules become reliable from $\mathrm{SNR} \ge 0.5$, where the Ordinary rule's FDR falls to $0.116$ and
    settles around $0.05\text{–}0.07$ while its TPR climbs $0.446 \to 1.000$.
-- **Bootstrap-CI remains the conservative rule: lower FDR, clearly less power.** Its FDR stays at or below
+- **Bootstrap-CI remains the conservative rule, with lower FDR and clearly less power.** Its FDR stays at or below
    $0.050$ for $\mathrm{SNR} \ge 0.5$, roughly half the Ordinary rule's, paid for with TPR $0.840$ vs.
    $1.000$ at $\mathrm{SNR} = 5$ and a wide mid-sweep gap ($0.393$ vs. $0.826$ at $\mathrm{SNR} = 1$).
 - **The internal FDR estimate is conservative here.** For $\mathrm{SNR} \ge 0.5$ it sits *above* the

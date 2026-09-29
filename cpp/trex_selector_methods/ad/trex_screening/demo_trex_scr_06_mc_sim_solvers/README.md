@@ -2,7 +2,8 @@
 
 ## Purpose
 
-The demo asks whether the **choice of T-Rex solver backend** changes screening performance, or whether it
+The demo asks whether the **choice of Terminating Random Experiments (T-Rex) solver backend** changes screening
+performance, or whether it
  is merely a speed knob.
  The same independent and identically distributed (i.i.d.) Gaussian design as
  [Demo 01](../demo_trex_scr_01_mc_sim_screen_trex/README.md) is used, so the numbers here are directly comparable to
@@ -103,7 +104,8 @@ Written to `simulation_results/data/`:
 - `scr_solver_method_snr_n300_p1000_s10.txt` / `.csv` — Part 2: the same metrics for all six
    solver × rule combinations.
 
-Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
+Figures in Portable Network Graphics (PNG) and Portable Document Format (PDF) go to `simulation_results/plots/`,
+produced by `./generate_plots.sh`.
 
 ---
 

@@ -2,7 +2,8 @@
 
 ## Purpose
 
-Stress-test the T-Rex selector with Grouped Variable Selection (T-Rex+GVS) on non-Gaussian data.
+Stress-test the Terminating Random Experiments (T-Rex) selector with Grouped Variable Selection (T-Rex+GVS) on
+non-Gaussian data.
  This demo reuses the same four-block active/trap geometry as Demo 03 (Mixed Blocks), but replaces every Gaussian
  component of the data-generating process (DGP) — latent factors, within-block perturbations, and response noise — with
  scaled Student-t(3) variables, testing robustness to heavy-tailed departures from the Gaussian assumption.
@@ -36,7 +37,7 @@ X_{ij} = \sqrt{\rho}\, Z_{i,\,g(j)} + \sqrt{1-\rho}\, \xi_{ij},
 \qquad Z_{\cdot,k},\, \xi_{ij} \sim t(3)/\sqrt{3},
 ```
 
-- Same 4-block geometry as Demo 03: sizes $\lbrace20, 50, 80, 65\rbrace$ (215 grouped columns in total).
+- Same 4-block geometry as Demo 03, with sizes $\lbrace20, 50, 80, 65\rbrace$ (215 grouped columns in total).
 - **Blocks 0–2 are active** ($\beta_j = 3$), while **block 3 is an inactive heavy-tailed trap** ($\beta_j = 0$).
 - Both the latent factors $Z_{\cdot,k}$ and the within-block perturbations $\xi_{ij}$ are $t(3)/\sqrt{3}$, so the
    heavy tails enter the design matrix as well as the response.
@@ -81,7 +82,8 @@ Written to `simulation_results/data/`:
 - `gvs_t3_blocks_2d.txt` / `.csv` — mean false discovery proportion (FDP) / true positive proportion (TPP) over the SNR
   $\times$ $\rho$ grid.
 
-Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
+Figures in Portable Network Graphics (PNG) and Portable Document Format (PDF) go to `simulation_results/plots/`,
+produced by `./generate_plots.sh`.
 
 ---
 

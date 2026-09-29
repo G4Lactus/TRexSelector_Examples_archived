@@ -2,7 +2,8 @@
 
 ## Purpose
 
-Evaluate the T-Rex selector with Grouped Variable Selection (T-Rex+GVS) on a more realistic grouped design:
+Evaluate the Terminating Random Experiments (T-Rex) selector with Grouped Variable Selection (T-Rex+GVS) on a more
+realistic grouped design:
  four contiguous equicorrelated blocks of unequal size,
  placed in **random order** with **random noise gaps** between and around them, and including one **inactive
  equicorrelated trap block**.
@@ -38,7 +39,7 @@ X_{ij} = Z_{i,\,g(j)} + \sigma_x\, \xi_{ij}, \qquad \xi_{ij} \sim \mathcal{N}(0,
 - Four contiguous blocks of sizes $\lbrace20, 50, 80, 65\rbrace$ (215 grouped columns in total).
 - **Blocks 0–2 are active** ($\beta_j = 3$), while **block 3 is an inactive trap** ($\beta_j = 0$) carrying the same
    equicorrelated structure as the active blocks.
-- Blocks are placed in a **random order** with **random-width noise gaps** (5 gap slots: before, between, and after
+- Blocks are placed in a **random order** with **random-width noise gaps** (5 gap slots before, between, and after
    the blocks) filled with i.i.d. $\mathcal{N}(0,1)$ background columns.
 - Within-block correlation $\rho = 1/(1 + \sigma_x^2)$, same convention as Demo 01.
 
@@ -83,7 +84,8 @@ Written to `simulation_results/data/`:
 - `gvs_mixed_blocks_2d.txt` / `.csv` — mean false discovery proportion (FDP) / true positive proportion (TPP) over the
   SNR $\times$ $\rho$ grid.
 
-Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
+Figures in Portable Network Graphics (PNG) and Portable Document Format (PDF) go to `simulation_results/plots/`,
+produced by `./generate_plots.sh`.
 
 ---
 

@@ -2,7 +2,8 @@
 
 ## Purpose
 
-The demo compares the T-Rex selector for sparse principal component analysis (SPCA), **T-Rex SPCA**
+The demo compares the Terminating Random Experiments (T-Rex) selector for sparse principal component analysis (SPCA),
+**T-Rex SPCA**
  [[1]](#references), against two principal component analysis (PCA) baselines on a synthetic sparse
  three-factor model, over a sweep of the signal-to-noise ratio (SNR) in decibels.
  Four solver/mode combinations are run — the elastic-net solver `TENET` vs. `TENET_AUG`, each with the
@@ -21,7 +22,7 @@ The demo compares the T-Rex selector for sparse principal component analysis (SP
  the reference paper, whose Fig. 2 reports FDR and TPR "for the first PC". The proportion of explained variance
  (PEV) does not suffer that ambiguity and is cumulative over all $M$ components.
 
-One framing to keep in mind throughout: T-Rex SPCA supervises each component's selector with the *plug-in*
+One framing is worth keeping in mind throughout. T-Rex SPCA supervises each component's selector with the *plug-in*
  ordinary PC $\boldsymbol z_m = \boldsymbol X \boldsymbol v_m$ — a one-shot construction, not the
  iterative refinement most sparse-PCA methods use. **The FDR guarantee is therefore conditional on the
  plug-in PC being a faithful proxy for its factor.** Where that proxy is good (PC1, factors above the noise
@@ -86,7 +87,7 @@ Note that only the **data** is seeded deterministically. Each trial's dummies ar
 | **TRexSPCA-EN-Thr** | T-Rex+GVS selection [[2]](#references) | `Thresholded` | `TENET` |
 | **TRexSPCA-ENaug-Thr** | T-Rex+GVS selection [[2]](#references) | `Thresholded` | `TENET_AUG` |
 
-The two modes differ in how the loadings are rebuilt once the support is chosen: `ActiveSet` keeps the
+The two modes differ in how the loadings are rebuilt once the support is chosen. `ActiveSet` keeps the
  selector's ridge coefficients, while `Thresholded` re-solves the ordinary PCA problem restricted to the
  selected support.
 
@@ -240,8 +241,8 @@ The **union of the factor supports** is well-posed for every component, because 
  the union is null for *every* factor, so selecting it is a false discovery no matter how the components
  mix.
 Section 2 of the demo (`TREX_SPCA_PARTS=2`) therefore scores each PC's selected support
- (`ActiveSet`/`TENET`, the selector's own active sets) against that union — answering the one question the
- overlap leaves answerable: *does the selector start harvesting pure-noise variables on the later PCs?*
+ (`ActiveSet`/`TENET`, the selector's own active sets) against that union. This answers the one question the
+ overlap leaves answerable. *Does the selector start harvesting pure-noise variables on the later PCs?*
 
 Formally, with $\mathcal S_{\cup} = \bigcup_{k=1}^{M} \mathcal S_k$ the union of the true factor supports
  and $\widehat{\mathcal A_m}$ the selector's active set for component $m$,
@@ -261,18 +262,18 @@ again as a Monte Carlo mean, while the right panel of the figure reports the com
 - **PC2 and PC3 are controlled exactly where their factors are alive, and break where they drown.** The
    factors have amplitudes $\sigma = (5, 3, 1)$, so relative to factor 1 the second factor sits
    $\approx 4$ dB and the third $\approx 14$ dB lower in effective SNR. That offset is precisely what the
-   curves show: PC2 holds the target from $-5$ dB up ($\leq 0.06$) and breaks below it ($0.16$ at $-7$ dB,
+   curves show. PC2 holds the target from $-5$ dB up ($\leq 0.06$) and breaks below it ($0.16$ at $-7$ dB,
    $0.45$ at $-10$ dB), while PC3 holds only from $+5$ dB up ($\leq 0.04$) and collapses below ($0.42$ at
    $0$ dB, $0.71\text{–}0.83$ at $\leq -3$ dB). Once a factor is buried, its plug-in PC is essentially a noise
    direction, and the selector — asked to explain a noise response — dutifully selects noise variables.
-   The support-size panel corroborates it: PC3's selection is inflated ($6\text{–}7.3$ variables) exactly in
+   The support-size panel corroborates it. PC3's selection is inflated ($6\text{–}7.3$ variables) exactly in
    its broken regime and drops to $\approx 3.7$ once the factor emerges.
 
 **Consequences**: the FDR guarantee is **conditional on the plug-in PC being a faithful proxy for its
 factor**. Where a factor is buried, the selector still controls the FDR of the noise regression it was
 handed — the nominal guarantee holds and is vacuous. Per-component control is therefore only as good as
-the component's effective SNR: a caveat inherited from the one-shot plug-in construction, not from the
-selector.
+the component's effective SNR. This caveat is inherited from the one-shot plug-in construction, not from
+the selector.
 
 ![T-Rex SPCA: union-support FDR per PC](simulation_results/plots/demo_trex_spca_01_mc_sim_union_fdr.png)
 

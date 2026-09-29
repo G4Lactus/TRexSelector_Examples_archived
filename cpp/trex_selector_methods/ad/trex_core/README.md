@@ -101,7 +101,7 @@ The selector aims to identify relevant variables while controlling false discove
 \right].
 ```
 
-In the simulations, the target level is denoted by **tFDR**, typically
+In the simulations, the target level is called the **target FDR (tFDR)**, typically
 
 ```math
 \alpha = 0.1.

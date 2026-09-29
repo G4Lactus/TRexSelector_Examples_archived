@@ -3,7 +3,7 @@
 ## Purpose
 
 The demo establishes the **baseline behaviour of Screen-TRex** [[1]](#references) on the easiest
- possible design: independent Gaussian predictors with no correlation structure at all.
+ possible design, independent Gaussian predictors with no correlation structure at all.
 Two thresholding rules are compared — the **Ordinary** majority-vote rule ($\Phi_j > 0.5$) and the
  **Bootstrap-CI** rule — over a signal-to-noise sweep.
 Everything the later demos add (correlation, dependency-aware corrections, biobank routing, solver
@@ -53,7 +53,8 @@ solver = TLARS               # T-Rex solver backend
 MC = 200                     # Monte Carlo repetitions per grid point
 ```
 
-Note that Screen-TRex has **no target-FDR parameter**, because unlike the classical T-Rex selector, screening
+Note that Screen-TRex has **no target-FDR parameter**, because unlike the classical Terminating Random Experiments
+(T-Rex) selector, screening
  thresholds the voting statistic instead of calibrating to a user-specified level.
 
 ---
@@ -84,7 +85,8 @@ Written to `simulation_results/data/`:
 
 - `scr_screen_trex_snr_n300_p1000.txt` / `.csv` — FDR, TPR, and estimated FDR per method and SNR level.
 
-Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
+Figures in Portable Network Graphics (PNG) and Portable Document Format (PDF) go to `simulation_results/plots/`,
+produced by `./generate_plots.sh`.
 
 ---
 
@@ -106,7 +108,7 @@ Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_p
 - **Both rules become reliable once signal is present.** From $\mathrm{SNR} \ge 0.5$ the Ordinary rule's
    FDR drops to $0.12$ and settles around $0.05\text{–}0.07$, while its TPR climbs $0.44 \to 1.00$. All ten
    active variables are recovered at $\mathrm{SNR} = 5$.
-- **Bootstrap-CI is the conservative rule: lower FDR, clearly less power.** Its FDR stays below $0.06$ for
+- **Bootstrap-CI is the conservative rule, with lower FDR and clearly less power.** Its FDR stays below $0.06$ for
    $\mathrm{SNR} \ge 0.5$ (roughly half the Ordinary rule's), paid for with TPR $0.87$ vs. $1.00$ at
    $\mathrm{SNR} = 5$, and a much wider gap mid-sweep ($0.37$ vs. $0.83$ at $\mathrm{SNR} = 1$). Choose it
    when false discoveries are costlier than missed ones.

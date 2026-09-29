@@ -2,10 +2,10 @@
 
 ## Purpose
 
-Demonstrate **memory-mapped (mmap) input/output (I/O) workflows** for the T-Rex selector via two single-run usage
-patterns. Enabling `use_memory_mapping = true` couples two behaviours. The internal dummy matrices $\mathbf{D}$ are
-memory-mapped, and solver warm-start (least-angle regression (LARS) path) state is serialized to disk between T-loop
-iterations. Demo B additionally memory-maps the design matrix $\mathbf{X}$ itself.
+Demonstrate **memory-mapped (mmap) input/output (I/O) workflows** for the Terminating Random Experiments (T-Rex)
+selector via two single-run usage patterns. Enabling `use_memory_mapping = true` couples two behaviours. The internal
+dummy matrices $\mathbf{D}$ are memory-mapped, and solver warm-start (least-angle regression (LARS) path) state is
+serialized to disk between T-loop iterations. Demo B additionally memory-maps the design matrix $\mathbf{X}$ itself.
 
 ---
 
@@ -34,6 +34,7 @@ range.)
 ## Scenarios
 
 ### Demo A: In-Memory $\mathbf{X}$ + `use_memory_mapping = true`
+
 - Design matrix $\mathbf{X}$ is generated and held in RAM (`SyntheticData`).
 - Internal dummy matrices $\mathbf{D}$ are memory-mapped, and solver LARS-path checkpoints are serialized to disk
   between T-loop iterations.
@@ -41,6 +42,7 @@ range.)
 **Use case**: $\mathbf{X}$ fits in RAM but the dummy/solver working set is large.
 
 ### Demo B: Fully Memory-Mapped Pipeline ($\mathbf{X}$ + $\mathbf{D}$ + solver serialization)
+
 - $\mathbf{X}$ itself is backed by a Boost memory-mapped file (`SyntheticDataMapped`) written to `X_mmap.dat` /
   `y_mmap.dat` in the **current working directory**.
 - These backing files are removed automatically on scope exit by a Resource Acquisition Is Initialization (RAII)
@@ -54,7 +56,7 @@ range.)
 
 ## Control Parameters
 
-```
+```text
 K = 20                           # Random experiments per T-loop iteration
 max_dummy_multiplier = 10        # Max L = 10p
 use_max_T_stop = true            # Cap T ≤ ceil(n/2)
@@ -81,11 +83,12 @@ configuration. Stems are `d02_trex_mmap_demo_a_n{n}_p{p}` (Demo A) and `d02_trex
 The `.txt` file records the run (selected indices, false discovery proportion (FDP), true positive proportion (TPP),
 and the Phi', Phi, FDP_hat, R matrices and voting grid — via the shared `print_results`). There is **no** timing block.
 The `.csv` is a per-variable selection table written by `save_selection_csv`, with header:
-```
+
+```text
 variable_index,phi_prime,selected,true_positive
 ```
 
-Note: the Demo B mmap backing files `X_mmap.dat` / `y_mmap.dat` are created in the working directory and deleted on
+The Demo B mmap backing files `X_mmap.dat` / `y_mmap.dat` are created in the working directory and deleted on
 scope exit. They are not written under `/tmp/trex_mmaps/`.
 
 ---
@@ -114,10 +117,12 @@ scope exit. They are not written under `/tmp/trex_mmaps/`.
 ## Interpretation Guide
 
 **What to look for:**
+
 1. **Correctness**: Demo A and Demo B select consistently for the same configuration.
 2. **Resource behaviour**: RAM stays low while dummy/solver state is offloaded to disk.
 3. **Cleanup**: Demo B's backing files are removed automatically by the RAII guard.
 
 **Practical guidance:**
+
 - Enable mmap when the dummy/solver working set (or $\mathbf{X}$ itself) does not fit comfortably in RAM.
 - Prefer an SSD for the backing files to reduce page-fault latency.

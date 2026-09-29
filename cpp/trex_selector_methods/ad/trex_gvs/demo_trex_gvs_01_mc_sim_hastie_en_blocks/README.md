@@ -2,9 +2,9 @@
 
 ## Purpose
 
-The following demo presents the T-Rex selector with Grouped Variable Selection (T-Rex+GVS) according to
-[[1]](#references) and [[2]](#references).
-We evaluate grouped-signal recovery under strong equicorrelation, using the classical three-group design of
+The following demo presents the Terminating Random Experiments (T-Rex) selector with Grouped Variable Selection
+(T-Rex+GVS) according to [[1]](#references) and [[2]](#references). We evaluate grouped-signal recovery under strong
+equicorrelation, using the classical three-group design of
  Zou & Hastie (2005) [[3]](#references).
  In our demos all variables within an active group are themselves active, so the task is recovering all
  of them, but on an individual-variable basis, rather than using a group-level selection method.
@@ -28,8 +28,9 @@ We consider the linear model:
 - $\boldsymbol{\epsilon}$ is the noise vector, independent and identically distributed (i.i.d.) standard normal.
 - $\sigma_{\varepsilon}^2$ is the noise variance, calibrated to achieve a target linear signal-to-noise ratio (SNR).
 - $n = 200$, $p = 500$, $s = 150$.
-  
+
 The design matrix $\boldsymbol{X}$ is generated from a latent-factor model with three active groups:
+
 ```math
 X_{ij} = Z_{i,\,g(j)} + \sigma_x\, \xi_{ij}, \qquad \xi_{ij} \sim \mathcal{N}(0,1).
 ```
@@ -93,7 +94,8 @@ Written to `simulation_results/data/`:
 - `gvs_Hastie_lambda2_method.txt` / `.csv` — $\lambda_2$-selection comparison (Part 2).
 - `gvs_Hastie_hc_linkage.txt` / `.csv` — HAC-linkage comparison (Part 3).
 
-Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
+Figures in Portable Network Graphics (PNG) and Portable Document Format (PDF) go to `simulation_results/plots/`,
+produced by `./generate_plots.sh`.
 
 ---
 

@@ -2,11 +2,11 @@
 
 ## Overview
 
-This folder contains C++ example programs for **DA-TRex**, the T-Rex Selector extended with **dependency-aware (DA)
-correction** for correlated/dependent design matrices. Where the classical T-Rex selector (see
-[../trex_core/](../trex_core/README.md)) assumes exchangeable, weakly correlated predictors, DA-TRex explicitly models
-the correlation structure among nearby or grouped variables so that a single true signal does not get "smeared" into
-false discoveries among its correlated neighbors.
+This folder contains C++ example programs for **DA-TRex**, the Terminating Random Experiments (T-Rex) Selector extended
+with **dependency-aware (DA) correction** for correlated/dependent design matrices. Where the classical T-Rex selector
+(see [../trex_core/](../trex_core/README.md)) assumes exchangeable, weakly correlated predictors, DA-TRex explicitly
+models the correlation structure among nearby or grouped variables so that a single true signal does not get "smeared"
+into false discoveries among its correlated neighbors.
 
 The demos cover four dependency structures and their matching DA methods: **first-order autoregressive (AR(1))**
 (Toeplitz decay), **equicorrelation (EQUI)**, **banded nearest-neighbor (NN)**, and **binary-tree (BT)**, a
@@ -94,12 +94,12 @@ $\mathrm{SNR} = \mathrm{Var}(\boldsymbol{X}\boldsymbol{\beta})/\mathrm{Var}(\bol
   clusters are picked uniformly at random per random experiment, which restores the occurrence spread the DA correction
   relies on. TLARS keeps `0` (unneeded). See `HISTORY.md` (2026-07-15) in the TRexSelector repository for details and
   validation.
-- **TAFS' adaptive forward-selection (AFS) correlation parameter** (`rho_afs = 0.3`): `default_solvers()` runs TAFS
-  with `rho_afs = 0.3`, the correlation threshold of its AFS step, while TLARS and TOMP take `0` (unused). Because it
-  is a defining part of the method rather than an incidental tuning knob, the plotting module annotates every legend
-  entry as `TAFS (rho = 0.3)` (`TAFS_RHO` in `trex_da_plt_utils.py` — keep it in sync with `default_solvers()` in
-  `trex_da_sim_common.hpp`). The CSVs keep the raw `TREX-DA...: TAFS` label the demo binaries write,
-  so the annotation is applied at plot time and needs no re-run.
+- **TAFS' adaptive forward-selection (AFS) correlation parameter** (`rho_afs = 0.3`): `default_solvers()` runs TAFS with
+  `rho_afs = 0.3`, the correlation threshold of its AFS step, while TLARS and TOMP take `0` (unused). Because it is a
+  defining part of the method rather than an incidental tuning knob, the plotting module annotates every legend entry as
+  `TAFS (rho = 0.3)` (`TAFS_RHO` in `trex_da_plt_utils.py` — keep it in sync with `default_solvers()` in
+  `trex_da_sim_common.hpp`). The comma-separated values (CSV) files keep the raw `TREX-DA...: TAFS` label the demo
+  binaries write, so the annotation is applied at plot time and needs no re-run.
 
 ---
 

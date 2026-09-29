@@ -2,14 +2,14 @@
 
 ## Purpose
 
-Compare the **dummy distributions** of the T-Rex Selector — the distribution from which the injected dummy (null)
-variables are drawn — across **three base solver families** (TLARS, TOMP, TAFS), with the L-loop strategy fixed at
-**STANDARD**. The T-Rex false discovery rate (FDR) calibration rests on exchangeability between real null predictors
-and the dummies. Since dummies are centered and L2-normalized before entering the solver, their *scale* is immaterial.
-What this demo probes is whether the *shape* of the dummy distribution (tail weight, discreteness, skewness, sparsity,
-cross-column dependence) affects the achieved FDR / true positive rate (TPR) and the calibrated dummy multiplier $L$ /
-stopping time $T$ — and whether any such effect depends on the solver family (equiangular least-angle regression (LARS)
-path vs greedy forward selection).
+Compare the **dummy distributions** of the Terminating Random Experiments (T-Rex) Selector — the distribution from which
+the injected dummy (null) variables are drawn — across **three base solver families** (TLARS, TOMP, TAFS), with the
+L-loop strategy fixed at **STANDARD**. The T-Rex false discovery rate (FDR) calibration rests on exchangeability between
+real null predictors and the dummies. Since dummies are centered and L2-normalized before entering the solver, their
+*scale* is immaterial. What this demo probes is whether the *shape* of the dummy distribution (tail weight,
+discreteness, skewness, sparsity, cross-column dependence) affects the achieved FDR / true positive rate (TPR) and the
+calibrated dummy multiplier $L$ / stopping time $T$ — and whether any such effect depends on the solver family
+(equiangular least-angle regression (LARS) path vs greedy forward selection).
 
 ---
 
@@ -68,7 +68,7 @@ All distributions use their unit-variance default parameters where applicable.
 
 Set per solver × distribution (see the solver / distribution loops):
 
-```
+```text
 solver_type = <varies>           # TLARS / TOMP / TAFS (outer sweep)
 solver_params.rho_afs = 0.3      # TAFS regularization (ignored by TLARS/TOMP)
 K = 20                           # Random experiments per T-loop iteration
@@ -90,12 +90,13 @@ All files are written to `simulation_results/data/`. One `.txt` + `.csv` pair is
 encodes the solver and the support scenario (`random_support` for the active run):
 
 ### Main Result Files
+
 **`demo_trex_05_dummy_distributions_results_n300_p1000_{tlars,tomp,tafs}_random_support.txt`**
 
 Aligned table (written by the shared `save_and_print_mc_results`) with four metric rows — FDR, TPR, Avg L, Avg T — per
 distribution across the 21 SNR columns. The row label is the distribution name (Normal, Uniform, …, UnifSphere_d5):
 
-```
+```text
 ======================================================================
 === T-Rex Results (averaged over 10 Monte Carlo runs) ===
 ======================================================================
@@ -112,6 +113,7 @@ Uniform        ...
 ```
 
 ### Tidy-Format CSVs
+
 **`demo_trex_05_dummy_distributions_results_n300_p1000_{tlars,tomp,tafs}_random_support.csv`**
 
 Long/stacked format, header column order **`solver,metric,snr,value`** (here the "solver" column holds the
@@ -153,14 +155,14 @@ values (CSV) files at once and renders them on a shared scale.
 
 For each base solver, the suite-level [../trex_plt_utils.py](../trex_plt_utils.py)
 also renders the usual overview (all twelve distributions on one FDR | TPR pair),
-a de-cluttered grouped 2×2 view, and a self-contained interactive Plotly HTML.
+a de-cluttered grouped 2×2 view, and a self-contained interactive Plotly `.html` page.
 The TLARS overview, for example:
 
 ![TLARS: FDR and TPR versus SNR for all 12 dummy distributions](simulation_results/plots/demo_trex_05_dummy_distributions_results_n300_p1000_tlars_random_support_fdr_tpr_vs_snr.png)
 
-The `_grouped` PNG/PDF and the interactive `.html` (hover for values, **click a
+The `_grouped` `.png` / `.pdf` and the interactive `.html` (hover for values, **click a
 distribution in the legend to isolate it** in both panels) sit alongside, one set
-per solver (`tlars` / `tomp` / `tafs`). Open an HTML directly in a browser.
+per solver (`tlars` / `tomp` / `tafs`). Open an `.html` file directly in a browser.
 The `.html` figures are not committed to the repository (each embeds a full copy of
 plotly.js). Run `./generate_plots.sh` to produce them locally.
 
@@ -168,7 +170,7 @@ plotly.js). Run `./generate_plots.sh` to produce them locally.
 open simulation_results/plots/demo_trex_05_dummy_distributions_results_n300_p1000_tlars_random_support_fdr_tpr_vs_snr.html
 ```
 
-Vector (PDF) copies of every static figure sit alongside the PNGs.
+Vector `.pdf` copies of every static figure sit alongside the `.png` files.
 
 ### Regenerating the figures
 
@@ -215,11 +217,13 @@ three per-solver sets plus the comparison grid:
 ## Interpretation Guide
 
 **What to look for:**
+
 - **FDR equivalence**: the i.i.d. rows should all keep FDR $\leq$ tFDR with only MC noise between them.
 - **TPR consistency**: minor variation due to randomness and the small MC count (`num_MC = 10`).
 - **Avg L / Avg T**: whether the L-loop calibrates a different dummy budget for a given distribution shape.
 
 **Practical significance:**
+
 - If all shapes perform equivalently, the Normal default is justified and the distribution choice is a free parameter
   (e.g., Rademacher / SparseRad admit cheaper generation or sparse storage).
 - Systematic deviations for the dependent UnifSphere rows would illustrate why the exchangeability requirement in

@@ -2,10 +2,11 @@
 
 ## Purpose
 
-Investigate T-Rex selector performance, measured by the false discovery rate (FDR), the true positive rate (TPR), the
-average dummy multiplier $L$ and the average stopping time $T$, when the **positions** of the active variables are
-redrawn on every Monte Carlo (MC) trial, while the **number** of active variables stays fixed. This isolates the effect
-of support location (rather than support size) and complements the fixed-support study in Demo 02.
+Investigate Terminating Random Experiments (T-Rex) selector performance, measured by the false discovery rate (FDR), the
+true positive rate (TPR), the average dummy multiplier $L$ and the average stopping time $T$, when the **positions** of
+the active variables are redrawn on every Monte Carlo (MC) trial, while the **number** of active variables stays fixed.
+This isolates the effect of support location (rather than support size) and complements the fixed-support study in
+Demo 02.
 
 ---
 
@@ -29,7 +30,7 @@ of support location (rather than support size) and complements the fixed-support
 
 ## Control Parameters
 
-```
+```text
 K = 20                           # Random experiments per T-loop iteration
 max_dummy_multiplier = 10        # Max dummies L = 10p
 use_max_T_stop = true            # Cap T ≤ ceil(n/2)
@@ -58,16 +59,19 @@ Both files are written to `simulation_results/data/`. The stem uses `tloop_max_s
 `stagnation_window_5`), prefixed with `demo_trex_03_mc_sim_variable_support_`.
 
 ### Main Result File
+
 **`demo_trex_03_mc_sim_variable_support_trex_results_n300_p1000_stagnation_window_5.txt`**
 
 Aligned table with four metric rows per solver — FDR, TPR, Avg L, Avg T — across the 21 SNR columns.
 
 ### Tidy-Format CSV
+
 **`demo_trex_03_mc_sim_variable_support_trex_results_n300_p1000_stagnation_window_5.csv`**
 
 Long/stacked format, header column order **`solver,metric,snr,value`**, with `FDR`, `TPR`, `AvgL`, and `AvgT` rows
 per solver and SNR:
-```
+
+```text
 solver,metric,snr,value
 TLARS,FDR,0.100000,...
 TLARS,TPR,0.100000,...
@@ -119,7 +123,7 @@ plotly.js). Run `./generate_plots.sh` to produce them locally.
 open simulation_results/plots/demo_trex_03_mc_sim_variable_support_trex_results_n300_p1000_stagnation_window_5_fdr_tpr_vs_snr.html
 ```
 
-Vector (PDF) copies of both static figures sit alongside the PNGs.
+Vector `.pdf` copies of both static figures sit alongside the `.png` files.
 
 ### Regenerating the figures
 
@@ -168,7 +172,7 @@ builds are silent here unless verbosity is enabled.
 ## Key Questions Addressed
 
 1. **Is FDR control robust to the location of the active set?**
-   - Expected: FDR remains $\leq$ tFDR regardless of which 10 indices are active.
+   - Expected: FDR remains $\leq \mathrm{tFDR}$ regardless of which 10 indices are active.
 
 2. **How do the averaged $L$ and $T$ behave across SNR?**
    - The Avg L and Avg T rows expose how the dummy multiplier and stopping time adapt as signal strength rises.
@@ -181,11 +185,13 @@ builds are silent here unless verbosity is enabled.
 ## Interpretation Guide
 
 **What to look for:**
-- **FDR stability**: Should remain $\leq$ tFDR even as support indices change per trial.
+
+- **FDR stability**: Should remain $\leq \mathrm{tFDR}$ even as support indices change per trial.
 - **TPR curve**: Smooth increase across the fine SNR grid.
 - **Avg L / Avg T**: Diagnostic behaviour of the L-loop and T-loop across SNR.
 
 **Comparison with Demo 02:**
+
 - Demo 02 (fixed support indices) is the baseline.
 - Demo 03 (support indices redrawn per trial, fixed cardinality) tests robustness to support location. Note the
   smaller MC count (`num_MC = 10`) — averages are noisier than Demo 02's 200 trials.

@@ -2,8 +2,8 @@
 
 ## Overview
 
-This folder contains C++ example programs for the **T-Rex Selector with Grouped Variable Selection (T-Rex+GVS)**
-according to [[1,2]](#references).
+This folder contains C++ example programs for the **Terminating Random Experiments (T-Rex) Selector with Grouped
+Variable Selection (T-Rex+GVS)** according to [[1,2]](#references).
 
 T-Rex+GVS extends the classical T-Rex selector (see [../trex_core/](../trex_core/README.md)) to settings where
 predictors form known or discoverable **groups** of correlated variables.
@@ -214,8 +214,8 @@ awake).
 
 ### Figures
 
-Each demo folder has a `generate_plots.sh` that renders its figures from the saved CSVs into
-`simulation_results/plots/` using the shared `trex_gvs_plt_utils.py` and the repo-root `.venv`
+Each demo folder has a `generate_plots.sh` that renders its figures from the saved comma-separated values (CSV) files
+into `simulation_results/plots/` using the shared `trex_gvs_plt_utils.py` and the repo-root `.venv`
 (matplotlib + pandas + numpy):
 
 ```bash

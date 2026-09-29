@@ -1,18 +1,16 @@
 # Demo 06: DA-TRex+AKG (A Priori Known Groups) on Multi-Level Nested Data
 
-Monte-Carlo (MC) results for **DA-TRex+AKG** — the dependency-aware T-Rex selector with **a priori known
-groups (AKG)**, where the true group structure is supplied to the selector as a hard **constraint** on its
-dependency tree (constrained sub-clustering), instead of letting hierarchical agglomerative
-clustering (HAC) discover the structure from scratch.
-The data-generating process (DGP) is a three-level nested latent-factor model with a non-exchangeable
-Toeplitz leaf layer.
-Common setup: $n=300$, $p=1{,}000$, $s=10$, `Random` support, target false discovery rate (FDR)
-$\mathrm{tFDR}=0.2$, $K=20$ random experiments, $\mathrm{MC}=200$ per grid point, solvers TLARS / TAFS / TOMP, and a
-signal-to-noise ratio (SNR) sweep $\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 1, 2, 5\rbrace$.
-The greedy solvers use *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for TAFS/TOMP, `0` for
-TLARS). See `Exchangeable_Tie_Breaking_DA_TRex.md` in the TRex_Research documentation.
-TAFS additionally runs with its adaptive forward-selection (AFS) correlation parameter `rho_afs = 0.3`
-(`0` for TLARS/TOMP), which is why the figures label it `TAFS (rho = 0.3)`.
+Monte-Carlo (MC) results for **DA-TRex+AKG** — the dependency-aware Terminating Random Experiments (T-Rex) selector with
+**a priori known groups (AKG)**, where the true group structure is supplied to the selector as a hard **constraint** on
+its dependency tree (constrained sub-clustering), instead of letting hierarchical agglomerative clustering (HAC)
+discover the structure from scratch. The data-generating process (DGP) is a three-level nested latent-factor model with
+a non-exchangeable Toeplitz leaf layer. Common setup: $n=300$, $p=1{,}000$, $s=10$, `Random` support, target false
+discovery rate (FDR) $\mathrm{tFDR}=0.2$, $K=20$ random experiments, $\mathrm{MC}=200$ per grid point, solvers TLARS /
+TAFS / TOMP, and a signal-to-noise ratio (SNR) sweep $\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 1, 2, 5\rbrace$. The greedy
+solvers use *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for TAFS/TOMP, `0` for TLARS). See
+`Exchangeable_Tie_Breaking_DA_TRex.md` in the TRex_Research documentation. TAFS additionally runs with its adaptive
+forward-selection (AFS) correlation parameter `rho_afs = 0.3` (`0` for TLARS/TOMP), which is why the figures label it
+`TAFS (rho = 0.3)`.
 
 ---
 
@@ -22,7 +20,7 @@ The known three-level hierarchy is passed via `da_ctrl.prior_groups`. Since 2026
 `PRIOR_GROUPS` method treats these labels as **merge constraints**, not as deflation
 neighbourhoods:
 
-1. the **finest common refinement** of the supplied levels (here: the groups of 10) partitions the
+1. the **finest common refinement** of the supplied levels (here the groups of 10) partitions the
    variables — two variables can only ever share a deflation neighbourhood if they share a group
    on every level,
 2. **HAC runs within each constraint group** (`hc_linkage`, correlation distance) — merges across
@@ -82,7 +80,8 @@ so even the members of a finest-level group are *not* exchangeable.
 ./build/release/bin/trex_selector_methods/ad/trex_da/demo_trex_da_06_mc_sim_groups/demo_trex_da_06_mc_sim_groups
 ```
 
-Afterwards, regenerate the figure from the CSV with [`generate_plots.sh`](generate_plots.sh).
+Afterwards, regenerate the figure from the comma-separated values (CSV) file with
+[`generate_plots.sh`](generate_plots.sh).
 
 ---
 
@@ -92,7 +91,7 @@ Data tables are written to `simulation_results/data/`:
 
 - `da_trex_mc_da_groups_toeplitz_leaf.txt` / `.csv`
 
-The figure (PNG/PDF + interactive Plotly HTML) goes to `simulation_results/plots/`.
+The figure (`.png`, `.pdf` and an interactive Plotly `.html` page) goes to `simulation_results/plots/`.
 
 ---
 

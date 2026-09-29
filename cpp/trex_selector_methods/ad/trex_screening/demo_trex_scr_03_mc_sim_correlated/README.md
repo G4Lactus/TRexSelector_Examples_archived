@@ -71,7 +71,8 @@ solver = TLARS               # T-Rex solver backend
 MC = 200                     # Monte Carlo repetitions per grid point
 ```
 
-Note that Screen-TRex has **no target-FDR parameter**, because unlike the classical T-Rex selector, screening
+Note that Screen-TRex has **no target-FDR parameter**, because unlike the classical Terminating Random Experiments
+(T-Rex) selector, screening
  thresholds the voting statistic instead of calibrating to a user-specified level.
 
 ---
@@ -121,8 +122,8 @@ Written to `simulation_results/data/`, each as `.txt` (human-readable table) and
 - `scr_equi_rho_n300_p1000_snr1.00` — Part 4: equicorrelated, $\rho$ sweep.
 - `scr_block_equi_rho_n300_p1000_blocks5_snr1.00` — Part 5: block-equicorrelated, $\rho$ sweep.
 
-Each file holds FDR, TPR, and estimated FDR per method and grid point. Figures (PNG + PDF) go to
-`simulation_results/plots/`, produced by `./generate_plots.sh`.
+Each file holds FDR, TPR, and estimated FDR per method and grid point. Figures in Portable Network Graphics (PNG) and
+Portable Document Format (PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
 
 ---
 

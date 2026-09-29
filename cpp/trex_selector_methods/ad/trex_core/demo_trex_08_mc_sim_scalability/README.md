@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Characterize **T-Rex selector runtime and memory usage** as $n$ and $p$ scale to
+Characterize **Terminating Random Experiments (T-Rex) selector runtime and memory usage** as $n$ and $p$ scale to
 large sizes, and demonstrate that the selector goes **high-dimensional and
 out-of-core** — into design volumes that exceed physical random-access memory
 (RAM). Everything runs on the **fully memory-mapped pipeline**. Every Monte Carlo
@@ -70,7 +70,7 @@ scalability limit. It is the main upstream optimization opportunity this benchma
 surfaces (free or stream the beta paths after each T-iteration's $\Phi$
 computation).
 
-Disk sizing: the $\mathbf{X}$ backing file is $n \cdot p \cdot 8$ bytes per trial
+For disk sizing, the $\mathbf{X}$ backing file is $n \cdot p \cdot 8$ bytes per trial
 and the mmap dummy matrix $\mathbf{D}$ grows up to `max_dummy_multiplier` × that,
 so the corner needs hundreds of GB of free disk for the dummy backing.
 
@@ -78,7 +78,7 @@ so the corner needs hundreds of GB of free disk for the dummy backing.
 
 ## Data Generation Parameters
 
-The data-generating process (DGP) mirrors **Demo 03** (variable support): Normal predictors and Normal noise.
+The data-generating process (DGP) mirrors **Demo 03** (variable support), with Normal predictors and Normal noise.
 
 - **True support cardinality**: fixed at $s = 10$, while the **indices are redrawn
   per trial** via `draw_support` (uniform without replacement,

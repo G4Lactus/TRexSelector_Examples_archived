@@ -2,9 +2,9 @@
 
 ## Purpose
 
-While Demo 01 asks whether the false discovery rate (FDR) of the loading support is controlled, this demo asks: **what
- proportion of variance does the selected support actually explain, and where does a non-sparse method's apparent
- advantage come from?**
+While Demo 01 asks whether the false discovery rate (FDR) of the loading support is controlled, this demo asks two
+ other questions. **What proportion of variance does the selected support actually explain, and where does a
+ non-sparse method's apparent advantage come from?**
 
 It runs all four sweeps of **Fig. 3** of [[1]](#references) — cumulative explained variance under the
  paper's Definition 1 — and reports the conventional total-variance normalization alongside it so the two can
@@ -59,7 +59,8 @@ As in demo 01, only the **data** is seeded deterministically, while each trial's
 ## Methods Compared
 
 Identical to [demo 01](../demo_trex_spca_01_mc_sim/README.md#methods-compared): **OrdPCA**, **OraclePCA**, and the four
- T-Rex sparse principal component analysis (SPCA) variants crossing `TENET`/`TENET_AUG` with `ActiveSet`/`Thresholded`.
+ Terminating Random Experiments (T-Rex) sparse principal component analysis (SPCA) variants crossing `TENET`/`TENET_AUG`
+ with `ActiveSet`/`Thresholded`.
 
 The metrics are those of [demo 01](../demo_trex_spca_01_mc_sim/README.md#metrics) — classical EV, corrected to the
  adjusted EV of [[3]](#references), reported as `PEV` (total-variance share), `PEVsig` (Definition 1) and `PEVsigmix`
@@ -101,7 +102,7 @@ Notes on the grids:
    comma-separated values (CSV) files as the data record but are not displayed.
 - **Part 5 is the support-recovery counterpart of Part 4**, run over the full 2D grid instead of the 0 dB slice, and
    only for PC1. Each trial runs the per-PC selector for grouped variable selection (GVS) with the elastic net (EN),
-   T-Rex+GVS(EN), twice on the same data: once on the **plug-in response** $y = \boldsymbol{X} v_1$ (what T-Rex SPCA
+   T-Rex+GVS(EN), twice on the same data, once on the **plug-in response** $y = \boldsymbol{X} v_1$ (what T-Rex SPCA
    actually regresses on) and once on the **oracle response** $y = z_1$, the true factor scores. The pairing isolates
    the mechanism behind the FDR overshoot at loose targets — see the caveat section below.
 
@@ -210,7 +211,7 @@ The paper's text does not pin down the normalization behind its plotted curves �
  denominator reproduces all published anchors, so digit-level agreement with Fig. 3 is not attainable from
  the paper alone. (A self-normalized reading of Definition 1 is ruled out entirely, because it is $\geq 100\%$ by
  construction for null-capturing methods and inverts the SNR trend.) This demo therefore uses the fixed
- active-column denominator throughout, which reproduces the figure's qualitative content: curves rising
+ active-column denominator throughout, which reproduces the figure's qualitative content, namely curves rising
  with SNR, ordinary PCA's Null-EV overshoot past $100\%$, the sparse methods saturating near $100\%$, and
  the ranking inversion between the two normalizations.
 
@@ -231,13 +232,13 @@ Part 5 maps the realized FDR and TPR of PC1's support over the **full** (target 
 
 What the grid shows:
 
-- **Plug-in response: control holds up to the targets this suite actually uses, then breaks everywhere.**
+- **Under the plug-in response, control holds up to the targets this suite actually uses, then breaks everywhere.**
    At $\mathrm{tFDR} = 0.05$ the realized FDR is $0.04\text{–}0.10$, and at $0.10$ it is $0.08\text{–}0.16$ (fraying
    mildly above target from $+5$ dB up). From $\mathrm{tFDR} = 0.15$ the exceedance is systematic at every
    SNR — $+0.06$ to $+0.09$ at $0.15$, growing to $+0.12$ to $+0.18$ at $0.50$ (realized $0.62\text{–}0.68$).
    The pattern is nearly SNR-independent, so this is not a noise effect. The standard error (SE) is
    $\approx 0.02\text{–}0.03$ per cell.
-- **Oracle response: the overshoot largely vanishes — the mechanism is confirmed.** With the true factor
+- **Under the oracle response the overshoot largely vanishes — the mechanism is confirmed.** With the true factor
    as response, the realized FDR stays **at or below target through $\mathrm{tFDR} \approx 0.30$ at every
    SNR** (e.g. $0.06\text{–}0.10$ against $0.15$, $0.14\text{–}0.18$ against $0.20$), and even at the loosest targets
    the residual exceedance is only $+0.03\text{–}0.04$ ($0.53\text{–}0.54$ against $0.50$). The bulk of the plug-in

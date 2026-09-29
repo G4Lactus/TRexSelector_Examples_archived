@@ -2,10 +2,10 @@
 
 ## Purpose
 
-The demo evaluates the T-Rex selector performance, measured by the false discovery rate (FDR) and the true positive
-rate (TPR), across a range of **Signal-to-Noise Ratios (SNR)** with a fixed true support structure, comparing many
-base solvers.
-This is the foundational empirical validation demo for the classical T-Rex algorithm.
+The demo evaluates the Terminating Random Experiments (T-Rex) selector performance, measured by the false discovery rate
+(FDR) and the true positive rate (TPR), across a range of **Signal-to-Noise Ratios (SNR)** with a fixed true support
+structure, comparing many base solvers. This is the foundational empirical validation demo for the classical T-Rex
+algorithm.
 
 ---
 
@@ -150,13 +150,13 @@ plotly.js). Run `./generate_plots.sh` to produce them locally.
 open simulation_results/plots/demo_trex_02_mc_sim_fixed_support_trex_results_n300_p1000_stagnation_window_7_fdr_tpr_vs_snr.html
 ```
 
-Vector (PDF) copies of both static figures sit alongside the PNGs.
+Vector `.pdf` copies of both static figures sit alongside the `.png` files.
 
 ### Regenerating the figures
 
 Quickest way — the wrapper picks up the repo's local `.venv` automatically, so no
 manual path or `activate` is needed. By default it produces all three views
-(overview + grouped static figures and the interactive HTML):
+(overview + grouped static figures and the interactive `.html` page):
 
 ```bash
 # From this demo folder:
@@ -166,8 +166,8 @@ manual path or `activate` is needed. By default it produces all three views
 ./generate_plots.sh --tfdr 0.05     # e.g. a different target-FDR line
 ```
 
-One-time setup: the plotter needs `matplotlib` and `plotly` (the repo `.venv`
-already ships `pandas`) — `pip install matplotlib plotly`.
+As a one-time setup, the plotter needs `matplotlib` and `plotly` (the repo `.venv`
+already ships `pandas`), so run `pip install matplotlib plotly`.
 
 The underlying `../trex_plt_utils.py` is shared by every demo in this suite whose
 results use the tidy `solver,metric,snr,value` schema (demos 02/03/04/05) — it
@@ -196,7 +196,7 @@ count.
 
 ### FDR Control
 
-- FDR is **maintained near or below target tFDR = 0.1** across SNR levels for the LARS-path solvers.
+- FDR is **maintained near or below the target $\mathrm{tFDR} = 0.1$** across SNR levels for the LARS-path solvers.
 - At low SNR, FDR tends to be conservative due to few selections, and it stabilizes as SNR increases.
 
 ### Power (TPR)
@@ -216,7 +216,7 @@ count.
 
 **What to look for:**
 
-1. **FDR constraint satisfaction**: Is FDR $\leq$ tFDR across SNR levels for each solver?
+1. **FDR constraint satisfaction**: Is FDR $\leq \mathrm{tFDR}$ across SNR levels for each solver?
 2. **Power progression**: Does TPR increase monotonically with SNR?
 3. **Solver differences**: How do the FDR/TPR curves diverge across the 14 solvers?
 
@@ -224,4 +224,4 @@ count.
 
 - Baseline validation of the algorithm implementation.
 - Comparison of base solvers within the T-Rex framework.
-- Parameter tuning (varying tFDR, K, stagnation window).
+- Parameter tuning (varying $\mathrm{tFDR}$, $K$, stagnation window).

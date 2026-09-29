@@ -2,9 +2,10 @@
 
 ## Purpose
 
-Quantify what **prior group knowledge is actually worth** to the T-Rex selector with Grouped Variable Selection
+Quantify what **prior group knowledge is actually worth** to the Terminating Random Experiments (T-Rex) selector with
+Grouped Variable Selection
  (T-Rex+GVS), as a function of how easily the groups could have been discovered from the data anyway.
- Four method variants factorize the question: elastic net (EN) vs. informed elastic net (IEN), each run once with
+ Four method variants factorize the question into elastic net (EN) vs. informed elastic net (IEN), each run once with
  groups discovered by hierarchical agglomerative clustering (HAC) and once with the true ("oracle") groups from the
  data-generating process (DGP).
  The headline sweep moves the within-block correlation $\rho$ across the HAC discoverability boundary set by
@@ -134,8 +135,8 @@ Written to `simulation_results/data/`, one pair per truth scenario:
 - `gvs_block_bench_individual.txt` / `.csv`
 
 Each `.txt` reproduces the console grid tables, and each `.csv` is a tidy long-format table with all four methods'
-aggregates per $(\rho, \mathrm{SNR})$ cell. Figures (PNG + PDF) go to `simulation_results/plots/`, produced by
-`./generate_plots.sh`.
+aggregates per $(\rho, \mathrm{SNR})$ cell. Figures in Portable Network Graphics (PNG) and Portable Document Format
+(PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
 
 ---
 

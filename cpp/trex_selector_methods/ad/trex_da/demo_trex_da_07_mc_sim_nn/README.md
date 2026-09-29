@@ -1,11 +1,11 @@
 # Demo 07: DA-TRex+NN (Nearest-Neighbor Dependency-Aware T-Rex) on Banded Data + AR(1) Method-Mismatch Study
 
-Monte-Carlo (MC) results for **DA-TRex+NN** — the Nearest-Neighbor (NN) Dependency-Aware (DA) T-Rex selector
-(`DAMethod::NN`) — on banded moving-average (MA($\kappa$)) data — the correctly-specified case — plus a
-**method-mismatch stress test** applying the same NN correction to first-order autoregressive (AR(1)) data.
-Common setup: $n=300$, $p=1{,}000$, $s=10$, amplitude $3.0$, target false discovery rate (FDR) $\mathrm{tFDR}=0.2$,
-$K=20$ random experiments, $\mathrm{MC}=200$ per grid point, and solvers TLARS / TAFS / TOMP (Part 1 additionally runs
-the classical no-DA T-Rex baseline).
+Monte-Carlo (MC) results for **DA-TRex+NN** — the Nearest-Neighbor (NN) Dependency-Aware (DA) Terminating Random
+Experiments (T-Rex) selector (`DAMethod::NN`) — on banded moving-average (MA($\kappa$)) data — the correctly-specified
+case — plus a **method-mismatch stress test** applying the same NN correction to first-order autoregressive (AR(1))
+data. Common setup: $n=300$, $p=1{,}000$, $s=10$, amplitude $3.0$, target false discovery rate (FDR)
+$\mathrm{tFDR}=0.2$, $K=20$ random experiments, $\mathrm{MC}=200$ per grid point, and solvers TLARS / TAFS / TOMP (Part
+1 additionally runs the classical no-DA T-Rex baseline).
 
 The greedy solvers use *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for TAFS/TOMP, `0` for TLARS).
 See `Exchangeable_Tie_Breaking_DA_TRex.md` in the TRex_Research documentation.
@@ -67,7 +67,7 @@ The resulting covariance is **banded Toeplitz**: for column distance $d = |j-k| 
 ```
 
 so correlation decays roughly geometrically *inside* the band and **cuts off exactly at bandwidth $\kappa$** —
-the hallmark difference to AR(1), whose correlation never truly vanishes. (Note: "nearest-neighbor" classically
+the hallmark difference to AR(1), whose correlation never truly vanishes. (Note that "nearest-neighbor" classically
 refers to a banded *precision* matrix. The MA($\kappa$) model instead has a banded *covariance* and a dense
 precision. $\rho$ here is the common ratio of the filter, not the lag-1 autocorrelation, although for
 $\kappa \gg 1$ the correlation at distance $d$ approaches $\rho^d$.)
@@ -100,7 +100,8 @@ placed by two support policies:
 ./build/release/bin/trex_selector_methods/ad/trex_da/demo_trex_da_07_mc_sim_nn/demo_trex_da_07_mc_sim_nn
 ```
 
-Afterwards, regenerate the figures from the CSVs with [`generate_plots.sh`](generate_plots.sh).
+Afterwards, regenerate the figures from the comma-separated values (CSV) files with
+[`generate_plots.sh`](generate_plots.sh).
 
 ---
 
@@ -112,7 +113,7 @@ Data tables are written to `simulation_results/data/` (`.txt` pretty-printed, `.
 - `da_trex_mc_da_nn_kappa_rho.txt` / `.csv` (Part 2, two-support 2D schema)
 - `da_trex_mc_da_nn_ar_snr_rho.txt` / `.csv` (Part 3, two-support 2D schema)
 
-Figures (PNG/PDF — the `.html` are not committed, `./generate_plots.sh` produces them
+Figures (`.png` and `.pdf` — the `.html` are not committed, `./generate_plots.sh` produces them
 locally) go to `simulation_results/plots/`,
 and the 2D CSVs are rendered by the plotter's `sweep2d` mode.
 

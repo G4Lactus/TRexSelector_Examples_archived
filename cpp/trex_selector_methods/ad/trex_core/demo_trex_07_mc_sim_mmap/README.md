@@ -2,10 +2,10 @@
 
 ## Purpose
 
-Validate **T-Rex selector performance under memory-mapped (mmap) input/output (I/O)** over many Monte Carlo (MC)
-trials, mirroring the single-run patterns of Demo 06. Two scenarios are run: (C) in-memory $\mathbf{X}$ with mmap dummy
-matrices $\mathbf{D}$ + solver serialization, and (D) a fully memory-mapped pipeline where each MC iteration creates
-and destroys its own mmap-backed $\mathbf{X}/\mathbf{y}$ files.
+Validate **Terminating Random Experiments (T-Rex) selector performance under memory-mapped (mmap) input/output (I/O)**
+over many Monte Carlo (MC) trials, mirroring the single-run patterns of Demo 06. Two scenarios are run: (C) in-memory
+$\mathbf{X}$ with mmap dummy matrices $\mathbf{D}$ + solver serialization, and (D) a fully memory-mapped pipeline where
+each MC iteration creates and destroys its own mmap-backed $\mathbf{X}/\mathbf{y}$ files.
 
 ---
 
@@ -30,12 +30,14 @@ Both scenarios use the same high-dimensional configuration:
 ## Scenarios
 
 ### Demo C: MC — In-Memory $\mathbf{X}$ + `use_memory_mapping = true`
+
 - $\mathbf{X}$ generated in random-access memory (RAM) per trial, while dummy matrices $\mathbf{D}$ are memory-mapped
   and solver least-angle regression (LARS) path state is serialized to disk.
-- Purpose: verify the D-mmap + solver-serialization pipeline yields a stable, reproducible false discovery rate (FDR)
-  and true positive rate (TPR) over many runs.
+- The purpose is to verify that the D-mmap + solver-serialization pipeline yields a stable, reproducible false
+  discovery rate (FDR) and true positive rate (TPR) over many runs.
 
 ### Demo D: MC — Fully Memory-Mapped Pipeline ($\mathbf{X}$ + $\mathbf{D}$ + solver serialization)
+
 - Each MC iteration writes its own mmap-backed $\mathbf{X}/\mathbf{y}$ files (per-thread paths derived from the
   filestem `X_mmap_mc` and `omp_get_thread_num()`), which are removed by a Resource Acquisition Is Initialization
   (RAII) `MmapFileGuard` at the end of the iteration scope — exception-safe.
@@ -44,7 +46,7 @@ Both scenarios use the same high-dimensional configuration:
 
 ## Control Parameters
 
-```
+```text
 K = 20                           # Random experiments per T-loop iteration
 max_dummy_multiplier = 10        # Max L = 10p
 use_max_T_stop = true            # Cap T ≤ ceil(n/2)
@@ -77,7 +79,7 @@ while the demo binary itself writes only the `.txt` / `.csv` pair per scenario.
 The `.txt` file (written by the shared `save_and_print_mc_results`) is an aligned table with FDR, TPR, Avg L, and
 Avg T rows for the single TLARS solver across the 5 SNR columns:
 
-```
+```text
 ======================================================================
 === T-Rex Results (averaged over 200 Monte Carlo runs) ===
 ======================================================================
@@ -140,7 +142,7 @@ plotly.js). Run `./generate_plots.sh` to produce them locally.
 open simulation_results/plots/d03_trex_mmap_demo_c_vs_d.html
 ```
 
-Vector (PDF) copies of every static figure sit alongside the PNGs.
+Vector `.pdf` copies of every static figure sit alongside the `.png` files.
 
 ### Regenerating the figures
 
@@ -185,11 +187,13 @@ temporary file, so `simulation_results/data/` keeps only what the demo binary wr
 ## Interpretation Guide
 
 **What to look for:**
+
 - **FDR stability**: FDR should stay $\leq$ tFDR across SNR.
 - **TPR progression**: increases with SNR toward full recovery.
 - **Avg L / Avg T**: dummy-multiplier and stopping-time behaviour under the mmap pipeline.
 - **Reliability**: no leaked mmap files, no crashes.
 
 **Comparison with Demo 06 (single-run mmap):**
+
 - Demo 06 validates basic mmap correctness (one run per scenario).
 - Demo 07 validates robustness and FDR guarantees over many MC trials.

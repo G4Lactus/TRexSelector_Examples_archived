@@ -1,14 +1,15 @@
 # Demo 08: DA-TRex+EQUI on Equicorrelated (EQUI) Data — 2D SNR × ρ Sweep
 
-Monte-Carlo (MC) results for the dependency-aware (DA) selector **DA-TRex+EQUI** vs. the **classical (no-DA) T-Rex
-selector** on equicorrelated (EQUI) data. One 2D sweep: for each signal-to-noise ratio (SNR) column in
-$\lbrace0.5, 1, 2, 5\rbrace$, a full $\rho$ sweep over $\lbrace0, 0.025, 0.05, 0.1, 0.2, 0.4, 0.7, 0.9\rbrace$ — dense
-near $0$ to locate the DA suppression cliff. Common configuration: $n=300$, $p=1{,}000$, $s=10$, amplitude $3.0$, target
-false discovery rate (FDR) $\mathrm{tFDR}=0.2$, $K=20$ random experiments, $\mathrm{MC}=200$ per grid point, `Random`
-support with a full redraw per trial, and solvers TLARS / TAFS / TOMP with *exchangeable tie-breaking*
-(`exch_tie_alpha = 0.25` for the greedy solvers TAFS/TOMP, `0` for the path solver TLARS), each with its base (no-DA)
-T-Rex comparison row — 6 method rows per grid point. TAFS additionally runs with its adaptive forward-selection (AFS)
-correlation parameter `rho_afs = 0.3` (`0` for TLARS/TOMP), which is why the figures label it `TAFS (rho = 0.3)`.
+Monte-Carlo (MC) results for the dependency-aware (DA) selector **DA-TRex+EQUI** vs. the **classical (no-DA) Terminating
+Random Experiments (T-Rex) selector** on equicorrelated (EQUI) data. The demo runs one 2D sweep. For each
+signal-to-noise ratio (SNR) column in $\lbrace0.5, 1, 2, 5\rbrace$, it runs a full $\rho$ sweep over
+$\lbrace0, 0.025, 0.05, 0.1, 0.2, 0.4, 0.7, 0.9\rbrace$, dense near $0$ to locate the DA suppression cliff. Common
+configuration: $n=300$, $p=1{,}000$, $s=10$, amplitude $3.0$, target false discovery rate (FDR) $\mathrm{tFDR}=0.2$,
+$K=20$ random experiments, $\mathrm{MC}=200$ per grid point, `Random` support with a full redraw per trial, and solvers
+TLARS / TAFS / TOMP with *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for the greedy solvers TAFS/TOMP, `0` for
+the path solver TLARS), each with its base (no-DA) T-Rex comparison row — 6 method rows per grid point. TAFS
+additionally runs with its adaptive forward-selection (AFS) correlation parameter `rho_afs = 0.3` (`0` for TLARS/TOMP),
+which is why the figures label it `TAFS (rho = 0.3)`.
 
 Corresponds to the R reference `demo_trex_da_02_equi.R` (legacy Comprehensive R Archive Network (CRAN) runs used
 $n=150$, $p=500$, $s=5$, while this demo runs at the common $n=300$, $p=1{,}000$, $s=10$ scale of the C++ suite).
@@ -125,7 +126,8 @@ other variable's DA correction set, and the correction deflates all candidates a
 ./build/release/bin/trex_selector_methods/ad/trex_da/demo_trex_da_08_mc_sim_equi_and_bt/demo_trex_da_08_mc_sim_equi_and_bt
 ```
 
-Afterwards, regenerate the figures from the CSVs with [`generate_plots.sh`](generate_plots.sh).
+Afterwards, regenerate the figures from the comma-separated values (CSV) files with
+[`generate_plots.sh`](generate_plots.sh).
 
 ---
 
@@ -141,8 +143,8 @@ format), one pair per SNR column:
 
 The single figure goes to `simulation_results/plots/`:
 
-- `da_trex_mc_da_equi_rho_snr_grid.png` / `.pdf` — 2×4 grid: rows = FDR/TPR, columns = SNR,
-  x-axis = $\rho$ on a square-root scale so the dense $\text{low-}\rho$ cliff region stays readable.
+- `da_trex_mc_da_equi_rho_snr_grid.png` / `.pdf` — a 2×4 grid with rows = FDR/TPR, columns = SNR,
+  and x-axis = $\rho$ on a square-root scale so the dense $\text{low-}\rho$ cliff region stays readable.
   (One-off per-CSV overviews can still be produced on demand via
   `./generate_plots.sh <csv>`.)
 
@@ -180,7 +182,7 @@ The single figure goes to `simulation_results/plots/`:
   Rates at MC $=1{,}000$: $(\mathrm{SNR}\,0.5, \rho\,0.7) = 0.176$ (the demo's $0.23$ was MC noise
   on a controlled cell) and $(\mathrm{SNR}\,1, \rho\,0.9) = 0.177$. Only
   $(\mathrm{SNR}\,0.5, \rho\,0.9) = 0.227 \pm 0.013$ sits marginally above target — the
-  mechanism hovers *at* the tFDR boundary in the zero-power regime, where FDR $\approx$
+  mechanism hovers *at* the target FDR (tFDR) boundary in the zero-power regime, where FDR $\approx$
   P(select anything at all).
 
 **Bottom line**: equicorrelation defeats individual variable selection for the DA framework —

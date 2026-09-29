@@ -1,14 +1,13 @@
 # Demo 02: DA-TRex+BT (Binary-Tree Dependency-Aware T-Rex) on Block AR(1) + White-Noise Data
 
-Monte-Carlo (MC) results for **DA-TRex+BT** — the Binary-Tree (BT) Dependency-Aware (DA) T-Rex selector
-(`DAMethod::BT`) — on a block-diagonal first-order autoregressive (AR(1)) design diluted by a large block of
-independent and identically distributed (i.i.d.) white-noise columns, sweeping the signal-to-noise ratio (SNR),
+Monte-Carlo (MC) results for **DA-TRex+BT** — the Binary-Tree (BT) Dependency-Aware (DA) Terminating Random Experiments
+(T-Rex) selector (`DAMethod::BT`) — on a block-diagonal first-order autoregressive (AR(1)) design diluted by a large
+block of independent and identically distributed (i.i.d.) white-noise columns, sweeping the signal-to-noise ratio (SNR),
 $\rho$, block size $Q$, and number of blocks $M$, each across the three hierarchical agglomerative clustering (HAC)
-linkage methods (Single / Complete / Average).
-Common setup: $n=300$, $p_{\text{total}}=1{,}000$, amplitude $1.0$, target false discovery rate (FDR)
-$\mathrm{tFDR}=0.1$, $K=20$ random experiments, $\mathrm{MC}=200$ per grid point, and solvers TLARS / TAFS / TOMP.
-Corresponds to R reference `demo_trex_da_06_bt_ar1_plus_white_block_sweeps.R` (numbered "06" in the
-R suite but "02" in this C++ folder — a naming lineage quirk, not a bug).
+linkage methods (Single / Complete / Average). Common setup: $n=300$, $p_{\text{total}}=1{,}000$, amplitude $1.0$,
+target false discovery rate (FDR) $\mathrm{tFDR}=0.1$, $K=20$ random experiments, $\mathrm{MC}=200$ per grid point, and
+solvers TLARS / TAFS / TOMP. Corresponds to R reference `demo_trex_da_06_bt_ar1_plus_white_block_sweeps.R` (numbered
+"06" in the R suite but "02" in this C++ folder — a naming lineage quirk, not a bug).
 
 The greedy solvers use *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for TAFS/TOMP, `0` for
 TLARS). See `Exchangeable_Tie_Breaking_DA_TRex.md` in the TRex_Research documentation.
@@ -99,7 +98,8 @@ $\sigma^2 = \widehat{\mathrm{Var}}(X\beta)/\mathrm{SNR}$.
 ./build/release/bin/trex_selector_methods/ad/trex_da/demo_trex_da_02_mc_sim_ar1_blocks_plus_white/demo_trex_da_02_mc_sim_ar1_blocks_plus_white
 ```
 
-Afterwards, regenerate the figures from the CSVs with [`generate_plots.sh`](generate_plots.sh).
+Afterwards, regenerate the figures from the comma-separated values (CSV) files with
+[`generate_plots.sh`](generate_plots.sh).
 
 ---
 
@@ -113,7 +113,7 @@ Data tables are written to `simulation_results/data/` (24 files = 12 scenario st
 - `da_trex_mc_da_ar1_blocks_plus_white_Q_{Single,Complete,Average}.txt` / `.csv`
 - `da_trex_mc_da_ar1_blocks_plus_white_M_{Single,Complete,Average}.txt` / `.csv`
 
-Figures go to `simulation_results/plots/`: one FDR/TPR overview (PNG/PDF + interactive Plotly HTML)
+Figures go to `simulation_results/plots/`: one FDR/TPR overview (`.png`, `.pdf` and an interactive Plotly `.html` page)
 per sweep × linkage, plus one linkage-comparison grid (Single/Complete/Average columns) per sweep —
 the four grids embedded below.
 

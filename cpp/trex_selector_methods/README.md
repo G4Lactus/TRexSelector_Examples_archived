@@ -24,7 +24,7 @@ demos. [sd/](sd/README.md) is reserved for the sparse-dummy (SD) selector and [v
 | Category | Folder | Purpose |
 |----------|--------|---------|
 | **Classical T-Rex** | [ad/trex_core/](ad/trex_core/README.md) | Terminating Random Experiments Selector — baseline FDR-controlled variable selection in low- and high-dimensional Gaussian linear models |
-| **Dependency-Aware T-Rex (DA-TRex)** | [ad/trex_da/](ad/trex_da/README.md) | Variable selection under correlated/dependent design structures: first-order autoregressive (AR(1)) Toeplitz, equicorrelated, banded nearest-neighbor, and hierarchical block-covariance designs |
+| **Dependency-Aware T-Rex (DA-TRex)** | [ad/trex_da/](ad/trex_da/README.md) | Variable selection under correlated/dependent design structures, namely first-order autoregressive (AR(1)) Toeplitz, equicorrelated, banded nearest-neighbor, and hierarchical block-covariance designs |
 | **Grouped Variable Selection (T-Rex+GVS)** | [ad/trex_gvs/](ad/trex_gvs/README.md) | Group-structured selection via the elastic net (EN), the elastic net in augmented-lasso form (EN-AUG) and the informed elastic net (IEN) based on hierarchical agglomerative clustering (HAC) across equicorrelated, scattered, and block-covariance patterns |
 | **Screening (Screen-TRex)** | [ad/trex_screening/](ad/trex_screening/README.md) | Ultra-high-dimensional pre-screening ahead of T-Rex selection, with in-memory, memory-mapped, and biobank-scale variants |
 | **Sparse PCA (T-Rex SPCA)** | [ad/trex_spca/](ad/trex_spca/README.md) | Sparse PCA via per-component T-Rex+GVS selection on plug-in principal components (PCs), benchmarked against ordinary PCA and oracle-thresholded baselines: Fig.-2/Fig.-3-style support-recovery and Definition-1 proportion of explained variance (PEV) studies, plus mechanism studies of the plug-in construction (plug-in vs. oracle response, union-support FDR per PC) |
@@ -45,7 +45,7 @@ In particular:
   its T-loop,
 - variants that rely on preprocessing reuse components from `ml_methods`, for example HAC clustering for group
   construction in `trex_gvs`, or scaling utilities shared across variants,
-- `trex_screening` and the memory-mapped demos in `trex` build on the memory-mapping utilities for large design
+- `trex_screening` and the memory-mapped demos in `trex_core` build on the memory-mapping utilities for large design
   matrices,
 - the validation programs in the library test suite check C++ selector output against trusted R reference pipelines.
 

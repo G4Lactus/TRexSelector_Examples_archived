@@ -2,7 +2,8 @@
 
 ## Overview
 
-This folder introduces the sparse principal component analysis (SPCA) version of the T-Rex selector, the
+This folder introduces the sparse principal component analysis (SPCA) version of the Terminating Random Experiments
+(T-Rex) selector, the
  **T-Rex SPCA** according to [[1]](#references).
 A sparse principal component analysis method built on the elastic-net machinery of T-Rex+GVS, the T-Rex selector for
  grouped variable selection (GVS) (see [../trex_gvs/](../trex_gvs/README.md)), according to [[2]](#references).
@@ -84,7 +85,7 @@ The proportion of explained variance (**PEV**) — computed cumulatively across 
 Classically the explained variance (EV) is the plain EV of the estimated components,
  $\mathrm{EV} = \mathrm{tr}(\widehat{\boldsymbol{Z}}^\top \widehat{\boldsymbol{Z}})$. Sparse loading vectors
  are not orthogonal, however, and correlated components double-count shared variance under that trace —
- Zou, Hastie & Tibshirani [[3]](#references) therefore correct it with the **adjusted** EV: a QR
+ Zou, Hastie & Tibshirani [[3]](#references) therefore correct it with the **adjusted** EV, which takes a QR
  decomposition of the estimated score matrix, whose diagonal carries each component's *incremental*
  contribution,
 
@@ -106,7 +107,7 @@ It answers "how much of what is in front of us did the $M$
  variance than $\boldsymbol{X}$ contains.
 
 **The reference paper's reading** (Definition 1 of [[1]](#references)) divides by the **Signal + Mixed EV of
- the data**: the variance carried by the true active variables, with
+ the data**, meaning the variance carried by the true active variables, with
  $\mathcal{A}$ the union of the factor supports,
 
 ```math
@@ -161,7 +162,7 @@ Keeping all readings is what makes the trade-off legible. The first prices the s
 - **`ENSolverType`** — the elastic-net solver driving each per-component selection: `TENET` (Gram-based) or
    `TENET_AUG` (augmented least absolute shrinkage and selection operator (LASSO) formulation). See
    [../trex_gvs/](../trex_gvs/README.md) for the shared elastic-net background.
-- **`lambda_2`** — the ridge penalty: a negative value selects it by $k$-fold cross-validation, $0$ disables
+- **`lambda_2`** — the ridge penalty. A negative value selects it by $k$-fold cross-validation, $0$ disables
    the ridge term, and a positive value fixes it.
 - **`tFDR`** — the target FDR handed to the per-component T-Rex selector.
 
@@ -245,12 +246,12 @@ cd demo_trex_spca_01_mc_sim
 ./generate_plots.sh
 ```
 
-Two figures are rendered. The first shows the true positive rate (TPR) and FDR (against the tFDR target) over the
-decibel sweep axis — support recovery only. The second — written with a `_pev` suffix — puts the two PEV normalizations
-side by side, with the 100 % line drawn in the right panel. It is only produced when the CSV carries the `PEVsig`
-metric. When the CSV also carries `PEVsigmix`, OrdPCA's Sig + Mix part is drawn in the Definition-1 panels as the
-paper's dashed "Ordinary PCA (Sig + Mix)" reference. `--xscale` is accepted for parity with the other suites, but the
-axis stays in dB either way.
+Two figures are rendered. The first shows the true positive rate (TPR) and FDR, the latter against the target FDR
+(tFDR), over the decibel sweep axis — support recovery only. The second — written with a `_pev` suffix — puts the two
+PEV normalizations side by side, with the 100 % line drawn in the right panel. It is only produced when the CSV carries
+the `PEVsig` metric. When the CSV also carries `PEVsigmix`, OrdPCA's Sig + Mix part is drawn in the Definition-1 panels
+as the paper's dashed "Ordinary PCA (Sig + Mix)" reference. `--xscale` is accepted for parity with the other suites, but
+the axis stays in dB either way.
 
 ---
 

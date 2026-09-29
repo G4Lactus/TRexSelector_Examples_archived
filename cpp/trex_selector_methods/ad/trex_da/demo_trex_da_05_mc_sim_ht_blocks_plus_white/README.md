@@ -1,17 +1,16 @@
 # Demo 05: DA-TRex+BT (Binary-Tree Dependency-Aware T-Rex) on Heavy-Tailed Block + White-Noise Data
 
-Monte-Carlo (MC) results for **DA-TRex+BT** — the Binary-Tree (BT) Dependency-Aware (DA) T-Rex selector
-(`DAMethod::BT`) — on the "combined effects" design of heavy-tailed (multivariate $t_{\nu}$) first-order
-autoregressive (AR(1)) Toeplitz blocks embedded in a larger design padded with independent and identically distributed
-(i.i.d.) $\text{Student-}t$ white-noise columns. It merges Demo 02's white-noise dilution with Demo 04's heavy-tailed
-robustness study, sweeping the signal-to-noise ratio (SNR), $\rho$, block size $Q$, number of blocks $M$, and the
-target false discovery rate (FDR) level tFDR — each across two noise scenarios (Gaussian vs. heavy-tailed response
-noise) and the three hierarchical agglomerative clustering (HAC) linkage methods.
-Common setup: $n=150$, $p_{\text{total}}=500$, amplitude $1.0$, $\nu=3$, $\mathrm{tFDR}=0.2$ (except
-the tFDR sweep), $K=20$ random experiments, $\mathrm{MC}=200$ per grid point, and solvers TLARS /
-TAFS / TOMP.
-Corresponds to R reference `demo_trex_da_08_bt_heavy_tailed_plus_white_block_sweeps.R` (numbered
-"08" in the R suite but "05" in this C++ folder — a naming lineage quirk, not a bug).
+Monte-Carlo (MC) results for **DA-TRex+BT** — the Binary-Tree (BT) Dependency-Aware (DA) Terminating Random Experiments
+(T-Rex) selector (`DAMethod::BT`) — on the "combined effects" design of heavy-tailed (multivariate $t_{\nu}$)
+first-order autoregressive (AR(1)) Toeplitz blocks embedded in a larger design padded with independent and identically
+distributed (i.i.d.) $\text{Student-}t$ white-noise columns. It merges Demo 02's white-noise dilution with Demo 04's
+heavy-tailed robustness study, sweeping the signal-to-noise ratio (SNR), $\rho$, block size $Q$, number of blocks $M$,
+and the target false discovery rate (FDR) level $\mathrm{tFDR}$ — each across two noise scenarios (Gaussian vs.
+heavy-tailed response noise) and the three hierarchical agglomerative clustering (HAC) linkage methods. Common setup:
+$n=150$, $p_{\text{total}}=500$, amplitude $1.0$, $\nu=3$, $\mathrm{tFDR}=0.2$ (except the target FDR (tFDR) sweep),
+$K=20$ random experiments, $\mathrm{MC}=200$ per grid point, and solvers TLARS / TAFS / TOMP. Corresponds to R reference
+`demo_trex_da_08_bt_heavy_tailed_plus_white_block_sweeps.R` (numbered "08" in the R suite but "05" in this C++ folder —
+a naming lineage quirk, not a bug).
 
 The greedy solvers use *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for TAFS/TOMP, `0` for
 TLARS). See `Exchangeable_Tie_Breaking_DA_TRex.md` in the TRex_Research documentation.
@@ -81,7 +80,8 @@ seed $2026$.
 ./build/release/bin/trex_selector_methods/ad/trex_da/demo_trex_da_05_mc_sim_ht_blocks_plus_white/demo_trex_da_05_mc_sim_ht_blocks_plus_white
 ```
 
-Afterwards, regenerate the figures from the CSVs with [`generate_plots.sh`](generate_plots.sh).
+Afterwards, regenerate the figures from the comma-separated values (CSV) files with
+[`generate_plots.sh`](generate_plots.sh).
 
 ---
 
@@ -91,17 +91,18 @@ Data tables are written to `simulation_results/data/` (60 files = 30 scenario st
 `.txt`+`.csv` pair each):
 `da_trex_mc_da_ht_blocks_plus_white_{snr,rho,Q,M,tFDR}_{s1_Gauss,s2_Heavy}_{Single,Complete,Average}.txt` / `.csv`.
 
-Figures go to `simulation_results/plots/`: one FDR and true positive rate (TPR) overview (PNG/PDF + interactive Plotly
-HTML) per sweep × scenario × linkage, one linkage-comparison grid per sweep × scenario, and one **Gaussian-vs-heavy
-scenario grid** per sweep (at Average linkage) — the five scenario grids, this demo's core exhibits, are embedded below.
+Figures go to `simulation_results/plots/`: one FDR and true positive rate (TPR) overview (`.png`, `.pdf` and an
+interactive Plotly `.html` page) per sweep × scenario × linkage, one linkage-comparison grid per sweep × scenario, and
+one **Gaussian-vs-heavy scenario grid** per sweep (at Average linkage) — the five scenario grids, this demo's core
+exhibits, are embedded below.
 
 ---
 
 ## Part 1 — SNR sweep ($\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 0.6, 1, 2, 5\rbrace$)
 
-- **Gaussian noise: controlled.** FDR peaks at $0.15$ (TOMP, high SNR) — under the
+- **Gaussian noise is controlled.** FDR peaks at $0.15$ (TOMP, high SNR) — under the
   $\mathrm{tFDR}=0.2$ target everywhere.
-- **Heavy-tailed noise: marginal violations at high SNR** — up to $0.22$ (TOMP) / $0.21$ (TAFS) /
+- **Heavy-tailed noise shows marginal violations at high SNR** — up to $0.22$ (TOMP) / $0.21$ (TAFS) /
   $0.205$ (TLARS) under Complete/Average linkage, while Single stays $\leq 0.19$. Heavy noise costs
   essentially no power but pushes realized FDR to (and slightly over) the target.
 - TPR is nearly scenario-independent: TOMP $0.92\text{–}0.98$ from $\mathrm{SNR}=2$, TAFS
@@ -145,7 +146,7 @@ scenario grid** per sweep (at Average linkage) — the five scenario grids, this
 - During the collapse the realized FDR drifts over target in the heavy scenario (up to $0.265$,
   TOMP under Complete linkage) — with almost nothing selected, a single false discovery dominates
   the false discovery proportion (FDP) ratio, so these cells are high-variance.
-- The $M=1$ corner separates the solvers sharply: TOMP finds the lone signal essentially always
+- The $M=1$ corner separates the solvers sharply. TOMP finds the lone signal essentially always
   (TPR $\approx 1.0$), TLARS $\approx 0.8$, TAFS almost never ($\approx 0.01$) — the same TAFS
   single-signal failure seen in Demo 03.
 

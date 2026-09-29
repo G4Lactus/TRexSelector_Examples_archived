@@ -2,7 +2,8 @@
 
 ## Purpose
 
-Test whether the T-Rex selector with Grouped Variable Selection (T-Rex+GVS) can correctly recover an
+Test whether the Terminating Random Experiments (T-Rex) selector with Grouped Variable Selection (T-Rex+GVS) can
+correctly recover an
  **active group with negative within-group correlation structure**
  while **excluding two spatially separated inactive trap groups** that share the same sign-flipped correlation
  pattern.
@@ -85,7 +86,8 @@ Written to `simulation_results/data/`:
 - `gvs_Neg-Traps_2d.txt` / `.csv` — mean false discovery proportion (FDP) / true positive proportion (TPP) over the SNR
   $\times$ $\rho$ grid.
 
-Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
+Figures in Portable Network Graphics (PNG) and Portable Document Format (PDF) go to `simulation_results/plots/`,
+produced by `./generate_plots.sh`.
 
 ---
 
@@ -107,7 +109,7 @@ Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_p
    group is identified as a *single* group rather than split into its positive and negative halves.
 - **TIENET_AUG** is far more conservative (FDR $\le 0.03$ everywhere) and its TPR collapses to near zero in the
    extreme $\rho = 0.99$ column. Otherwise it behaves as in the uniformly-positive-correlation scenarios of
-   Demos 01–03 — the sign-flipped halves do not by themselves trigger different informed elastic net (EN) behavior.
+   Demos 01–03 — the sign-flipped halves do not by themselves trigger different informed elastic net (IEN) behavior.
 - The two spatially separated traps are a stronger test of false-group exclusion than a single trap. Watch whether
    FDR creeps up with SNR, which would indicate one of the traps starting to be (partially) selected.
 

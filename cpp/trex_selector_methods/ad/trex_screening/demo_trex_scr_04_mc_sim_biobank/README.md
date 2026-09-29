@@ -6,9 +6,10 @@ The demo illustrates the **Biobank Screen-TRex workflow** ("Algorithm 1") of [[1
  which screens *many phenotypes* against a single shared design matrix $\boldsymbol{X}$.
 Per phenotype the algorithm tries **Screen-TRex Ordinary** first. If the estimated false discovery rate (FDR) falls
  outside the acceptable window $\lbrack 0.05, 0.15\rbrack$ it retries with **Screen-TRex Bootstrap-CI**, and if that
- also lands outside the window it falls back to the **classical T-Rex selector** at a target FDR of $0.10$.
-The interesting quantity is therefore not a single error rate but the *routing behaviour*: which method
- handles which phenotype, and how well each performs on the subset it was given.
+ also lands outside the window it falls back to the **classical Terminating Random Experiments (T-Rex) selector** at a
+ target FDR of $0.10$.
+The interesting quantity is therefore not a single error rate but the *routing behaviour*, meaning which method
+ handles which phenotype and how well each performs on the subset it was given.
 This demo keeps the dummy matrices **in memory** (`use_memory_mapping = false`), while demo 05 runs the identical
  study with memory-mapped, disk-backed dummy matrices.
 Screening returns a *candidate set*, and the FDR and the true positive rate (TPR) are evaluated on the individual
@@ -103,7 +104,8 @@ Written to `simulation_results/data/`:
 - `scr_biobank_multi_n300_p1000_q5_s5.txt` / `.csv` — Part 2: the same metrics for the
    multi-phenotype study.
 
-Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
+Figures in Portable Network Graphics (PNG) and Portable Document Format (PDF) go to `simulation_results/plots/`,
+produced by `./generate_plots.sh`.
 
 ---
 

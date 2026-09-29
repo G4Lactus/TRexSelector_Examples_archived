@@ -2,7 +2,8 @@
 
 ## Overview
 
-This folder contains C++ example programs for **Screen-TRex**, the T-Rex Selector extended with a
+This folder contains C++ example programs for **Screen-TRex**, the Terminating Random Experiments (T-Rex) Selector
+extended with a
  variable-**screening** step for ultra-high-dimensional data, according to [[1]](#references).
 
 Screen-TRex targets settings where $p$ is so large that running the classical T-Rex selector directly is
@@ -98,8 +99,8 @@ As elsewhere in this project,
 >
 > Screen-TRex additionally reports an **estimated FDR** — its own internal assessment of the selection's
 > error rate. Every figure in this folder plots it (dashed) against the realized FDR (solid), because the
-> two can diverge severely: conservative on i.i.d. designs, but wildly optimistic under equicorrelation
-> (Demo 03).
+> two can diverge severely. The estimate is conservative on i.i.d. designs but wildly optimistic under
+> equicorrelation (Demo 03).
 >
 > In the biobank demos, the FDR and the true positive rate (TPR) are accumulated **conditionally** on which method a
 > phenotype was routed to, alongside the unconditional **Usage %**. A conditional rate over a route that handled no

@@ -8,7 +8,7 @@ The demo repeats the **Biobank Screen-TRex workflow** ("Algorithm 1") of demo 04
  The algorithm is unchanged. Per phenotype it tries **Screen-TRex Ordinary** first. If the estimated false discovery
  rate (FDR) falls outside the acceptable window $\lbrack 0.05, 0.15\rbrack$ it retries with
  **Screen-TRex Bootstrap-CI**, and if that also lands outside the window it falls back to the
- **classical T-Rex selector** at a target FDR of $0.10$.
+ **classical Terminating Random Experiments (T-Rex) selector** at a target FDR of $0.10$.
  Demo 04 is the in-memory reference for every number reported here — the point of this demo is to show
  that moving the dummy matrices to disk changes the memory footprint and not the statistics.
  Screening returns a *candidate set*, and the FDR and the true positive rate (TPR) are evaluated on the individual
@@ -103,7 +103,8 @@ Written to `simulation_results/data/`:
 - `scr_biobank_mmap_multi_n300_p1000_q5_s5.txt` / `.csv` — Part 2: the same metrics for the
    multi-phenotype study.
 
-Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh`.
+Figures in Portable Network Graphics (PNG) and Portable Document Format (PDF) go to `simulation_results/plots/`,
+produced by `./generate_plots.sh`.
 
 ---
 
