@@ -2,17 +2,17 @@
 
 ## Purpose
 
-Evaluate classical T-Rex FDR/TPR across an SNR sweep with a **fixed** true support,
-benchmarking all base solvers under a shared DGP and FDR target. The foundational
-empirical validation demo.
+Evaluate the classical Terminating Random Experiments (T-Rex) false discovery rate (FDR) and true positive rate (TPR)
+across a signal-to-noise ratio (SNR) sweep with a **fixed** true support, benchmarking all base solvers under a shared
+data-generating process (DGP) and FDR target. The foundational empirical validation demo.
 
 ## Data-generating process
 
-`dgp_gauss_snr` — i.i.d. Gaussian design, `y = X beta + eps` calibrated to SNR.
-High-dimensional config: `n = 300`, `p = 1000`, `s = 10`, `tFDR = 0.1`. The true
+`dgp_gauss_snr` — independent and identically distributed (i.i.d.) Gaussian design, `y = X beta + eps` calibrated
+to SNR. High-dimensional config: `n = 300`, `p = 1000`, `s = 10`, `tFDR = 0.1`. The true
 support is drawn **once** before the loop via `make_support_random(s, p, seed = 24)`
-and reused across every solver, SNR level, and MC trial (it is not the first 10
-features); coefficients are fixed `beta_j = 1`. SNR sweep `{0.1, 0.5, 1.0, 2.0, 5.0}`,
+and reused across every solver, SNR level, and Monte Carlo (MC) trial (it is not the first 10
+features), and the coefficients are fixed at `beta_j = 1`. SNR sweep `{0.1, 0.5, 1.0, 2.0, 5.0}`,
 `num_MC = 200` per solver x SNR.
 
 The design columns are drawn independently, so the design carries no correlation
@@ -32,14 +32,14 @@ structure — the empirical column-correlation matrix is essentially the identit
 - Reports averaged FDR and TPR per solver x SNR (`track_L_T = FALSE`, so Avg L / Avg T
   are not computed here).
 
-MC trials run in parallel over a hardcoded `num_cores <- 6L` (set at the top of the
-file; edit there to change).
+MC trials run in parallel over a hardcoded `num_cores <- 6L` (set and edited at the top of the
+file).
 
 ## Results
 
-`./generate_plots.sh` renders the tidy CSV through the shared ggplot2 plotter
-[`../trex_plt_utils.R`](../trex_plt_utils.R) into `simulation_results/plots/`
-(PNG + PDF; this port has no interactive HTML output).
+`./generate_plots.sh` renders the tidy comma-separated values (CSV) file through the shared ggplot2 plotter
+[`../trex_plt_utils.R`](../trex_plt_utils.R) into `simulation_results/plots/` as Portable Network Graphics (PNG) and
+Portable Document Format (PDF) files. This port has no interactive `.html` output.
 
 ### Overview (all 14 solvers)
 
@@ -49,10 +49,10 @@ FDR and TPR versus SNR on a log-scaled x-axis, every solver on one pair of panel
 
 *Left:* FDR stays far below the target `tFDR = 0.1` (black dotted line) at every
 SNR level for every solver — the maximum over the whole table is only 0.0487
-(TLARS at SNR 1.0), and the LARS-path solvers peak there while the greedy family
+(TLARS at SNR 1.0), and the least-angle regression (LARS) path solvers peak there while the greedy family
 never exceeds 0.04. *Right:* TPR climbs from essentially zero at SNR 0.1
 (0.0015 at best) to full recovery (1.0000) at SNR 5.0 for all 14 solvers. The
-split at intermediate SNR is the usual one: at SNR 0.5 the LARS-path solvers
+split at intermediate SNR is the usual one. At SNR 0.5 the LARS-path solvers
 (TLARS/TLASSO/TENET/TSTAGEWISE, 0.254–0.263) lead the greedy family
 (0.187–0.196, with TAFS_rho_0.3 in between at 0.2305), and the ordering reverses
 by SNR 1.0, where the greedy solvers reach 0.840–0.866 against 0.728–0.746 for
@@ -77,4 +77,4 @@ and a tidy `.csv` (header `solver,metric,snr,value`), stem
 `demo_trex_02_mc_sim_fixed_support_trex_results_n300_p1000_stagnation_window_7`.
 Both files are re-saved after each completed solver (growing file), so an abort
 mid-run keeps the solvers already finished. The script
-sources `../../support_generators.R`, `../../simulation_utils.R`, and `../trex_sim_utils.R`.
+sources `../../../support_generators.R`, `../../../simulation_utils.R`, and `../trex_sim_utils.R`.

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-R example programs for **Screen-TRex**, the T-Rex Selector extended with a
+R example programs for **Screen-TRex**, the Terminating Random Experiments (T-Rex) Selector extended with a
 variable-**screening** step for ultra-high-dimensional data. Screen-TRex is
 built for the regime where `p` is so large that running the classical T-Rex
 selector directly is impractical (genome- or biobank-scale designs): it first
@@ -51,7 +51,7 @@ The `trex_method` strings accepted by `trex_screen_control()` are:
 and `"TREX_DA_BLOCK_EQUI"` (dependency-aware variants). An unknown string
 raises `Unknown ScreenTRexMethod: ...` at `select()` time.
 
-The folder layout mirrors the C++ suite one-to-one: one subfolder per demo,
+The folder layout mirrors the C++ suite one-to-one, with one subfolder per demo
 plus the shared `trex_scr_sim_utils.R` helper at the suite level.
 
 ```txt
@@ -78,12 +78,12 @@ Each demo folder has its own `README.md`.
 
 | # | Folder | Description | cpp counterpart | Key APIs |
 |---|---|---|---|---|
-| 01 | [demo_trex_scr_01_mc_sim_screen_trex/](demo_trex_scr_01_mc_sim_screen_trex/) | In-memory Ordinary vs. Bootstrap-CI screening: two single runs (fixed support, SNR 5) plus an 8-point SNR-sweep Monte Carlo reporting FDR / TPR / Estimated FDR | [demo_trex_scr_01_mc_sim_screen_trex/](../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_01_mc_sim_screen_trex/) | `TRexScreeningSelector`, `trex_screen_control(use_bootstrap_CI=)` |
-| 02 | [demo_trex_scr_02_mc_sim_screen_trex_mmap/](demo_trex_scr_02_mc_sim_screen_trex_mmap/) | Same screening scenario with the memory-mapped pipeline: Part A in-memory X + `use_memory_mapping=TRUE` (D-mmap); Part B fully memory-mapped X via `mem_matrix_from()`; Part C mmap MC SNR sweep | [demo_trex_scr_02_mc_sim_screen_trex_mmap/](../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_02_mc_sim_screen_trex_mmap/) | `mem_matrix_from`, `trex_control(use_memory_mapping=)` |
-| 03 | [demo_trex_scr_03_mc_sim_correlated/](demo_trex_scr_03_mc_sim_correlated/) | Ordinary vs. DA screening on correlated designs: 4 single runs (Ordinary/DA-AR1/DA-EQUI/DA-BLOCK-EQUI) + 5 Monte Carlo sweeps (AR(1)/equi SNR sweeps and AR(1)/equi/block-equi rho sweeps) | [demo_trex_scr_03_mc_sim_correlated/](../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_03_mc_sim_correlated/) | `trex_method = "TREX_DA_*"`, `estimated_correlation` |
+| 01 | [demo_trex_scr_01_mc_sim_screen_trex/](demo_trex_scr_01_mc_sim_screen_trex/) | In-memory Ordinary vs. Bootstrap-CI screening: two single runs with fixed support at a signal-to-noise ratio (SNR) of 5, plus an 8-point SNR-sweep Monte Carlo (MC) reporting the false discovery rate (FDR), the true positive rate (TPR), and the Estimated FDR | [demo_trex_scr_01_mc_sim_screen_trex/](../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_01_mc_sim_screen_trex/) | `TRexScreeningSelector`, `trex_screen_control(use_bootstrap_CI=)` |
+| 02 | [demo_trex_scr_02_mc_sim_screen_trex_mmap/](demo_trex_scr_02_mc_sim_screen_trex_mmap/) | Same screening scenario with the memory-mapped (mmap) pipeline: Part A in-memory X + `use_memory_mapping=TRUE` (D-mmap), Part B fully memory-mapped X via `mem_matrix_from()`, and Part C mmap MC SNR sweep | [demo_trex_scr_02_mc_sim_screen_trex_mmap/](../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_02_mc_sim_screen_trex_mmap/) | `mem_matrix_from`, `trex_control(use_memory_mapping=)` |
+| 03 | [demo_trex_scr_03_mc_sim_correlated/](demo_trex_scr_03_mc_sim_correlated/) | Ordinary vs. DA screening on correlated designs: 4 single runs (Ordinary/DA-AR1/DA-EQUI/DA-BLOCK-EQUI) + 5 Monte Carlo sweeps (SNR sweeps on first-order autoregressive (AR(1)) and equi designs, rho sweeps on AR(1), equi, and block-equi designs) | [demo_trex_scr_03_mc_sim_correlated/](../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_03_mc_sim_correlated/) | `trex_method = "TREX_DA_*"`, `estimated_correlation` |
 | 04 | [demo_trex_scr_04_mc_sim_biobank/](demo_trex_scr_04_mc_sim_biobank/) | Biobank "Algorithm 1" (in-memory): single phenotype, 5-phenotype routing table + summary, and MC SNR sweeps (single and multi-phenotype) reporting per-method Usage % / FDR / TPR / Est. FDR | [demo_trex_scr_04_mc_sim_biobank/](../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_04_mc_sim_biobank/) | `TRexBiobankScreeningSelector`, `trex_biobank_control` |
-| 05 | [demo_trex_scr_05_mc_sim_biobank_mmap/](demo_trex_scr_05_mc_sim_biobank_mmap/) | Same biobank workflow with the memory-mapped pipeline: Part A in-memory X + D-mmap; Part B single + multi phenotype on a fully memory-mapped X; Part C mmap MC SNR sweep | [demo_trex_scr_05_mc_sim_biobank_mmap/](../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_05_mc_sim_biobank_mmap/) | `TRexBiobankScreeningSelector` + mmap X |
-| 06 | [demo_trex_scr_06_mc_sim_solvers/](demo_trex_scr_06_mc_sim_solvers/) | Solver-backend comparison under screening: 8-point SNR sweep for TLARS / TAFS(rho_afs=0.3) / TOMP, Part 1 Ordinary only (3 series), Part 2 x {Ordinary, Bootstrap-CI} (6 series) | [demo_trex_scr_06_mc_sim_solvers/](../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_06_mc_sim_solvers/) | `trex_control(solver=, rho_afs=)` |
+| 05 | [demo_trex_scr_05_mc_sim_biobank_mmap/](demo_trex_scr_05_mc_sim_biobank_mmap/) | Same biobank workflow with the memory-mapped pipeline: Part A in-memory X + D-mmap, Part B single + multi phenotype on a fully memory-mapped X, and Part C mmap MC SNR sweep | [demo_trex_scr_05_mc_sim_biobank_mmap/](../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_05_mc_sim_biobank_mmap/) | `TRexBiobankScreeningSelector` + mmap X |
+| 06 | [demo_trex_scr_06_mc_sim_solvers/](demo_trex_scr_06_mc_sim_solvers/) | Solver-backend comparison under screening: 8-point SNR sweep for terminating least-angle regression (TLARS), terminating adaptive forward selection (TAFS) with rho_afs=0.3, and terminating orthogonal matching pursuit (TOMP), Part 1 Ordinary only (3 series), Part 2 x {Ordinary, Bootstrap-CI} (6 series) | [demo_trex_scr_06_mc_sim_solvers/](../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_06_mc_sim_solvers/) | `trex_control(solver=, rho_afs=)` |
 
 ---
 
@@ -93,8 +93,8 @@ Each demo folder has its own `README.md`.
 headers (`demo_trex_scr_common.hpp`, `demo_trex_scr_bb_common.hpp`) and is
 sourced by every demo:
 
-- **Section 1 — DGPs**: `dgp_iid_snr()` (i.i.d. Gaussian), `dgp_ar1()`,
-  `dgp_equi()`, `dgp_block_equi()` (AR(1) / equi / block-equi correlated
+- **Section 1 — data-generating processes (DGPs)**: `dgp_iid_snr()` (independent and identically distributed
+  (i.i.d.) Gaussian), `dgp_ar1()`, `dgp_equi()`, `dgp_block_equi()` (AR(1) / equi / block-equi correlated
   designs), and `make_beta()` (evenly-spaced sparse coefficients). All use
   SNR-calibrated noise, `sigma = sqrt(||X beta||^2 / (n * SNR))`.
 - **Section 2 — control factories**: `make_scr_trex_ctrl()`,
@@ -114,7 +114,7 @@ sourced by every demo:
 - `trex_screen_control(use_bootstrap_CI, R_boot, ci_grid_step, trex_method)` —
   the screening rule and variant. **Note**: unlike the C++
   `make_screen_control()`, the R binding does **not** expose `rho_thr_DA` or
-  `n_blocks`; the DA variants (including `TREX_DA_BLOCK_EQUI`) use the library's
+  `n_blocks`. The DA variants (including `TREX_DA_BLOCK_EQUI`) use the library's
   internal defaults for those, so the block DGP's `n_blocks` is not forwarded to
   the screener.
 - `trex_control(solver, K, rho_afs, use_memory_mapping, ...)` — the underlying
@@ -143,8 +143,9 @@ projection:
 Every demo uses `num_MC = 200`, matching the C++ and Python references (demos
 04 and 05 also use `num_MC_multi = 200` and `R_boot = 1000`). Trials run in
 parallel, so the counts need no reduction. Results are statistically comparable
-to the C++/Python reference, **not** bit-identical: the three suites use
-different RNG streams, so seeds are mirrored as labels only.
+to the C++/Python reference but **not** bit-identical. The three suites use
+different random number generator (RNG) streams, so seeds are mirrored as labels
+only.
 
 ---
 

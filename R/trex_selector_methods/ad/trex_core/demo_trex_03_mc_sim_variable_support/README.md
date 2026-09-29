@@ -2,22 +2,22 @@
 
 ## Purpose
 
-Test robustness of classical T-Rex to the **location** of the active set: the support
-indices are redrawn on every MC trial while the cardinality stays fixed. Complements
+Test robustness of classical Terminating Random Experiments (T-Rex) to the **location** of the active set. The support
+indices are redrawn on every Monte Carlo (MC) trial while the cardinality stays fixed. Complements
 the fixed-support study in Demo 02 and additionally tracks the dummy multiplier `L`
 and stopping time `T`.
 
 ## Data-generating process
 
-`dgp_gauss_snr` — i.i.d. Gaussian design, `y = X beta + eps` calibrated to SNR.
-High-dimensional config: `n = 300`, `p = 1000`, `s = 10`, `tFDR = 0.1`. Each trial
-redraws the support via `make_support_random(s, p, seed = trial_seed)`; coefficients
-are fixed `beta_j = 1` (`rnd_coef = FALSE`; an isolated `rnorm(s)` stream is available
+`dgp_gauss_snr` — independent and identically distributed (i.i.d.) Gaussian design, `y = X beta + eps` calibrated
+to a signal-to-noise ratio (SNR). High-dimensional config: `n = 300`, `p = 1000`, `s = 10`, `tFDR = 0.1`. Each trial
+redraws the support via `make_support_random(s, p, seed = trial_seed)`, and the coefficients
+are fixed at `beta_j = 1` (`rnd_coef = FALSE`, while an isolated `rnorm(s)` stream is available
 when `rnd_coef = TRUE`). Fine SNR grid `seq(0.1, 2.0, by = 0.1)` plus `5.0` (21 values),
 `num_MC = 200` per solver x SNR.
 
-Only the *location* of the active set varies — the design itself is unchanged from
-Demo 02: independent columns, so the empirical column-correlation matrix is
+Only the *location* of the active set varies. The design itself is unchanged from
+Demo 02, with independent columns, so the empirical column-correlation matrix is
 essentially the identity:
 
 ![Design-matrix correlation of the shared i.i.d. Gaussian DGP (natural order, no clustering)](../dgp_corr_plots/trex_gauss.png)
@@ -29,15 +29,16 @@ essentially the identity:
 - Base control: `K = 20`, `max_dummy_multiplier = 10`, `use_max_T_stop = TRUE`,
   `lloop_strategy = "HCONCAT"`, `tloop_stagnation_stop = TRUE`,
   `tloop_max_stagnant_steps = 5`.
-- Reports averaged FDR, TPR, Avg L, and Avg T per solver x SNR (`track_L_T = TRUE`).
+- Reports the averaged false discovery rate (FDR), true positive rate (TPR), Avg L, and Avg T per solver x SNR
+  (`track_L_T = TRUE`).
 
 MC trials run in parallel over a hardcoded `num_cores <- 6L` (set at the top of the file).
 
 ## Results
 
-`./generate_plots.sh` renders the tidy CSV through the shared ggplot2 plotter
-[`../trex_plt_utils.R`](../trex_plt_utils.R) into `simulation_results/plots/`
-(PNG + PDF; this port has no interactive HTML output). Only the `FDR` and `TPR`
+`./generate_plots.sh` renders the tidy comma-separated values (CSV) file through the shared ggplot2 plotter
+[`../trex_plt_utils.R`](../trex_plt_utils.R) into `simulation_results/plots/` as Portable Network Graphics (PNG) and
+Portable Document Format (PDF) files. This port has no interactive `.html` output. Only the `FDR` and `TPR`
 rows are plotted — the `AvgL` / `AvgT` rows stay in the `.txt` / `.csv` files.
 
 ### Overview (all 14 solvers)
@@ -50,13 +51,13 @@ solver on one pair of panels:
 *Left:* redrawing the support on every trial does not break FDR control — the
 maximum over the entire table is 0.0621 (TENET at SNR 0.7), well under the target
 `tFDR = 0.1` (black dotted line). The fine grid resolves a hump the coarse Demo 02
-grid only hints at: the four LARS-path solvers rise to 0.058–0.062 at SNR 0.7 and
+grid only hints at. The four least-angle regression (LARS) path solvers rise to 0.058–0.062 at SNR 0.7 and
 then decay to 0.029–0.031 by SNR 5.0, while the greedy family stays flatter and
 lower throughout (per-solver maxima 0.029–0.036, most of them reached at the top
 of the fine grid at SNR 1.7–1.8 rather than at the hump). *Right:* with
 `num_MC = 200` the power curves are smooth — TLARS climbs from 0.004 at SNR 0.1 to
-0.984 at SNR 2.0 and 1.000 at SNR 5.0. The two families cross near SNR 0.8: the
-LARS path leads below it, the greedy solvers above (at SNR 1.0, TSTEPWISE 0.884
+0.984 at SNR 2.0 and 1.000 at SNR 5.0. The two families cross near SNR 0.8. The
+LARS path leads below it and the greedy solvers lead above it (at SNR 1.0, TSTEPWISE 0.884
 against TLARS 0.729).
 
 ### Grouped 2x2 view (de-cluttered)
@@ -78,5 +79,5 @@ and a tidy `.csv` (header `solver,metric,snr,value`, with `FDR`/`TPR`/`AvgL`/`Av
 rows), stem `demo_trex_03_mc_sim_variable_support_trex_results_n300_p1000_stagnation_window_5`.
 Both files are re-saved after each completed solver (growing file), so an abort
 mid-run keeps the solvers already finished. The script sources
-`../../support_generators.R`, `../../simulation_utils.R`, and
+`../../../support_generators.R`, `../../../simulation_utils.R`, and
 `../trex_sim_utils.R`.
