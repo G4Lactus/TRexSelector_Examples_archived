@@ -19,7 +19,7 @@
 #   Rscript corr_plt_utils.R <demo_key> [--out PATH.png] [--dpi N]
 #   Rscript corr_plt_utils.R --list
 #
-# Each sub-suite's DGP module lives one level down (trex/, trex_da/, ...); the
+# Each sub-suite's DGP module lives two levels down (ad/trex_core/, ad/trex_da/, ...); the
 # builders source only the DGP file actually needed, into a private
 # environment. All 22 Python keys are registered: da_* (8), trex_gauss,
 # gvs_* (8), scr_* (4) and spca_factor.
@@ -41,9 +41,9 @@ suppressMessages(library(ggplot2))
 .SP <- 75L    # small structured-prefix crop
 
 
-#' Source one file of a sub-suite into a private environment and return it.
+#' Source one file of a sub-suite (below ad/) into a private environment and return it.
 .suite_dgp <- function(...) {
-  path <- file.path(.HERE, ...)
+  path <- file.path(.HERE, "ad", ...)
   env <- new.env(parent = globalenv())
   sys.source(path, envir = env)
   env
@@ -123,7 +123,7 @@ plot_correlation_matrix <- function(X, out_path, title, subtitle = NULL,
 # (R supports are 1-based: 1:10 mirrors Python's np.arange(10).)
 # ==============================================================================
 
-# --- trex_da: 8 DGPs (trex_da/trex_da_dgps.R) ---------------------------------
+# --- trex_da: 8 DGPs (ad/trex_da/trex_da_dgps.R) ------------------------------
 
 .da <- function() .suite_dgp("trex_da", "trex_da_dgps.R")
 
@@ -194,10 +194,10 @@ plot_correlation_matrix <- function(X, out_path, title, subtitle = NULL,
 }
 
 
-# --- trex: iid Gaussian (trex/trex_sim_utils.R dgp_gauss_snr) -----------------
+# --- trex_core: iid Gaussian (ad/trex_core/trex_sim_utils.R dgp_gauss_snr) ----
 
 .ex_trex_gauss <- function() {
-  g <- .suite_dgp("trex", "trex_sim_utils.R")
+  g <- .suite_dgp("trex_core", "trex_sim_utils.R")
   d <- g$dgp_gauss_snr(n = 300L, p = 1000L, support = 1:10,
                        coefs = rep(1.0, 10L), snr = 1.0, seed = .SEED)
   list(X = d$X, title = .TITLE, crop = NULL,
@@ -205,7 +205,7 @@ plot_correlation_matrix <- function(X, out_path, title, subtitle = NULL,
                          "(corr ~ identity)  |  n=300, p=1000"))
 }
 
-# --- trex_gvs: 8 DGPs (trex_gvs/trex_gvs_dgps.R) ------------------------------
+# --- trex_gvs: 8 DGPs (ad/trex_gvs/trex_gvs_dgps.R) ---------------------------
 # The gvs DGPs require an snr argument; a nominal snr = 1 is passed — corr(X)
 # never depends on it.
 
@@ -267,7 +267,7 @@ plot_correlation_matrix <- function(X, out_path, title, subtitle = NULL,
 }
 
 
-# --- trex_screening: 4 DGPs (trex_screening/trex_scr_sim_utils.R) -------------
+# --- trex_screening: 4 DGPs (ad/trex_screening/trex_scr_sim_utils.R) ----------
 
 .scr <- function() .suite_dgp("trex_screening", "trex_scr_sim_utils.R")
 
@@ -301,7 +301,7 @@ plot_correlation_matrix <- function(X, out_path, title, subtitle = NULL,
 }
 
 
-# --- trex_spca: sparse factor model (trex_spca/trex_spca_sim_utils.R) ---------
+# --- trex_spca: sparse factor model (ad/trex_spca/trex_spca_sim_utils.R) ------
 
 .ex_spca_factor <- function() {
   g <- .suite_dgp("trex_spca", "trex_spca_sim_utils.R")

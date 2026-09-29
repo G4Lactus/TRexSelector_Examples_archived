@@ -8,17 +8,22 @@ Each variant addresses a different variable-selection scenario — the classical
 
 The C++ tree's `validation/` programs (cross-checks against R reference outputs) are validation infrastructure rather than demos and have no Python port by design; they live in the TRexSelector library test suite.
 
+The folders follow the layout of the library, which sorts the selectors by the way they handle the dummies. [ad/](ad/)
+holds the variants with augmented dummies (AD), which append an explicit dummy matrix to the predictors, and all current
+demos. [sd/](sd/README.md) is reserved for the sparse-dummy (SD) selector and [vd/](vd/README.md) for the virtual-dummy
+(VD) selector.
+
 ---
 
 ## Category overview
 
 | Category | Folder | Purpose |
 |----------|--------|---------|
-| **Classical T-Rex** | [trex/](trex/README.md) | Terminating Random Experiments Selector — baseline FDR-controlled variable selection in low- and high-dimensional Gaussian linear models (demos 01–08) |
-| **Dependency-Aware T-Rex (DA-TRex)** | [trex_da/](trex_da/README.md) | Variable selection under correlated/dependent design structures: AR(1) Toeplitz, equicorrelated, banded nearest-neighbor, and hierarchical block-covariance designs (demos 01–08) |
-| **Grouped Variable Selection (T-Rex+GVS)** | [trex_gvs/](trex_gvs/README.md) | Group-structured selection via elastic-net-based and HAC-clustering-based grouping (EN, EN-AUG, IEN) across equicorrelated, scattered, and block-covariance patterns (demos 01–08) |
-| **Screening (Screen-TRex)** | [trex_screening/](trex_screening/README.md) | Ultra-high-dimensional pre-screening ahead of T-Rex selection, with in-memory, memory-mapped, and biobank-scale variants (demos 01–06) |
-| **Sparse PCA (T-Rex SPCA)** | [trex_spca/](trex_spca/README.md) | Sparse PCA via per-component T-Rex+GVS selection on plug-in PCs, benchmarked against ordinary PCA and oracle-thresholded baselines: Fig.-2/Fig.-3-style support-recovery and Definition-1 PEV studies, plus mechanism studies of the plug-in construction (plug-in vs. oracle response, union-support FDR per PC) (demos 01–02) |
+| **Classical T-Rex** | [ad/trex_core/](ad/trex_core/README.md) | Terminating Random Experiments Selector — baseline FDR-controlled variable selection in low- and high-dimensional Gaussian linear models (demos 01–08) |
+| **Dependency-Aware T-Rex (DA-TRex)** | [ad/trex_da/](ad/trex_da/README.md) | Variable selection under correlated/dependent design structures: AR(1) Toeplitz, equicorrelated, banded nearest-neighbor, and hierarchical block-covariance designs (demos 01–08) |
+| **Grouped Variable Selection (T-Rex+GVS)** | [ad/trex_gvs/](ad/trex_gvs/README.md) | Group-structured selection via elastic-net-based and HAC-clustering-based grouping (EN, EN-AUG, IEN) across equicorrelated, scattered, and block-covariance patterns (demos 01–08) |
+| **Screening (Screen-TRex)** | [ad/trex_screening/](ad/trex_screening/README.md) | Ultra-high-dimensional pre-screening ahead of T-Rex selection, with in-memory, memory-mapped, and biobank-scale variants (demos 01–06) |
+| **Sparse PCA (T-Rex SPCA)** | [ad/trex_spca/](ad/trex_spca/README.md) | Sparse PCA via per-component T-Rex+GVS selection on plug-in PCs, benchmarked against ordinary PCA and oracle-thresholded baselines: Fig.-2/Fig.-3-style support-recovery and Definition-1 PEV studies, plus mechanism studies of the plug-in construction (plug-in vs. oracle response, union-support FDR per PC) (demos 01–02) |
 
 ---
 
@@ -45,7 +50,7 @@ All selector-layer classes and enums are accessed through the package root (`imp
 Each demo is a plain script, run directly with the Python interpreter:
 
 ```bash
-python trex/demo_trex_01_single_run/demo_trex_01_single_run.py
+python ad/trex_core/demo_trex_01_single_run/demo_trex_01_single_run.py
 ```
 
 For each variant's demo lineup and required parameters, see the corresponding subfolder README.
@@ -57,9 +62,12 @@ For each variant's demo lineup and required parameters, see the corresponding su
 ```txt
 trex_selector_methods/
   ├── README.md
-  ├── trex/
-  ├── trex_screening/
-  ├── trex_da/
-  ├── trex_gvs/
-  └── trex_spca/
+  ├── ad/   # augmented dummies (AD)
+  │   ├── trex_core/
+  │   ├── trex_screening/
+  │   ├── trex_da/
+  │   ├── trex_gvs/
+  │   └── trex_spca/
+  ├── sd/   # sparse dummies (SD), README only
+  └── vd/   # virtual dummies (VD), README only
 ```

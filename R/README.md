@@ -43,7 +43,7 @@ Additional CRAN packages, depending on which demos you run:
 | `TRexSelector` (1.0.0) | the reference generator `demo_ts_compare_tlars_tlasso.R`, now in the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/tsolvers/`) |
 | `plotly` | Correlation-matrix heatmaps in the trex_da / trex_gvs MC demos |
 | `parallel` | Monte Carlo runners (shipped with base R) |
-| `glmnet` | the model-selection and trex_spca cross-check probes, now in the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/ml_methods/model_selection/` and `.../trex_selector_methods/trex_spca/`) |
+| `glmnet` | the model-selection and trex_spca cross-check probes, now in the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/ml_methods/model_selection/` and `.../trex_selector_methods/ad/trex_spca/`) |
 | `tlars` | the reference generator `demo_ts_compare_tlars_tlasso.R`, now in the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/tsolvers/`) |
 
 ---
@@ -53,7 +53,7 @@ Additional CRAN packages, depending on which demos you run:
 Every demo is a standalone script and can be run from **any** working directory:
 
 ```bash
-Rscript R/trex_selector_methods/trex/demo_trex_01_single_run/demo_trex_01_single_run.R
+Rscript R/trex_selector_methods/ad/trex_core/demo_trex_01_single_run/demo_trex_01_single_run.R
 ```
 
 Each script resolves its own location (via `sys.frame(1L)$ofile` with a
@@ -78,22 +78,26 @@ explicitly where fixed supports are mirrored from C++.
 | [ml_methods/svd/](ml_methods/svd/README.md) | NEW (TRexSelectorNeo) | Truncated SVD via `MLSVD` | [cpp/ml_methods/svd/](../cpp/ml_methods/svd/) |
 | [ml_methods/ridge_regression/](ml_methods/ridge_regression/README.md) | NEW (TRexSelectorNeo) | L2-penalized least squares via `MLRidge` | [cpp/ml_methods/ridge_regression/](../cpp/ml_methods/ridge_regression/) |
 | [ml_methods/model_selection/](ml_methods/model_selection/README.md) | NEW (TRexSelectorNeo) | K-fold CV ridge via `MLRidgeCV` incl. a memory-mapped design matrix, plus elastic-net path fitting and CV via `MLElasticNet` / `MLElasticNetCV` | [cpp/ml_methods/model_selection/](../cpp/ml_methods/model_selection/) |
-| [trex_selector_methods/trex/](trex_selector_methods/trex/README.md) | NEW (TRexSelectorNeo) | Classical T-Rex: single runs, MC studies, l-loop strategies, mmap, scalability (demos 00–07) | [cpp/trex_selector_methods/trex/](../cpp/trex_selector_methods/trex/) |
-| [trex_selector_methods/trex_da/](trex_selector_methods/trex_da/README.md) | NEW (TRexSelectorNeo) | Dependency-Aware T-Rex: AR(1), equi, NN, BT-block, heavy-tailed DGPs (demos 01–08), NN demos skip until the R binding exposes `da_method="NN"` | [cpp/trex_selector_methods/trex_da/](../cpp/trex_selector_methods/trex_da/) |
-| [trex_selector_methods/trex_gvs/](trex_selector_methods/trex_gvs/README.md) | NEW (TRexSelectorNeo) | Grouped Variable Selection T-Rex: EN vs IEN over grouped DGPs (demos 01–08) | [cpp/trex_selector_methods/trex_gvs/](../cpp/trex_selector_methods/trex_gvs/) |
-| [trex_selector_methods/trex_spca/](trex_selector_methods/trex_spca/README.md) | NEW (TRexSelectorNeo) | T-Rex Sparse PCA MC comparison vs. ordinary/oracle PCA (`TRexSPCASelector`, demo 01, folder-per-demo), C++/R cross-check probes moved to the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/trex_selector_methods/trex_spca/`) | [cpp/trex_selector_methods/trex_spca/](../cpp/trex_selector_methods/trex_spca/) |
-| [trex_selector_methods/trex_screening/](trex_selector_methods/trex_screening/README.md) | NEW (TRexSelectorNeo) | Screen-TRex: in-memory / mmap screening, correlated designs, biobank-scale, solver comparison (6 demos) | [cpp/trex_selector_methods/trex_screening/](../cpp/trex_selector_methods/trex_screening/) |
+| [trex_selector_methods/ad/trex_core/](trex_selector_methods/ad/trex_core/README.md) | NEW (TRexSelectorNeo) | Classical T-Rex: single runs, MC studies, l-loop strategies, mmap, scalability (demos 00–07) | [cpp/trex_selector_methods/ad/trex_core/](../cpp/trex_selector_methods/ad/trex_core/) |
+| [trex_selector_methods/ad/trex_da/](trex_selector_methods/ad/trex_da/README.md) | NEW (TRexSelectorNeo) | Dependency-Aware T-Rex: AR(1), equi, NN, BT-block, heavy-tailed DGPs (demos 01–08), NN demos skip until the R binding exposes `da_method="NN"` | [cpp/trex_selector_methods/ad/trex_da/](../cpp/trex_selector_methods/ad/trex_da/) |
+| [trex_selector_methods/ad/trex_gvs/](trex_selector_methods/ad/trex_gvs/README.md) | NEW (TRexSelectorNeo) | Grouped Variable Selection T-Rex: EN vs IEN over grouped DGPs (demos 01–08) | [cpp/trex_selector_methods/ad/trex_gvs/](../cpp/trex_selector_methods/ad/trex_gvs/) |
+| [trex_selector_methods/ad/trex_spca/](trex_selector_methods/ad/trex_spca/README.md) | NEW (TRexSelectorNeo) | T-Rex Sparse PCA MC comparison vs. ordinary/oracle PCA (`TRexSPCASelector`, demo 01, folder-per-demo), C++/R cross-check probes moved to the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/trex_selector_methods/ad/trex_spca/`) | [cpp/trex_selector_methods/ad/trex_spca/](../cpp/trex_selector_methods/ad/trex_spca/) |
+| [trex_selector_methods/ad/trex_screening/](trex_selector_methods/ad/trex_screening/README.md) | NEW (TRexSelectorNeo) | Screen-TRex: in-memory / mmap screening, correlated designs, biobank-scale, solver comparison (6 demos) | [cpp/trex_selector_methods/ad/trex_screening/](../cpp/trex_selector_methods/ad/trex_screening/) |
 | [tsolvers/](tsolvers/README.md) | NEW (TRexSelectorNeo) | 12 standalone terminating-solver demos (`demo_ts_01` … `demo_ts_12`: early stopping, external normalization, serialization, mmap, terminated solution paths with ggplot2 figures), the TENET/TENETAug equivalence check and CRAN tlars path-equivalence reference generator moved to the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/tsolvers/`) | [cpp/tsolvers/](../cpp/tsolvers/) |
 
 Shared helpers for the selector demos live in
 [trex_selector_methods/](trex_selector_methods/README.md)
 (`support_generators.R`, `simulation_utils.R`).
 
+The `tsolvers/` and `trex_selector_methods/` folders follow the library layout by dummy type. `ad/` holds the
+augmented-dummy (AD) demos, while `sd/` (sparse dummies) and `vd/` (virtual dummies) hold a README until the R bindings
+expose these methods.
+
 ---
 
 ## Coverage relative to the C++ tree
 
-The R tree now mirrors the selector suites — `trex`, `trex_da`, `trex_gvs`,
+The R tree now mirrors the selector suites — `trex_core`, `trex_da`, `trex_gvs`,
 `trex_spca`, and `trex_screening` — on the new TRexSelectorNeo R6 API. A few
 gaps relative to [cpp/](../cpp/README.md) remain:
 

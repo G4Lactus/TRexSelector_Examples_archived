@@ -4,7 +4,7 @@
 #
 # Shared helpers for the standalone terminating-solver (tsolvers) demos.
 #
-# Mirrors the C++ utilities used by cpp/tsolvers/demo_ts_*:
+# Mirrors the C++ utilities used by cpp/tsolvers/ad/demo_ts_*:
 #   - datagen::SyntheticData with predictor_policy::Normal(),
 #     dummygen::Distribution::Normal(), noisegen::noise_policy::Normal()
 #   - cdiagnostics::print_section_header / print_talgo_demo_config /

@@ -23,8 +23,8 @@ exactly on a rounding tie can differ by one unit in the last displayed digit
 from a fresh C++ run. Re-run the demo if bit-exact tables matter.
 
 Usage:
-    ./reformat_result_txt.py                 # every suite below this folder
-    ./reformat_result_txt.py trex trex_da    # only these suites
+    ./reformat_result_txt.py                 # every suite below ad/
+    ./reformat_result_txt.py trex_core trex_da    # only these suites
     ./reformat_result_txt.py <file.csv> ...  # only these files
 """
 from __future__ import annotations
@@ -70,7 +70,7 @@ def header_cells(xs: list[float], suite: str, width: int = COL_W,
 
 def suite_of(path: Path) -> str:
     for part in path.resolve().parts:
-        if part in ("trex", "trex_da", "trex_gvs", "trex_screening", "trex_spca"):
+        if part in ("trex_core", "trex_da", "trex_gvs", "trex_screening", "trex_spca"):
             return part
     return ""
 
@@ -166,9 +166,9 @@ def main(argv: list[str]) -> int:
     if args and all(a.endswith(".csv") for a in args):
         csvs = [Path(a) for a in args]
     else:
-        suites = args or ["trex", "trex_da", "trex_gvs", "trex_screening", "trex_spca"]
+        suites = args or ["trex_core", "trex_da", "trex_gvs", "trex_screening", "trex_spca"]
         csvs = sorted(c for s in suites
-                      for c in (here / s).glob("demo_*/simulation_results/data/*.csv"))
+                      for c in (here / "ad" / s).glob("demo_*/simulation_results/data/*.csv"))
 
     done = skipped = 0
     for c in csvs:

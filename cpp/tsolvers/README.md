@@ -11,34 +11,39 @@ The solver demos run each solver on its own, outside the calibration of the T-Re
 normalization modes and the checkpoints can be inspected in isolation. The performance demos compare all solvers side
 by side.
 
+The folders follow the layout of the library, which sorts the solvers by the way they handle the dummies. [ad/](ad/)
+holds the augmented-dummy (AD) solvers, which append an explicit dummy matrix to the predictors, and all current demos.
+[sd/](sd/README.md) is reserved for the sparse-dummy (SD) solvers and [vd/](vd/README.md) for the virtual-dummy (VD)
+forward selectors.
+
 ---
 
 ## Demo overview
 
 | # | Solver | Folder | Strategy |
 |---|--------|--------|----------|
-| 01 | **T-LARS** | [demo_ts_01_tlars/](demo_ts_01_tlars/README.md) | Least angle regression |
-| 02 | **T-LASSO** | [demo_ts_02_tlasso/](demo_ts_02_tlasso/README.md) | Lasso path |
-| 03 | **T-Stepwise** | [demo_ts_03_tstepwise/](demo_ts_03_tstepwise/README.md) | Forward stepwise regression |
-| 04 | **T-ENET** | [demo_ts_04_tenet/](demo_ts_04_tenet/README.md) | Elastic net |
-| 05 | **T-Stagewise** | [demo_ts_05_tstagewise/](demo_ts_05_tstagewise/README.md) | Forward stagewise regression |
-| 06 | **T-OMP** | [demo_ts_06_tomp/](demo_ts_06_tomp/README.md) | Orthogonal matching pursuit |
-| 07 | **T-GP** | [demo_ts_07_tgp/](demo_ts_07_tgp/README.md) | Gradient pursuit |
-| 08 | **T-ACGP** | [demo_ts_08_tacgp/](demo_ts_08_tacgp/README.md) | Approximate conjugate gradient pursuit |
-| 09 | **T-MP** | [demo_ts_09_tmp/](demo_ts_09_tmp/README.md) | Matching pursuit |
-| 10 | **T-NCGMP** | [demo_ts_10_tncgmp/](demo_ts_10_tncgmp/README.md) | Norm-corrective generalized matching pursuit |
-| 11 | **T-OLS** | [demo_ts_11_tools/](demo_ts_11_tools/README.md) | Orthogonal least squares |
-| 12 | **T-AFS** | [demo_ts_12_tafs/](demo_ts_12_tafs/README.md) | Adaptive forward stepwise |
+| 01 | **T-LARS** | [demo_ts_01_tlars/](ad/demo_ts_01_tlars/README.md) | Least angle regression |
+| 02 | **T-LASSO** | [demo_ts_02_tlasso/](ad/demo_ts_02_tlasso/README.md) | Lasso path |
+| 03 | **T-Stepwise** | [demo_ts_03_tstepwise/](ad/demo_ts_03_tstepwise/README.md) | Forward stepwise regression |
+| 04 | **T-ENET** | [demo_ts_04_tenet/](ad/demo_ts_04_tenet/README.md) | Elastic net |
+| 05 | **T-Stagewise** | [demo_ts_05_tstagewise/](ad/demo_ts_05_tstagewise/README.md) | Forward stagewise regression |
+| 06 | **T-OMP** | [demo_ts_06_tomp/](ad/demo_ts_06_tomp/README.md) | Orthogonal matching pursuit |
+| 07 | **T-GP** | [demo_ts_07_tgp/](ad/demo_ts_07_tgp/README.md) | Gradient pursuit |
+| 08 | **T-ACGP** | [demo_ts_08_tacgp/](ad/demo_ts_08_tacgp/README.md) | Approximate conjugate gradient pursuit |
+| 09 | **T-MP** | [demo_ts_09_tmp/](ad/demo_ts_09_tmp/README.md) | Matching pursuit |
+| 10 | **T-NCGMP** | [demo_ts_10_tncgmp/](ad/demo_ts_10_tncgmp/README.md) | Norm-corrective generalized matching pursuit |
+| 11 | **T-OLS** | [demo_ts_11_tools/](ad/demo_ts_11_tools/README.md) | Orthogonal least squares |
+| 12 | **T-AFS** | [demo_ts_12_tafs/](ad/demo_ts_12_tafs/README.md) | Adaptive forward stepwise |
 
 The performance demos compare all solvers side by side, for example by false discovery rate (FDR) and true
 positive rate (TPR), with figures drawn by `ts_plt_utils.py`:
 
 | # | Folder | Question |
 |---|--------|----------|
-| P1 | [demo_ts_perf_01_fdr_tpr_vs_T/](demo_ts_perf_01_fdr_tpr_vs_T/README.md) | FDR and TPR of the terminated paths vs. $T$ (the simulation of the R tlars vignette) |
-| P2 | [demo_ts_perf_02_runtime_vs_dummies/](demo_ts_perf_02_runtime_vs_dummies/README.md) | Run time, steps and time per step vs. the number of dummies $L$, and the gain of the warm start |
-| P3 | [demo_ts_perf_03_memory_vs_np/](demo_ts_perf_03_memory_vs_np/README.md) | Solver memory vs. the ratio $n/p$, and its share of the data |
-| P4 | [demo_ts_perf_04_recovery_vs_dt_ratio/](demo_ts_perf_04_recovery_vs_dt_ratio/README.md) | Exact support recovery, TPR and FDR at the first dummy vs. $n/(s \log p)$, and the Donoho–Tanner diagram |
+| P1 | [demo_ts_perf_01_fdr_tpr_vs_T/](ad/demo_ts_perf_01_fdr_tpr_vs_T/README.md) | FDR and TPR of the terminated paths vs. $T$ (the simulation of the R tlars vignette) |
+| P2 | [demo_ts_perf_02_runtime_vs_dummies/](ad/demo_ts_perf_02_runtime_vs_dummies/README.md) | Run time, steps and time per step vs. the number of dummies $L$, and the gain of the warm start |
+| P3 | [demo_ts_perf_03_memory_vs_np/](ad/demo_ts_perf_03_memory_vs_np/README.md) | Solver memory vs. the ratio $n/p$, and its share of the data |
+| P4 | [demo_ts_perf_04_recovery_vs_dt_ratio/](ad/demo_ts_perf_04_recovery_vs_dt_ratio/README.md) | Exact support recovery, TPR and FDR at the first dummy vs. $n/(s \log p)$, and the Donoho–Tanner diagram |
 
 ---
 
@@ -87,7 +92,7 @@ T-ENET and T-OLS take paths of their own. The T-AFS figure shows four values of 
 and the T-NCGMP figure both variants.
 
 Over full paths an identity holds as far as the rules of the solvers agree. In
-[demo_ts_perf_01](demo_ts_perf_01_fdr_tpr_vs_T/) (100 runs up to $T = 100$, precentered readers, seeded
+[demo_ts_perf_01](ad/demo_ts_perf_01_fdr_tpr_vs_T/) (100 runs up to $T = 100$, precentered readers, seeded
 tie-breaking):
 
 | Solvers | Full path |
@@ -119,9 +124,9 @@ cmake --build --preset release-build
 Run any demo from the repository root. For example:
 
 ```bash
-cpp/build/release/bin/tsolvers/demo_ts_01_tlars/demo_ts_01_tlars      # Parts 1-5
-cpp/build/release/bin/tsolvers/demo_ts_01_tlars/demo_ts_01_tlars 5    # Part 5 only
-cpp/tsolvers/demo_ts_01_tlars/generate_plots.sh                        # path figure from the Part 5 data
+cpp/build/release/bin/tsolvers/ad/demo_ts_01_tlars/demo_ts_01_tlars      # Parts 1-5
+cpp/build/release/bin/tsolvers/ad/demo_ts_01_tlars/demo_ts_01_tlars 5    # Part 5 only
+cpp/tsolvers/ad/demo_ts_01_tlars/generate_plots.sh                        # path figure from the Part 5 data
 ```
 
 Every demo takes the parts to run as optional arguments. Part 4 writes about 44 GB of temporary files, so `5`
@@ -138,20 +143,23 @@ tsolvers/
   ├── ts_perf_utils.hpp      # shared C++ helpers (part selection, path recorder, selection, medians)
   ├── ts_perf_solvers.hpp    # the solvers compared by the performance demos
   ├── ts_plt_utils.py        # shared matplotlib figures
-  ├── demo_ts_01_tlars/
-  ├── demo_ts_02_tlasso/
-  ├── demo_ts_03_tstepwise/
-  ├── demo_ts_04_tenet/
-  ├── demo_ts_05_tstagewise/
-  ├── demo_ts_06_tomp/
-  ├── demo_ts_07_tgp/
-  ├── demo_ts_08_tacgp/
-  ├── demo_ts_09_tmp/
-  ├── demo_ts_10_tncgmp/
-  ├── demo_ts_11_tools/
-  ├── demo_ts_12_tafs/
-  ├── demo_ts_perf_01_fdr_tpr_vs_T/
-  ├── demo_ts_perf_02_runtime_vs_dummies/
-  ├── demo_ts_perf_03_memory_vs_np/
-  └── demo_ts_perf_04_recovery_vs_dt_ratio/
+  ├── ad/                    # augmented dummies (AD)
+  │   ├── demo_ts_01_tlars/
+  │   ├── demo_ts_02_tlasso/
+  │   ├── demo_ts_03_tstepwise/
+  │   ├── demo_ts_04_tenet/
+  │   ├── demo_ts_05_tstagewise/
+  │   ├── demo_ts_06_tomp/
+  │   ├── demo_ts_07_tgp/
+  │   ├── demo_ts_08_tacgp/
+  │   ├── demo_ts_09_tmp/
+  │   ├── demo_ts_10_tncgmp/
+  │   ├── demo_ts_11_tools/
+  │   ├── demo_ts_12_tafs/
+  │   ├── demo_ts_perf_01_fdr_tpr_vs_T/
+  │   ├── demo_ts_perf_02_runtime_vs_dummies/
+  │   ├── demo_ts_perf_03_memory_vs_np/
+  │   └── demo_ts_perf_04_recovery_vs_dt_ratio/
+  ├── sd/                    # sparse dummies (SD), README only
+  └── vd/                    # virtual dummies (VD), README only
 ```

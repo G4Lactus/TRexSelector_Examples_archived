@@ -32,7 +32,7 @@ The same handles feed the out-of-core examples
 [demo_mlm_hac_02_mmap](../ml_methods/hac_clustering/demo_mlm_hac_02_mmap/README.md),
 [demo_mlm_scaler_01](../ml_methods/scaler_methods/demo_mlm_scaler_01/README.md) and
 [demo_mlm_ms_01_ridge_cv_svd](../ml_methods/model_selection/demo_mlm_ms_01_ridge_cv_svd/README.md), the
-[T-solver demos](../tsolvers/README.md) and the [T-Rex demos](../trex_selector_methods/trex/README.md).
+[T-solver demos](../tsolvers/README.md) and the [T-Rex demos](../trex_selector_methods/ad/trex_core/README.md).
 
 ---
 

@@ -17,7 +17,7 @@
 #   python corr_plt_utils.py <demo_key> [--out PATH.png] [--dpi N]
 #   python corr_plt_utils.py --list
 #
-# Each sub-suite's DGP module lives one level down (trex_da/, trex_gvs/, ...);
+# Each sub-suite's DGP module lives two levels down (ad/trex_da/, ad/trex_gvs/, ...);
 # the builders add the relevant suite dir to sys.path lazily so only the DGP
 # actually needed is imported.
 # ==============================================================================
@@ -39,8 +39,8 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 
 
 def _suite_dgp(suite: str):
-    """Add <suite>/ to sys.path and return its module namespace helpers."""
-    d = os.path.join(_HERE, suite)
+    """Add ad/<suite>/ to sys.path and return its module namespace helpers."""
+    d = os.path.join(_HERE, "ad", suite)
     if d not in sys.path:
         sys.path.insert(0, d)
 
@@ -191,7 +191,7 @@ def _ex_da_groups():
 # --- trex: iid Gaussian (dgp_gauss_snr) ---------------------------------------
 
 def _ex_trex_gauss():
-    _suite_dgp("trex")
+    _suite_dgp("trex_core")
     from dgp_gauss_snr import dgp_gauss_snr
     d = dgp_gauss_snr(n=300, p=1000, support=_sup(), coefs=np.ones(10), snr=1.0,
                       seed=_SEED)

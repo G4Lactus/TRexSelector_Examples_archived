@@ -57,7 +57,7 @@ All demo executables are registered through the
 
 - Creates the executable and links Eigen3, Open Multi-Processing (OpenMP), and a chosen library set
 - Routes each binary into a mirrored sub-tree under `build/<type>/bin/`
-  (e.g. `tsolvers/demo_ts_01_tlars/demo_ts_01_tlars`)
+  (e.g. `tsolvers/ad/demo_ts_01_tlars/demo_ts_01_tlars`)
 - Injects `DEMO_OUTPUT_DIR` as a compile-time constant pointing to the
   source-side `simulation_results/` folder next to the demo source
 
@@ -111,7 +111,8 @@ on demand via its `run_validations` target.
 
 Terminating T-Algorithm solvers for high-dimensional linear-model variable
 selection. Each solver stops at $T_{\text{stop}}$ level rather than computing
-the full regularization path.
+the full regularization path. The demos live in `tsolvers/ad/` (augmented dummies), while
+`tsolvers/sd/` (sparse dummies) and `tsolvers/vd/` (virtual dummies) are reserved for later demos.
 
 | Demo | Solver |
 | --- | --- |
@@ -136,32 +137,33 @@ TENET/TENET_AUG probe) moved to the TRexSelector library test suite
 
 ### `trex_selector_methods/`
 
-Five T-Rex selector variants, each in its own sub-directory. Demos run Monte
-Carlo simulations and write results to source-side `simulation_results/` folders.
+Five T-Rex selector variants, each in its own sub-directory of `ad/` (augmented dummies), while `sd/` (sparse
+dummies) and `vd/` (virtual dummies) are reserved for later demos. Demos run Monte Carlo simulations and write
+results to source-side `simulation_results/` folders.
 
-#### `trex/`
+#### `ad/trex_core/`
 
 Classical T-Rex selector. Demos cover single runs, Monte Carlo simulations
 with fixed and variable support, l-loop strategies, and memory-mapped designs
 (7 demos, 1 pending).
 
-#### `trex_da/`
+#### `ad/trex_da/`
 
 Dependency-Aware T-Rex. Demos explore first-order autoregressive (AR(1)), equicorrelated, nearest-neighbor,
 block-diagonal, and group correlation structures (8 demos).
 
-#### `trex_gvs/`
+#### `ad/trex_gvs/`
 
 Grouped Variable Selection T-Rex. Demos benchmark elastic net (EN), EN in augmented-lasso form (EN-AUG), and
 informed elastic net (IEN) grouping strategies across Hastie, scattered, mixed, negative-trap, t-distributed, AR(1),
 autoregressive moving-average (ARMA), and block-benchmark designs (8 demos).
 
-#### `trex_screening/`
+#### `ad/trex_screening/`
 
 Ultra-high-dimensional screening with T-Rex. Demos cover in-memory screening,
 memory-mapped screening, correlated designs, and biobank-scale pipelines
 (6 demos).
 
-#### `trex_spca/`
+#### `ad/trex_spca/`
 
 Sparse PCA with T-Rex. Monte Carlo simulation demo (1 demo).

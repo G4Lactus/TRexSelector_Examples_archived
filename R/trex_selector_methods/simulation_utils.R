@@ -160,7 +160,7 @@ cap_hc <- function(hc_dist) {
 }
 
 
-# (The DA-TRex MC engine now lives in trex_da/da_sim_common.R, sourced by the
+# (The DA-TRex MC engine now lives in ad/trex_da/da_sim_common.R, sourced by the
 # trex_da demos directly — this file keeps only the GVS wrappers and the
 # generic output helpers.)
 

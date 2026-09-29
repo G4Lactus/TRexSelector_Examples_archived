@@ -8,9 +8,9 @@
 # They are only needed to run the linter, configured in mypy.ini.
 # Launch from the repository root so the relative mypy_path entries resolve:
 #
-#   mypy cpp/trex_selector_methods/trex/trex_plt_utils.py \
-#        cpp/trex_selector_methods/trex_da/trex_da_plt_utils.py
-#   mypy Python/tsolvers/demo_ts_01_tlars/demo_ts_01_tlars.py
+#   mypy cpp/trex_selector_methods/ad/trex_core/trex_plt_utils.py \
+#        cpp/trex_selector_methods/ad/trex_da/trex_da_plt_utils.py
+#   mypy Python/tsolvers/ad/demo_ts_01_tlars/demo_ts_01_tlars.py
 
 mypy
 

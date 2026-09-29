@@ -100,7 +100,7 @@ import `trex_selector_neo`.
 Each demo is run directly with the Python interpreter, e.g.:
 
 ```bash
-python trex_selector_methods/trex/demo_trex_01_single_run/demo_trex_01_single_run.py
+python trex_selector_methods/ad/trex_core/demo_trex_01_single_run/demo_trex_01_single_run.py
 ```
 
 Notes:
@@ -125,12 +125,16 @@ Notes:
 | ML methods — SVD | [ml_methods/svd/](ml_methods/svd/) | Truncated SVD, direct and Gram paths (`demo_mlm_svd_01`) | [cpp/ml_methods/svd/](../cpp/ml_methods/svd/) |
 | ML methods — Ridge | [ml_methods/ridge_regression/](ml_methods/ridge_regression/) | L2-penalized least squares, primal/dual, lambda sweep (`demo_mlm_ridge_01`) | [cpp/ml_methods/ridge_regression/](../cpp/ml_methods/ridge_regression/) |
 | ML methods — Model selection | [ml_methods/model_selection/](ml_methods/model_selection/) | K-fold CV for ridge (SVD) and elastic net (CCD), lambda.min / lambda.1se (`demo_mlm_ms_01`, `demo_mlm_ms_02`) | [cpp/ml_methods/model_selection/](../cpp/ml_methods/model_selection/) |
-| T-Rex selector | [trex_selector_methods/trex/](trex_selector_methods/trex/) | Classical T-Rex: single runs, Monte Carlo simulations, L-loop strategies, dummy distributions, memory-mapped pipelines, scalability benchmark (Demos 01–08) | [cpp/trex_selector_methods/trex/](../cpp/trex_selector_methods/trex/) |
-| Dependency-Aware T-Rex | [trex_selector_methods/trex_da/](trex_selector_methods/trex_da/) | T-Rex+DA: AR(1), AR(1)/heavy-tailed blocks (± white noise), prior groups, nearest-neighbor, equicorrelated + BT (Demos 01–08) | [cpp/trex_selector_methods/trex_da/](../cpp/trex_selector_methods/trex_da/) |
-| Grouped Variable Selection T-Rex | [trex_selector_methods/trex_gvs/](trex_selector_methods/trex_gvs/) | T-Rex+GVS: Hastie, scattered, mixed/negative-trap, heavy-tailed, AR(1), ARMA, block benchmark; EN / EN+AUG / IEN (Demos 01–08) | [cpp/trex_selector_methods/trex_gvs/](../cpp/trex_selector_methods/trex_gvs/) |
-| Screen-TRex | [trex_selector_methods/trex_screening/](trex_selector_methods/trex_screening/) | Ultra-high-dimensional screening: Ordinary/Bootstrap-CI, mmap, correlated designs, biobank routing, solver backends (Demos 01–06) | [cpp/trex_selector_methods/trex_screening/](../cpp/trex_selector_methods/trex_screening/) |
-| T-Rex Sparse PCA | [trex_selector_methods/trex_spca/](trex_selector_methods/trex_spca/) | T-Rex SPCA: MC comparison vs. ordinary/oracle PCA on a sparse 3-factor model, plus Fig.-3-style PEV sweeps and the plugin-vs-oracle FDR/TPR heatmap study (Demos 01–02) | [cpp/trex_selector_methods/trex_spca/](../cpp/trex_selector_methods/trex_spca/) |
+| T-Rex selector | [trex_selector_methods/ad/trex_core/](trex_selector_methods/ad/trex_core/) | Classical T-Rex: single runs, Monte Carlo simulations, L-loop strategies, dummy distributions, memory-mapped pipelines, scalability benchmark (Demos 01–08) | [cpp/trex_selector_methods/ad/trex_core/](../cpp/trex_selector_methods/ad/trex_core/) |
+| Dependency-Aware T-Rex | [trex_selector_methods/ad/trex_da/](trex_selector_methods/ad/trex_da/) | T-Rex+DA: AR(1), AR(1)/heavy-tailed blocks (± white noise), prior groups, nearest-neighbor, equicorrelated + BT (Demos 01–08) | [cpp/trex_selector_methods/ad/trex_da/](../cpp/trex_selector_methods/ad/trex_da/) |
+| Grouped Variable Selection T-Rex | [trex_selector_methods/ad/trex_gvs/](trex_selector_methods/ad/trex_gvs/) | T-Rex+GVS: Hastie, scattered, mixed/negative-trap, heavy-tailed, AR(1), ARMA, block benchmark; EN / EN+AUG / IEN (Demos 01–08) | [cpp/trex_selector_methods/ad/trex_gvs/](../cpp/trex_selector_methods/ad/trex_gvs/) |
+| Screen-TRex | [trex_selector_methods/ad/trex_screening/](trex_selector_methods/ad/trex_screening/) | Ultra-high-dimensional screening: Ordinary/Bootstrap-CI, mmap, correlated designs, biobank routing, solver backends (Demos 01–06) | [cpp/trex_selector_methods/ad/trex_screening/](../cpp/trex_selector_methods/ad/trex_screening/) |
+| T-Rex Sparse PCA | [trex_selector_methods/ad/trex_spca/](trex_selector_methods/ad/trex_spca/) | T-Rex SPCA: MC comparison vs. ordinary/oracle PCA on a sparse 3-factor model, plus Fig.-3-style PEV sweeps and the plugin-vs-oracle FDR/TPR heatmap study (Demos 01–02) | [cpp/trex_selector_methods/ad/trex_spca/](../cpp/trex_selector_methods/ad/trex_spca/) |
 | T-Solvers | [tsolvers/](tsolvers/README.md) | 12 standalone terminating-solver demos (`demo_ts_01` … `demo_ts_12`: early stopping, external normalization, serialization, mmap); the validation programs moved to the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/tsolvers/`) | [cpp/tsolvers/](../cpp/tsolvers/) |
+
+The `tsolvers/` and `trex_selector_methods/` folders follow the library layout by dummy type. `ad/` holds the
+augmented-dummy (AD) demos, while `sd/` (sparse dummies) and `vd/` (virtual dummies) hold a README until the Python
+bindings expose these methods.
 
 ---
 

@@ -13,12 +13,12 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 suites=("$@")
 if [[ ${#suites[@]} -eq 0 ]]; then
-  suites=(trex trex_da trex_gvs trex_screening trex_spca)
+  suites=(trex_core trex_da trex_gvs trex_screening trex_spca)
 fi
 
 echo "### master overnight run: ${suites[*]}  ($(date)) ###"
 for s in "${suites[@]}"; do
-  script="$here/$s/run_overnight.sh"
+  script="$here/ad/$s/run_overnight.sh"
   if [[ ! -x "$script" && ! -f "$script" ]]; then
     echo "!!! missing $script — skipping"; continue
   fi

@@ -9,24 +9,29 @@ algorithms for high-dimensional linear models inside the T-Rex framework. Each o
 greedy or pursuit strategy, and all of them share the terminating principle. Instead of the whole path they compute
 only its start, up to the $T$-th dummy that enters the active set.
 
+The folders follow the layout of the library, which sorts the solvers by the way they handle the dummies. [ad/](ad/)
+holds the augmented-dummy (AD) solvers, which append an explicit dummy matrix to the predictors, and all current demos.
+[sd/](sd/README.md) is reserved for the sparse-dummy (SD) solvers and [vd/](vd/README.md) for the virtual-dummy (VD)
+forward selectors.
+
 ---
 
 ## Demo overview
 
 | # | Solver | Folder | Strategy | Binding class |
 |---|--------|--------|----------|---------------|
-| 01 | **T-LARS** | [demo_ts_01_tlars/](demo_ts_01_tlars/README.md) | Least angle regression | `tsolvers.ad.lars_based.TLARS_Solver` |
-| 02 | **T-LASSO** | [demo_ts_02_tlasso/](demo_ts_02_tlasso/README.md) | Lasso path | `tsolvers.ad.lars_based.TLASSO_Solver` |
-| 03 | **T-Stepwise** | [demo_ts_03_tstepwise/](demo_ts_03_tstepwise/README.md) | Forward stepwise regression | `tsolvers.ad.lars_based.TSTEPWISE_Solver` |
-| 04 | **T-ENET** | [demo_ts_04_tenet/](demo_ts_04_tenet/README.md) | Elastic net | `tsolvers.ad.lars_based.TENET_Solver` |
-| 05 | **T-Stagewise** | [demo_ts_05_tstagewise/](demo_ts_05_tstagewise/README.md) | Forward stagewise regression | `tsolvers.ad.lars_based.TSTAGEWISE_Solver` |
-| 06 | **T-OMP** | [demo_ts_06_tomp/](demo_ts_06_tomp/README.md) | Orthogonal matching pursuit | `tsolvers.ad.omp_based.TOMP_Solver` |
-| 07 | **T-GP** | [demo_ts_07_tgp/](demo_ts_07_tgp/README.md) | Gradient pursuit | `tsolvers.ad.omp_based.TGP_Solver` |
-| 08 | **T-ACGP** | [demo_ts_08_tacgp/](demo_ts_08_tacgp/README.md) | Approximate conjugate gradient pursuit | `tsolvers.ad.omp_based.TACGP_Solver` |
-| 09 | **T-MP** | [demo_ts_09_tmp/](demo_ts_09_tmp/README.md) | Matching pursuit | `tsolvers.ad.omp_based.TMP_Solver` |
-| 10 | **T-NCGMP** | [demo_ts_10_tncgmp/](demo_ts_10_tncgmp/README.md) | Norm-corrective generalized matching pursuit | `tsolvers.ad.omp_based.TNCGMP_Solver` |
-| 11 | **T-OLS** | [demo_ts_11_tools/](demo_ts_11_tools/README.md) | Orthogonal least squares | `tsolvers.ad.omp_based.TOOLS_Solver` |
-| 12 | **T-AFS** | [demo_ts_12_tafs/](demo_ts_12_tafs/README.md) | Adaptive forward stepwise | `tsolvers.ad.afs_based.TAFS_Solver` |
+| 01 | **T-LARS** | [demo_ts_01_tlars/](ad/demo_ts_01_tlars/README.md) | Least angle regression | `tsolvers.ad.lars_based.TLARS_Solver` |
+| 02 | **T-LASSO** | [demo_ts_02_tlasso/](ad/demo_ts_02_tlasso/README.md) | Lasso path | `tsolvers.ad.lars_based.TLASSO_Solver` |
+| 03 | **T-Stepwise** | [demo_ts_03_tstepwise/](ad/demo_ts_03_tstepwise/README.md) | Forward stepwise regression | `tsolvers.ad.lars_based.TSTEPWISE_Solver` |
+| 04 | **T-ENET** | [demo_ts_04_tenet/](ad/demo_ts_04_tenet/README.md) | Elastic net | `tsolvers.ad.lars_based.TENET_Solver` |
+| 05 | **T-Stagewise** | [demo_ts_05_tstagewise/](ad/demo_ts_05_tstagewise/README.md) | Forward stagewise regression | `tsolvers.ad.lars_based.TSTAGEWISE_Solver` |
+| 06 | **T-OMP** | [demo_ts_06_tomp/](ad/demo_ts_06_tomp/README.md) | Orthogonal matching pursuit | `tsolvers.ad.omp_based.TOMP_Solver` |
+| 07 | **T-GP** | [demo_ts_07_tgp/](ad/demo_ts_07_tgp/README.md) | Gradient pursuit | `tsolvers.ad.omp_based.TGP_Solver` |
+| 08 | **T-ACGP** | [demo_ts_08_tacgp/](ad/demo_ts_08_tacgp/README.md) | Approximate conjugate gradient pursuit | `tsolvers.ad.omp_based.TACGP_Solver` |
+| 09 | **T-MP** | [demo_ts_09_tmp/](ad/demo_ts_09_tmp/README.md) | Matching pursuit | `tsolvers.ad.omp_based.TMP_Solver` |
+| 10 | **T-NCGMP** | [demo_ts_10_tncgmp/](ad/demo_ts_10_tncgmp/README.md) | Norm-corrective generalized matching pursuit | `tsolvers.ad.omp_based.TNCGMP_Solver` |
+| 11 | **T-OLS** | [demo_ts_11_tools/](ad/demo_ts_11_tools/README.md) | Orthogonal least squares | `tsolvers.ad.omp_based.TOOLS_Solver` |
+| 12 | **T-AFS** | [demo_ts_12_tafs/](ad/demo_ts_12_tafs/README.md) | Adaptive forward stepwise | `tsolvers.ad.afs_based.TAFS_Solver` |
 
 Every demo has the five parts of its C++ counterpart:
 
@@ -42,10 +47,10 @@ rate (TPR), with the designs, seeds and CSV columns of the C++ ones and figures 
 
 | # | Folder | Question |
 |---|--------|----------|
-| P1 | [demo_ts_perf_01_fdr_tpr_vs_T/](demo_ts_perf_01_fdr_tpr_vs_T/README.md) | FDR and TPR of the terminated paths vs. $T$ (the simulation of the R tlars vignette) |
-| P2 | [demo_ts_perf_02_runtime_vs_dummies/](demo_ts_perf_02_runtime_vs_dummies/README.md) | Run time, steps and time per step vs. the number of dummies $L$, and the gain of the warm start |
-| P3 | [demo_ts_perf_03_memory_vs_np/](demo_ts_perf_03_memory_vs_np/README.md) | Solver memory vs. the ratio $n/p$, and its share of the data |
-| P4 | [demo_ts_perf_04_recovery_vs_dt_ratio/](demo_ts_perf_04_recovery_vs_dt_ratio/README.md) | Exact support recovery, TPR and FDR at the first dummy vs. $n/(s \log p)$, and the Donoho–Tanner diagram |
+| P1 | [demo_ts_perf_01_fdr_tpr_vs_T/](ad/demo_ts_perf_01_fdr_tpr_vs_T/README.md) | FDR and TPR of the terminated paths vs. $T$ (the simulation of the R tlars vignette) |
+| P2 | [demo_ts_perf_02_runtime_vs_dummies/](ad/demo_ts_perf_02_runtime_vs_dummies/README.md) | Run time, steps and time per step vs. the number of dummies $L$, and the gain of the warm start |
+| P3 | [demo_ts_perf_03_memory_vs_np/](ad/demo_ts_perf_03_memory_vs_np/README.md) | Solver memory vs. the ratio $n/p$, and its share of the data |
+| P4 | [demo_ts_perf_04_recovery_vs_dt_ratio/](ad/demo_ts_perf_04_recovery_vs_dt_ratio/README.md) | Exact support recovery, TPR and FDR at the first dummy vs. $n/(s \log p)$, and the Donoho–Tanner diagram |
 
 ---
 
@@ -110,9 +115,9 @@ variants. In contrast to the C++ data, T-OLS follows T-OMP to the end here.
 Run any demo from the repository root, with the package installed in the repository's virtual environment:
 
 ```bash
-.venv/bin/python Python/tsolvers/demo_ts_01_tlars/demo_ts_01_tlars.py      # Parts 1-5
-.venv/bin/python Python/tsolvers/demo_ts_01_tlars/demo_ts_01_tlars.py 5    # Part 5 only
-Python/tsolvers/demo_ts_01_tlars/generate_plots.sh                          # path figure from the Part 5 data
+.venv/bin/python Python/tsolvers/ad/demo_ts_01_tlars/demo_ts_01_tlars.py      # Parts 1-5
+.venv/bin/python Python/tsolvers/ad/demo_ts_01_tlars/demo_ts_01_tlars.py 5    # Part 5 only
+Python/tsolvers/ad/demo_ts_01_tlars/generate_plots.sh                          # path figure from the Part 5 data
 ```
 
 Every solver demo takes the parts to run as optional arguments, and all five parts run in a few seconds. The demos
@@ -130,20 +135,23 @@ tsolvers/
   ├── ts_plt_utils.py        # shared matplotlib figures (copy of cpp/tsolvers/ts_plt_utils.py)
   ├── ts_perf_solvers.py     # the solvers compared by the performance demos
   ├── ts_perf_utils.py       # shared helpers of the performance demos
-  ├── demo_ts_01_tlars/
-  ├── demo_ts_02_tlasso/
-  ├── demo_ts_03_tstepwise/
-  ├── demo_ts_04_tenet/
-  ├── demo_ts_05_tstagewise/
-  ├── demo_ts_06_tomp/
-  ├── demo_ts_07_tgp/
-  ├── demo_ts_08_tacgp/
-  ├── demo_ts_09_tmp/
-  ├── demo_ts_10_tncgmp/
-  ├── demo_ts_11_tools/
-  ├── demo_ts_12_tafs/
-  ├── demo_ts_perf_01_fdr_tpr_vs_T/
-  ├── demo_ts_perf_02_runtime_vs_dummies/
-  ├── demo_ts_perf_03_memory_vs_np/
-  └── demo_ts_perf_04_recovery_vs_dt_ratio/
+  ├── ad/                    # augmented dummies (AD)
+  │   ├── demo_ts_01_tlars/
+  │   ├── demo_ts_02_tlasso/
+  │   ├── demo_ts_03_tstepwise/
+  │   ├── demo_ts_04_tenet/
+  │   ├── demo_ts_05_tstagewise/
+  │   ├── demo_ts_06_tomp/
+  │   ├── demo_ts_07_tgp/
+  │   ├── demo_ts_08_tacgp/
+  │   ├── demo_ts_09_tmp/
+  │   ├── demo_ts_10_tncgmp/
+  │   ├── demo_ts_11_tools/
+  │   ├── demo_ts_12_tafs/
+  │   ├── demo_ts_perf_01_fdr_tpr_vs_T/
+  │   ├── demo_ts_perf_02_runtime_vs_dummies/
+  │   ├── demo_ts_perf_03_memory_vs_np/
+  │   └── demo_ts_perf_04_recovery_vs_dt_ratio/
+  ├── sd/                    # sparse dummies (SD), README only
+  └── vd/                    # virtual dummies (VD), README only
 ```
