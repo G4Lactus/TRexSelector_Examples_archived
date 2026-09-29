@@ -2,11 +2,13 @@
 
 ## Purpose
 
-Investigate T-Rex selector performance (FDR, TPR, average dummy multiplier $L$,
-average stopping time $T$) when the **positions** of the active variables are
-redrawn on every Monte Carlo trial while the **number** of active variables stays
-fixed. This isolates the effect of support *location* (rather than support size)
-and complements the fixed-support study in Demo 02. Python port of
+Investigate the Terminating Random Experiments (T-Rex) selector performance,
+measured by the false discovery rate (FDR), the true positive rate (TPR), the
+average dummy multiplier $L$ and the average stopping time $T$, when the
+**positions** of the active variables are redrawn on every Monte Carlo (MC) trial
+while the **number** of active variables stays fixed. This isolates the effect of
+support *location* (rather than support size) and complements the fixed-support
+study in Demo 02. Python port of
 [cpp/trex_selector_methods/ad/trex_core/demo_trex_03_mc_sim_variable_support](../../../../../cpp/trex_selector_methods/ad/trex_core/demo_trex_03_mc_sim_variable_support/),
 using `trex_selector_neo`.
 
@@ -14,10 +16,11 @@ using `trex_selector_neo`.
 
 ## Data Generation Parameters
 
-The shared Gaussian generator `dgp_gauss_snr` draws an i.i.d. standard-normal
-design $\boldsymbol{X}$ (independent columns), so the design carries **no
-correlation structure** — the empirical column-correlation matrix is essentially
-the identity:
+The shared Gaussian data-generating process (DGP) `dgp_gauss_snr` draws an
+independent and identically distributed (i.i.d.) standard-normal design
+$\boldsymbol{X}$ (independent columns), so the design carries **no correlation
+structure** — the empirical column-correlation matrix is essentially the
+identity:
 
 ```math
 \boldsymbol{y} = \boldsymbol{X}\boldsymbol{\beta} + \boldsymbol{\epsilon},
@@ -26,12 +29,13 @@ the identity:
 
 ![Design-matrix correlation of the shared i.i.d. Gaussian DGP (natural order, no clustering)](../dgp_corr_plots/trex_gauss.png)
 
-- **Sample size**: $n = 300$, **features**: $p = 1000$ (high-dimensional)
+- **Sample size**: $n = 300$, **features**: $p = 1{,}000$ (high-dimensional)
 - **True support cardinality**: fixed at $s = 10$ on every trial. The support
-  **size does not vary**; only the **indices** change — each trial redraws them
-  via `make_support_random` (`fixed_support=None`).
+  **size does not vary**, and only the **indices** change — each trial redraws
+  them via `make_support_random` (`fixed_support=None`).
 - **True coefficients**: fixed $\beta_j = 1$ (`rnd_coef = False`)
-- **SNR grid**: a **21-point grid** — $\lbrace0.1, 0.2, \ldots, 2.0\rbrace$ (step $0.1$) plus $5.0$
+- **Signal-to-noise ratio (SNR) grid**: a **21-point grid** —
+  $\lbrace0.1, 0.2, \ldots, 2.0\rbrace$ (step $0.1$) plus $5.0$
 - **Monte Carlo repetitions**: `num_MC = 200` trials per solver × SNR
   (`_NUM_MC = 200`, mirroring the C++ reference's `num_MC = 200`)
 
@@ -76,7 +80,8 @@ Written to `simulation_results/data/`, stem
   [`trex_plt_utils.py`](../../../../../cpp/trex_selector_methods/ad/trex_core/trex_plt_utils.py)
   renders the same figures (it plots the FDR/TPR rows and ignores AvgL/AvgT).
 
-The rendered figures (PNG + PDF, plus the interactive Plotly HTML) are written to
+The rendered figures, as Portable Network Graphics (PNG) and Portable Document
+Format (PDF) files plus the interactive Plotly `.html` page, are written to
 `simulation_results/plots/` — see [Results Visualization](#results-visualization).
 
 ---
@@ -84,9 +89,10 @@ The rendered figures (PNG + PDF, plus the interactive Plotly HTML) are written t
 ## Results Visualization
 
 The suite-level plotting module [`../trex_plt_utils.py`](../trex_plt_utils.py)
-renders the tidy CSV three ways (all written to `simulation_results/plots/`).
-Only the `FDR` and `TPR` rows are plotted; the `AvgL` / `AvgT` rows are ignored
-by the plotter and remain available in the `.txt` / `.csv` data files.
+renders the tidy comma-separated values (CSV) file three ways (all written to
+`simulation_results/plots/`). Only the `FDR` and `TPR` rows are plotted, while
+the plotter ignores the `AvgL` / `AvgT` rows, which remain available in the
+`.txt` / `.csv` data files.
 
 ### Overview (all 14 solvers)
 
@@ -117,13 +123,13 @@ up. Both FDR panels share a y-scale for comparison:
 values and **click a solver in the legend to isolate its curve** in both panels.
 Open it directly in a browser (it is not rendered inline on GitHub).
 The `.html` figures are not committed to the repository (each embeds a full copy of
-plotly.js); run `./generate_plots.sh` to produce them locally.
+plotly.js). Run `./generate_plots.sh` to produce them locally.
 
 ```bash
 open simulation_results/plots/demo_trex_03_mc_sim_variable_support_trex_results_n300_p1000_stagnation_window_5_fdr_tpr_vs_snr.html
 ```
 
-Vector (PDF) copies of both static figures sit alongside the PNGs.
+Vector `.pdf` copies of both static figures sit alongside the `.png` files.
 
 ### Regenerating the figures
 

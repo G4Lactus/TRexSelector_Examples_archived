@@ -2,23 +2,19 @@
 
 ## Overview
 
-This folder contains the Python example programs for **DA-TRex**, the T-Rex
-Selector extended with **dependency-aware (DA) correction** for
-correlated/dependent design matrices. Where the classical T-Rex selector (see
-[../trex_core/](../trex_core/README.md)) assumes exchangeable, weakly correlated
-predictors, DA-TRex explicitly models the correlation structure among nearby
-or grouped variables so that a single true signal does not get "smeared" into
-false discoveries among its correlated neighbors.
+This folder contains the Python example programs for the **Dependency-Aware T-Rex (DA-TRex)**, the Terminating Random
+Experiments (T-Rex) selector extended with a **dependency-aware (DA) correction** for correlated/dependent design
+matrices. Where the classical T-Rex selector (see [../trex_core/](../trex_core/README.md)) assumes exchangeable, weakly
+correlated predictors, DA-TRex explicitly models the correlation structure among nearby or grouped variables so that a
+single true signal does not get "smeared" into false discoveries among its correlated neighbors.
 
 The demos mirror the authoritative C++ suite in
 [cpp/trex_selector_methods/ad/trex_da/](../../../../cpp/trex_selector_methods/ad/trex_da/README.md)
-one-to-one — same data-generating processes, control parameters, sweep axes,
-console summaries, and result-file naming — and cover four dependency
-structures and their matching DA methods: **AR(1)** (autoregressive/Toeplitz
-decay), **EQUI** (equicorrelation), **NN** (banded/nearest-neighbor), and
-**BT** (binary-tree/dendrogram-based hierarchical block detection via HAC
-clustering), plus the **PRIOR_GROUPS** constrained sub-clustering method for a
-priori known group structures.
+one-to-one — same data-generating processes (DGPs), control parameters, sweep axes, console summaries, and result-file
+naming. They cover four dependency structures and their matching DA methods: **first-order autoregressive (AR(1))**
+(Toeplitz decay), **equicorrelation (EQUI)**, **banded nearest-neighbor (NN)**, and **binary-tree (BT)**, a
+dendrogram-based hierarchical block detection via hierarchical agglomerative clustering (HAC). In addition, the
+**PRIOR_GROUPS** constrained sub-clustering method covers a priori known groups (AKG).
 
 ---
 
@@ -43,21 +39,16 @@ priori known group structures.
 
 ## DA-TRex specific concepts
 
-- **`trex.DAMethod`** — the dependency-correction strategy: `AR1`, `EQUI`,
-  `NN`, `BT` (plus `PRIOR_GROUPS`, engaged automatically whenever
-  `da_control.prior_groups` is non-empty). Each targets the matching
-  correlation structure; DA-TRex uses it to widen or narrow the "correction
-  window" around each candidate variable when accumulating dummy-based voting
-  evidence.
-- **BT linkage method** (`LinkageMethod` from
-  `trex_selector_neo.ml_methods.clustering`) — for the `BT` method, variables
-  are grouped via hierarchical agglomerative clustering; several demos sweep
-  **Single**, **Complete**, and **Average** linkage to study sensitivity to
-  this choice.
-- **Prior groups as merge constraints** (since 2026-07-17): the `PRIOR_GROUPS`
-  method sub-clusters *within* the finest common refinement of the supplied
-  label vectors and calibrates over a data-driven ascending rho grid anchored
-  at the conservative rho = 1 singleton point; negative labels are rejected.
+- **`trex.DAMethod`** — the dependency-correction strategy: `AR1`, `EQUI`, `NN`, `BT` (plus `PRIOR_GROUPS`, engaged
+  automatically whenever `da_control.prior_groups` is non-empty). Each targets the matching correlation structure, and
+  DA-TRex uses this structure to widen or narrow the "correction window" around each candidate variable when
+  accumulating dummy-based voting evidence.
+- **BT linkage method** (`LinkageMethod` from `trex_selector_neo.ml_methods.clustering`) — for the `BT` method,
+  variables are grouped via hierarchical agglomerative clustering, and several demos sweep **Single**, **Complete**, and
+  **Average** linkage to study sensitivity to this choice.
+- **Prior groups as merge constraints** (since 2026-07-17): the `PRIOR_GROUPS` method sub-clusters *within* the finest
+  common refinement of the supplied label vectors and calibrates over a data-driven ascending rho grid anchored at the
+  conservative rho = 1 singleton point. Negative labels are rejected.
 - **Support placement policies**: `CappedSpread` (deterministic, evenly spaced
   with a capped gap), `Random` (redrawn per trial), `OnePerBlock` (one active
   variable per block — the natural choice for block-structured DGPs). See
@@ -65,30 +56,31 @@ priori known group structures.
 - **Base T-Rex comparison rows**: Demos 01, 07, and 08 additionally run the
   *classical* T-Rex selector (no DA correction) side by side with DA-TRex on
   the same correlated data (`TREX: <solver>` rows).
-- **Exchangeable tie-breaking for greedy solvers** (`exch_tie_alpha`, since
-  2026-07-15): `default_solvers()` sets `exch_tie_alpha = 0.25` for TAFS/TOMP
-  so that statistically indistinguishable top candidates within highly
-  correlated clusters are picked uniformly at random per random experiment —
-  restoring the occurrence spread the DA deflation's FDR control relies on.
-  TLARS keeps `0` (path solvers spread naturally). See HISTORY.md
+- **Exchangeable tie-breaking for greedy solvers** (`exch_tie_alpha`, since 2026-07-15): `default_solvers()` sets
+  `exch_tie_alpha = 0.25` for TAFS/TOMP so that statistically indistinguishable top candidates within highly correlated
+  clusters are picked uniformly at random per random experiment — restoring the occurrence spread the DA deflation's
+  false discovery rate (FDR) control relies on. TLARS keeps `0` (path solvers spread naturally). See HISTORY.md
   (2026-07-15) in the TRexSelector repository.
-- **TAFS' AFS correlation parameter**: `default_solvers()` runs TAFS with
-  `rho_afs = 0.3`; TLARS and TOMP take `0` (unused).
+- **TAFS' adaptive forward-selection (AFS) correlation parameter**: `default_solvers()` runs TAFS with
+  `rho_afs = 0.3`, while TLARS and TOMP take `0` (unused).
 
 ---
 
 ## Demo descriptions
 
+Each row lists the DA method, the DGP generator and the key parameters, including the sweeps over the signal-to-noise
+ratio (SNR) and, in Demos 04–05, over the target FDR (tFDR):
+
 | # | Name | DA Method | DGP | Key parameters |
 |---|------|-----------|-----|-----------------|
-| **01** | [AR(1)](demo_trex_da_01_mc_sim_ar1/) | `AR1` | `dgp_ar1_snr` | n=300, p=1000, s=10, rho=0.7; SNR & rho sweeps + 2D gap x rho |
-| **02** | [BT + white noise](demo_trex_da_02_mc_sim_ar1_blocks_plus_white/) | `BT` | `dgp_ar1_block_white_snr` | n=300, p_total=1000, M=5, Q=5 (p_ar=25), rho=0.7; linkage x {SNR, rho, Q, M} sweeps |
-| **03** | [BT](demo_trex_da_03_mc_sim_ar1_blocks/) | `BT` | `dgp_ar1_block_snr` | n=150, M=5, Q=5 (p=25, s=5), rho=0.7; linkage x {SNR, rho, Q, M} sweeps |
-| **04** | [BT, heavy-tailed](demo_trex_da_04_mc_sim_ht_blocks/) | `BT` | `dgp_block_toeplitz_hvt_snr` | n=150, M=5, Q=5, rho=0.8, nu=3; Gauss/Heavy x linkage x {SNR, rho, Q, M, tFDR} |
-| **05** | [BT, heavy-tailed + white](demo_trex_da_05_mc_sim_ht_blocks_plus_white/) | `BT` | `dgp_ht_block_white_snr` | n=150, p_total=500, M=5, Q=5, rho=0.8, nu=3; Gauss/Heavy x linkage x {SNR, rho, Q, M, tFDR} |
-| **06** | [Prior groups (AKG)](demo_trex_da_06_mc_sim_groups/) | `PRIOR_GROUPS` (a priori known groups) | `dgp_groups_toeplitz_leaf` | n=300, p=1000, s=10; 3-level groups {10, 50, 250}, rho={0.55, 0.25, 0.10}, phi=0.5 |
-| **07** | [NN + mismatch test](demo_trex_da_07_mc_sim_nn/) | `NN` | `dgp_nn_snr`, `dgp_ar1_snr` | n=300, p=1000, kappa=3, rho=0.7; SNR sweep + 2D kappa x rho + 2D SNR x rho on AR(1) data (NN misspecified) |
-| **08** | [Equi](demo_trex_da_08_mc_sim_equi_and_bt/) | `EQUI` | `dgp_equi_snr` | n=300, p=1000, s=10; rho sweep x SNR in {0.5, 1, 2, 5} |
+| **01** | [AR(1)](demo_trex_da_01_mc_sim_ar1/) | `AR1` | `dgp_ar1_snr` | n=300, p=1,000, s=10, rho=0.7, with SNR & rho sweeps + 2D gap x rho |
+| **02** | [BT + white noise](demo_trex_da_02_mc_sim_ar1_blocks_plus_white/) | `BT` | `dgp_ar1_block_white_snr` | n=300, p_total=1,000, M=5, Q=5 (p_ar=25), rho=0.7, with linkage x {SNR, rho, Q, M} sweeps |
+| **03** | [BT](demo_trex_da_03_mc_sim_ar1_blocks/) | `BT` | `dgp_ar1_block_snr` | n=150, M=5, Q=5 (p=25, s=5), rho=0.7, with linkage x {SNR, rho, Q, M} sweeps |
+| **04** | [BT, heavy-tailed](demo_trex_da_04_mc_sim_ht_blocks/) | `BT` | `dgp_block_toeplitz_hvt_snr` | n=150, M=5, Q=5, rho=0.8, nu=3, with Gauss/Heavy x linkage x {SNR, rho, Q, M, tFDR} |
+| **05** | [BT, heavy-tailed + white](demo_trex_da_05_mc_sim_ht_blocks_plus_white/) | `BT` | `dgp_ht_block_white_snr` | n=150, p_total=500, M=5, Q=5, rho=0.8, nu=3, with Gauss/Heavy x linkage x {SNR, rho, Q, M, tFDR} |
+| **06** | [Prior groups (AKG)](demo_trex_da_06_mc_sim_groups/) | `PRIOR_GROUPS` (a priori known groups) | `dgp_groups_toeplitz_leaf` | n=300, p=1,000, s=10, with 3-level groups {10, 50, 250}, rho={0.55, 0.25, 0.10}, phi=0.5 |
+| **07** | [NN + mismatch test](demo_trex_da_07_mc_sim_nn/) | `NN` | `dgp_nn_snr`, `dgp_ar1_snr` | n=300, p=1,000, kappa=3, rho=0.7, with SNR sweep + 2D kappa x rho + 2D SNR x rho on AR(1) data (NN misspecified) |
+| **08** | [Equi](demo_trex_da_08_mc_sim_equi_and_bt/) | `EQUI` | `dgp_equi_snr` | n=300, p=1,000, s=10, with rho sweep x SNR in {0.5, 1, 2, 5} |
 
 ---
 
@@ -112,32 +104,27 @@ trex_da/
   └── demo_trex_da_08_mc_sim_equi_and_bt/
 ```
 
-Each demo subfolder contains its `.py` script (named after the folder), a
-`README.md`, a `generate_plots.sh`, and a `simulation_results/` folder split
-exactly like the cpp suite into `data/` — the `.txt` (pretty-printed tables)
-and `.csv` (tidy long format) files written by the demo, following the cpp
-naming pattern `da_trex_mc_{scenario_tag}.{txt,csv}` — and `plots/`, the
-figures rendered from those CSVs.
+Each demo subfolder contains its `.py` script (named after the folder), a `README.md`, a `generate_plots.sh`, and a
+`simulation_results/` folder split exactly like the cpp suite into `data/` — the `.txt` (pretty-printed tables) and
+`.csv` (tidy long format) files written by the demo, following the cpp naming pattern
+`da_trex_mc_{scenario_tag}.{txt,csv}` — and `plots/`, the figures rendered from those comma-separated values (CSV)
+files.
 
 Shared infrastructure:
 
-- [dgp_generators.py](dgp_generators.py) — the DA data-generating processes
-  (AR(1); equicorrelated; NN/MA(kappa); AR(1)-block, with and without a white
-  block; heavy-tailed blocks, with and without a heavy-tailed white block;
-  prior-groups with Toeplitz leaves), all SNR-calibrated with 0-based support,
-  mirroring `cpp/.../dgp_generators.hpp` one generator per cpp DGP.
-- [da_sim_common.py](da_sim_common.py) — support generators, the default
-  solver set (TLARS/TAFS/TOMP with per-solver `exch_tie_alpha` / `rho_afs` /
-  stagnation), parallel MC runners for DA-TRex and base T-Rex, generic
-  parameter sweeps, and the console/TXT/CSV writers, mirroring
-  `cpp/.../trex_da_sim_common.hpp`.
-- [trex_da_plt_utils.py](trex_da_plt_utils.py) — the shared results plotter
-  (identical to `cpp/.../trex_da_plt_utils.py`), driven by each demo's
-  `generate_plots.sh`.
-- [generate_corr_plots.sh](generate_corr_plots.sh) — renders one
-  design-correlation heatmap per DGP into [dgp_corr_plots/](dgp_corr_plots/)
-  via the category-level plotter [../../corr_plt_utils.py](../../corr_plt_utils.py);
-  these are embedded in the demo READMEs alongside the DGP description.
+- [dgp_generators.py](dgp_generators.py) — the DA data-generating processes, all SNR-calibrated with 0-based support
+  and mirroring `cpp/.../dgp_generators.hpp` one generator per cpp DGP. They cover AR(1), equicorrelated, NN or
+  moving-average (MA(kappa)), AR(1) blocks with and without a white block, heavy-tailed blocks with and without a
+  heavy-tailed white block, and prior groups with Toeplitz leaves.
+- [da_sim_common.py](da_sim_common.py) — support generators, the default solver set (TLARS/TAFS/TOMP with per-solver
+  `exch_tie_alpha` / `rho_afs` / stagnation), parallel Monte-Carlo (MC) runners for DA-TRex and base T-Rex, generic
+  parameter sweeps, and the console / `.txt` / `.csv` writers, mirroring `cpp/.../trex_da_sim_common.hpp`.
+- [trex_da_plt_utils.py](trex_da_plt_utils.py) — the shared results plotter (identical to
+  `cpp/.../trex_da_plt_utils.py`), driven by each demo's `generate_plots.sh`.
+- [generate_corr_plots.sh](generate_corr_plots.sh) — renders one design-correlation heatmap per DGP into
+  [dgp_corr_plots/](dgp_corr_plots/) via the category-level plotter
+  [../../corr_plt_utils.py](../../corr_plt_utils.py), and the demo READMEs embed these heatmaps alongside the DGP
+  description.
 
 ---
 
@@ -147,21 +134,18 @@ Shared infrastructure:
 python Python/trex_selector_methods/ad/trex_da/demo_trex_da_01_mc_sim_ar1/demo_trex_da_01_mc_sim_ar1.py
 ```
 
-Each demo exposes `RUN_PART_*` flags at the top; all parts are enabled by
-default (mirroring the cpp `if (true)` toggles) and each runs `NUM_MC = 200`
-Monte Carlo trials per grid point — reduce `NUM_MC` to preview. Each demo
-inserts both its own directory and its parent suite directory onto `sys.path`,
-so the shared `dgp_generators` / `da_sim_common` modules resolve from the
-nested location and are importable by the spawned workers — so demos must be
-run as files, not piped via `python -`. Monte Carlo trials run in parallel via
-`concurrent.futures.ProcessPoolExecutor` (one persistent pool per demo run,
-up to `min(6, os.cpu_count())` workers).
+Each demo exposes `RUN_PART_*` flags at the top. All parts are enabled by default (mirroring the cpp `if (true)`
+toggles), and each runs `NUM_MC = 200` Monte Carlo trials per grid point. Reduce `NUM_MC` to preview. Each demo inserts
+both its own directory and its parent suite directory onto `sys.path`, so the shared `dgp_generators` /
+`da_sim_common` modules resolve from the nested location and are importable by the spawned workers. The demos must
+therefore be run as files, not piped via `python -`. Monte Carlo trials run in parallel via
+`concurrent.futures.ProcessPoolExecutor` (one persistent pool per demo run, up to `min(6, os.cpu_count())` workers).
 
 Seed spaces mirror the cpp suite: DGP seed = base + grid offset + trial,
 random support seed = trial seed + 500000, selector seed = -1 (hardware
 entropy, required for valid MC FDR estimates).
 
-Indices are **0-based** (Python convention); the R counterparts are 1-based.
+Indices are **0-based** (Python convention), while the R counterparts are 1-based.
 
 ---
 
@@ -188,19 +172,19 @@ All the tidy demos share the CSV schema `solver,metric,<SWEEP>,value`, where
 `Linkage` index) — the plotter auto-detects the sweep column and picks the
 matching x-axis. It offers four figure patterns:
 
-- **per-CSV FDR/TPR overview** — side-by-side FDR | TPR vs the swept quantity,
+- **per-CSV FDR and true positive rate (TPR) overview** — side-by-side FDR | TPR vs the swept quantity,
   one line per method (`TREX-DA:` TLARS/TAFS/TOMP, and the classical `TREX:`
   baseline in Demos 01, 07 and 08), with the `tFDR` target drawn as a reference
-  (a horizontal line, or the identity line for a `tFDR` sweep);
+  (a horizontal line, or the identity line for a `tFDR` sweep),
 - **comparison grid** (`grid` mode) — a 2×N grid sharing FDR/TPR scales across
   columns, used for the HAC-linkage sensitivity study (Single/Complete/Average
   columns, Demos 02–05), the Gaussian-vs-heavy-tailed scenario contrast
   (Demos 04–05), and the CappedSpread-vs-Random support contrast (Demos 01
-  and 07);
+  and 07),
 - **gap × ρ study** (`gaprho` mode, Demo 01) — `mean_TPP` / `mean_FDP` heatmaps
-  over the (gap, ρ) grid with the DA+AR1 correction-window (κ-boundary) overlaid;
+  over the (gap, ρ) grid with the DA+AR1 correction-window (κ-boundary) overlaid,
 - **generic 2D sweep** (`sweep2d` mode, Demo 07) — per-solver TPR/FDR heatmaps
-  over a 2D grid (κ × ρ on NN data; SNR × ρ for the AR(1) method-mismatch
+  over a 2D grid (κ × ρ on NN data, and SNR × ρ for the AR(1) method-mismatch
   study), one figure per support placement, with FDR cells above the `tFDR`
   target outlined in cyan.
 
@@ -208,22 +192,17 @@ matching x-axis. It offers four figure patterns:
 
 ## What to expect
 
-Every demo ships with real committed data and figures, and the pattern matches
-the C++ reference throughout (independent RNG streams, so cells agree up to
-Monte-Carlo noise): DA-TRex's FDR stays far closer to controlled than the
-classical (no-DA) T-Rex selector on the same correlated data — in Demo 01 at
-$\mathrm{SNR}=2$, DA-TRex realizes $\mathrm{FDR}\approx 0.05\text{–}0.08$ against
-base T-Rex TLARS's $\approx 0.27$ — at some cost in TPR, mostly at low SNR and
-under `Random` support. The greedy DA solvers (TAFS/TOMP) are FDR-controlled
-across the full $\rho$ grid and both support placements thanks to the
-exchangeable-tie fix, and generally outperform DA-TLARS on block designs. The
-known rough edges are documented in the demo READMEs: TLARS breaks the target at
-$\rho = 0.9$ on block designs (Demos 03/04) and on the multi-level prior-groups
-DGP (Demo 06, flat in SNR — a structural property of the symmetric
-nearest-partner deflation under LARS-type occurrence profiles), heavy tails cost
-FDR rather than power (Demos 04/05), the NN correction breaks down when applied
-to AR(1) data at $\rho \geq 0.8$ (Demo 07), and equicorrelation suppresses the
-DA selector entirely from $\rho = 0.025$ on (Demo 08).
+Every demo ships with real committed data and figures, and the pattern matches the C++ reference throughout
+(independent random number generator (RNG) streams, so cells agree up to Monte-Carlo noise). DA-TRex's FDR stays far
+closer to controlled than the classical (no-DA) T-Rex selector on the same correlated data — in Demo 01 at
+$\mathrm{SNR}=2$, DA-TRex realizes $\mathrm{FDR}\approx 0.05\text{–}0.08$ against base T-Rex TLARS's $\approx 0.27$ — at
+some cost in TPR, mostly at low SNR and under `Random` support. The greedy DA solvers (TAFS/TOMP) are FDR-controlled
+across the full $\rho$ grid and both support placements thanks to the exchangeable-tie fix, and generally outperform
+DA-TLARS on block designs. The demo READMEs document the known rough edges. TLARS breaks the target at $\rho = 0.9$ on
+block designs (Demos 03/04) and on the multi-level prior-groups DGP (Demo 06, flat in SNR — a structural property of
+the symmetric nearest-partner deflation under least-angle regression (LARS) type occurrence profiles), heavy tails
+cost FDR rather than power (Demos 04/05), the NN correction breaks down when applied to AR(1) data at
+$\rho \geq 0.8$ (Demo 07), and equicorrelation suppresses the DA selector entirely from $\rho = 0.025$ on (Demo 08).
 
 ---
 

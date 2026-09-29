@@ -2,36 +2,37 @@
 
 ## Purpose
 
-While Demo 01 asks whether the loading support is FDR-controlled, this demo asks: **what proportion of
- variance does the selected support actually explain, and where does a non-sparse method's apparent advantage
- come from?**
+While Demo 01 asks whether the false discovery rate (FDR) of the loading support is controlled, this demo asks:
+ **what proportion of variance does the selected support actually explain, and where does a non-sparse method's
+ apparent advantage come from?**
 
 It runs all four sweeps of **Fig. 3** of [[1]](#references) — cumulative explained variance under the
  paper's Definition 1 — and reports the conventional total-variance normalization alongside it so the two can
  be compared directly.
-The pairing is the point: under one denominator ordinary PCA looks best, under the
+The pairing is the point. Under one denominator ordinary principal component analysis (PCA) looks best, under the
  other it looks worst, and both statements are computed from the very same explained variance.
 
-Python counterpart of
+This demo is the Python counterpart of
  [`cpp/trex_selector_methods/ad/trex_spca/demo_trex_spca_02_mc_sim_pev/`](../../../../../cpp/trex_selector_methods/ad/trex_spca/demo_trex_spca_02_mc_sim_pev/README.md)
- (same DGP, sweeps, measurement definitions and output-file naming). Support indices here are **0-based**
- (Python convention).
+ with the same data-generating process (DGP), sweeps, measurement definitions and output-file naming. Support
+ indices here are **0-based** (Python convention).
 
-The Definition-1 denominator is the **Signal + Mixed EV of the data** — the variance carried by the true
- active variables, fixed per dataset and shared by all methods. This convention reproduces the published
- panels' qualitative behaviour (curves *rising* with SNR from ≈40 %, ordinary PCA overshooting far past
- 100 %, sparse methods saturating near 100 %). An earlier revision of the cpp demo instead normalized each
- method by its **own** Signal + Mixed EV ("Definition 1 as printed"), which is structurally ≥ 100 % for
- null-capturing methods and inverts the SNR trend — the published curves are unreachable under it.
- Digit-level coincidence with the paper's Fig. 3 remains impossible either way: the paper's exact
- normalization cannot be reconstructed from its text (see
+The Definition-1 denominator is the **Signal + Mixed explained variance (EV) of the data** — the variance carried
+ by the true active variables, fixed per dataset and shared by all methods. This convention reproduces the
+ published panels' qualitative behaviour (curves *rising* with the signal-to-noise ratio (SNR) from ≈40 %, ordinary
+ PCA overshooting far past 100 %, sparse methods saturating near 100 %). An earlier revision of the cpp demo
+ instead normalized each method by its **own** Signal + Mixed EV ("Definition 1 as printed"), which is
+ structurally ≥ 100 % for null-capturing methods and inverts the SNR trend — the published curves are
+ unreachable under it. Digit-level coincidence with the paper's Fig. 3 remains impossible either way, because the
+ paper's exact normalization cannot be reconstructed from its text (see
  [the dedicated section below](#relation-to-the-papers-fig-3)).
 
 ---
 
 ## Data Generation Parameters (`generate_sparse_factor_model`)
 
-The sparse $M$-factor model of [demo 01](../demo_trex_spca_01_mc_sim/README.md#data-generation-parameters-generate_sparse_factor_model),
+The sparse $M$-factor model of
+ [demo 01](../demo_trex_spca_01_mc_sim/README.md#data-generation-parameters-generate_sparse_factor_model),
  unchanged:
 
 ```math
@@ -56,9 +57,9 @@ MC = 200              # Monte Carlo repetitions per grid point
 base_seed = 42        # Per-grid-point seed band, derived from the swept value
 ```
 
-As in demo 01, only the **data** is seeded deterministically; each trial's dummies come from hardware
+As in demo 01, only the **data** is seeded deterministically, while each trial's dummies come from hardware
  entropy (selector seed $-1$), which is what makes the Monte Carlo estimate valid. A re-run therefore
- reproduces results to within Monte Carlo noise, not exactly. One Python-specific detail: the cpp demo
+ reproduces results to within Monte Carlo noise, not exactly. There is one Python-specific detail. The cpp demo
  stores the per-grid-point seed offset in an `unsigned int`, which silently wraps the negative offsets the
  SNR sweep produces — the Python port mirrors that wrap explicitly (`% 2**32`), since numpy rejects
  negative seeds.
@@ -68,14 +69,15 @@ As in demo 01, only the **data** is seeded deterministically; each trial's dummi
 ## Methods Compared
 
 Identical to [demo 01](../demo_trex_spca_01_mc_sim/README.md#methods-compared): **OrdPCA**, **OraclePCA**,
- and the four T-Rex SPCA variants crossing `TENET`/`TENET_AUG` with `ActiveSet`/`Thresholded`.
+ and the four Terminating Random Experiments (T-Rex) sparse principal component analysis (SPCA) variants crossing
+ `TENET`/`TENET_AUG` with `ActiveSet`/`Thresholded`.
 
 The metrics are those of [demo 01](../demo_trex_spca_01_mc_sim/README.md#metrics) — classical EV, corrected
  to the adjusted EV of [[3]](#references), reported as `PEV` (total-variance share), `PEVsig`
- (Definition 1) and `PEVsigmix` (the method's own Sig + Mix part; OrdPCA's is the paper's
- "Ordinary PCA (Sig + Mix)" reference curve). As in demo 01, realized FDR is evaluated on PC1's support
- only, and FDR *control* is assumed for PC1 only: the overlapping factor supports make later components'
- ground truth ambiguous.
+ (Definition 1) and `PEVsigmix` (the method's own Sig + Mix part, where OrdPCA's is the paper's
+ "Ordinary PCA (Sig + Mix)" reference curve). As in demo 01, realized FDR is evaluated on the support of the
+ first principal component (PC1) only, and FDR *control* is assumed for PC1 only, because the overlapping factor
+ supports make later components' ground truth ambiguous.
 
 ---
 
@@ -90,7 +92,7 @@ Each part varies **one** axis and holds the rest at their defaults (#PCs $= 3$, 
 | 2 | SNR (dB) | $\lbrace-10, -7, -5, -3, 0, 3, 5, 7, 10\rbrace$ |
 | 3 | Number of true active loadings $p_1$ | $\lbrace1, 5, 10, 15, 20, 25, 30\rbrace$ |
 | 4 | Target FDR | $\lbrace0.01, 0.05, 0.10, 0.15, \ldots, 0.50\rbrace$ |
-| 5 | Realized FDR / TPR **heatmaps** over the full target-FDR $\times$ SNR grid | $11 \times 9$ points, PC1 support, two selector responses |
+| 5 | Realized FDR / true positive rate (TPR) **heatmaps** over the full target-FDR $\times$ SNR grid | $11 \times 9$ points, PC1 support, two selector responses |
 
 Notes on the grids:
 
@@ -103,18 +105,18 @@ Notes on the grids:
    is constant. 49 is the largest attainable PC count on an $n = 50$ design, not a safety margin.
 - **Part 3 is bounded above by the overlap pool.** Each factor draws its support from a shared pool of 30
    candidates, so $p_1 \leq 30$.
-- **Only the T-Rex variants respond to Part 4.** The two PCA baselines never see `tFDR`; they are reported
+- **Only the T-Rex variants respond to Part 4.** The two PCA baselines never see `tFDR`, so they are reported
    as flat reference lines.
-- **Parts 2–4 are displayed as cumulative PEV only.** Their extraction is held at the $M = 3$ true factors,
-   so what they show is the cumulative PEV of PCs 1–3 under both normalizations — the tables carry nothing
-   else. Support-recovery metrics belong to demo 01's sweep; here they remain in the CSVs as the data
-   record but are not displayed.
+- **Parts 2–4 are displayed as cumulative proportion of explained variance (PEV) only.** Their extraction is
+   held at the $M = 3$ true factors, so what they show is the cumulative PEV of PCs 1–3 under both
+   normalizations — the tables carry nothing else. Support-recovery metrics belong to demo 01's sweep. Here they
+   remain in the comma-separated values (CSV) files as the data record but are not displayed.
 - **Part 5 is the support-recovery counterpart of Part 4**, run over the full 2D grid instead of the 0 dB
-   slice, and only for PC1. Each trial runs the per-PC T-Rex+GVS(EN) selector
-   (`trex.TRexGVSSelector`, the same configuration `trex.TRexSPCASelector` uses internally) twice on the same
-   data: once on the **plug-in response** $y = \boldsymbol{X} v_1$ (what T-Rex SPCA actually regresses on)
-   and once on the **oracle response** $y = z_1$, the true factor scores. The pairing isolates the mechanism
-   behind the FDR overshoot at loose targets — see the caveat section below.
+   slice, and only for PC1. Each trial runs the per-PC selector for grouped variable selection (GVS) with the
+   elastic net (EN), T-Rex+GVS(EN) (`trex.TRexGVSSelector`, the same configuration `trex.TRexSPCASelector`
+   uses internally), twice on the same data: once on the **plug-in response** $y = \boldsymbol{X} v_1$ (what
+   T-Rex SPCA actually regresses on) and once on the **oracle response** $y = z_1$, the true factor scores. The
+   pairing isolates the mechanism behind the FDR overshoot at loose targets — see the caveat section below.
 
 ---
 
@@ -129,12 +131,13 @@ Written to `simulation_results/data/`, one pair per sweep:
 - `demo_trex_spca_02_mc_sim_pev_fdr_heatmap.csv` — Part 5 (`response,metric,tfdr,snr_db,value`)
 
 The `pcs` table carries FDR, TPR, `PEV` (total-variance normalization), `PEVsig` (Definition 1) and
- `PEVsigmix` (the method's Sig + Mix part) per method; the `snr`, `loadings` and `tfdr` **tables are
+ `PEVsigmix` (the method's Sig + Mix part) per method, while the `snr`, `loadings` and `tfdr` **tables are
  restricted to the cumulative-PEV rows** (PCs 1–3). Every CSV still records all five metrics.
 
-Figures (PNG + PDF) go to `simulation_results/plots/`, produced by `./generate_plots.sh` via the shared
- suite plotting module [`../trex_spca_plt_utils.py`](../trex_spca_plt_utils.py), which combines all four
- sweeps into one panel figure per normalization:
+Figures in Portable Network Graphics (PNG) and Portable Document Format (PDF) go to `simulation_results/plots/`,
+ produced by `./generate_plots.sh` via the shared suite plotting module
+ [`../trex_spca_plt_utils.py`](../trex_spca_plt_utils.py), which combines all four sweeps into one panel figure
+ per normalization:
 
 - `demo_trex_spca_02_mc_sim_pev_signal.png` — cumulative PEV under Definition 1.
 - `demo_trex_spca_02_mc_sim_pev_total.png` — cumulative PEV as a share of the total variance.
@@ -152,18 +155,19 @@ python demo_trex_spca_02_mc_sim_pev.py 8          # 8 worker cores
 ```
 
 `TREX_SPCA_NUM_MC=<k>` overrides the Monte Carlo count for quick pilot runs (e.g. `TREX_SPCA_NUM_MC=10`),
-and `TREX_SPCA_PARTS` selects which parts run (default `12345`; e.g. `TREX_SPCA_PARTS=5` reruns only the
-FDR/TPR heatmap sweep) — the same environment switches as the cpp executable.
+and `TREX_SPCA_PARTS` selects which parts run (default `12345`, while `TREX_SPCA_PARTS=5`, for example,
+reruns only the FDR/TPR heatmap sweep) — the same environment switches as the cpp executable.
 
 Run the demo inside an environment that carries `trex_selector_neo` (e.g. the `trex-dev` conda environment
-or the repo `.venv`); it parallelizes trials via `concurrent.futures.ProcessPoolExecutor` (spawn), so run it
-**as a real `.py` file**, not via `python -` / piped stdin. The optional first CLI argument sets the number
-of worker cores.
+or the repo `.venv`). It parallelizes trials via `concurrent.futures.ProcessPoolExecutor` (spawn), so run it
+**as a real `.py` file**, not via `python -` / piped stdin. The optional first command-line interface (CLI)
+argument sets the number of worker cores.
 
-The PC-count sweep dominates the runtime: extracting 49 components means 49 independent T-Rex selections
+The PC-count sweep dominates the runtime, because extracting 49 components means 49 independent T-Rex selections
 per trial, so Part 1 alone costs several times what the other parts cost together. The committed run
-(all five parts, 200 MC) took $\approx 88$ min on 6 workers — substantially longer than in C++ (Python
-drives the same C++ core, but per-trial process dispatch and the per-PC CV add overhead).
+(all five parts, 200 Monte Carlo (MC) trials) took $\approx 88$ min on 6 workers — substantially longer than in
+C++ (Python drives the same C++ core, but per-trial process dispatch and the per-PC cross-validation (CV) add
+overhead).
 
 ---
 
@@ -175,15 +179,15 @@ All five parts, 200 MC trials per grid point, run 2026-07-27 (6 workers, $\appro
 
 - **Panel (a) is the clearest statement in this suite.** The data has three true factors, so every component
    past the third can only add Null EV — and that is exactly what the curves show. Ordinary PCA climbs from
-   $65.5\%$ at one PC past the $100\%$ line just after five PCs to $165.1\%$ at 49: by the time it has
+   $65.5\%$ at one PC past the $100\%$ line just after five PCs to $165.1\%$ at 49. By the time it has
    extracted 49 components it is reporting two thirds more variance than the true active variables carry.
    Its dashed Sig + Mix decomposition saturates at $107.8\%$ — everything between the solid and dashed
    curves is Null EV. OraclePCA reaches $117.8\%$ and even overtakes the dashed reference (crossover
-   between 10 and 20 PCs): it is an oracle only about the support *size* $p_1$, so on the noise directions
+   between 10 and 20 PCs). It is an oracle only about the support *size* $p_1$, so on the noise directions
    beyond PC3 its $\text{top-}p_1$ thresholding selects mostly null variables and the renormalization hands them
    full weight — the $\approx 10$-point gap above the dashed curve is its accumulated Null EV. Knowing the
-   cardinality does not protect against thresholding noise; only the FDR-controlled selection, which may
-   return (near-)empty supports on noise components, stays flat: the four T-Rex variants flatten out by
+   cardinality does not protect against thresholding noise. Only the FDR-controlled selection, which may
+   return (near-)empty supports on noise components, stays flat. The four T-Rex variants flatten out by
    three-to-five PCs and stay there ($79.6\text{–}79.7\%$ `ActiveSet`, $85.6\text{–}85.7\%$ `Thresholded` at 49),
    declining to claim variance that is not theirs even when handed 46 components they do not need.
 - **Panel (b) rises with SNR, as in the published Fig. 3(b).** At $-10$ dB the true active columns are
@@ -199,7 +203,7 @@ All five parts, 200 MC trials per grid point, run 2026-07-27 (6 workers, $\appro
    $85.7\%$ ordinary), and recover toward $p_1 = 30$, where the true support fills the entire overlap pool
    and there are few null variables left to miss. The middle of the range is where support selection
    actually matters.
-- **Panel (d) reproduces the paper's headline reading: T-Rex is insensitive to the target above
+- **Panel (d) reproduces the paper's headline reading that T-Rex is insensitive to the target above
    $\approx 5\%$.** The two ordinary-PCA references are `tFDR`-blind and sit flat ($90.8\%$ solid,
    $88.7\%$ dashed). The T-Rex variants pay visibly only at the strictest target ($59.3\%$ `ActiveSet` /
    $63.8\%$ `Thresholded` at $\mathrm{tFDR} = 0.01$, where the selector keeps too few variables), then climb
@@ -216,9 +220,9 @@ variance":
 
 - In panel (a) ordinary PCA rises to exactly $100.0\%$ at 49 PCs — with $n - 1 = 49$ components it spans the
    whole centered row space and reproduces the data completely. The T-Rex variants saturate at $48\text{–}52\%$
-   after about five components and then stop, which is the same flatness as before seen from the other side:
-   they are not adding anything after the true factors are covered.
-- The gap between the two figures at $p_1 = 10$, 49 PCs is the whole argument in two numbers: ordinary PCA
+   after about five components and then stop, which is the same flatness as before seen from the other side.
+   They are not adding anything after the true factors are covered.
+- The gap between the two figures at $p_1 = 10$, 49 PCs is the whole argument in two numbers. Ordinary PCA
    explains $100\%$ of the total variance, and $165\%$ of the variance that belongs to the true active
    variables.
 
@@ -228,11 +232,11 @@ variance":
 
 Panel for panel and grid point for grid point, the Python numbers reproduce the cpp reference to within the
  Monte Carlo noise of independent dummy draws. Across all four sweep tables no PEV reading differs by more
- than $0.015$ and no realized FDR by more than $0.033$; the part-5 heatmaps agree to $\leq 0.025$ per cell.
+ than $0.015$ and no realized FDR by more than $0.033$, and the part-5 heatmaps agree to $\leq 0.025$ per cell.
  The 49-PC Definition-1 endpoints land within half a percentage point for every method ($165.1$ vs.
  $165.2\%$ ordinary PCA, $117.8$ vs. $117.4\%$ oracle, $79.6$ vs. $79.6\text{–}80.0\%$ `ActiveSet`, $85.6\text{–}85.7$
  vs. $85.5\text{–}85.7\%$ `Thresholded`), and the total-variance panel closes on $100.0\%$ in both. Exact
- per-trial agreement is impossible by construction (numpy PCG64 vs. C++ `std::mt19937`); see the
+ per-trial agreement is impossible by construction (numpy PCG64 vs. C++ `std::mt19937`). See the
  [cpp demo-02 README](../../../../../cpp/trex_selector_methods/ad/trex_spca/demo_trex_spca_02_mc_sim_pev/README.md)
  for the reference tables.
 
@@ -240,8 +244,8 @@ Panel for panel and grid point for grid point, the Python numbers reproduce the 
 
 The paper's text does not pin down the normalization behind its plotted curves — no constructible
  denominator reproduces all published anchors, so digit-level agreement with Fig. 3 is not attainable from
- the paper alone. (A self-normalized reading of Definition 1 is ruled out entirely: it is $\geq 100\%$ by
- construction for null-capturing methods and inverts the SNR trend.) This demo therefore uses the fixed
+ the paper alone. (A self-normalized reading of Definition 1 is ruled out entirely, because it is $\geq 100\%$
+ by construction for null-capturing methods and inverts the SNR trend.) This demo therefore uses the fixed
  active-column denominator throughout, which reproduces the figure's qualitative content: curves rising
  with SNR, ordinary PCA's Null-EV overshoot past $100\%$, the sparse methods saturating near $100\%$, and
  the ranking inversion between the two normalizations.
@@ -250,8 +254,8 @@ The paper's text does not pin down the normalization behind its plotted curves �
 
 Part 5 maps the realized FDR and TPR of PC1's support over the **full** (target FDR $\times$ SNR) grid —
  200 MC trials per cell, same datasets across each row's targets. The FDR panels show the realized FDR on a
- red scale from $0$; whether a cell is in control is read against its column's target. Each configuration is
- run for two selector responses; the pairing is a controlled test of the mechanism suspected behind the
+ red scale from $0$, and whether a cell is in control is read against its column's target. Each configuration
+ is run for two selector responses, and the pairing is a controlled test of the mechanism suspected behind the
  overshoot:
 
 - **plug-in response** $y = \boldsymbol{X} v_1$ — the ordinary PC1, exactly what T-Rex SPCA regresses on.
@@ -265,11 +269,11 @@ Part 5 maps the realized FDR and TPR of PC1's support over the **full** (target 
 What the grid shows:
 
 - **Plug-in response: control holds up to the targets this suite actually uses, then breaks everywhere.**
-   At $\mathrm{tFDR} = 0.05$ the realized FDR is $0.043\text{–}0.100$; at $0.10$ it hovers at or mildly above
+   At $\mathrm{tFDR} = 0.05$ the realized FDR is $0.043\text{–}0.100$, and at $0.10$ it hovers at or mildly above
    target ($0.078\text{–}0.156$, the excursions concentrated at the high-SNR end). From
    $\mathrm{tFDR} = 0.15$ the exceedance is systematic at every SNR — $+0.03$ to $+0.09$ at $0.15$, growing
-   to $+0.12$ to $+0.18$ at $0.50$ (realized $0.615\text{–}0.684$). The pattern is nearly SNR-independent: this
-   is not a noise effect (SE $\approx 0.02\text{–}0.03$ per cell).
+   to $+0.12$ to $+0.18$ at $0.50$ (realized $0.615\text{–}0.684$). The pattern is nearly SNR-independent, so
+   this is not a noise effect. The standard error (SE) is $\approx 0.02\text{–}0.03$ per cell.
 - **Oracle response: the overshoot largely vanishes — the mechanism is confirmed.** With the true factor
    as response, the realized FDR stays **at or below target through $\mathrm{tFDR} \approx 0.30$ at every
    SNR** (e.g. $0.070\text{–}0.092$ against $0.15$, $0.146\text{–}0.177$ against $0.20$), and even at the loosest
@@ -279,14 +283,14 @@ What the grid shows:
    loose targets.
 - **TPR is a non-issue except in the strict-target / low-SNR corner.** It is $\geq 0.96$ everywhere outside
    the $\mathrm{tFDR} = 0.01$ column, and inside it dips only at low SNR, where the selector keeps too few
-   variables ($0.94$ oracle at $-7$ dB; $0.57$ plug-in / $0.42$ oracle at $-10$ dB) — the same corner that
+   variables ($0.94$ oracle at $-7$ dB, and $0.57$ plug-in / $0.42$ oracle at $-10$ dB) — the same corner that
    produces the PEV dip in panel (d).
 
 **Consequences**: At this suite's default $\mathrm{tFDR} = 0.10$ the pipeline is safe across the whole
-   SNR range. Loosening the target is a poor trade under factor-model scoring: from $0.10$ to $0.50$ it
+   SNR range. Loosening the target is a poor trade under factor-model scoring, because from $0.10$ to $0.50$ it
    buys about six PEV points (panel (d), `ActiveSet`) while the realized factor-model FDR climbs roughly
    linearly to $\approx 0.62\text{–}0.68$.
-The general lesson is the conditional nature of the guarantee:
+The general lesson is the conditional nature of the guarantee.
  **T-Rex SPCA controls the FDR of the regression it is handed, and that transfers to the factor model
  only insofar as the plug-in PC is a faithful proxy for the factor** (see also demo 01's union-FDR
  section for the same condition read across components).

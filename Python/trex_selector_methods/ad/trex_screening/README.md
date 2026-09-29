@@ -2,20 +2,20 @@
 
 ## Purpose
 
-Python example programs for **Screen-TRex**, the T-Rex Selector extended with a
+Python example programs for **Screen-TRex**, the Terminating Random Experiments (T-Rex) Selector extended with a
 variable-**screening** step for ultra-high-dimensional data, according to
 [[1]](#references). Screen-TRex is built for the regime where `p` is so large
 that running the classical T-Rex selector directly is impractical (genome- or
-biobank-scale designs): it first thresholds a dummy-based voting statistic
+biobank-scale designs). It first thresholds a dummy-based voting statistic
 `Phi_j` to screen down to a small candidate set, using either the **Ordinary**
 majority-vote rule (`Phi_j > 0.5`) or a **Bootstrap-CI** rule, plus
 **dependency-aware (DA)** variants that recover power under correlated designs.
-Unlike the classical T-Rex selector, screening has **no target-FDR parameter**;
-it reports its own *estimated FDR* alongside the selection, and whether that
-self-estimate can be trusted depends sharply on the correlation structure (see
-Demos 01 and 03).
+Unlike the classical T-Rex selector, screening has **no target parameter for the
+false discovery rate (FDR)**. It reports its own *estimated FDR* alongside the
+selection, and whether that self-estimate can be trusted depends sharply on the
+correlation structure (see Demos 01 and 03).
 
-All six demos are **Monte Carlo studies** (200 repetitions per grid point) that
+All six demos are **Monte Carlo (MC) studies** (200 repetitions per grid point) that
 parallelize their trials with `concurrent.futures.ProcessPoolExecutor` and write
 per-method sweep tables (`.txt` + tidy `.csv`) into each demo's own
 `simulation_results/data/` folder, with figures in `simulation_results/plots/`.
@@ -49,10 +49,10 @@ results[0].selected_indices   # per-phenotype 0-based selected indices
 
 The suite mirrors the C++ demos in
 [cpp/trex_selector_methods/ad/trex_screening/](../../../../cpp/trex_selector_methods/ad/trex_screening/README.md)
-one-to-one — same DGPs, same grids, same Monte Carlo counts, same output file
-names and CSV schemas, and the same plotting module. Support sets and selected
-indices are **0-based** in Python (matching the C++ sources; the R suite is
-1-based).
+one-to-one — same data-generating processes (DGPs), same grids, same Monte Carlo
+counts, same output file names and comma-separated values (CSV) schemas, and the
+same plotting module. Support sets and selected indices are **0-based** in Python
+(matching the C++ sources, while the R suite is 1-based).
 
 The `ScreenTRexMethod` values accepted by `ScreenTRexControlParameter.trex_method`
 are `trex.ScreenTRexMethod.TREX` (ordinary voting-based screening), `.TREX_DA_AR1`,
@@ -62,10 +62,11 @@ are `trex.ScreenTRexMethod.TREX` (ordinary voting-based screening), `.TREX_DA_AR
 
 ## What this folder covers
 
-- **Baseline screening** (Demos 01–02): Ordinary vs. Bootstrap-CI on an i.i.d. Gaussian design, in memory
-   and memory-mapped.
-- **Correlation robustness** (Demo 03): plain screening vs. the dependency-aware variants under AR(1),
-   equicorrelated, and block-equicorrelated designs, swept over both SNR and correlation strength.
+- **Baseline screening** (Demos 01–02): Ordinary vs. Bootstrap-CI on an independent and identically
+   distributed (i.i.d.) Gaussian design, in memory and memory-mapped.
+- **Correlation robustness** (Demo 03): plain screening vs. the dependency-aware variants under first-order
+   autoregressive (AR(1)), equicorrelated, and block-equicorrelated designs, swept over both signal-to-noise
+   ratio (SNR) and correlation strength.
 - **Multi-phenotype biobank screening** (Demos 04–05): Algorithm 1's adaptive routing applied to several
    phenotypes sharing one design matrix, in memory and memory-mapped.
 - **Solver sensitivity** (Demo 06): whether the T-Rex backend (TLARS, TAFS, TOMP) changes screening
@@ -92,7 +93,7 @@ All demos use the same Gaussian linear model as the classical T-Rex selector:
 
 - $n$: number of observations, $p$: number of variables, $s$: number of truly active variables.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$: design matrix, $\boldsymbol{y} \in \mathbb{R}^n$: response.
-- $\mathcal{A} = \lbrace j : \beta_j \neq 0 \rbrace$: true active support; $\widehat{\mathcal{A}}$: selected set.
+- $\mathcal{A} = \lbrace j : \beta_j \neq 0 \rbrace$: true active support, $\widehat{\mathcal{A}}$: selected set.
 - $\Phi_j$: dummy-based voting proportion for variable $j$ — the evidence T-Rex accumulates internally.
 - $\rho$: correlation strength (AR(1) lag-1, equicorrelation, or within-block equicorrelation).
 - $\sigma_{\varepsilon}^2$: noise variance, calibrated to a target SNR.
@@ -130,7 +131,7 @@ As elsewhere in this project,
 
 > **Screening returns a candidate set, and every rate is evaluated on individual variables.** The quantity
 > Screen-TRex thresholds is the voting proportion $\Phi_j$, and what it returns is a set of variable
-> indices; $\widehat{\mathcal{A}}$ and $\mathcal{A}$ above are therefore sets of *variables*. A false
+> indices. $\widehat{\mathcal{A}}$ and $\mathcal{A}$ above are therefore sets of *variables*. A false
 > discovery is a selected variable that is not truly active.
 >
 > Screen-TRex additionally reports an **estimated FDR** — its own internal assessment of the selection's
@@ -138,9 +139,9 @@ As elsewhere in this project,
 > two can diverge severely: conservative on i.i.d. designs, but wildly optimistic under equicorrelation
 > (Demo 03).
 >
-> In the biobank demos, FDR/TPR are accumulated **conditionally** on which method a phenotype was routed
-> to, alongside the unconditional **Usage %**. A conditional rate over a route that handled no phenotypes
-> at a given SNR is an average over an empty set, not a failure.
+> In the biobank demos, the FDR and the true positive rate (TPR) are accumulated **conditionally** on which
+> method a phenotype was routed to, alongside the unconditional **Usage %**. A conditional rate over a route
+> that handled no phenotypes at a given SNR is an average over an empty set, not a failure.
 
 ---
 
@@ -150,14 +151,14 @@ As elsewhere in this project,
    the bootstrap rule) and the dependency-aware variants `TREX_DA_AR1`, `TREX_DA_EQUI`,
    `TREX_DA_BLOCK_EQUI` (Demo 03).
 - **Ordinary vs. Bootstrap-CI** (`ScreenTRexControlParameter.use_bootstrap_CI`) — the **Ordinary** rule
-   thresholds at $\Phi_j > 0.5$; the **Bootstrap-CI** rule builds a bootstrap confidence band
+   thresholds at $\Phi_j > 0.5$, while the **Bootstrap-CI** rule builds a bootstrap confidence band
    (`R_boot = 1000` replicates, grid granularity `ci_grid_step = 0.001`) around the estimated FDR curve and
    picks its threshold from that band.
 - **Dependency-aware (DA) screening** (`rho_thr_DA`, `n_blocks`) — pre-groups strongly correlated variables
    before voting, so redundant correlated variables do not split the evidence.
 - **Biobank / "Algorithm 1"** (`BiobankScreenTRexControl`, Demos 04–05) — screens **multiple phenotypes
-   against one shared design matrix**. Per phenotype it tries Screen-TRex Ordinary; if the estimated FDR
-   falls outside `[lower_bound_FDR, upper_bound_FDR]` it tries Bootstrap-CI; failing that it falls back to
+   against one shared design matrix**. Per phenotype it tries Screen-TRex Ordinary. If the estimated FDR
+   falls outside `[lower_bound_FDR, upper_bound_FDR]` it tries Bootstrap-CI, and failing that it falls back to
    the classical T-Rex selector at `target_FDR_trex`. The share routed to each method is reported as
    **Usage %**.
 
@@ -165,8 +166,8 @@ As elsewhere in this project,
 
 ## Folder contents
 
-The folder layout mirrors the C++ suite one-to-one: one subfolder per demo, plus
-the shared helper modules at the suite level.
+The folder layout mirrors the C++ suite one-to-one, with one subfolder per demo
+plus the shared helper modules at the suite level.
 
 ```txt
 trex_screening/
@@ -207,7 +208,7 @@ results and figures.
 | # | Folder | Description | cpp counterpart | Key APIs |
 |---|---|---|---|---|
 | 01 | [demo_trex_scr_01_mc_sim_screen_trex/](demo_trex_scr_01_mc_sim_screen_trex/) | In-memory Ordinary vs. Bootstrap-CI screening: an 8-point SNR-sweep Monte Carlo reporting FDR / TPR / Estimated FDR | [demo_trex_scr_01_mc_sim_screen_trex/](../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_01_mc_sim_screen_trex/) | `TRexScreeningSelector`, `ScreenTRexControlParameter.use_bootstrap_CI` |
-| 02 | [demo_trex_scr_02_mc_sim_screen_trex_mmap/](demo_trex_scr_02_mc_sim_screen_trex_mmap/) | The same SNR sweep with `use_memory_mapping=True` (dummy matrices on disk); equivalence to Demo 01 at a lower memory footprint | [demo_trex_scr_02_mc_sim_screen_trex_mmap/](../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_02_mc_sim_screen_trex_mmap/) | `TRexControlParameter.use_memory_mapping` |
+| 02 | [demo_trex_scr_02_mc_sim_screen_trex_mmap/](demo_trex_scr_02_mc_sim_screen_trex_mmap/) | The same SNR sweep with `use_memory_mapping=True` (dummy matrices on disk), equivalent to Demo 01 at a lower memory footprint | [demo_trex_scr_02_mc_sim_screen_trex_mmap/](../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_02_mc_sim_screen_trex_mmap/) | `TRexControlParameter.use_memory_mapping` |
 | 03 | [demo_trex_scr_03_mc_sim_correlated/](demo_trex_scr_03_mc_sim_correlated/) | Ordinary/Bootstrap vs. DA screening on correlated designs: 5 MC sweeps (AR(1)/equi SNR sweeps and AR(1)/equi/block-equi rho sweeps) | [demo_trex_scr_03_mc_sim_correlated/](../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_03_mc_sim_correlated/) | `ScreenTRexMethod.TREX_DA_*`, `estimated_correlation` |
 | 04 | [demo_trex_scr_04_mc_sim_biobank/](demo_trex_scr_04_mc_sim_biobank/) | Biobank "Algorithm 1" (in-memory): MC SNR sweeps (single and multi-phenotype) reporting per-method Usage % / FDR / TPR / Est. FDR | [demo_trex_scr_04_mc_sim_biobank/](../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_04_mc_sim_biobank/) | `TRexBiobankScreeningSelector`, `BiobankScreenTRexControl` |
 | 05 | [demo_trex_scr_05_mc_sim_biobank_mmap/](demo_trex_scr_05_mc_sim_biobank_mmap/) | The same biobank MC sweeps with `use_memory_mapping=True` | [demo_trex_scr_05_mc_sim_biobank_mmap/](../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_05_mc_sim_biobank_mmap/) | `TRexBiobankScreeningSelector` + D-mmap |
@@ -235,16 +236,16 @@ from every `ProcessPoolExecutor` child.
 - [trex_scr_bb_common.py](trex_scr_bb_common.py) — Biobank helpers: the control
   builder `_build_biobank_ctrl`, the module-level workers
   `_biobank_single_worker` / `_biobank_multi_worker`, the parallel runner
-  `run_mc_biobank`, the per-SNR aggregator `accumulate_snr` (conditional FDR/TPR
-  + unconditional Usage % and estimated FDR), and the table writer
+  `run_mc_biobank`, the per-SNR aggregator `accumulate_snr` (conditional FDR/TPR +
+  unconditional Usage % and estimated FDR), and the table writer
   `save_and_print_biobank_mc`. It shares `trex_scr_common`'s worker pool.
 - [trex_scr_plt_utils.py](trex_scr_plt_utils.py) — the figure renderer, a
   byte-identical copy of the C++ suite's module, so both ports produce visually
   identical figures from identically-named CSVs.
 
-Both runners follow the suite convention: workers are module-level functions and
-receive only picklable flat dicts; the `trex_selector_neo` enums and controls
-are rebuilt inside each worker, never sent across a process boundary. Every
+Both runners follow the suite convention, in which workers are module-level functions
+that receive only picklable flat dicts. The `trex_selector_neo` enums and controls
+are rebuilt inside each worker and never sent across a process boundary. Every
 trial constructs its selector with `seed = -1` (hardware entropy per trial),
 which the library requires for valid Monte Carlo FDR estimates.
 
@@ -253,9 +254,9 @@ which the library requires for valid Monte Carlo FDR estimates.
 ## Control parameters
 
 - `ScreenTRexControlParameter` — `trex_method`, `use_bootstrap_CI`, `R_boot`
-  (Bootstrap-CI replicates, default 1000), `ci_grid_step`, and the DA knobs
+  (Bootstrap-CI replicates, default 1,000), `ci_grid_step`, and the DA knobs
   `rho_thr_DA`, `n_blocks`, `cor_coef`. It nests its own `trex_ctrl`
-  (a `TRexControlParameter`); the Python `TRexScreeningSelector` also accepts a
+  (a `TRexControlParameter`). The Python `TRexScreeningSelector` also accepts a
   separate `trex_control` argument for convenience.
 - `TRexControlParameter` — `solver_type`, `K`, `use_memory_mapping`,
   `solver_params.rho_afs`, `tloop_stagnation_stop`, `tloop_max_stagnant_steps`,
@@ -274,7 +275,7 @@ exposes `phenotype_index`, `method_used` (`"Screen-TRex (ordinary)"`,
 `estimated_FDR_screen_ordinary`, `estimated_FDR_screen_bootstrap`,
 `selected_indices` (and `selected_indices_screen_ordinary` /
 `selected_indices_screen_bootstrap`), and `used_fallback_trex`. This differs
-from the R binding, which returns a list with a `$statistics` data frame; the
+from the R binding, which returns a list with a `$statistics` data frame. The
 Python binding returns the per-phenotype result objects directly (mirroring the
 C++ `BiobankScreenTRexResult` vector).
 
@@ -286,9 +287,9 @@ Every demo uses the **C++ reference counts**: `num_MC = 200` per grid point
 (biobank `num_MC_multi = 200`) and `R_boot = 1000` bootstrap replicates, so the
 recorded results reproduce the C++ suite's fidelity rather than a downscaled
 approximation. Results are statistically comparable to the C++/R reference,
-**not** bit-identical: the three ports use different RNG streams, so the mirrored
-seeds are labels only, and each trial's selector is additionally constructed with
-`seed = -1`.
+**not** bit-identical, because the three ports use different random number
+generator (RNG) streams. The mirrored seeds are therefore labels only, and each
+trial's selector is additionally constructed with `seed = -1`.
 
 For a quick smoke test, reduce `_NUM_MC` and the sweep grids at the top of the
 demo you are running.
@@ -300,8 +301,8 @@ demo you are running.
 Monte Carlo trials run in a `ProcessPoolExecutor` shared across a demo's parts.
 The worker count defaults to `min(6, usable CPUs)` — matching the C++ demos'
 `omp_set_num_threads(6)` so runtimes stay comparable across the ports — and each
-worker pins its own OpenMP pool to a single thread, so a demo never exceeds the
-worker count in total cores. Override per run, without editing sources:
+worker pins its own Open Multi-Processing (OpenMP) pool to a single thread, so a
+demo never exceeds the worker count in total cores. Override per run, without editing sources:
 
 ```bash
 SCR_NUM_WORKERS=12 python <demo>.py   # this suite's variable (takes precedence)
@@ -309,7 +310,7 @@ TREX_NUM_WORKERS=12 python <demo>.py  # the project-wide variable
 TREX_NUM_WORKERS=0 python <demo>.py   # use every usable CPU
 ```
 
-"Usable" honours CPU affinity and cgroup quotas where the platform reports them,
+"Usable" honours central processing unit (CPU) affinity and cgroup quotas where the platform reports them,
 so a container granted 4 CPUs yields 4, not the host's core count.
 
 ---
@@ -344,7 +345,7 @@ Each demo writes into its own `simulation_results/` subfolder:
 
 - `data/*.txt` — human-readable summary tables,
 - `data/*.csv` — tidy long-format tables (`method, metric, SNR|rho, value` for the
-  screening demos; `method, metric, snr, value` with a `Usage` metric for the
+  screening demos and `method, metric, snr, value` with a `Usage` metric for the
   biobank demos) for plotting and post-processing,
 - `plots/*.png` / `*.pdf` — the figures embedded in the demo READMEs.
 
@@ -362,7 +363,7 @@ cd demo_trex_scr_01_mc_sim_screen_trex
 ./generate_plots.sh
 ```
 
-`trex_scr_plt_utils.py` auto-detects the CSV shape: sweep results render as a TPR
+`trex_scr_plt_utils.py` auto-detects the CSV shape, so sweep results render as a TPR
 panel and an FDR panel (realized solid, estimated dashed), while the biobank
 results add a third Usage-% panel and shade the routing window. The design
 correlation heatmaps are separate and suite-wide:

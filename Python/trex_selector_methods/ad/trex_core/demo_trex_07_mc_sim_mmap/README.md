@@ -2,8 +2,9 @@
 
 ## Purpose
 
-Validate **T-Rex selector performance under memory-mapped (mmap) I/O** over many
-Monte Carlo trials, mirroring the single-run patterns of Demo 06. Two scenarios
+Validate **Terminating Random Experiments (T-Rex) selector performance under
+memory-mapped (mmap) input/output (I/O)** over many Monte Carlo (MC) trials,
+mirroring the single-run patterns of Demo 06. Two scenarios
 run the identical sweep: (C) in-memory $\mathbf{X}$ with mmap dummy matrices
 $\mathbf{D}$ + solver serialization, and (D) a fully memory-mapped pipeline where
 each MC iteration creates and destroys its own mmap-backed $\mathbf{X}/\mathbf{y}$
@@ -17,19 +18,20 @@ using `trex_selector_neo`.
 ## Data Generation Parameters
 
 Both scenarios use the same high-dimensional configuration, drawn by the shared
-Gaussian generator `dgp_gauss_snr` (i.i.d. standard-normal design, independent
-columns — column-correlation essentially the identity):
+Gaussian data-generating process (DGP) `dgp_gauss_snr`. It draws an independent
+and identically distributed (i.i.d.) standard-normal design with independent
+columns, so the column-correlation is essentially the identity:
 
 ![Design-matrix correlation of the shared i.i.d. Gaussian DGP (natural order, no clustering)](../dgp_corr_plots/trex_gauss.png)
 
-- **Sample size**: $n = 300$, **features**: $p = 1000$, $s = 10$
+- **Sample size**: $n = 300$, **features**: $p = 1{,}000$, $s = 10$
 - **True support**: drawn **once** via `make_support_random(s, p, seed=24)`,
   fixed across all MC trials
 - **True coefficients**: fixed $\beta_j = 1$ (`rnd_coef = False`)
-- **SNR range**: $\lbrace0.1, 0.5, 1.0, 2.0, 5.0\rbrace$
+- **Signal-to-noise ratio (SNR) range**: $\lbrace0.1, 0.5, 1.0, 2.0, 5.0\rbrace$
 - **Base solver**: TLARS only
-- **Monte Carlo repetitions**: `num_MC = 200` for **both** scenarios (`_NUM_MC =
-  200`, mirrors C++) — the two runs are directly comparable
+- **Monte Carlo repetitions**: `num_MC = 200` for **both** scenarios
+  (`_NUM_MC = 200`, mirrors C++) — the two runs are directly comparable
 
 ---
 
@@ -53,10 +55,11 @@ tFDR                  = 0.1        # Target FDR control level
 
 ## Scenarios
 
-- **Part C** (`trx_03_part_c`) — in-memory $\mathbf{X}$ + `use_memory_mapping =
-  True` (D-mmap + solver serialization). Verifies the pipeline yields stable,
-  reproducible FDR/TPR over many runs.
-- **Part D** (`trx_03_part_d`) — fully memory-mapped pipeline: each MC trial
+- **Part C** (`trx_03_part_c`) — in-memory $\mathbf{X}$ +
+  `use_memory_mapping = True` (D-mmap + solver serialization). Verifies the
+  pipeline yields stable, reproducible false discovery rate (FDR) and true
+  positive rate (TPR) over many runs.
+- **Part D** (`trx_03_part_d`) — fully memory-mapped pipeline, where each MC trial
   writes $\mathbf{X}$ to a unique temp binary file (`numpy_to_memmap`), passes the
   zero-copy `X_mmap.to_numpy()` view to `TRexSelector`, and deletes the file in a
   `finally` block. Adds X-mmap on top of D-mmap + solver serialization.
@@ -78,21 +81,22 @@ and `d03_trex_mmap_demo_d_n300_p1000_sw7`:
   renders the same figures.
 
 Figures are written separately to `simulation_results/plots/` by
-`./generate_plots.sh` (see *Results Visualization*); the demo itself writes only
-the `.txt` / `.csv` pair per scenario.
+`./generate_plots.sh` (see *Results Visualization*), while the demo itself writes
+only the `.txt` / `.csv` pair per scenario.
 
 ---
 
 ## Results Visualization
 
 The suite-level plotting module [`../trex_plt_utils.py`](../trex_plt_utils.py)
-renders the tidy CSVs into `simulation_results/plots/`. Only the `FDR` and `TPR`
-rows are plotted; the `AvgL` / `AvgT` rows are ignored by the plotter (they remain
-in the CSV and the `.txt` table).
+renders the tidy comma-separated values (CSV) files into
+`simulation_results/plots/`. Only the `FDR` and `TPR` rows are plotted, while the
+plotter ignores the `AvgL` / `AvgT` rows (they remain in the CSV and the `.txt`
+table).
 
 ### Storage scenarios compared (headline figure)
 
-Both scenarios run the identical sweep, so they belong on one pair of axes: this
+Both scenarios run the identical sweep, so they belong on one pair of axes. This
 demo's question is whether the storage medium is visible in the *results*, and two
 curves that lie on top of each other answer it directly. The scenario takes the
 place of the "solver" row that the other demos sweep:
@@ -108,7 +112,7 @@ $\mathrm{SNR}=5$.
 The two pipelines agree to within **0.0073 (FDR, at $\mathrm{SNR}=0.5$)** and
 **0.0085 (TPR, at $\mathrm{SNR}=0.5$)** at every grid point — the scale of Monte
 Carlo noise at $\text{num\_MC} = 200$, not a systematic effect. This is the result
-the demo exists to show: memory-mapping $\mathbf{X}$ and $\mathbf{D}$ is
+the demo exists to show. Memory-mapping $\mathbf{X}$ and $\mathbf{D}$ is
 transparent to the selector, so it buys its memory savings without moving the
 statistics. Note the curves are *not* expected to coincide exactly — the two
 scenarios drive different data paths (and `seed = -1` draws dummies from hardware
@@ -130,7 +134,7 @@ Each static figure has a self-contained `.html` twin — hover for exact values,
 click a scenario in the legend to isolate its curve in both panels. Open it
 directly in a browser (it is not rendered inline on GitHub).
 The `.html` figures are not committed to the repository (each embeds a full copy of
-plotly.js); run `./generate_plots.sh` to produce them locally.
+plotly.js). Run `./generate_plots.sh` to produce them locally.
 
 ```bash
 open simulation_results/plots/d03_trex_mmap_demo_c_vs_d.html

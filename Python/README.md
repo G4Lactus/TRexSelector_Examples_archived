@@ -54,11 +54,11 @@ The rules:
    `namespace` qualification and R's `trexselector::`. Root symbols are never
    `from`-imported, and the alias is only introduced in files that use it.
 2. **Subpackage symbols via explicit `from`-imports.** Solvers come from
-   `trex_selector_neo.tsolvers.{lars_based,omp_based,afs_based}`, ML building
+   `trex_selector_neo.tsolvers.ad.{lars_based,omp_based,afs_based}`, machine learning (ML) building
    blocks from `trex_selector_neo.ml_methods` (clustering from
    `trex_selector_neo.ml_methods.clustering`), and metrics/memory-mapping
-   helpers from `trex_selector_neo.utils`. Call sites use the bare names;
-   subpackages are never aliased and never accessed as `trex.utils.…`.
+   helpers from `trex_selector_neo.utils`. Call sites use the bare names.
+   Subpackages are never aliased and never accessed as `trex.utils.…`.
 3. **Only the public surface.** Demos never import from the raw binding module
    `trex_selector_neo.trex_selector_methods` (it bypasses the ergonomic Python
    wrappers), never from `trex_selector_neo._core`, and never through the
@@ -73,13 +73,13 @@ The rules:
 
 - Python >= 3.10
 - numpy >= 1.26 (installed automatically with TRexSelectorNeo)
-- pandas (used by the demos to write CSV result files)
+- pandas (used by the demos to write comma-separated values (CSV) result files)
 - matplotlib and plotly (used by the plotters behind each demo's
   `generate_plots.sh`)
 
 TRexSelectorNeo is built with scikit-build-core + pybind11 from the main
-repository. Install it into a virtual environment at the repository root;
-the overnight runners and the `generate_plots.sh` scripts look for
+repository. Install it into a virtual environment at the repository root,
+because the overnight runners and the `generate_plots.sh` scripts look for
 `.venv/bin/python` there:
 
 ```bash
@@ -119,18 +119,18 @@ Notes:
 | Area | Folder | What it covers | C++ counterpart |
 |---|---|---|---|
 | Memory mapping | [memory_mapping/](memory_mapping/) | Disk-backed matrices via `MemoryMappedMatrix`, `numpy_to_memmap`, out-of-core workflows | [cpp/memory_mapping/](../cpp/memory_mapping/) |
-| ML methods — HAC | [ml_methods/hac_clustering/](ml_methods/hac_clustering/) | Hierarchical agglomerative clustering: sample/variable clustering, LSH linkage, linkage comparisons, out-of-core mmap workflow (`demo_mlm_hac_01`, `demo_mlm_hac_02_mmap`) | [cpp/ml_methods/hac_clustering/](../cpp/ml_methods/hac_clustering/) |
+| ML methods — HAC | [ml_methods/hac_clustering/](ml_methods/hac_clustering/) | Hierarchical agglomerative clustering (HAC): sample/variable clustering, locality-sensitive hashing (LSH) linkage, linkage comparisons, out-of-core mmap workflow (`demo_mlm_hac_01`, `demo_mlm_hac_02_mmap`) | [cpp/ml_methods/hac_clustering/](../cpp/ml_methods/hac_clustering/) |
 | ML methods — Scalers | [ml_methods/scaler_methods/](ml_methods/scaler_methods/) | Z-score and Lp-norm column scaling, inverse transform, serialization, mmap-backed (`demo_mlm_scaler_01`) | [cpp/ml_methods/scaler_methods/](../cpp/ml_methods/scaler_methods/) |
-| ML methods — PCA | [ml_methods/pca/](ml_methods/pca/) | PCA fit, restore round-trip, out-of-sample transform (`demo_mlm_pca_01`) | [cpp/ml_methods/pca/](../cpp/ml_methods/pca/) |
-| ML methods — SVD | [ml_methods/svd/](ml_methods/svd/) | Truncated SVD, direct and Gram paths (`demo_mlm_svd_01`) | [cpp/ml_methods/svd/](../cpp/ml_methods/svd/) |
+| ML methods — PCA | [ml_methods/pca/](ml_methods/pca/) | Principal component analysis (PCA) fit, restore round-trip, out-of-sample transform (`demo_mlm_pca_01`) | [cpp/ml_methods/pca/](../cpp/ml_methods/pca/) |
+| ML methods — SVD | [ml_methods/svd/](ml_methods/svd/) | Truncated singular value decomposition (SVD), direct and Gram paths (`demo_mlm_svd_01`) | [cpp/ml_methods/svd/](../cpp/ml_methods/svd/) |
 | ML methods — Ridge | [ml_methods/ridge_regression/](ml_methods/ridge_regression/) | L2-penalized least squares, primal/dual, lambda sweep (`demo_mlm_ridge_01`) | [cpp/ml_methods/ridge_regression/](../cpp/ml_methods/ridge_regression/) |
-| ML methods — Model selection | [ml_methods/model_selection/](ml_methods/model_selection/) | K-fold CV for ridge (SVD) and elastic net (CCD), lambda.min / lambda.1se (`demo_mlm_ms_01`, `demo_mlm_ms_02`) | [cpp/ml_methods/model_selection/](../cpp/ml_methods/model_selection/) |
-| T-Rex selector | [trex_selector_methods/ad/trex_core/](trex_selector_methods/ad/trex_core/) | Classical T-Rex: single runs, Monte Carlo simulations, L-loop strategies, dummy distributions, memory-mapped pipelines, scalability benchmark (Demos 01–08) | [cpp/trex_selector_methods/ad/trex_core/](../cpp/trex_selector_methods/ad/trex_core/) |
-| Dependency-Aware T-Rex | [trex_selector_methods/ad/trex_da/](trex_selector_methods/ad/trex_da/) | T-Rex+DA: AR(1), AR(1)/heavy-tailed blocks (± white noise), prior groups, nearest-neighbor, equicorrelated + BT (Demos 01–08) | [cpp/trex_selector_methods/ad/trex_da/](../cpp/trex_selector_methods/ad/trex_da/) |
-| Grouped Variable Selection T-Rex | [trex_selector_methods/ad/trex_gvs/](trex_selector_methods/ad/trex_gvs/) | T-Rex+GVS: Hastie, scattered, mixed/negative-trap, heavy-tailed, AR(1), ARMA, block benchmark; EN / EN+AUG / IEN (Demos 01–08) | [cpp/trex_selector_methods/ad/trex_gvs/](../cpp/trex_selector_methods/ad/trex_gvs/) |
+| ML methods — Model selection | [ml_methods/model_selection/](ml_methods/model_selection/) | K-fold cross-validation (CV) for ridge via SVD and elastic net via cyclic coordinate descent (CCD), lambda.min / lambda.1se (`demo_mlm_ms_01`, `demo_mlm_ms_02`) | [cpp/ml_methods/model_selection/](../cpp/ml_methods/model_selection/) |
+| T-Rex selector | [trex_selector_methods/ad/trex_core/](trex_selector_methods/ad/trex_core/) | Classical Terminating Random Experiments (T-Rex) selector: single runs, Monte Carlo simulations, L-loop strategies, dummy distributions, memory-mapped pipelines, scalability benchmark (Demos 01–08) | [cpp/trex_selector_methods/ad/trex_core/](../cpp/trex_selector_methods/ad/trex_core/) |
+| Dependency-Aware T-Rex | [trex_selector_methods/ad/trex_da/](trex_selector_methods/ad/trex_da/) | T-Rex+DA: first-order autoregressive (AR(1)), AR(1)/heavy-tailed blocks (± white noise), prior groups, nearest-neighbor, equicorrelated + Binary-Tree (BT) (Demos 01–08) | [cpp/trex_selector_methods/ad/trex_da/](../cpp/trex_selector_methods/ad/trex_da/) |
+| Grouped Variable Selection T-Rex | [trex_selector_methods/ad/trex_gvs/](trex_selector_methods/ad/trex_gvs/) | T-Rex+GVS: Hastie, scattered, mixed/negative-trap, heavy-tailed, AR(1), autoregressive moving-average (ARMA), block benchmark, with the elastic net (EN), the elastic net in augmented-lasso form (EN+AUG) and the informed elastic net (IEN) (Demos 01–08) | [cpp/trex_selector_methods/ad/trex_gvs/](../cpp/trex_selector_methods/ad/trex_gvs/) |
 | Screen-TRex | [trex_selector_methods/ad/trex_screening/](trex_selector_methods/ad/trex_screening/) | Ultra-high-dimensional screening: Ordinary/Bootstrap-CI, mmap, correlated designs, biobank routing, solver backends (Demos 01–06) | [cpp/trex_selector_methods/ad/trex_screening/](../cpp/trex_selector_methods/ad/trex_screening/) |
-| T-Rex Sparse PCA | [trex_selector_methods/ad/trex_spca/](trex_selector_methods/ad/trex_spca/) | T-Rex SPCA: MC comparison vs. ordinary/oracle PCA on a sparse 3-factor model, plus Fig.-3-style PEV sweeps and the plugin-vs-oracle FDR/TPR heatmap study (Demos 01–02) | [cpp/trex_selector_methods/ad/trex_spca/](../cpp/trex_selector_methods/ad/trex_spca/) |
-| T-Solvers | [tsolvers/](tsolvers/README.md) | 12 standalone terminating-solver demos (`demo_ts_01` … `demo_ts_12`: early stopping, external normalization, serialization, mmap); the validation programs moved to the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/tsolvers/`) | [cpp/tsolvers/](../cpp/tsolvers/) |
+| T-Rex Sparse PCA | [trex_selector_methods/ad/trex_spca/](trex_selector_methods/ad/trex_spca/) | T-Rex SPCA: Monte Carlo (MC) comparison vs. ordinary/oracle PCA on a sparse 3-factor model, plus Fig.-3-style proportion of explained variance (PEV) sweeps and the plugin-vs-oracle false discovery rate (FDR) / true positive rate (TPR) heatmap study (Demos 01–02) | [cpp/trex_selector_methods/ad/trex_spca/](../cpp/trex_selector_methods/ad/trex_spca/) |
+| T-Solvers | [tsolvers/](tsolvers/README.md) | 12 standalone terminating-solver demos (`demo_ts_01` … `demo_ts_12`: early stopping, external normalization, serialization, mmap). The validation programs moved to the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/tsolvers/`) | [cpp/tsolvers/](../cpp/tsolvers/) |
 
 The `tsolvers/` and `trex_selector_methods/` folders follow the library layout by dummy type. `ad/` holds the
 augmented-dummy (AD) demos, while `sd/` (sparse dummies) and `vd/` (virtual dummies) hold a README until the Python
@@ -150,5 +150,5 @@ matching demo names, folder layout, and result-file schemas (as of the
 
 The scaler/HAC cross-language reference programs that used to live under
 `cpp/ml_methods/validation/` moved to the TRexSelector library test suite
-(`TRexSelector/cpp/tests/validation/hac_clustering/`); as validation
+(`TRexSelector/cpp/tests/validation/hac_clustering/`). As validation
 infrastructure rather than demos, they have no Python port by design.
