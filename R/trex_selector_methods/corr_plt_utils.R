@@ -29,8 +29,7 @@ suppressMessages(library(ggplot2))
 
 .HERE <- local({
   a <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
-  if (length(a) > 0) dirname(normalizePath(sub("^--file=", "", a[[1L]])))
-  else normalizePath(".")
+  if (length(a) > 0) dirname(normalizePath(sub("^--file=", "", a[[1L]]))) else normalizePath(".")
 })
 
 .SEED <- 2026L
@@ -71,8 +70,7 @@ plot_correlation_matrix <- function(X, out_path, title, subtitle = NULL,
     X <- X[, seq_len(crop), drop = FALSE]
     note <- sprintf("leading %dx%d block of the p=%d design",
                     crop, crop, p_full)
-    subtitle <- if (is.null(subtitle)) note
-                else sprintf("%s  |  %s", subtitle, note)
+    subtitle <- if (is.null(subtitle)) note else sprintf("%s  |  %s", subtitle, note)
   }
 
   C <- stats::cor(X)
@@ -367,12 +365,23 @@ main <- function() {
   i <- 1L
   while (i <= length(argv)) {
     a <- argv[[i]]
-    flag <- function() { i <<- i + 1L; argv[[i]] }
+    flag <- function() {
+      i <<- i + 1L
+      argv[[i]]
+    }
     switch(a,
-      "--out"  = { out <- flag() },
-      "--dpi"  = { dpi <- as.numeric(flag()) },
-      "--list" = { list_only <- TRUE },
-      { key <- a })
+           "--out"  = {
+             out <- flag()
+           },
+           "--dpi"  = {
+             dpi <- as.numeric(flag())
+           },
+           "--list" = {
+             list_only <- TRUE
+           },
+           {
+             key <- a
+           })
     i <- i + 1L
   }
 

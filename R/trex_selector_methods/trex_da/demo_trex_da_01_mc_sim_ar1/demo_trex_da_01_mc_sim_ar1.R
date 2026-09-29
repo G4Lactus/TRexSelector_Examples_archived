@@ -34,8 +34,7 @@ this_dir_ <- tryCatch(
     args <- commandArgs(trailingOnly = FALSE)
     flag <- grep("^--file=", args, value = TRUE)
     if (length(flag) > 0L)
-      dirname(normalizePath(sub("^--file=", "", flag[1L])))
-    else "."
+      dirname(normalizePath(sub("^--file=", "", flag[1L]))) else "."
   }
 )
 
@@ -77,25 +76,31 @@ part_1_snr_sweep <- function() {
   run_snr_sweep(
     OUT_DIR, "da_ar1_snr_capped", snr_grid, NUM_MC, TFDR, BASE_SEED,
     default_solvers("+AR1"),
-    function(snr) list(n = N, p = P, dgp = "dgp_ar1_snr",
-                       kwargs = list(amplitude = AMPLITUDE, rho = rho,
-                                     snr = snr),
-                       support = support_capped, s = S),
+    function(snr) {
+      list(n = N, p = P, dgp = "dgp_ar1_snr",
+           kwargs = list(amplitude = AMPLITUDE, rho = rho,
+                         snr = snr),
+           support = support_capped, s = S)
+    },
     DA_SPEC, K,
     paste0(hdr_base, sprintf(", support=CappedSpread(max_gap=%d)", MAX_GAP)),
-    include_base_trex = TRUE)
+    include_base_trex = TRUE
+  )
 
   # --- Run B: Random support (redrawn per trial) ---
   run_snr_sweep(
     OUT_DIR, "da_ar1_snr_random", snr_grid, NUM_MC, TFDR, BASE_SEED,
     default_solvers("+AR1"),
-    function(snr) list(n = N, p = P, dgp = "dgp_ar1_snr",
-                       kwargs = list(amplitude = AMPLITUDE, rho = rho,
-                                     snr = snr),
-                       support = NULL, s = S),
+    function(snr) {
+      list(n = N, p = P, dgp = "dgp_ar1_snr",
+           kwargs = list(amplitude = AMPLITUDE, rho = rho,
+                         snr = snr),
+           support = NULL, s = S)
+    },
     DA_SPEC, K,
     paste0(hdr_base, ", support=Random (redrawn per trial)"),
-    include_base_trex = TRUE)
+    include_base_trex = TRUE
+  )
 }
 
 
@@ -113,25 +118,31 @@ part_2_rho_sweep <- function() {
   run_param_sweep(
     OUT_DIR, "da_ar1_rho_capped", "Rho", rho_grid, NUM_MC, TFDR, BASE_SEED,
     default_solvers("+AR1"),
-    function(rho) list(n = N, p = P, dgp = "dgp_ar1_snr",
-                       kwargs = list(amplitude = AMPLITUDE, rho = rho,
-                                     snr = snr_fixed),
-                       support = support_capped, s = S),
+    function(rho) {
+      list(n = N, p = P, dgp = "dgp_ar1_snr",
+           kwargs = list(amplitude = AMPLITUDE, rho = rho,
+                         snr = snr_fixed),
+           support = support_capped, s = S)
+    },
     DA_SPEC, K,
     paste0(hdr_base, sprintf(", support=CappedSpread(max_gap=%d)", MAX_GAP)),
-    include_base_trex = TRUE)
+    include_base_trex = TRUE
+  )
 
   # --- Run B: Random support (redrawn per trial) ---
   run_param_sweep(
     OUT_DIR, "da_ar1_rho_random", "Rho", rho_grid, NUM_MC, TFDR, BASE_SEED,
     default_solvers("+AR1"),
-    function(rho) list(n = N, p = P, dgp = "dgp_ar1_snr",
-                       kwargs = list(amplitude = AMPLITUDE, rho = rho,
-                                     snr = snr_fixed),
-                       support = NULL, s = S),
+    function(rho) {
+      list(n = N, p = P, dgp = "dgp_ar1_snr",
+           kwargs = list(amplitude = AMPLITUDE, rho = rho,
+                         snr = snr_fixed),
+           support = NULL, s = S)
+    },
     DA_SPEC, K,
     paste0(hdr_base, ", support=Random (redrawn per trial)"),
-    include_base_trex = TRUE)
+    include_base_trex = TRUE
+  )
 }
 
 
@@ -161,9 +172,11 @@ part_3_gap_rho_sweep <- function() {
   n_gap <- length(gap_grid)
 
   zero_mat <- stats::setNames(
-    rep(list(matrix(0.0, n_rho, n_gap)), length(names_)), names_)
+    rep(list(matrix(0.0, n_rho, n_gap)), length(names_)), names_
+  )
   zero_vec <- stats::setNames(
-    rep(list(numeric(n_rho)), length(names_)), names_)
+    rep(list(numeric(n_rho)), length(names_)), names_
+  )
   tpp_cs <- zero_mat
   fdp_cs <- zero_mat
   sd_tpp_cs <- zero_mat
@@ -204,7 +217,8 @@ part_3_gap_rho_sweep <- function() {
         res <- run_mc_trials(
           NUM_MC, lbl, N, P, "dgp_ar1_snr",
           list(amplitude = AMPLITUDE, rho = rho, snr = snr_fixed),
-          support, S, TFDR, sv, K, DA_SPEC, base_offset)
+          support, S, TFDR, sv, K, DA_SPEC, base_offset
+        )
         tpp_cs[[nm]][ir, ig] <- res$avg_tpr
         fdp_cs[[nm]][ir, ig] <- res$avg_fdr
         sd_tpp_cs[[nm]][ir, ig] <- res$sd_tpr
@@ -221,7 +235,8 @@ part_3_gap_rho_sweep <- function() {
       res <- run_mc_trials(
         NUM_MC, lbl, N, P, "dgp_ar1_snr",
         list(amplitude = AMPLITUDE, rho = rho, snr = snr_fixed),
-        NULL, S, TFDR, sv, K, DA_SPEC, base_offset)
+        NULL, S, TFDR, sv, K, DA_SPEC, base_offset
+      )
       tpp_rand[[nm]][ir] <- res$avg_tpr
       fdp_rand[[nm]][ir] <- res$avg_fdr
       sd_tpp_rand[[nm]][ir] <- res$sd_tpr
@@ -235,7 +250,8 @@ part_3_gap_rho_sweep <- function() {
   save_and_print_2d_gap_rho_results(
     OUT_DIR, "da_ar1_gap_rho", gap_grid, rho_grid, kappa_boundary, NUM_MC,
     names_, tpp_cs, fdp_cs, sd_tpp_cs, sd_fdp_cs,
-    tpp_rand, fdp_rand, sd_tpp_rand, sd_fdp_rand, header_extra)
+    tpp_rand, fdp_rand, sd_tpp_rand, sd_fdp_rand, header_extra
+  )
 }
 
 

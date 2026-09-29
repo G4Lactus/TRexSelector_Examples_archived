@@ -45,8 +45,7 @@ this_dir_ <- tryCatch(
     args <- commandArgs(trailingOnly = FALSE)
     flag <- grep("^--file=", args, value = TRUE)
     if (length(flag) > 0L)
-      dirname(normalizePath(sub("^--file=", "", flag[1L])))
-    else "."
+      dirname(normalizePath(sub("^--file=", "", flag[1L]))) else "."
   }
 )
 
@@ -92,14 +91,17 @@ part_1_2d_snr_rho_sweep <- function() {
     run_param_sweep(
       OUT_DIR, sprintf("da_equi_rho_snr%s", snr_tag), "Rho", rho_grid,
       NUM_MC, TFDR, col_seed, default_solvers("+EQUI"),
-      function(rho) list(n = N, p = P, dgp = "dgp_equi_snr",
-                         kwargs = list(amplitude = AMPLITUDE, rho = rho,
-                                       snr = snr),
-                         support = NULL, s = S),
+      function(rho) {
+        list(n = N, p = P, dgp = "dgp_equi_snr",
+             kwargs = list(amplitude = AMPLITUDE, rho = rho,
+                           snr = snr),
+             support = NULL, s = S)
+      },
       DA_SPEC, K,
       sprintf("Equi 2D sweep, SNR=%s, n=%d, p=%d, support=Random",
               fmt_num(snr), N, P),
-      include_base_trex = TRUE)
+      include_base_trex = TRUE
+    )
   }
 }
 

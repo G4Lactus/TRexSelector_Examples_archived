@@ -57,20 +57,24 @@ OUT_DIR <- file.path(this_dir_, "simulation_results", "data")
 # Monte Carlo count mirrors the cpp/Python reference (num_MC = 200).
 NUM_MC <- 200L
 
-N <- 300L; P <- 1000L; SUPPORT_SIZE <- 10L
+N <- 300L
+P <- 1000L
+SUPPORT_SIZE <- 10L
 SNR_GRID <- c(0.01, 0.1, 0.2, 0.5, 0.6, 1.0, 2.0, 5.0)
 
 
 #' A solver x screening-variant descriptor (mirrors cpp SolverVariant).
-sv <- function(name, solver, rho_afs = 0.3, bootstrap = FALSE)
+sv <- function(name, solver, rho_afs = 0.3, bootstrap = FALSE) {
   list(name = name, solver = solver, rho_afs = rho_afs, bootstrap = bootstrap)
+}
 
 #' Three solvers, Ordinary screening only (mirrors ordinary_solver_variants()).
 ordinary_solver_variants <- function() {
   list(
     sv("Screen-TRex Ordinary: TLARS",    "TLARS"),
     sv("Screen-TRex Ordinary: TAFS-0.3", "TAFS", rho_afs = 0.3),
-    sv("Screen-TRex Ordinary: TOMP",     "TOMP"))
+    sv("Screen-TRex Ordinary: TOMP",     "TOMP")
+  )
 }
 
 #' Six combined variants — three solvers x {Ordinary, Bootstrap-CI}.
@@ -81,7 +85,8 @@ all_solver_variants <- function() {
     variants <- c(variants, list(
       sv(paste0(prefix, "TLARS"),    "TLARS",                 bootstrap = bs),
       sv(paste0(prefix, "TAFS-0.3"), "TAFS", rho_afs = 0.3,   bootstrap = bs),
-      sv(paste0(prefix, "TOMP"),     "TOMP",                  bootstrap = bs)))
+      sv(paste0(prefix, "TOMP"),     "TOMP",                  bootstrap = bs)
+    ))
   }
   variants
 }
@@ -96,13 +101,19 @@ run_solver_sweep <- function(title, variants, file_stem) {
               N, P, SUPPORT_SIZE, NUM_MC))
 
   method_names <- vapply(variants, function(v) v$name, character(1))
-  init <- function() setNames(
-    lapply(method_names, function(x) numeric(length(SNR_GRID))), method_names)
-  fdr_map <- init(); tpr_map <- init(); est_fdr_map <- init()
+  init <- function() {
+    setNames(
+      lapply(method_names, function(x) numeric(length(SNR_GRID))), method_names
+    )
+  }
+  fdr_map <- init()
+  tpr_map <- init()
+  est_fdr_map <- init()
 
   for (v in variants) {
     cat(strrep("=", 70L), "\n", sep = "")
-    cat(sprintf("Variant: %s\n", v$name)); cat(strrep("=", 70L), "\n", sep = "")
+    cat(sprintf("Variant: %s\n", v$name))
+    cat(strrep("=", 70L), "\n", sep = "")
     # make_trex_ctrl_for(): stagnation stop enabled for every backend.
     trex_ctrl <- make_scr_trex_ctrl(solver = v$solver, rho_afs = v$rho_afs,
                                     tloop_stagnation_stop = TRUE,
@@ -118,7 +129,8 @@ run_solver_sweep <- function(title, variants, file_stem) {
       res <- run_mc_screen(
         NUM_MC, sprintf("%s  SNR=%.2f", v$name, snr), make_data, trex_ctrl,
         screen_args = list(trex_method = "TREX", use_bootstrap_CI = v$bootstrap),
-        base_seed = base_seed, num_cores = num_cores)
+        base_seed = base_seed, num_cores = num_cores
+      )
       fdr_map[[v$name]][si]     <- res$avg_fdr
       tpr_map[[v$name]][si]     <- res$avg_tpr
       est_fdr_map[[v$name]][si] <- res$avg_est_fdr
@@ -137,12 +149,14 @@ run_solver_sweep <- function(title, variants, file_stem) {
 run_solver_sweep(
   "Demo: Screen-TRex MC - Solver Comparison (TLARS / TAFS-0.3 / TOMP)",
   ordinary_solver_variants(),
-  sprintf("scr_solvers_snr_n%d_p%d_s%d", N, P, SUPPORT_SIZE))
+  sprintf("scr_solvers_snr_n%d_p%d_s%d", N, P, SUPPORT_SIZE)
+)
 
 # Part 2: three solvers x {Ordinary, Bootstrap-CI} (6 series)
 run_solver_sweep(
   "Demo: Screen-TRex MC - Solver x Method Comparison (6 series)",
   all_solver_variants(),
-  sprintf("scr_solver_method_snr_n%d_p%d_s%d", N, P, SUPPORT_SIZE))
+  sprintf("scr_solver_method_snr_n%d_p%d_s%d", N, P, SUPPORT_SIZE)
+)
 
 cat("\ndemo_trex_scr_06_mc_sim_solvers.R complete.\n")

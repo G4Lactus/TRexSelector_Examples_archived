@@ -39,8 +39,7 @@ this_dir_ <- tryCatch(
     args <- commandArgs(trailingOnly = FALSE)
     flag <- grep("^--file=", args, value = TRUE)
     if (length(flag) > 0L)
-      dirname(normalizePath(sub("^--file=", "", flag[1L])))
-    else "."
+      dirname(normalizePath(sub("^--file=", "", flag[1L]))) else "."
   }
 )
 
@@ -96,15 +95,18 @@ part_1_snr_sweep <- function() {
     OUT_DIR, "da_groups_toeplitz_leaf",
     c(0.1, 0.2, 0.5, 1.0, 2.0, 5.0), NUM_MC, TFDR, BASE_SEED,
     default_solvers(),
-    function(snr) list(n = N, p = P, dgp = "dgp_groups_toeplitz_leaf",
-                       kwargs = list(amplitude = AMPLITUDE, groups = groups,
-                                     rho_levels = RHO_LEVELS, phi = PHI_LEAF,
-                                     snr = snr),
-                       support = NULL, s = S),
+    function(snr) {
+      list(n = N, p = P, dgp = "dgp_groups_toeplitz_leaf",
+           kwargs = list(amplitude = AMPLITUDE, groups = groups,
+                         rho_levels = RHO_LEVELS, phi = PHI_LEAF,
+                         snr = snr),
+           support = NULL, s = S)
+    },
     da_spec, K,
     sprintf(paste0("Prior Groups + Toeplitz leaf, n=%d, p=%d, support=Random",
                    ", phi_leaf=%s, max_gap=%d"),
-            N, P, fmt_num(PHI_LEAF), MAX_GAP))
+            N, P, fmt_num(PHI_LEAF), MAX_GAP)
+  )
 }
 
 

@@ -42,8 +42,7 @@ this_dir_ <- tryCatch(
     args <- commandArgs(trailingOnly = FALSE)
     flag <- grep("^--file=", args, value = TRUE)
     if (length(flag) > 0L)
-      dirname(normalizePath(sub("^--file=", "", flag[1L])))
-    else "."
+      dirname(normalizePath(sub("^--file=", "", flag[1L]))) else "."
   }
 )
 
@@ -92,7 +91,8 @@ GVS_METHODS <- list(
     tFDR = CFG$tFDR, K = CFG$K, num_MC = CFG$num_MC, seed = CFG$seed,
     GVS_type = method$GVS_type, corr_max = CFG$corr_max, hc_dist = "Single",
     en_solver = method$en_solver, lambda2_method = "CV_1SE_CCD",
-    n_cores = num_cores)
+    n_cores = num_cores
+  )
 }
 
 
@@ -121,7 +121,8 @@ sim_neg_traps_part1 <- function(cfg, tag) {
         sd_x <- sqrt((1 - rho) / rho)
         .neg_traps_point(m, snr, sd_x)
       },
-      snr_grid_2d, rho_grid_2d, m$label, cfg$num_MC)
+      snr_grid_2d, rho_grid_2d, m$label, cfg$num_MC
+    )
   })
   en_2d     <- sweeps[[1L]]
   en_aug_2d <- sweeps[[2L]]

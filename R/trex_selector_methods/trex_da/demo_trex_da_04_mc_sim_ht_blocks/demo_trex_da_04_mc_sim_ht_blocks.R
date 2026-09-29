@@ -43,8 +43,7 @@ this_dir_ <- tryCatch(
     args <- commandArgs(trailingOnly = FALSE)
     flag <- grep("^--file=", args, value = TRUE)
     if (length(flag) > 0L)
-      dirname(normalizePath(sub("^--file=", "", flag[1L])))
-    else "."
+      dirname(normalizePath(sub("^--file=", "", flag[1L]))) else "."
   }
 )
 
@@ -102,15 +101,18 @@ part_1_snr_sweep <- function() {
       run_snr_sweep(
         OUT_DIR, sprintf("da_ht_blocks_snr_%s_%s", scen$tag, lnk), snr_grid,
         NUM_MC, TFDR, BASE_SEED, default_solvers("+BT"),
-        function(snr) list(n = N, p = BASE_P,
-                           dgp = "dgp_block_toeplitz_hvt_snr",
-                           kwargs = .kwargs(M, RHO, snr, h_noise),
-                           support = SUPPORT_BASE, s = M),
+        function(snr) {
+          list(n = N, p = BASE_P,
+               dgp = "dgp_block_toeplitz_hvt_snr",
+               kwargs = .kwargs(M, RHO, snr, h_noise),
+               support = SUPPORT_BASE, s = M)
+        },
         list(method = "BT", hc_linkage = lnk), K,
         sprintf(paste0("HT-block SNR sweep  n=%d  M=%d  Q=%d  p=%d  s=%d",
                        "  rho=%s  nu=%s  noise=%s  linkage=%s"),
                 N, M, Q, BASE_P, M, fmt_num(RHO), fmt_num(NU), scen$tag, lnk),
-        include_base_trex = FALSE)
+        include_base_trex = FALSE
+      )
     }
   }
 }
@@ -130,15 +132,18 @@ part_2_rho_sweep <- function() {
       run_param_sweep(
         OUT_DIR, sprintf("da_ht_blocks_rho_%s_%s", scen$tag, lnk), "Rho",
         rho_grid, NUM_MC, TFDR, BASE_SEED, default_solvers("+BT"),
-        function(rho) list(n = N, p = BASE_P,
-                           dgp = "dgp_block_toeplitz_hvt_snr",
-                           kwargs = .kwargs(M, rho, SNR, h_noise),
-                           support = SUPPORT_BASE, s = M),
+        function(rho) {
+          list(n = N, p = BASE_P,
+               dgp = "dgp_block_toeplitz_hvt_snr",
+               kwargs = .kwargs(M, rho, SNR, h_noise),
+               support = SUPPORT_BASE, s = M)
+        },
         list(method = "BT", hc_linkage = lnk), K,
         sprintf(paste0("HT-block rho sweep  n=%d  M=%d  Q=%d  s=%d",
                        "  SNR=%s  nu=%s  noise=%s  linkage=%s"),
                 N, M, Q, M, fmt_num(SNR), fmt_num(NU), scen$tag, lnk),
-        include_base_trex = FALSE)
+        include_base_trex = FALSE
+      )
     }
   }
 }
@@ -171,7 +176,8 @@ part_3_q_sweep <- function() {
                        "  SNR=%s  nu=%s  p=M*Q varies  noise=%s  linkage=%s"),
                 N, M, M, fmt_num(RHO), fmt_num(SNR), fmt_num(NU), scen$tag,
                 lnk),
-        include_base_trex = FALSE)
+        include_base_trex = FALSE
+      )
     }
   }
 }
@@ -204,7 +210,8 @@ part_4_m_sweep <- function() {
                        "  SNR=%s  nu=%s  p=M*Q and s=M vary  noise=%s",
                        "  linkage=%s"),
                 N, Q, fmt_num(RHO), fmt_num(SNR), fmt_num(NU), scen$tag, lnk),
-        include_base_trex = FALSE)
+        include_base_trex = FALSE
+      )
     }
   }
 }
@@ -229,7 +236,8 @@ part_5_tfdr_sweep <- function() {
       solvers <- default_solvers("+BT")
       names_ <- vapply(solvers, `[[`, character(1L), "name")
       zero <- stats::setNames(
-        rep(list(numeric(length(tfdr_grid))), length(names_)), names_)
+        rep(list(numeric(length(tfdr_grid))), length(names_)), names_
+      )
       fdr <- zero
       tpr <- zero
       sd_fdr <- zero
@@ -247,7 +255,8 @@ part_5_tfdr_sweep <- function() {
             "dgp_block_toeplitz_hvt_snr",
             .kwargs(M, RHO, SNR, h_noise),
             SUPPORT_BASE, M, tfdr, sv_run, K, da_spec,
-            BASE_SEED + (gi - 1L) * 10000L)
+            BASE_SEED + (gi - 1L) * 10000L
+          )
           fdr[[nm]][gi] <- res$avg_fdr
           tpr[[nm]][gi] <- res$avg_tpr
           sd_fdr[[nm]][gi] <- res$sd_fdr
@@ -263,7 +272,8 @@ part_5_tfdr_sweep <- function() {
         sprintf(paste0("HT-block tFDR sweep  n=%d  M=%d  Q=%d  p=%d  s=%d",
                        "  rho=%s  SNR=%s  nu=%s  noise=%s  linkage=%s"),
                 N, M, Q, BASE_P, M, fmt_num(RHO), fmt_num(SNR), fmt_num(NU),
-                scen$tag, lnk))
+                scen$tag, lnk)
+      )
     }
   }
 }
@@ -284,7 +294,8 @@ part_6_linkage_sweep <- function() {
     solvers <- default_solvers("+BT")
     names_ <- vapply(solvers, `[[`, character(1L), "name")
     zero <- stats::setNames(
-      rep(list(numeric(length(lnk_vals))), length(names_)), names_)
+      rep(list(numeric(length(lnk_vals))), length(names_)), names_
+    )
     fdr <- zero
     tpr <- zero
     sd_fdr <- zero
@@ -303,7 +314,8 @@ part_6_linkage_sweep <- function() {
           .kwargs(M, RHO, SNR, h_noise),
           SUPPORT_BASE, M, TFDR, sv_run, K,
           list(method = "BT", hc_linkage = lnk),
-          BASE_SEED + (gi - 1L) * 10000L)
+          BASE_SEED + (gi - 1L) * 10000L
+        )
         fdr[[nm]][gi] <- res$avg_fdr
         tpr[[nm]][gi] <- res$avg_tpr
         sd_fdr[[nm]][gi] <- res$sd_fdr
@@ -320,7 +332,8 @@ part_6_linkage_sweep <- function() {
                      "  rho=%s  SNR=%s  nu=%s  tFDR=%s  noise=%s",
                      "\n  Linkage codes: 1=Single  2=Complete  3=Average"),
               N, M, Q, BASE_P, M, fmt_num(RHO), fmt_num(SNR), fmt_num(NU),
-              fmt_num(TFDR), scen$tag))
+              fmt_num(TFDR), scen$tag)
+    )
   }
 }
 

@@ -135,7 +135,7 @@ dgp_block_equi <- function(n, p, p1, rho, n_blocks, snr, beta_val, seed) {
     z_k <- rnorm(n)                                   # shared factor for block k
     idx <- (col + 1L):(col + bk)
     X[, idx] <- load_f * matrix(z_k, n, bk) +
-                load_eta * matrix(rnorm(n * bk), n, bk)
+      load_eta * matrix(rnorm(n * bk), n, bk)
     col <- col + bk
   }
   X <- .standardise_cols(X)
@@ -288,7 +288,8 @@ save_and_print_scr_mc <- function(num_MC, out_dir, file_stem, x_values,
                                   sweep_label = "SNR") {
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
   lines <- character(0)
-  add <- function(...) lines[[length(lines) + 1L]] <<- paste0(...)
+  acc <- environment()  # the report lines that add() appends to
+  add <- function(...) acc$lines[[length(lines) + 1L]] <- paste0(...)
 
   add("")
   add(strrep("=", 70L))
@@ -317,11 +318,14 @@ save_and_print_scr_mc <- function(num_MC, out_dir, file_stem, x_values,
   for (nm in method_names) {
     for (i in seq_along(x_values)) {
       rows[[length(rows) + 1L]] <- data.frame(
-        method = nm, metric = "FDR",      x = x_values[i], value = fdr_map[[nm]][i])
+        method = nm, metric = "FDR",      x = x_values[i], value = fdr_map[[nm]][i]
+      )
       rows[[length(rows) + 1L]] <- data.frame(
-        method = nm, metric = "TPR",      x = x_values[i], value = tpr_map[[nm]][i])
+        method = nm, metric = "TPR",      x = x_values[i], value = tpr_map[[nm]][i]
+      )
       rows[[length(rows) + 1L]] <- data.frame(
-        method = nm, metric = "Est. FDR", x = x_values[i], value = est_fdr_map[[nm]][i])
+        method = nm, metric = "Est. FDR", x = x_values[i], value = est_fdr_map[[nm]][i]
+      )
     }
   }
   csv_path <- file.path(out_dir, paste0(file_stem, ".csv"))
@@ -420,7 +424,8 @@ biobank_multi_trial <- function(n, p, q, support_size, snr, x_seed,
     set.seed(sup_seed_base + (k - 1L))
     sup <- sort(sample.int(p, support_size))
     true_supports[[k]] <- sup
-    beta <- numeric(p); beta[sup] <- 1
+    beta <- numeric(p)
+    beta[sup] <- 1
     Y[, k] <- .make_response(X, beta, snr)
   }
   res <- .run_biobank_selector(X, Y, use_memory_mapping, R_boot, tFDR)
@@ -455,7 +460,10 @@ run_mc_biobank <- function(num_MC, trial_fn, num_cores = 1L) {
 accumulate_snr <- function(records, target_FDR_trex) {
   total <- length(records)
   z <- setNames(numeric(length(BIOBANK_METHODS)), BIOBANK_METHODS)
-  cnt <- z; fdp <- z; tpp <- z; est <- z
+  cnt <- z
+  fdp <- z
+  tpp <- z
+  est <- z
 
   for (r in records) {
     m <- r$method_used
@@ -489,7 +497,8 @@ save_and_print_biobank_mc <- function(num_MC, out_dir, file_stem, snr_values,
                                       est_fdr_map, usage_map) {
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
   lines <- character(0)
-  add <- function(...) lines[[length(lines) + 1L]] <<- paste0(...)
+  acc <- environment()  # the report lines that add() appends to
+  add <- function(...) acc$lines[[length(lines) + 1L]] <- paste0(...)
 
   add("")
   add(strrep("=", 70L))
@@ -520,13 +529,13 @@ save_and_print_biobank_mc <- function(num_MC, out_dir, file_stem, snr_values,
   for (nm in display_names) {
     for (i in seq_along(snr_values)) {
       rows[[length(rows) + 1L]] <- data.frame(method = nm, metric = "Usage",
-        snr = snr_values[i], value = usage_map[[nm]][i])
+                                              snr = snr_values[i], value = usage_map[[nm]][i])
       rows[[length(rows) + 1L]] <- data.frame(method = nm, metric = "FDR",
-        snr = snr_values[i], value = fdp_map[[nm]][i])
+                                              snr = snr_values[i], value = fdp_map[[nm]][i])
       rows[[length(rows) + 1L]] <- data.frame(method = nm, metric = "TPR",
-        snr = snr_values[i], value = tpp_map[[nm]][i])
+                                              snr = snr_values[i], value = tpp_map[[nm]][i])
       rows[[length(rows) + 1L]] <- data.frame(method = nm, metric = "Est. FDR",
-        snr = snr_values[i], value = est_fdr_map[[nm]][i])
+                                              snr = snr_values[i], value = est_fdr_map[[nm]][i])
     }
   }
   csv_path <- file.path(out_dir, paste0(file_stem, ".csv"))

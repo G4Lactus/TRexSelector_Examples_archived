@@ -84,11 +84,10 @@ All scenario generators live in the single [trex_gvs_dgps.R](trex_gvs_dgps.R)
 (mirroring the C++ `trex_gvs_dgps.hpp`): `dgp_hastie_snr`,
 `dgp_scattered_grouped_snr`, `dgp_mixed_blocks_snr`, `dgp_neg_traps_snr`,
 `dgp_t3_equi_blocks_snr`, `dgp_ar1_blocks_snr`, `dgp_arma_blocks_snr`
-(+ the `.sim_arma()` helper), and `dgp_block_equicorr`. Each carries an
-interactive `generate_*()` variant alongside the SNR-calibrated `*_snr()` one.
-Earlier speculative, demo-less DGPs (factor-model, hapgen, neg-corr,
-random/unequal blocks, the `dgp_gvs` collection) were removed in the
-consolidation.
+(+ the `.sim_arma()` helper), and `dgp_block_equicorr`. Earlier speculative,
+demo-less DGPs (factor-model, hapgen, neg-corr, random/unequal blocks, the
+`dgp_gvs` collection) were removed in the consolidation, and so were the
+fixed-noise `generate_*()` variants of the scenarios, which no demo used.
 
 ---
 

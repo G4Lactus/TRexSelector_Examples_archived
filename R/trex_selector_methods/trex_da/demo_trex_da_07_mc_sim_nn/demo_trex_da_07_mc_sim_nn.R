@@ -41,8 +41,7 @@ this_dir_ <- tryCatch(
     args <- commandArgs(trailingOnly = FALSE)
     flag <- grep("^--file=", args, value = TRUE)
     if (length(flag) > 0L)
-      dirname(normalizePath(sub("^--file=", "", flag[1L])))
-    else "."
+      dirname(normalizePath(sub("^--file=", "", flag[1L]))) else "."
   }
 )
 
@@ -88,25 +87,31 @@ part_1_snr_sweep <- function() {
   run_snr_sweep(
     OUT_DIR, "da_nn_snr_capped", snr_grid, NUM_MC, TFDR, BASE_SEED,
     default_solvers("+NN"),
-    function(snr) list(n = N, p = P, dgp = "dgp_nn_snr",
-                       kwargs = list(amplitude = AMPLITUDE, kappa = KAPPA,
-                                     rho = RHO, snr = snr),
-                       support = support_fixed, s = S),
+    function(snr) {
+      list(n = N, p = P, dgp = "dgp_nn_snr",
+           kwargs = list(amplitude = AMPLITUDE, kappa = KAPPA,
+                         rho = RHO, snr = snr),
+           support = support_fixed, s = S)
+    },
     DA_SPEC, K,
     paste0(hdr_base, sprintf(", support=CappedSpread(max_gap=%d)", MAX_GAP)),
-    include_base_trex = TRUE)
+    include_base_trex = TRUE
+  )
 
   # B — Random (redrawn each trial)
   run_snr_sweep(
     OUT_DIR, "da_nn_snr_random", snr_grid, NUM_MC, TFDR, BASE_SEED,
     default_solvers("+NN"),
-    function(snr) list(n = N, p = P, dgp = "dgp_nn_snr",
-                       kwargs = list(amplitude = AMPLITUDE, kappa = KAPPA,
-                                     rho = RHO, snr = snr),
-                       support = NULL, s = S),
+    function(snr) {
+      list(n = N, p = P, dgp = "dgp_nn_snr",
+           kwargs = list(amplitude = AMPLITUDE, kappa = KAPPA,
+                         rho = RHO, snr = snr),
+           support = NULL, s = S)
+    },
     DA_SPEC, K,
     paste0(hdr_base, ", support=Random (per-trial)"),
-    include_base_trex = TRUE)
+    include_base_trex = TRUE
+  )
 }
 
 
@@ -126,7 +131,8 @@ part_1_snr_sweep <- function() {
   n_col <- length(col_grid)
 
   zero_mat <- stats::setNames(
-    rep(list(matrix(0.0, n_row, n_col)), length(names_)), names_)
+    rep(list(matrix(0.0, n_row, n_col)), length(names_)), names_
+  )
   tpp_cs <- zero_mat
   fdp_cs <- zero_mat
   sd_tpp_cs <- zero_mat
@@ -183,7 +189,8 @@ part_1_snr_sweep <- function() {
   save_and_print_2d_two_support_results(
     OUT_DIR, scenario_tag, row_label, col_label, row_grid, col_grid,
     NUM_MC, names_, tpp_cs, fdp_cs, sd_tpp_cs, sd_fdp_cs,
-    tpp_rand, fdp_rand, sd_tpp_rand, sd_fdp_rand, header_extra)
+    tpp_rand, fdp_rand, sd_tpp_rand, sd_fdp_rand, header_extra
+  )
 }
 
 
@@ -207,14 +214,19 @@ part_2_kappa_rho_sweep <- function() {
 
   .run_2d_two_support(
     "da_nn_kappa_rho", "Kappa", "Rho", kappa_grid, rho_grid,
-    function(kappa, rho) list(dgp = "dgp_nn_snr",
-                              kwargs = list(amplitude = AMPLITUDE,
-                                            kappa = as.integer(kappa),
-                                            rho = rho, snr = SNR)),
+    function(kappa, rho) {
+      list(dgp = "dgp_nn_snr",
+           kwargs = list(amplitude = AMPLITUDE,
+                         kappa = as.integer(kappa),
+                         rho = rho, snr = SNR))
+    },
     sprintf("n=%d, p=%d, s=%d, SNR=%s, tFDR=%s, amplitude=3.0",
             N, P, S, fmt_num(SNR), fmt_num(TFDR)),
-    function(kappa, rho) sprintf("kappa=%d  rho=%.1f",
-                                 as.integer(kappa), rho))
+    function(kappa, rho) {
+      sprintf("kappa=%d  rho=%.1f",
+              as.integer(kappa), rho)
+    }
+  )
 }
 
 
@@ -239,12 +251,15 @@ part_3_nn_ar_snr_rho_sweep <- function() {
 
   .run_2d_two_support(
     "da_nn_ar_snr_rho", "SNR", "Rho", snr_grid, rho_grid,
-    function(snr, rho) list(dgp = "dgp_ar1_snr",
-                            kwargs = list(amplitude = AMPLITUDE, rho = rho,
-                                          snr = snr)),
+    function(snr, rho) {
+      list(dgp = "dgp_ar1_snr",
+           kwargs = list(amplitude = AMPLITUDE, rho = rho,
+                         snr = snr))
+    },
     sprintf("n=%d, p=%d, s=%d, tFDR=%s, amplitude=3.0",
             N, P, S, fmt_num(TFDR)),
-    function(snr, rho) sprintf("SNR=%.2f  rho=%.1f", snr, rho))
+    function(snr, rho) sprintf("SNR=%.2f  rho=%.1f", snr, rho)
+  )
 }
 
 

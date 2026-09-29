@@ -275,7 +275,8 @@ run_mc_trials_trex_spca <- function(num_MC, progress_label, make_data,
                                   en_solver = en_solver,
                                   lambda_2 = lambda_2,
                                   lambda2_method = "CV_1SE_CCD"),
-      seed = -1L, verbose = FALSE)
+      seed = -1L, verbose = FALSE
+    )
     sel$select()
 
     unlist(evaluate_spca(X, sel$V, sel$Z, dat$V))
@@ -374,7 +375,7 @@ run_mc_trials_oracle_pca <- function(num_MC, progress_label, make_data,
 #' @param fdr_map,tpr_map,pev_map,pev_sig_map,pev_sigmix_map Named lists:
 #'   method -> numeric vector over the sweep grid.
 #' @param include_support_metrics Show FDR/TPR rows in the table (default TRUE).
-save_and_print_spca_sweep_results <- function(out_dir, file_stem, num_MC,
+save_and_print_spca_sweep_results <- function(out_dir, file_stem, num_MC,  # nolint: object_length_linter. C++ name
                                               sweep_col, sweep_header,
                                               sweep_precision, axis_values,
                                               method_names, fdr_map, tpr_map,
@@ -383,10 +384,13 @@ save_and_print_spca_sweep_results <- function(out_dir, file_stem, num_MC,
                                               include_support_metrics = TRUE) {
   dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
-  indent_w <- 2L; metric_w <- 23L; col_w <- 10L
+  indent_w <- 2L
+  metric_w <- 23L
+  col_w <- 10L
 
   lines <- character(0)
-  add <- function(s) lines[[length(lines) + 1L]] <<- s
+  acc <- environment()  # the report lines that add() appends to
+  add <- function(s) acc$lines[[length(lines) + 1L]] <- s
   add("")
   add(strrep("=", 70L))
   add(sprintf("=== T-Rex SPCA Results (averaged over %d MC trials) ===", num_MC))
@@ -434,7 +438,8 @@ save_and_print_spca_sweep_results <- function(out_dir, file_stem, num_MC,
         axis   = sprintf("%.6f", axis_values[i]),
         value  = sprintf("%.6f",
                          vapply(metrics, function(m) m[[name]][i], numeric(1))),
-        stringsAsFactors = FALSE)
+        stringsAsFactors = FALSE
+      )
       names(df)[3L] <- sweep_col
       rows[[length(rows) + 1L]] <- df
     }
@@ -458,5 +463,6 @@ save_and_print_spca_mc_results <- function(out_dir, file_stem, num_MC,
                                            pev_sig_map, pev_sigmix_map) {
   save_and_print_spca_sweep_results(
     out_dir, file_stem, num_MC, "snr_db", "SNR(dB)", 1L, snr_values,
-    method_names, fdr_map, tpr_map, pev_map, pev_sig_map, pev_sigmix_map)
+    method_names, fdr_map, tpr_map, pev_map, pev_sig_map, pev_sigmix_map
+  )
 }

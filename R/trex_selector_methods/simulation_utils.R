@@ -204,7 +204,8 @@ cap_hc <- function(hc_dist) {
     hc_linkage     = cap_hc(hc_dist),
     en_solver      = en_solver,
     lambda2_method = lambda2_method,
-    cv_seed        = cv_seed)
+    cv_seed        = cv_seed
+  )
   if (!is.null(groups)) gvs_args$groups <- groups
 
   # The TIENET_AUG-labeled rows run the augmented IEN solver, matching the
@@ -215,7 +216,8 @@ cap_hc <- function(hc_dist) {
   sel <- TRexSelectorNeo::TRexGVSSelector$new(
     X, y, tFDR = tFDR, seed = as.integer(seed), verbose = FALSE,
     gvs_control = do.call(TRexSelectorNeo::trex_gvs_control, gvs_args),
-    control     = TRexSelectorNeo::trex_control(solver = base_solver, K = K))
+    control     = TRexSelectorNeo::trex_control(solver = base_solver, K = K)
+  )
   sel$select()
   sel
 }
@@ -574,7 +576,7 @@ cap_hc <- function(hc_dist) {
   one_trial <- function(mc) {
     trial_seed <- seed + mc - 1L
     dat <- dgp_t3_equi_blocks_snr(n = n, p = p, snr = snr, rho = rho,
-                                   df = df, seed = trial_seed)
+                                  df = df, seed = trial_seed)
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
                        hc_dist, en_solver, lambda2_method,
                        seed = trial_seed, cv_seed = trial_seed)

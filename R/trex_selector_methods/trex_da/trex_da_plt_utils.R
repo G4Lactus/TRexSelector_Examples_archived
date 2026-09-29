@@ -107,7 +107,8 @@ SWEEP_CONFIG <- list(
   kappa   = list(label = "NN bandwidth κ", scale = "linear"),
   linkage = list(label = "HAC linkage method", scale = "linear",
                  categorical = c("1" = "Single", "2" = "Complete",
-                                 "3" = "Average")))
+                                 "3" = "Average"))
+)
 DEFAULT_SWEEP_CONFIG <- list(label = "Sweep value", scale = "linear")
 
 #' Normalise a CSV sweep-column name to a SWEEP_CONFIG key ('SNR' -> 'snr',
@@ -120,8 +121,7 @@ sweep_key_of <- function(column) {
 
 #' Look up the axis configuration for a sweep key (with a safe default).
 sweep_config <- function(key) {
-  if (key %in% names(SWEEP_CONFIG)) SWEEP_CONFIG[[key]]
-  else DEFAULT_SWEEP_CONFIG
+  if (key %in% names(SWEEP_CONFIG)) SWEEP_CONFIG[[key]] else DEFAULT_SWEEP_CONFIG
 }
 
 
@@ -143,7 +143,8 @@ sweep_config <- function(key) {
       plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
       legend.title = element_text(size = 10, face = "bold"),
       legend.text = element_text(size = 9),
-      legend.background = element_rect(colour = "grey55", linewidth = 0.3))
+      legend.background = element_rect(colour = "grey55", linewidth = 0.3)
+    )
 }
 
 #' Stable colour / shape maps keyed by position in the method list, so a
@@ -177,8 +178,7 @@ save_figure <- function(plot, outdir, stem, formats = c("png", "pdf"),
 #' `.../simulation_results/data/x.csv` -> `.../simulation_results/plots`.
 default_plots_dir <- function(csv_path) {
   parent <- dirname(csv_path)
-  if (basename(parent) == "data") file.path(dirname(parent), "plots")
-  else parent
+  if (basename(parent) == "data") file.path(dirname(parent), "plots") else parent
 }
 
 
@@ -274,8 +274,7 @@ apply_relabel <- function(df, specs) {
 fdr_axis_top <- function(df, cfg, tfdr) {
   fdr_max <- suppressWarnings(max(df$value[df$metric == "FDR"], na.rm = TRUE))
   if (!is.finite(fdr_max)) fdr_max <- 0
-  ref <- if (isTRUE(cfg$is_tfdr_sweep)) max(df$sweep)
-         else if (tfdr > 0) tfdr else 0
+  ref <- if (isTRUE(cfg$is_tfdr_sweep)) max(df$sweep) else if (tfdr > 0) tfdr else 0
   max(fdr_max, ref) * Y_HEADROOM
 }
 
@@ -305,8 +304,7 @@ choose_ticks <- function(values, scale, max_ticks = MAX_XTICKS) {
 .x_cont <- function(..., transform = NULL) {
   if (is.null(transform)) return(scale_x_continuous(...))
   if ("transform" %in% names(formals(ggplot2::scale_x_continuous)))
-    scale_x_continuous(..., transform = transform)
-  else
+    scale_x_continuous(..., transform = transform) else
     scale_x_continuous(..., trans = transform)
 }
 
@@ -327,7 +325,8 @@ choose_ticks <- function(values, scale, max_ticks = MAX_XTICKS) {
       breaks = present,
       labels = unname(categorical[as.character(as.integer(present))]),
       limits = c(min(present) - 0.5, max(present) + 0.5),
-      expand = expansion(0))))
+      expand = expansion(0)
+    )))
   }
 
   scale <- xscale %||% cfg$scale
@@ -340,13 +339,15 @@ choose_ticks <- function(values, scale, max_ticks = MAX_XTICKS) {
     return(list(scale_x_continuous(
       breaks = scales::breaks_extended(7),
       limits = c(min(values) - pad, max(values) + pad),
-      expand = expansion(0))))
+      expand = expansion(0)
+    )))
   }
   if (scale == "log") {
     return(list(scale_x_log10(
       breaks = choose_ticks(values, "log"), labels = .fmt_g,
       limits = c(min(values) * 0.82, max(values) * 1.18),
-      expand = expansion(0))))
+      expand = expansion(0)
+    )))
   }
   if (scale == "sqrt") {
     span_sqrt <- sqrt(max(values)) - sqrt(max(min(values), 0))
@@ -357,12 +358,14 @@ choose_ticks <- function(values, scale, max_ticks = MAX_XTICKS) {
               expand = expansion(0), transform = "sqrt"),
       # Grid values cluster near zero even after the sqrt stretch — slant
       # the labels so neighbouring ticks cannot collide.
-      theme(axis.text.x = element_text(angle = 45, hjust = 1))))
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    ))
   }
   list(scale_x_continuous(
     breaks = choose_ticks(values, "linear"), labels = .fmt_g,
     limits = c(min(values) - pad, max(values) + pad),
-    expand = expansion(0)))
+    expand = expansion(0)
+  ))
 }
 
 #' The FDR target reference for an FDR panel: a horizontal dotted tFDR line,
@@ -376,7 +379,8 @@ choose_ticks <- function(values, scale, max_ticks = MAX_XTICKS) {
                 colour = "black", linewidth = 0.8, inherit.aes = FALSE),
       scale_linetype_manual(name = NULL,
                             values = c("realized = target" = "dotted"),
-                            guide = guide_legend(order = 1))))
+                            guide = guide_legend(order = 1))
+    ))
   }
   if (tfdr > 0) {
     lab <- sprintf("tFDR = %g", tfdr)
@@ -384,7 +388,8 @@ choose_ticks <- function(values, scale, max_ticks = MAX_XTICKS) {
       geom_hline(aes(yintercept = tfdr, linetype = lab),
                  color = "black", linewidth = 0.8),
       scale_linetype_manual(name = NULL, values = setNames("dotted", lab),
-                            guide = guide_legend(order = 1))))
+                            guide = guide_legend(order = 1))
+    ))
   }
   list()
 }
@@ -473,7 +478,8 @@ plot_fdr_tpr_vs_sweep <- function(df, sweep_key, title,
     plot_layout(guides = "collect") +
     plot_annotation(title = title,
                     theme = theme(plot.title = element_text(
-                      size = 14, face = "bold", hjust = 0.5)))
+                      size = 14, face = "bold", hjust = 0.5
+                    )))
   list(fig = fig, width = 13.6, height = 5.6)
 }
 
@@ -508,16 +514,18 @@ plot_comparison_grid <- function(frames, sweep_key, title,
     metric <- METRICS[[mi]]
     for (ci in seq_along(labels)) {
       head_txt <- if (mi == 1) {
-        if (nzchar(column_title)) paste0(column_title, ": ", labels[[ci]])
-        else labels[[ci]]
-      } else NULL
+        if (nzchar(column_title)) paste0(column_title, ": ", labels[[ci]]) else labels[[ci]]
+      } else {
+        NULL
+      }
       panels[[length(panels) + 1L]] <- .line_panel(
         frames[[ci]], methods, metric, cfg, all_values, legend_title,
         if (metric == "FDR") tfdr else 0, bands, xscale,
         panel_title = head_txt,
         x_lab = if (mi == length(METRICS)) cfg$label else NULL,
         y_lab = if (ci == 1) METRIC_LABELS[[metric]] else NULL,
-        ylim = if (metric == "FDR") c(0, fdr_top) else c(-0.02, 1.02))
+        ylim = if (metric == "FDR") c(0, fdr_top) else c(-0.02, 1.02)
+      )
     }
   }
 
@@ -525,7 +533,8 @@ plot_comparison_grid <- function(frames, sweep_key, title,
     plot_layout(guides = "collect") +
     plot_annotation(title = title,
                     theme = theme(plot.title = element_text(
-                      size = 15, face = "bold", hjust = 0.5)))
+                      size = 15, face = "bold", hjust = 0.5
+                    )))
   list(fig = fig, width = 5.0 * length(labels) + 2.8, height = 9.0)
 }
 
@@ -645,8 +654,7 @@ kappa_boundary <- function(rho) {
 plot_gap_rho <- function(df, title, tfdr = DEFAULT_TFDR) {
   solvers <- sort(unique(df$solver), method = "radix")
   method_txt <- if (length(solvers) > 1)
-    paste0("mean over ", paste(solvers, collapse = " / "))
-  else solvers[[1]]
+    paste0("mean over ", paste(solvers, collapse = " / ")) else solvers[[1]]
 
   capped <- df[df$support_type == "CappedSpread", ]
   rho_vals <- sort(unique(capped$rho))
@@ -660,7 +668,8 @@ plot_gap_rho <- function(df, title, tfdr = DEFAULT_TFDR) {
     x = stats::approx(rho_vals, seq_along(rho_vals), xout = fine_rho,
                       rule = 2)$y,
     y = stats::approx(gap_vals, seq_along(gap_vals), xout = kap,
-                      rule = 1)$y)
+                      rule = 1)$y
+  )
 
   heat <- function(metric, pal, vmin, vmax, panel_title, fill_name) {
     # Multiple solvers share each (gap, rho) cell; the heatmaps show the mean
@@ -714,7 +723,8 @@ plot_gap_rho <- function(df, title, tfdr = DEFAULT_TFDR) {
       coord_cartesian(ylim = ylim)
   }
   fdp_max <- suppressWarnings(
-    max(rnd$value[rnd$metric == "mean_FDP"], na.rm = TRUE))
+    max(rnd$value[rnd$metric == "mean_FDP"], na.rm = TRUE)
+  )
   if (!is.finite(fdp_max)) fdp_max <- 0
   b_tpr <- base_panel("mean_TPP", "Random support baseline — TPR",
                       "True positive rate", c(-0.02, 1.02), 0)
@@ -725,7 +735,8 @@ plot_gap_rho <- function(df, title, tfdr = DEFAULT_TFDR) {
   caption <- paste0(
     "cyan dashed curve: κ-boundary  gap = ⌈log ε / log ρ",
     "⌉, ε = ", .fmt_g(GAP_RHO_EPS),
-    " (DA window, same for all solvers)")
+    " (DA window, same for all solvers)"
+  )
   fig <- ((h_tpp | h_fdp) / (b_tpr | b_fdp)) +
     plot_layout(guides = "collect") +
     plot_annotation(
@@ -734,7 +745,9 @@ plot_gap_rho <- function(df, title, tfdr = DEFAULT_TFDR) {
       theme = theme(
         plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         plot.caption = element_text(size = 10, colour = "darkcyan",
-                                    hjust = 0.5)))
+                                    hjust = 0.5)
+      )
+    )
   list(fig = fig, width = 14.0, height = 10.5)
 }
 
@@ -809,7 +822,8 @@ plot_sweep2d <- function(df, support, title, row_label, col_label,
          pal = viridisLite::viridis(256), vmin = 0, vmax = 1),
     list(metric = "mean_FDP", mlabel = "FDR (false discovery rate)",
          pal = viridisLite::magma(256, direction = -1), vmin = 0,
-         vmax = fdr_top))
+         vmax = fdr_top)
+  )
 
   rows <- lapply(seq_along(specs), function(mi) {
     sp <- specs[[mi]]
@@ -819,8 +833,7 @@ plot_sweep2d <- function(df, support, title, row_label, col_label,
       sub <- sub[, c("row", "col", "value")]
       # The metric heads every panel of its row; the solver tops the figure
       # columns. The y-axis stays reserved for the row quantity.
-      head_txt <- if (mi == 1) paste0(solvers[[si]], "\n", sp$mlabel)
-                  else sp$mlabel
+      head_txt <- if (mi == 1) paste0(solvers[[si]], "\n", sp$mlabel) else sp$mlabel
       .heat_panel(sub, sort(unique(sub$col)), sort(unique(sub$row)),
                   sp$pal, sp$vmin, sp$vmax, head_txt,
                   x_lab = col_label, y_lab = row_label,
@@ -832,8 +845,7 @@ plot_sweep2d <- function(df, support, title, row_label, col_label,
   })
 
   caption <- if (tfdr > 0)
-    sprintf("cyan boxes: realized FDR above the tFDR = %g target", tfdr)
-  else NULL
+    sprintf("cyan boxes: realized FDR above the tFDR = %g target", tfdr) else NULL
   fig <- (rows[[1]] / rows[[2]]) +
     plot_annotation(
       title = paste0(title, "\n(", support, " support)"),
@@ -841,7 +853,9 @@ plot_sweep2d <- function(df, support, title, row_label, col_label,
       theme = theme(
         plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         plot.caption = element_text(size = 10, colour = "darkcyan",
-                                    hjust = 0.5)))
+                                    hjust = 0.5)
+      )
+    )
   list(fig = fig, width = fig_w, height = 9.0)
 }
 
@@ -863,7 +877,8 @@ plot_sweep2d <- function(df, support, title, row_label, col_label,
   "  Rscript trex_da_plt_utils.R gaprho <csv> --stem S --outdir DIR\n",
   "      [--title T] [--tfdr F] [--formats png pdf]\n",
   "  Rscript trex_da_plt_utils.R sweep2d <csv> --stem S --outdir DIR\n",
-  "      [--title T] [--xlabel L] [--ylabel L] [--tfdr F] [--formats png pdf]")
+  "      [--title T] [--xlabel L] [--ylabel L] [--tfdr F] [--formats png pdf]"
+)
 
 .parse_args <- function(argv) {
   args <- list(csv = character(0), title = NULL,
@@ -873,8 +888,9 @@ plot_sweep2d <- function(df, support, title, row_label, col_label,
                relabel = character(0), labels = NULL, csvs = NULL,
                column_title = "")
   i <- 1L
+  acc <- environment()  # the argument cursor i that take() and take_multi() advance
   take <- function() {
-    i <<- i + 1L
+    acc$i <- i + 1L
     if (i > length(argv)) stop("missing value for ", argv[[i - 1L]],
                                call. = FALSE)
     argv[[i]]
@@ -884,7 +900,7 @@ plot_sweep2d <- function(df, support, title, row_label, col_label,
     vals <- character(0)
     while (i < length(argv) && !startsWith(argv[[i + 1L]], "--")) {
       vals <- c(vals, argv[[i + 1L]])
-      i <<- i + 1L
+      acc$i <- i + 1L
     }
     if (length(vals) == 0)
       stop(flag_name, " requires at least one value", call. = FALSE)
@@ -893,35 +909,61 @@ plot_sweep2d <- function(df, support, title, row_label, col_label,
   while (i <= length(argv)) {
     a <- argv[[i]]
     switch(a,
-      "--title"        = { args$title <- take() },
-      "--legend-title" = { args$legend_title <- take() },
-      "--outdir"       = { args$outdir <- take() },
-      "--stem"         = { args$stem <- take() },
-      "--formats"      = {
-        args$formats <- unlist(strsplit(take_multi("--formats"), ","))
-      },
-      "--tfdr"         = { args$tfdr <- as.numeric(take()) },
-      "--bands"        = { args$bands <- TRUE },
-      "--xlabel"       = { args$xlabel <- take() },
-      "--ylabel"       = { args$ylabel <- take() },
-      "--xscale"       = { args$xscale <- take() },
-      "--relabel"      = { args$relabel <- take_multi("--relabel") },
-      "--labels"       = { args$labels <- take_multi("--labels") },
-      "--csvs"         = { args$csvs <- take_multi("--csvs") },
-      "--column-title" = { args$column_title <- take() },
-      # Accepted for CLI parity with the Python plotter; the R port never
-      # produces the interactive Plotly HTML.
-      "--no-plotly"    = { },
-      "--plotly-cdn"   = { },
-      {
-        if (startsWith(a, "--"))
-          stop("Unknown flag: ", a, "\n", .USAGE, call. = FALSE)
-        args$csv <- c(args$csv, a)
-      })
+           "--title"        = {
+             args$title <- take()
+           },
+           "--legend-title" = {
+             args$legend_title <- take()
+           },
+           "--outdir"       = {
+             args$outdir <- take()
+           },
+           "--stem"         = {
+             args$stem <- take()
+           },
+           "--formats"      = {
+             args$formats <- unlist(strsplit(take_multi("--formats"), ","))
+           },
+           "--tfdr"         = {
+             args$tfdr <- as.numeric(take())
+           },
+           "--bands"        = {
+             args$bands <- TRUE
+           },
+           "--xlabel"       = {
+             args$xlabel <- take()
+           },
+           "--ylabel"       = {
+             args$ylabel <- take()
+           },
+           "--xscale"       = {
+             args$xscale <- take()
+           },
+           "--relabel"      = {
+             args$relabel <- take_multi("--relabel")
+           },
+           "--labels"       = {
+             args$labels <- take_multi("--labels")
+           },
+           "--csvs"         = {
+             args$csvs <- take_multi("--csvs")
+           },
+           "--column-title" = {
+             args$column_title <- take()
+           },
+           # Accepted for CLI parity with the Python plotter; the R port never
+           # produces the interactive Plotly HTML.
+           "--no-plotly"    = { },
+           "--plotly-cdn"   = { },
+           {
+             if (startsWith(a, "--"))
+               stop("Unknown flag: ", a, "\n", .USAGE, call. = FALSE)
+             args$csv <- c(args$csv, a)
+           })
     i <- i + 1L
   }
   if (!is.null(args$xscale) &&
-      !args$xscale %in% c("linear", "linear-minor", "sqrt", "log"))
+        !args$xscale %in% c("linear", "linear-minor", "sqrt", "log"))
     stop("--xscale must be one of linear, linear-minor, sqrt, log; got: ",
          args$xscale, call. = FALSE)
   if (any(is.na(args$tfdr)))
@@ -992,7 +1034,8 @@ main_grid <- function(args) {
     frames, sweep_keys[[1]], args$title %||% "DA-TRex comparison",
     legend_title = args$legend_title, tfdr = args$tfdr,
     column_title = args$column_title, bands = args$bands,
-    xlabel = args$xlabel, xscale = args$xscale)
+    xlabel = args$xlabel, xscale = args$xscale
+  )
   save_figure(out$fig, args$outdir, args$stem, args$formats,
               out$width, out$height)
 }

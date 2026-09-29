@@ -63,8 +63,7 @@ this_dir_ <- tryCatch(
     args <- commandArgs(trailingOnly = FALSE)
     flag <- grep("^--file=", args, value = TRUE)
     if (length(flag) > 0L)
-      dirname(normalizePath(sub("^--file=", "", flag[1L])))
-    else "."
+      dirname(normalizePath(sub("^--file=", "", flag[1L]))) else "."
   }
 )
 
@@ -112,8 +111,9 @@ CFG <- list(
 #' Fraction of active blocks with at least one selected variable.
 .block_hit_rate <- function(sel, active, block_size) {
   if (length(active) == 0L) return(0)
-  hits <- sum(vapply(active, function(blk)
-    any(.block_cols(blk, block_size) %in% sel), logical(1L)))
+  hits <- sum(vapply(active, function(blk) {
+    any(.block_cols(blk, block_size) %in% sel)
+  }, logical(1L)))
   hits / length(active)
 }
 
@@ -133,8 +133,9 @@ CFG <- list(
 #' Fraction of active blocks fully contained in the selection.
 .full_block_rate <- function(sel, active, block_size) {
   if (length(active) == 0L) return(0)
-  fully <- sum(vapply(active, function(blk)
-    all(.block_cols(blk, block_size) %in% sel), logical(1L)))
+  fully <- sum(vapply(active, function(blk) {
+    all(.block_cols(blk, block_size) %in% sel)
+  }, logical(1L)))
   fully / length(active)
 }
 
@@ -185,7 +186,8 @@ CFG <- list(
     gvs_type       = gvs_type,
     corr_max       = cfg$corr_max,
     hc_linkage     = "Single",
-    lambda2_method = "CV_1SE_CCD")
+    lambda2_method = "CV_1SE_CCD"
+  )
   # en_solver applies to EN only (TENET / TENET_AUG). For IEN the en_solver
   # field is not applicable and is left at its library default, mirroring the
   # Python demos' en_solver=None; the IEN solver itself is pinned to
@@ -197,7 +199,8 @@ CFG <- list(
   sel <- TRexSelectorNeo::TRexGVSSelector$new(
     dat$X, dat$y, tFDR = cfg$tFDR, seed = seed, verbose = FALSE,
     gvs_control = do.call(TRexSelectorNeo::trex_gvs_control, gvs_args),
-    control     = TRexSelectorNeo::trex_control(solver = solver, K = cfg$K))
+    control     = TRexSelectorNeo::trex_control(solver = solver, K = cfg$K)
+  )
   sel$select()
 
   si <- sel$selected_indices
@@ -243,7 +246,8 @@ CFG <- list(
     dat <- dgp_block_equicorr(
       n = cfg$n, p = cfg$p, G = cfg$G, block_size = cfg$block_size,
       n_active_blocks = cfg$n_active_blocks, rho = rho, snr = snr,
-      scenario = scenario, seed = trial_seed, b = cfg$b)
+      scenario = scenario, seed = trial_seed, b = cfg$b
+    )
     .run_block_all_methods(dat, cfg, seed = trial_seed)
   }
 
@@ -285,7 +289,8 @@ run_block_bench_scenario <- function(cfg, scenario, rho_grid) {
   print_section_header(sprintf(
     "Block Bench MC: %s\nn=%d p=%d G=%d block=%d active=%d tFDR=%s K=%d MC=%d corr_max=%s",
     tag, cfg$n, cfg$p, cfg$G, cfg$block_size, cfg$n_active_blocks,
-    fmt_num(cfg$tFDR), cfg$K, cfg$num_MC, fmt_num(cfg$corr_max)))
+    fmt_num(cfg$tFDR), cfg$K, cfg$num_MC, fmt_num(cfg$corr_max)
+  ))
 
   n_rho <- length(rho_grid)
   n_snr <- length(cfg$snr_grid)
@@ -329,7 +334,8 @@ run_block_benchmark <- function(cfg) {
     "Block-equicorrelated benchmark\n",
     "DGP = dgp_block_equicorr\n",
     "methods = {EN clustered, EN oracle, IEN clustered, IEN oracle}\n",
-    "scenarios = {WHOLE (headline), INDIVIDUAL (appendix)}"))
+    "scenarios = {WHOLE (headline), INDIVIDUAL (appendix)}"
+  ))
 
   run_block_bench_scenario(cfg, "WHOLE", cfg$rho_grid_whole)
   run_block_bench_scenario(cfg, "INDIVIDUAL", cfg$rho_grid_individual)

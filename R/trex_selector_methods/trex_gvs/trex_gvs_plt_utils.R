@@ -58,7 +58,8 @@ METHOD_LABELS <- c(
   "M1(EN-C)" = "EN + HAC groups",
   "M2(EN-O)" = "EN + oracle groups",
   "M3(IE-C)" = "IEN + HAC groups",
-  "M4(IE-O)" = "IEN + oracle groups")
+  "M4(IE-O)" = "IEN + oracle groups"
+)
 
 # Hollow per-method markers (o, s, ^, D) — overlapping curves (e.g. M1/M2 at
 # high rho) stay distinguishable by marker shape. ggplot2 shapes 21-25.
@@ -103,12 +104,14 @@ VIOLATION <- "cyan"
       plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
       legend.title = element_text(size = 10, face = "bold"),
       legend.text = element_text(size = 9),
-      legend.background = element_rect(colour = "grey55", linewidth = 0.3))
+      legend.background = element_rect(colour = "grey55", linewidth = 0.3)
+    )
 }
 
 #' Linear sweep x-axis with 4% padding (block-benchmark line plots).
 .sweep_x_scale <- function(values) {
-  lo <- min(values); hi <- max(values)
+  lo <- min(values)
+  hi <- max(values)
   span <- hi - lo
   pad <- if (span > 0) span * 0.04 else 0.5
   scale_x_continuous(limits = c(lo - pad, hi + pad),
@@ -143,8 +146,7 @@ save_figure <- function(plot, outdir, stem, formats = c("png", "pdf"),
 #' `.../simulation_results/data/x.csv` -> `.../simulation_results/plots`.
 default_plots_dir <- function(csv_path) {
   parent <- dirname(csv_path)
-  if (basename(parent) == "data") file.path(dirname(parent), "plots")
-  else file.path(parent, "plots")
+  if (basename(parent) == "data") file.path(dirname(parent), "plots") else file.path(parent, "plots")
 }
 
 load_csv <- function(path) {
@@ -220,7 +222,8 @@ plot_2d_heatmaps <- function(df, title, tfdr = DEFAULT_TFDR) {
     list(metric = "mean_TPP", mlabel = "TPR (true positive rate)",
          pal = pal_tpr, vmin = 0, vmax = 1),
     list(metric = "mean_FDP", mlabel = "FDR (false discovery rate)",
-         pal = pal_fdr, vmin = 0, vmax = fdr_top))
+         pal = pal_fdr, vmin = 0, vmax = fdr_top)
+  )
 
   rows <- lapply(seq_along(specs), function(mi) {
     sp <- specs[[mi]]
@@ -245,7 +248,9 @@ plot_2d_heatmaps <- function(df, title, tfdr = DEFAULT_TFDR) {
       theme = theme(
         plot.title = element_text(size = 15, face = "bold", hjust = 0.5),
         plot.caption = element_text(size = 10, colour = "darkcyan",
-                                    hjust = 0.5)))
+                                    hjust = 0.5)
+      )
+    )
   list(fig = fig, width = fig_w, height = 8.6)
 }
 
@@ -269,7 +274,8 @@ plot_2d_heatmaps <- function(df, title, tfdr = DEFAULT_TFDR) {
   if (tfdr > 0) {
     p <- p + geom_hline(
       aes(yintercept = tfdr, linetype = sprintf("tFDR = %g", tfdr)),
-      color = "black", linewidth = 0.8) +
+      color = "black", linewidth = 0.8
+    ) +
       scale_linetype_manual(name = NULL, values = "dotted",
                             guide = guide_legend(order = 1))
   }
@@ -302,7 +308,8 @@ plot_method_bars <- function(df, param_col, title, param_label,
     plot_layout(guides = "collect") +
     plot_annotation(title = title,
                     theme = theme(plot.title = element_text(
-                      size = 14, face = "bold", hjust = 0.5)))
+                      size = 14, face = "bold", hjust = 0.5
+                    )))
   list(fig = fig, width = max(11.0, 2.2 * length(levels) + 5), height = 4.8)
 }
 
@@ -318,7 +325,8 @@ plot_method_bars <- function(df, param_col, title, param_label,
     ifelse(sub$method %in% names(METHOD_LABELS),
            METHOD_LABELS[sub$method], sub$method),
     levels = ifelse(methods %in% names(METHOD_LABELS),
-                    METHOD_LABELS[methods], methods))
+                    METHOD_LABELS[methods], methods)
+  )
   sub$x <- sub[[x_col]]
   sub$y <- sub[[metric]]
 
@@ -329,7 +337,8 @@ plot_method_bars <- function(df, param_col, title, param_label,
   if (tfdr > 0) {
     p <- p + geom_hline(
       aes(yintercept = tfdr, linetype = sprintf("tFDR = %g", tfdr)),
-      color = "black", linewidth = 0.8) +
+      color = "black", linewidth = 0.8
+    ) +
       scale_linetype_manual(name = NULL, values = "dotted",
                             guide = guide_legend(order = 1))
   }
@@ -341,7 +350,8 @@ plot_method_bars <- function(df, param_col, title, param_label,
     scale_shape_manual(name = "Method",
                        values = setNames(
                          METHOD_SHAPES[(seq_along(lvls) - 1L) %%
-                                         length(METHOD_SHAPES) + 1L], lvls)) +
+                                         length(METHOD_SHAPES) + 1L], lvls
+                       )) +
     guides(color = guide_legend(order = 2), shape = guide_legend(order = 2)) +
     labs(title = panel_title, x = x_lab, y = y_lab) +
     .sweep_x_scale(x_values) +
@@ -370,7 +380,8 @@ plot_block_bench <- function(df, title, tfdr = DEFAULT_TFDR, vs = "snr",
     list(metric = "mean_coord_tpr", mlabel = "TPR (true positive rate)",
          ylim = c(0, 1.05), tfdr = 0),
     list(metric = "mean_coord_fdp", mlabel = "FDR (false discovery rate)",
-         ylim = NULL, tfdr = tfdr))
+         ylim = NULL, tfdr = tfdr)
+  )
 
   panels_lst <- list()
   for (mi in seq_along(metric_rows)) {
@@ -379,15 +390,17 @@ plot_block_bench <- function(df, title, tfdr = DEFAULT_TFDR, vs = "snr",
       pv <- panel_vals[ri]
       sub <- df[.is_close_any(df[[panel_col]], pv), ]
       head_txt <- if (mi == 1) {
-        if (panel_col == "rho") sprintf("ρ = %g", pv)
-        else sprintf("SNR = %g", pv)
-      } else NULL
+        if (panel_col == "rho") sprintf("ρ = %g", pv) else sprintf("SNR = %g", pv)
+      } else {
+        NULL
+      }
       panels_lst[[length(panels_lst) + 1L]] <- .bench_panel(
         sub, x_col, mr$metric, methods, x_values,
         panel_title = head_txt,
         x_lab = if (mi == 2) (if (x_col == "snr") "SNR" else "ρ") else NULL,
         y_lab = if (ri == 1) mr$mlabel else NULL,
-        ylim = mr$ylim, tfdr = mr$tfdr)
+        ylim = mr$ylim, tfdr = mr$tfdr
+      )
     }
   }
 
@@ -395,7 +408,8 @@ plot_block_bench <- function(df, title, tfdr = DEFAULT_TFDR, vs = "snr",
     plot_layout(guides = "collect") +
     plot_annotation(title = title,
                     theme = theme(plot.title = element_text(
-                      size = 15, face = "bold", hjust = 0.5)))
+                      size = 15, face = "bold", hjust = 0.5
+                    )))
   list(fig = fig, width = 5.2 * length(panel_vals) + 2.0, height = 8.4)
 }
 
@@ -420,41 +434,58 @@ detect_kind <- function(df) {
   i <- 1L
   while (i <= length(argv)) {
     a <- argv[[i]]
-    flag <- function() { i <<- i + 1L; argv[[i]] }
+    flag <- function() {
+      i <<- i + 1L
+      argv[[i]]
+    }
     switch(a,
-      "--outdir"      = { args$outdir <- flag() },
-      "--title"       = { args$title <- flag() },
-      "--tfdr"        = { args$tfdr <- as.numeric(flag()) },
-      "--formats"     = {
-        # Consume all following extension tokens (Python nargs='+' style);
-        # a single comma-separated token also works.
-        fmts <- character(0)
-        while (i < length(argv) &&
-               grepl("^(png|pdf|svg)(,(png|pdf|svg))*$", argv[[i + 1L]])) {
-          fmts <- c(fmts, strsplit(argv[[i + 1L]], ",")[[1]])
-          i <- i + 1L
-        }
-        if (length(fmts) == 0) stop("--formats requires png/pdf value(s)")
-        args$formats <- fmts
-      },
-      "--param-label" = { args$param_label <- flag() },
-      "--stem"        = { args$stem <- flag() },
-      "--vs"          = { args$vs <- flag() },
-      "--panels"      = {
-        # Consume all following numeric tokens (Python nargs='+' style);
-        # a single comma-separated token also works.
-        vals <- numeric(0)
-        while (i < length(argv) && !startsWith(argv[[i + 1L]], "--")) {
-          tok <- strsplit(argv[[i + 1L]], ",")[[1]]
-          num <- suppressWarnings(as.numeric(tok))
-          if (any(is.na(num))) break
-          vals <- c(vals, num)
-          i <- i + 1L
-        }
-        if (length(vals) == 0) stop("--panels requires numeric value(s)")
-        args$panels <- vals
-      },
-      { args$csv <- c(args$csv, a) })
+           "--outdir"      = {
+             args$outdir <- flag()
+           },
+           "--title"       = {
+             args$title <- flag()
+           },
+           "--tfdr"        = {
+             args$tfdr <- as.numeric(flag())
+           },
+           "--formats"     = {
+             # Consume all following extension tokens (Python nargs='+' style);
+             # a single comma-separated token also works.
+             fmts <- character(0)
+             while (i < length(argv) &&
+                      grepl("^(png|pdf|svg)(,(png|pdf|svg))*$", argv[[i + 1L]])) {
+               fmts <- c(fmts, strsplit(argv[[i + 1L]], ",")[[1]])
+               i <- i + 1L
+             }
+             if (length(fmts) == 0) stop("--formats requires png/pdf value(s)")
+             args$formats <- fmts
+           },
+           "--param-label" = {
+             args$param_label <- flag()
+           },
+           "--stem"        = {
+             args$stem <- flag()
+           },
+           "--vs"          = {
+             args$vs <- flag()
+           },
+           "--panels"      = {
+             # Consume all following numeric tokens (Python nargs='+' style);
+             # a single comma-separated token also works.
+             vals <- numeric(0)
+             while (i < length(argv) && !startsWith(argv[[i + 1L]], "--")) {
+               tok <- strsplit(argv[[i + 1L]], ",")[[1]]
+               num <- suppressWarnings(as.numeric(tok))
+               if (any(is.na(num))) break
+               vals <- c(vals, num)
+               i <- i + 1L
+             }
+             if (length(vals) == 0) stop("--panels requires numeric value(s)")
+             args$panels <- vals
+           },
+           {
+             args$csv <- c(args$csv, a)
+           })
     i <- i + 1L
   }
   if (length(args$csv) != 1L)
@@ -472,12 +503,9 @@ main <- function() {
   df <- load_csv(csv_path)
 
   kind <- detect_kind(df)
-  outdir <- if (is.null(args$outdir)) default_plots_dir(csv_path)
-            else args$outdir
-  stem <- if (is.null(args$stem)) sub("[.]csv$", "", basename(csv_path))
-          else args$stem
-  title <- if (is.null(args$title)) sub("[.]csv$", "", basename(csv_path))
-           else args$title
+  outdir <- if (is.null(args$outdir)) default_plots_dir(csv_path) else args$outdir
+  stem <- if (is.null(args$stem)) sub("[.]csv$", "", basename(csv_path)) else args$stem
+  title <- if (is.null(args$title)) sub("[.]csv$", "", basename(csv_path)) else args$title
 
   res <- if (kind == "2d") {
     plot_2d_heatmaps(df, title, args$tfdr)

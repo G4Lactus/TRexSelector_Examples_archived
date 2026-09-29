@@ -62,7 +62,8 @@ OUT_DIR <- file.path(this_dir_, "simulation_results", "data")
 NUM_MC       <- 200L
 NUM_MC_MULTI <- 200L
 
-N <- 300L; P <- 1000L
+N <- 300L
+P <- 1000L
 SNR_GRID        <- c(0.1, 0.5, 1.0, 2.0, 5.0)
 TARGET_FDR_TREX <- 0.10
 R_BOOT          <- 1000L   # mirrors the cpp reference (R_boot = 1000)
@@ -70,13 +71,17 @@ USE_MMAP        <- TRUE    # dummy (D) matrices backed by on-disk files
 
 
 #' Empty per-method map: display name -> per-SNR numeric vector.
-empty_maps <- function() setNames(
-  lapply(BIOBANK_DISPLAY, function(x) numeric(length(SNR_GRID))), BIOBANK_DISPLAY)
+empty_maps <- function() {
+  setNames(
+    lapply(BIOBANK_DISPLAY, function(x) numeric(length(SNR_GRID))), BIOBANK_DISPLAY
+  )
+}
 
 #' Copy one SNR level's aggregate into the display-keyed maps.
 store_agg <- function(agg, maps, si) {
   for (j in seq_along(BIOBANK_METHODS)) {
-    canon <- BIOBANK_METHODS[j]; disp <- BIOBANK_DISPLAY[j]
+    canon <- BIOBANK_METHODS[j]
+    disp <- BIOBANK_DISPLAY[j]
     maps$fdp[[disp]][si]   <- agg[[canon]]$fdp
     maps$tpp[[disp]][si]   <- agg[[canon]]$tpp
     maps$est[[disp]][si]   <- agg[[canon]]$est
@@ -118,7 +123,8 @@ part_1 <- function() {
   save_and_print_biobank_mc(
     NUM_MC, OUT_DIR,
     sprintf("scr_biobank_mmap_snr_n%d_p%d_s%d", N, P, support_size),
-    SNR_GRID, BIOBANK_DISPLAY, maps$fdp, maps$tpp, maps$est, maps$usage)
+    SNR_GRID, BIOBANK_DISPLAY, maps$fdp, maps$tpp, maps$est, maps$usage
+  )
 }
 
 
@@ -130,7 +136,8 @@ part_2 <- function() {
   cat("\n", strrep("=", 70L), "\n", sep = "")
   cat("Part 2: Biobank Screen-TRex - MC SNR Sweep, Multiple Phenotypes (Memory-Mapped)\n")
   cat(strrep("=", 70L), "\n", sep = "")
-  q <- 5L; support_size <- 5L
+  q <- 5L
+  support_size <- 5L
   cat(sprintf("n = %d, p = %d, q = %d, s = %d, num_MC = %d\n\n",
               N, P, q, support_size, NUM_MC_MULTI))
 
@@ -144,7 +151,8 @@ part_2 <- function() {
         N, P, q, support_size, snr,
         x_seed        = 5000L * (si - 1L) + mc + 1L,   # shared X per trial
         sup_seed_base = 770000L + q * (NUM_MC_MULTI * (si - 1L) + mc),
-        use_memory_mapping = USE_MMAP, R_boot = R_BOOT, tFDR = TARGET_FDR_TREX)
+        use_memory_mapping = USE_MMAP, R_boot = R_BOOT, tFDR = TARGET_FDR_TREX
+      )
     }
     records <- run_mc_biobank(NUM_MC_MULTI, trial_fn, num_cores)
     maps <- store_agg(accumulate_snr(records, TARGET_FDR_TREX), maps, si)
@@ -155,7 +163,8 @@ part_2 <- function() {
   save_and_print_biobank_mc(
     NUM_MC_MULTI, OUT_DIR,
     sprintf("scr_biobank_mmap_multi_n%d_p%d_q%d_s%d", N, P, q, support_size),
-    SNR_GRID, BIOBANK_DISPLAY, maps$fdp, maps$tpp, maps$est, maps$usage)
+    SNR_GRID, BIOBANK_DISPLAY, maps$fdp, maps$tpp, maps$est, maps$usage
+  )
 }
 
 

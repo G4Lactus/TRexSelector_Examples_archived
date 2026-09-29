@@ -81,8 +81,7 @@ save_figure <- function(plot, outdir, stem, formats = c("png", "pdf"),
 #' `.../simulation_results/data/x.csv` -> `.../simulation_results/plots`.
 default_plots_dir <- function(csv_path) {
   parent <- dirname(csv_path)
-  if (basename(parent) == "data") file.path(dirname(parent), "plots")
-  else file.path(parent, "plots")
+  if (basename(parent) == "data") file.path(dirname(parent), "plots") else file.path(parent, "plots")
 }
 
 load_csv <- function(path) {
@@ -126,7 +125,8 @@ load_csv <- function(path) {
 #' limit stays at the data (keeps 0 on-axis) — mirrors the Python helper
 #' apply_linear_minor_xaxis().
 .sweep_x_scale <- function(values, xscale = "linear") {
-  lo <- min(values); hi <- max(values)
+  lo <- min(values)
+  hi <- max(values)
   step <- .nice_step(hi - lo)
   breaks <- seq(ceiling(lo / step) * step, hi + 1e-12, by = step)
   minor <- seq(ceiling(lo / (step / 2)) * step / 2, hi + 1e-12, by = step / 2)
@@ -135,13 +135,15 @@ load_csv <- function(path) {
     pad <- if (span_sqrt > 0) (span_sqrt * 0.04)^2 else 0.5
     scale_x_continuous(
       transform = "sqrt", breaks = breaks, minor_breaks = minor,
-      limits = c(lo, hi + pad), expand = expansion(0))
+      limits = c(lo, hi + pad), expand = expansion(0)
+    )
   } else {
     span <- hi - lo
     pad <- if (span > 0) span * 0.04 else 0.5
     scale_x_continuous(
       breaks = breaks, minor_breaks = minor,
-      limits = c(lo - pad, hi + pad), expand = expansion(0))
+      limits = c(lo - pad, hi + pad), expand = expansion(0)
+    )
   }
 }
 
@@ -155,7 +157,8 @@ load_csv <- function(path) {
       plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
       legend.title = element_text(size = 10, face = "bold"),
       legend.text = element_text(size = 9),
-      legend.background = element_rect(colour = "grey55", linewidth = 0.3))
+      legend.background = element_rect(colour = "grey55", linewidth = 0.3)
+    )
 }
 
 #' Method colour/fill/shape scales over a fixed ordered set (CSV order — the
@@ -167,7 +170,8 @@ load_csv <- function(path) {
                                    length(METHOD_SHAPES) + 1L], methods)
   list(
     scale_color_manual(name = group_label, values = cols),
-    scale_shape_manual(name = group_label, values = shps))
+    scale_shape_manual(name = group_label, values = shps)
+  )
 }
 
 #' Subset one metric, method factor in first-appearance order.
@@ -226,7 +230,8 @@ load_csv <- function(path) {
       scale_fill_manual(
         name = NULL, values = setNames("grey75", win_lbl),
         guide = guide_legend(order = 3,
-                             override.aes = list(alpha = 0.6)))
+                             override.aes = list(alpha = 0.6))
+      )
   }
 
   p <- p +
@@ -252,7 +257,9 @@ load_csv <- function(path) {
       name = NULL, values = lt_values, breaks = names(lt_values),
       guide = guide_legend(
         order = 2,
-        override.aes = list(color = lt_colors, shape = NA))) +
+        override.aes = list(color = lt_colors, shape = NA)
+      )
+    ) +
     .method_scales(methods) +
     # The method legend is carried by the TPR panel alone so patchwork's
     # guide collection shows exactly ONE Method box (this panel's colour
@@ -269,7 +276,8 @@ load_csv <- function(path) {
     plot_layout(guides = "collect") +
     plot_annotation(title = title,
                     theme = theme(plot.title = element_text(
-                      size = 14, face = "bold", hjust = 0.5)))
+                      size = 14, face = "bold", hjust = 0.5
+                    )))
 }
 
 
@@ -329,15 +337,32 @@ detect_kind <- function(df) {
   i <- 1L
   while (i <= length(argv)) {
     a <- argv[[i]]
-    flag <- function() { i <<- i + 1L; argv[[i]] }
+    flag <- function() {
+      i <<- i + 1L
+      argv[[i]]
+    }
     switch(a,
-      "--outdir"  = { args$outdir <- flag() },
-      "--title"   = { args$title <- flag() },
-      "--tfdr"    = { args$tfdr <- as.numeric(flag()) },
-      "--formats" = { args$formats <- strsplit(flag(), ",")[[1]] },
-      "--stem"    = { args$stem <- flag() },
-      "--xscale"  = { args$xscale <- flag() },
-      { args$csv <- c(args$csv, a) })
+           "--outdir"  = {
+             args$outdir <- flag()
+           },
+           "--title"   = {
+             args$title <- flag()
+           },
+           "--tfdr"    = {
+             args$tfdr <- as.numeric(flag())
+           },
+           "--formats" = {
+             args$formats <- strsplit(flag(), ",")[[1]]
+           },
+           "--stem"    = {
+             args$stem <- flag()
+           },
+           "--xscale"  = {
+             args$xscale <- flag()
+           },
+           {
+             args$csv <- c(args$csv, a)
+           })
     i <- i + 1L
   }
   if (length(args$csv) != 1L)
@@ -354,12 +379,9 @@ main <- function() {
   csv_path <- args$csv[[1]]
   df <- load_csv(csv_path)
 
-  outdir <- if (is.null(args$outdir)) default_plots_dir(csv_path)
-            else args$outdir
-  stem <- if (is.null(args$stem)) sub("[.]csv$", "", basename(csv_path))
-          else args$stem
-  title <- if (is.null(args$title)) sub("[.]csv$", "", basename(csv_path))
-           else args$title
+  outdir <- if (is.null(args$outdir)) default_plots_dir(csv_path) else args$outdir
+  stem <- if (is.null(args$stem)) sub("[.]csv$", "", basename(csv_path)) else args$stem
+  title <- if (is.null(args$title)) sub("[.]csv$", "", basename(csv_path)) else args$title
 
   kind <- detect_kind(df)
   if (kind == "biobank") {

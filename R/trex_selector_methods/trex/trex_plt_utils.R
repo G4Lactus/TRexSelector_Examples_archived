@@ -165,8 +165,7 @@ read_mc_results <- function(path) {
 #' falls back to the CSV's own directory outside that layout.
 default_plots_dir <- function(csv_path) {
   parent <- dirname(csv_path)
-  if (basename(parent) == "data") file.path(dirname(parent), "plots")
-  else parent
+  if (basename(parent) == "data") file.path(dirname(parent), "plots") else parent
 }
 
 #' Stable colour / hollow-marker assignment keyed by row order.
@@ -196,7 +195,8 @@ fdr_axis_top <- function(df, tfdr) {
 choose_ticks <- function(values, max_ticks = MAX_XTICKS) {
   values <- sort(unique(values))
   if (length(values) <= max_ticks) return(values)
-  lo <- log10(values[1L]); hi <- log10(values[length(values)])
+  lo <- log10(values[1L])
+  hi <- log10(values[length(values)])
   ticks <- numeric(0)
   for (i in seq_len(max_ticks) - 1L) {
     target <- lo + (hi - lo) * i / (max_ticks - 1L)
@@ -226,9 +226,12 @@ marker_stride <- function(values) max(1L, length(values) %/% 10L)
 .sweep_x_scale <- function(values, xscale = DEFAULT_XSCALE, ticks = NULL,
                            force_ticks = FALSE, angle = 0) {
   values <- sort(unique(values))
-  lo <- min(values); hi <- max(values)
-  fmt <- function(b) format(b, big.mark = ",", trim = TRUE,
-                            scientific = FALSE, drop0trailing = TRUE)
+  lo <- min(values)
+  hi <- max(values)
+  fmt <- function(b) {
+    format(b, big.mark = ",", trim = TRUE,
+           scientific = FALSE, drop0trailing = TRUE)
+  }
   guide <- if (angle != 0) guide_axis(angle = angle) else guide_axis()
 
   if (xscale == "log") {
@@ -238,8 +241,7 @@ marker_stride <- function(values) max(1L, length(values) %/% 10L)
                          expand = expansion(0)))
   }
 
-  brk <- if (force_ticks && !is.null(ticks)) ticks
-         else scales::breaks_extended(MAX_XTICKS)
+  brk <- if (force_ticks && !is.null(ticks)) ticks else scales::breaks_extended(MAX_XTICKS)
   if (xscale == "sqrt") {
     span_sqrt <- sqrt(hi) - sqrt(max(lo, 0.0))
     pad <- if (span_sqrt > 0) (span_sqrt * 0.04)^2 else 0.5
@@ -269,7 +271,8 @@ marker_stride <- function(values) max(1L, length(values) %/% 10L)
       plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
       legend.title = element_text(size = 10, face = "bold"),
       legend.text = element_text(size = 9),
-      legend.background = element_rect(colour = "grey55", linewidth = 0.3))
+      legend.background = element_rect(colour = "grey55", linewidth = 0.3)
+    )
 }
 
 #' Rate-axis breaks: FDR panels resolve to 0.02 (minor 0.01), the 0-1 rate
@@ -305,7 +308,8 @@ marker_stride <- function(values) max(1L, length(values) %/% 10L)
     geom_hline(aes(yintercept = tfdr, linetype = lbl),
                color = "black", linewidth = 0.8),
     scale_linetype_manual(name = NULL, values = setNames("dotted", lbl),
-                          guide = guide_legend(order = 1)))
+                          guide = guide_legend(order = 1))
+  )
 }
 
 save_figure <- function(plot, outdir, stem, formats = c("png", "pdf"),
@@ -363,15 +367,17 @@ plot_fdr_tpr_vs_snr <- function(df, title, tfdr = DEFAULT_TFDR,
   shapes <- row_shapes(rows)
   fdr_top <- fdr_axis_top(df, tfdr)
 
-  panels <- lapply(METRICS, function(metric)
+  panels <- lapply(METRICS, function(metric) {
     .mc_panel(df, metric, rows, colors, shapes, tfdr, legend_title,
-              xscale, snr_values, fdr_top))
+              xscale, snr_values, fdr_top)
+  })
 
   (panels[[1L]] | panels[[2L]]) +
     plot_layout(guides = "collect") +
     plot_annotation(title = title,
                     theme = theme(plot.title = element_text(
-                      size = 14, face = "bold", hjust = 0.5)))
+                      size = 14, face = "bold", hjust = 0.5
+                    )))
 }
 
 
@@ -410,8 +416,7 @@ plot_fdr_tpr_vs_snr_grouped <- function(df, title, tfdr = DEFAULT_TFDR,
                                starts[gi], ends[gi]) else NULL,
                      show_ylab = gi == 1L,
                      show_xlab = ri == length(METRICS))
-      p <- p + if (metric == "FDR") .legend_inside(0.03, 0.97)
-               else .legend_inside(0.97, 0.03)
+      p <- p + if (metric == "FDR") .legend_inside(0.03, 0.97) else .legend_inside(0.97, 0.03)
       panels[[length(panels) + 1L]] <- p
     }
   }
@@ -419,7 +424,8 @@ plot_fdr_tpr_vs_snr_grouped <- function(df, title, tfdr = DEFAULT_TFDR,
   wrap_plots(panels, nrow = length(METRICS), byrow = TRUE) +
     plot_annotation(title = title,
                     theme = theme(plot.title = element_text(
-                      size = 14, face = "bold", hjust = 0.5)))
+                      size = 14, face = "bold", hjust = 0.5
+                    )))
 }
 
 
@@ -471,7 +477,8 @@ plot_comparison_grid <- function(frames, title,
     plot_layout(guides = "collect") +
     plot_annotation(title = title,
                     theme = theme(plot.title = element_text(
-                      size = 14, face = "bold", hjust = 0.5)))
+                      size = 14, face = "bold", hjust = 0.5
+                    )))
 }
 
 
@@ -499,8 +506,12 @@ scal_solver_label <- function(solver) {
 }
 
 # Column labels as they appear in the CSV's 'metric' field.
-M_SELMED <- "SelMed_s"; M_SELMIN <- "SelMin_s"; M_SELMAX <- "SelMax_s"
-M_PEAKRSS <- "PeakRSS_MiB"; M_XY <- "X+y_MiB"; M_DESIGN <- "DesignGiB"
+M_SELMED <- "SelMed_s"
+M_SELMIN <- "SelMin_s"
+M_SELMAX <- "SelMax_s"
+M_PEAKRSS <- "PeakRSS_MiB"
+M_XY <- "X+y_MiB"
+M_DESIGN <- "DesignGiB"
 M_FDR <- "FDR"
 
 #' Physical RAM in GiB (for the out-of-core reference line); NA on failure.
@@ -551,8 +562,10 @@ scal_pivot <- function(df) {
 #' at the measured p grid with comma labels rotated 45 degrees.
 .scal_p_scale <- function(p_values, xscale = SCAL_XSCALE) {
   if (xscale == "log") {
-    fmt <- function(b) format(b, big.mark = ",", trim = TRUE,
-                              scientific = FALSE, drop0trailing = TRUE)
+    fmt <- function(b) {
+      format(b, big.mark = ",", trim = TRUE,
+             scientific = FALSE, drop0trailing = TRUE)
+    }
     scale_x_log10(breaks = p_values, labels = fmt,
                   guide = guide_axis(angle = 45),
                   limits = c(min(p_values) / 1.6, max(p_values) * 1.6),
@@ -601,7 +614,8 @@ plot_scalability_dashboard <- function(df, title, tfdr = DEFAULT_TFDR,
       data = band,
       aes(x = p, ymin = .data[[M_SELMIN]], ymax = .data[[M_SELMAX]],
           fill = n_f, group = n_f),
-      alpha = 0.12, colour = NA, inherit.aes = FALSE, show.legend = FALSE)
+      alpha = 0.12, colour = NA, inherit.aes = FALSE, show.legend = FALSE
+    )
   p_rt <- p_rt +
     geom_line(linewidth = 0.7) +
     geom_point(size = 1.4, shape = 16, show.legend = FALSE) +
@@ -663,7 +677,8 @@ plot_scalability_dashboard <- function(df, title, tfdr = DEFAULT_TFDR,
       data = barrier,
       aes(x = .data[[M_DESIGN]], y = .data[[M_PEAKRSS]] / 1024.0),
       shape = 21, size = 5.5, color = "#DC143C", fill = NA, stroke = 1.0,
-      inherit.aes = FALSE, show.legend = FALSE)
+      inherit.aes = FALSE, show.legend = FALSE
+    )
   oc_lt <- character(0)
   if (is.finite(ram) && ram > 0) {
     ram_lbl <- sprintf("physical RAM = %.0f GiB", ram)
@@ -677,9 +692,11 @@ plot_scalability_dashboard <- function(df, title, tfdr = DEFAULT_TFDR,
   p_oc <- p_oc +
     scale_color_manual(name = NULL, values = n_cols) +
     scale_shape_manual(name = NULL, values = slv_shapes) +
-    scale_x_log10(labels = function(b) format(b, trim = TRUE,
-                                              scientific = FALSE,
-                                              drop0trailing = TRUE)) +
+    scale_x_log10(labels = function(b) {
+      format(b, trim = TRUE,
+             scientific = FALSE,
+             drop0trailing = TRUE)
+    }) +
     labs(title = "Out-of-core: design crosses RAM, resident stays bounded",
          subtitle = if (nrow(barrier) > 0)
            "ringed = out-of-core barrier point ([X|D] > RAM)" else NULL,
@@ -722,7 +739,8 @@ plot_scalability_dashboard <- function(df, title, tfdr = DEFAULT_TFDR,
   ((p_rt | p_mem) / (p_oc | p_fdr)) +
     plot_annotation(title = title,
                     theme = theme(plot.title = element_text(
-                      size = 14, face = "bold", hjust = 0.5)))
+                      size = 14, face = "bold", hjust = 0.5
+                    )))
 }
 
 
@@ -751,28 +769,52 @@ plot_scalability_dashboard <- function(df, title, tfdr = DEFAULT_TFDR,
   i <- 1L
   while (i <= length(argv)) {
     a <- argv[[i]]
-    flag <- function() { i <<- i + 1L; argv[[i]] }
+    flag <- function() {
+      i <<- i + 1L
+      argv[[i]]
+    }
     switch(a,
-      "--title"        = { args$title <- flag() },
-      "--legend-title" = { args$legend_title <- flag() },
-      "--outdir"       = { args$outdir <- flag() },
-      "--stem"         = { args$stem <- flag() },
-      "--formats"      = { args$formats <- .split_formats(flag()) },
-      "--tfdr"         = { args$tfdr <- as.numeric(flag()) },
-      "--groups"       = { args$groups <- as.integer(flag()) },
-      "--xscale"       = { args$xscale <- match.arg(flag(), XSCALES) },
-      "--no-grouped"   = { args$no_grouped <- TRUE },
-      "--overlay"      = { r <- .consume_multi(argv, i)
-                           args$overlay <- r$values; i <- r$i },
-      "--no-plotly"    = { },  # accepted for Python-CLI parity; no HTML here
-      "--plotly-cdn"   = { },
-      {
-        if (startsWith(a, "--")) {
-          cat(sprintf("note: ignoring unknown flag %s\n", a))
-        } else {
-          args$csv <- c(args$csv, a)
-        }
-      })
+           "--title"        = {
+             args$title <- flag()
+           },
+           "--legend-title" = {
+             args$legend_title <- flag()
+           },
+           "--outdir"       = {
+             args$outdir <- flag()
+           },
+           "--stem"         = {
+             args$stem <- flag()
+           },
+           "--formats"      = {
+             args$formats <- .split_formats(flag())
+           },
+           "--tfdr"         = {
+             args$tfdr <- as.numeric(flag())
+           },
+           "--groups"       = {
+             args$groups <- as.integer(flag())
+           },
+           "--xscale"       = {
+             args$xscale <- match.arg(flag(), XSCALES)
+           },
+           "--no-grouped"   = {
+             args$no_grouped <- TRUE
+           },
+           "--overlay"      = {
+             r <- .consume_multi(argv, i)
+             args$overlay <- r$values
+             i <- r$i
+           },
+           "--no-plotly"    = { },  # accepted for Python-CLI parity; no HTML here
+           "--plotly-cdn"   = { },
+           {
+             if (startsWith(a, "--")) {
+               cat(sprintf("note: ignoring unknown flag %s\n", a))
+             } else {
+               args$csv <- c(args$csv, a)
+             }
+           })
     i <- i + 1L
   }
   args
@@ -814,12 +856,9 @@ main_fdr_tpr <- function(argv) {
 
   csv_path <- args$csv[[1L]]
   csv_stem <- sub("[.]csv$", "", basename(csv_path))
-  title <- if (!is.null(args$title)) args$title
-           else sprintf("T-Rex Monte Carlo simulation (%s)", csv_stem)
-  outdir <- if (!is.null(args$outdir)) args$outdir
-            else default_plots_dir(csv_path)
-  stem <- if (!is.null(args$stem)) args$stem
-          else paste0(csv_stem, STEM_SUFFIX)
+  title <- if (!is.null(args$title)) args$title else sprintf("T-Rex Monte Carlo simulation (%s)", csv_stem)
+  outdir <- if (!is.null(args$outdir)) args$outdir else default_plots_dir(csv_path)
+  stem <- if (!is.null(args$stem)) args$stem else paste0(csv_stem, STEM_SUFFIX)
 
   # 1. Combined overview (FDR | TPR).
   fig <- plot_fdr_tpr_vs_snr(df, title, tfdr = args$tfdr,
@@ -831,7 +870,8 @@ main_fdr_tpr <- function(argv) {
   if (!args$no_grouped) {
     grouped <- plot_fdr_tpr_vs_snr_grouped(
       df, title, tfdr = args$tfdr, legend_title = args$legend_title,
-      n_groups = args$groups, xscale = args$xscale)
+      n_groups = args$groups, xscale = args$xscale
+    )
     save_figure(grouped, outdir, paste0(stem, "_grouped"), args$formats,
                 width = 6.8 * args$groups, height = 9.0)
   }
@@ -850,20 +890,43 @@ main_grid <- function(argv) {
   i <- 1L
   while (i <= length(argv)) {
     a <- argv[[i]]
-    flag <- function() { i <<- i + 1L; argv[[i]] }
+    flag <- function() {
+      i <<- i + 1L
+      argv[[i]]
+    }
     switch(a,
-      "--labels"       = { r <- .consume_multi(argv, i)
-                           args$labels <- r$values; i <- r$i },
-      "--csvs"         = { r <- .consume_multi(argv, i)
-                           args$csvs <- r$values; i <- r$i },
-      "--title"        = { args$title <- flag() },
-      "--legend-title" = { args$legend_title <- flag() },
-      "--stem"         = { args$stem <- flag() },
-      "--outdir"       = { args$outdir <- flag() },
-      "--formats"      = { args$formats <- .split_formats(flag()) },
-      "--tfdr"         = { args$tfdr <- as.numeric(flag()) },
-      "--xscale"       = { args$xscale <- match.arg(flag(), XSCALES) },
-      { })  # ignore flags meant for the default mode (--no-grouped, ...)
+           "--labels"       = {
+             r <- .consume_multi(argv, i)
+             args$labels <- r$values
+             i <- r$i
+           },
+           "--csvs"         = {
+             r <- .consume_multi(argv, i)
+             args$csvs <- r$values
+             i <- r$i
+           },
+           "--title"        = {
+             args$title <- flag()
+           },
+           "--legend-title" = {
+             args$legend_title <- flag()
+           },
+           "--stem"         = {
+             args$stem <- flag()
+           },
+           "--outdir"       = {
+             args$outdir <- flag()
+           },
+           "--formats"      = {
+             args$formats <- .split_formats(flag())
+           },
+           "--tfdr"         = {
+             args$tfdr <- as.numeric(flag())
+           },
+           "--xscale"       = {
+             args$xscale <- match.arg(flag(), XSCALES)
+           },
+           { })  # ignore flags meant for the default mode (--no-grouped, ...)
     i <- i + 1L
   }
   if (is.null(args$stem) || is.null(args$outdir))
@@ -902,17 +965,32 @@ main_scalability <- function(argv) {
   i <- 1L
   while (i <= length(argv)) {
     a <- argv[[i]]
-    flag <- function() { i <<- i + 1L; argv[[i]] }
+    flag <- function() {
+      i <<- i + 1L
+      argv[[i]]
+    }
     switch(a,
-      "--title"   = { args$title <- flag() },
-      "--stem"    = { args$stem <- flag() },
-      "--outdir"  = { args$outdir <- flag() },
-      "--formats" = { args$formats <- .split_formats(flag()) },
-      "--tfdr"    = { args$tfdr <- as.numeric(flag()) },
-      "--xscale"  = { args$xscale <- match.arg(flag(), XSCALES) },
-      {
-        if (!startsWith(a, "--")) args$csv <- c(args$csv, a)
-      })  # unknown flags meant for other modes are ignored
+           "--title"   = {
+             args$title <- flag()
+           },
+           "--stem"    = {
+             args$stem <- flag()
+           },
+           "--outdir"  = {
+             args$outdir <- flag()
+           },
+           "--formats" = {
+             args$formats <- .split_formats(flag())
+           },
+           "--tfdr"    = {
+             args$tfdr <- as.numeric(flag())
+           },
+           "--xscale"  = {
+             args$xscale <- match.arg(flag(), XSCALES)
+           },
+           {
+             if (!startsWith(a, "--")) args$csv <- c(args$csv, a)
+           })  # unknown flags meant for other modes are ignored
     i <- i + 1L
   }
   if (length(args$csv) != 1L || is.null(args$stem) || is.null(args$outdir))

@@ -41,8 +41,7 @@ this_dir_ <- tryCatch(
     args <- commandArgs(trailingOnly = FALSE)
     flag <- grep("^--file=", args, value = TRUE)
     if (length(flag) > 0L)
-      dirname(normalizePath(sub("^--file=", "", flag[1L])))
-    else "."
+      dirname(normalizePath(sub("^--file=", "", flag[1L]))) else "."
   }
 )
 
@@ -99,7 +98,8 @@ GVS_METHODS <- list(
     tFDR = CFG$tFDR, K = CFG$K, num_MC = CFG$num_MC, seed = CFG$seed,
     GVS_type = method$GVS_type, corr_max = CFG$corr_max, hc_dist = "Single",
     en_solver = method$en_solver, lambda2_method = "CV_1SE_CCD",
-    n_cores = num_cores)
+    n_cores = num_cores
+  )
 }
 
 
@@ -126,7 +126,8 @@ run_part1_2d_sweep <- function(cfg, preset) {
         sd_x <- sqrt((1 - rho) / rho)
         .mixed_point(m, snr, sd_x)
       },
-      preset$snr_grid_2d, preset$rho_grid_2d, m$label, cfg$num_MC)
+      preset$snr_grid_2d, preset$rho_grid_2d, m$label, cfg$num_MC
+    )
   })
   en     <- sweeps[[1L]]
   en_aug <- sweeps[[2L]]
@@ -158,8 +159,13 @@ run_part1_2d_sweep <- function(cfg, preset) {
 
 run_mixed_blocks_benchmark <- function(cfg, preset) {
   print_section_header(sprintf(
-    "Mixed-blocks benchmark | %s\nDGP = dgp_mixed_blocks_snr\nblocks = {20, 50, 80, 65}, active = {1,2,3}, inactive trap = {4}",
-    preset$scenario_tag))
+    paste0(
+      "Mixed-blocks benchmark | %s\n",
+      "DGP = dgp_mixed_blocks_snr\n",
+      "blocks = {20, 50, 80, 65}, active = {1,2,3}, inactive trap = {4}"
+    ),
+    preset$scenario_tag
+  ))
 
   run_part1_2d_sweep(cfg, preset)
 

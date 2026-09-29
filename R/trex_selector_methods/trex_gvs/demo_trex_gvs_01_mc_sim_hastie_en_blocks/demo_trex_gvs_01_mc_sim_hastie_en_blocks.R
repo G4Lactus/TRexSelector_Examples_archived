@@ -40,8 +40,7 @@ this_dir_ <- tryCatch(
     args <- commandArgs(trailingOnly = FALSE)
     flag <- grep("^--file=", args, value = TRUE)
     if (length(flag) > 0L)
-      dirname(normalizePath(sub("^--file=", "", flag[1L])))
-    else "."
+      dirname(normalizePath(sub("^--file=", "", flag[1L]))) else "."
   }
 )
 
@@ -147,7 +146,8 @@ sim_hastie_part_1 <- function(cfg, tag) {
         sd_x <- sqrt((1 - rho) / rho)
         .hastie_point(m$GVS_type, m$en_solver, snr, sd_x)
       },
-      snr_grid_2d, rho_grid_2d, m$label, cfg$num_MC)
+      snr_grid_2d, rho_grid_2d, m$label, cfg$num_MC
+    )
   })
   en_2d     <- sweeps[[1L]]
   en_aug_2d <- sweeps[[2L]]
@@ -197,16 +197,19 @@ sim_hastie_part_2 <- function(cfg, tag) {
   for (lm in methods) {
     en_results[[length(en_results) + 1L]] <- .comparison_point(
       sprintf("TENET+%s", lm), "EN", "TENET", fixed_snr, fixed_sdx,
-      lambda2_method = lm)
+      lambda2_method = lm
+    )
     ien_results[[length(ien_results) + 1L]] <- .comparison_point(
       sprintf("TIENET_AUG+%s", lm), "IEN", NULL, fixed_snr, fixed_sdx,
-      lambda2_method = lm)
+      lambda2_method = lm
+    )
   }
 
   save_mc_1d_method_tables(
     tag, "lambda2_method", "lambda2_method", methods, en_results, ien_results,
     sprintf("SNR=%s, rho=%s", fmt_num(fixed_snr), fmt_num(fixed_rho)),
-    cfg, OUT_DIR, sprintf("gvs_%s_lambda2_method", tag))
+    cfg, OUT_DIR, sprintf("gvs_%s_lambda2_method", tag)
+  )
 }
 
 
@@ -236,16 +239,19 @@ sim_hastie_part_3 <- function(cfg, tag) {
   for (lk in linkages) {
     en_results[[length(en_results) + 1L]] <- .comparison_point(
       sprintf("TENET+%s", lk), "EN", "TENET", fixed_snr, fixed_sdx,
-      hc_dist = lk)
+      hc_dist = lk
+    )
     ien_results[[length(ien_results) + 1L]] <- .comparison_point(
       sprintf("TIENET_AUG+%s", lk), "IEN", NULL, fixed_snr, fixed_sdx,
-      hc_dist = lk)
+      hc_dist = lk
+    )
   }
 
   save_mc_1d_method_tables(
     tag, "hc_linkage", "hc_linkage", linkages, en_results, ien_results,
     sprintf("SNR=%s, rho=%s", fmt_num(fixed_snr), fmt_num(fixed_rho)),
-    cfg, OUT_DIR, sprintf("gvs_%s_hc_linkage", tag))
+    cfg, OUT_DIR, sprintf("gvs_%s_hc_linkage", tag)
+  )
 }
 
 

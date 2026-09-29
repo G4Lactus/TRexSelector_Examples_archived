@@ -42,8 +42,7 @@ this_dir_ <- tryCatch(
     args <- commandArgs(trailingOnly = FALSE)
     flag <- grep("^--file=", args, value = TRUE)
     if (length(flag) > 0L)
-      dirname(normalizePath(sub("^--file=", "", flag[1L])))
-    else "."
+      dirname(normalizePath(sub("^--file=", "", flag[1L]))) else "."
   }
 )
 
@@ -99,7 +98,8 @@ GVS_METHODS <- list(
     tFDR = CFG$tFDR, K = CFG$K, num_MC = CFG$num_MC, seed = CFG$seed,
     GVS_type = method$GVS_type, corr_max = CFG$corr_max, hc_dist = "Single",
     en_solver = method$en_solver, lambda2_method = "CV_1SE_CCD",
-    n_cores = num_cores)
+    n_cores = num_cores
+  )
 }
 
 
@@ -123,7 +123,8 @@ run_ar1_part1_2d_sweep <- function(cfg, preset) {
   sweeps <- lapply(GVS_METHODS, function(m) {
     run_gvs_2d_sweep(
       function(snr, rho) .ar1_point(m, snr, rho),
-      preset$snr_grid_2d, preset$rho_grid_2d, m$label, cfg$num_MC)
+      preset$snr_grid_2d, preset$rho_grid_2d, m$label, cfg$num_MC
+    )
   })
   en     <- sweeps[[1L]]
   en_aug <- sweeps[[2L]]
@@ -155,8 +156,13 @@ run_ar1_part1_2d_sweep <- function(cfg, preset) {
 
 run_ar1_blocks_benchmark <- function(cfg, preset) {
   print_section_header(sprintf(
-    "AR(1)-within-block benchmark | %s\nDGP = dgp_ar1_blocks_snr\nblocks = {20, 50, 80, 65}, active = {1,2,3}, inactive trap = {4}",
-    preset$scenario_tag))
+    paste0(
+      "AR(1)-within-block benchmark | %s\n",
+      "DGP = dgp_ar1_blocks_snr\n",
+      "blocks = {20, 50, 80, 65}, active = {1,2,3}, inactive trap = {4}"
+    ),
+    preset$scenario_tag
+  ))
 
   run_ar1_part1_2d_sweep(cfg, preset)
 

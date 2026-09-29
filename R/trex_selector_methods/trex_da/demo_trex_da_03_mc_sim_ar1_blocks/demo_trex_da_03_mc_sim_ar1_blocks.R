@@ -38,8 +38,7 @@ this_dir_ <- tryCatch(
     args <- commandArgs(trailingOnly = FALSE)
     flag <- grep("^--file=", args, value = TRUE)
     if (length(flag) > 0L)
-      dirname(normalizePath(sub("^--file=", "", flag[1L])))
-    else "."
+      dirname(normalizePath(sub("^--file=", "", flag[1L]))) else "."
   }
 )
 
@@ -83,15 +82,18 @@ part_1_snr_sweep <- function() {
     run_snr_sweep(
       OUT_DIR, sprintf("da_ar1_blocks_snr_%s", lnk), snr_grid, NUM_MC, TFDR,
       BASE_SEED, default_solvers("+BT"),
-      function(snr) list(n = N, p = BASE_P, dgp = "dgp_ar1_block_snr",
-                         kwargs = list(amplitude = AMPLITUDE, n_blocks = M,
-                                       rho = RHO, snr = snr),
-                         support = support_base, s = M),
+      function(snr) {
+        list(n = N, p = BASE_P, dgp = "dgp_ar1_block_snr",
+             kwargs = list(amplitude = AMPLITUDE, n_blocks = M,
+                           rho = RHO, snr = snr),
+             support = support_base, s = M)
+      },
       list(method = "BT", hc_linkage = lnk), K,
       sprintf(paste0("AR(1)-block SNR sweep  n=%d  M=%d  Q=%d  p=%d  s=%d",
                      "  rho=%s  linkage=%s"),
               N, M, Q, BASE_P, M, fmt_num(RHO), lnk),
-      include_base_trex = FALSE)
+      include_base_trex = FALSE
+    )
   }
 }
 
@@ -109,15 +111,18 @@ part_2_rho_sweep <- function() {
     run_param_sweep(
       OUT_DIR, sprintf("da_ar1_blocks_rho_%s", lnk), "Rho", rho_grid, NUM_MC,
       TFDR, BASE_SEED, default_solvers("+BT"),
-      function(rho) list(n = N, p = BASE_P, dgp = "dgp_ar1_block_snr",
-                         kwargs = list(amplitude = AMPLITUDE, n_blocks = M,
-                                       rho = rho, snr = SNR),
-                         support = support_base, s = M),
+      function(rho) {
+        list(n = N, p = BASE_P, dgp = "dgp_ar1_block_snr",
+             kwargs = list(amplitude = AMPLITUDE, n_blocks = M,
+                           rho = rho, snr = SNR),
+             support = support_base, s = M)
+      },
       list(method = "BT", hc_linkage = lnk), K,
       sprintf(paste0("AR(1)-block rho sweep  n=%d  M=%d  Q=%d  p=%d  s=%d",
                      "  SNR=%s  linkage=%s"),
               N, M, Q, BASE_P, M, fmt_num(SNR), lnk),
-      include_base_trex = FALSE)
+      include_base_trex = FALSE
+    )
   }
 }
 
@@ -149,7 +154,8 @@ part_3_q_sweep <- function() {
       sprintf(paste0("AR(1)-block Q sweep  n=%d  M=%d  s=%d  rho=%s",
                      "  SNR=%s  p=M*Q varies  linkage=%s"),
               N, M, M, fmt_num(RHO), fmt_num(SNR), lnk),
-      include_base_trex = FALSE)
+      include_base_trex = FALSE
+    )
   }
 }
 
@@ -181,7 +187,8 @@ part_4_m_sweep <- function() {
       sprintf(paste0("AR(1)-block M sweep  n=%d  Q=%d  rho=%s",
                      "  SNR=%s  p=M*Q and s=M vary  linkage=%s"),
               N, Q, fmt_num(RHO), fmt_num(SNR), lnk),
-      include_base_trex = FALSE)
+      include_base_trex = FALSE
+    )
   }
 }
 

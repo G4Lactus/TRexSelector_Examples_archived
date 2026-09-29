@@ -282,8 +282,7 @@ RAW_FIELDS <- c("n", "p", "solver", "mc", "trial_seed", "dgp_s", "select_s",
     avg_select_s = mean(sel),
     peak_rss_mib = max(num("peak_rss_mib")),
     max_rss_mib  = max(num("rss_mib")),
-    max_fp_mib   = if (all(is.na(num("fp_mib")))) NA_real_
-                   else max(num("fp_mib"), na.rm = TRUE),
+    max_fp_mib   = if (all(is.na(num("fp_mib")))) NA_real_ else max(num("fp_mib"), na.rm = TRUE),
     data_mib     = as.numeric(rows[[length(rows)]][["data_mib"]]),
     avg_fdr      = mean(fdp),
     avg_tpr      = mean(tpp),
@@ -470,7 +469,8 @@ run_scalability_grid_point <- function(n, p, num_MC, is_barrier, solver_entry,
   reuse_note <- if (have > 0L) sprintf("  (reusing %d cached)", have) else ""
   cat(sprintf(
     "  [%s] n=%d, p=%d  (design [X|D] = %.1f GiB%s) — %d new / %d MC trials (mmap)%s ...\n",
-    solver_entry$name, n, p, design, over, length(todo), num_MC, reuse_note))
+    solver_entry$name, n, p, design, over, length(todo), num_MC, reuse_note
+  ))
 
   for (mc in todo) {
     trial_seed <- .trial_seed(n, p, mc)
@@ -505,7 +505,8 @@ run_scalability_grid_point <- function(n, p, num_MC, is_barrier, solver_entry,
     cat(sprintf(
       "    trial %d/%d: dgp=%.2fs  select=%.2fs  FDP=%.3f  TPP=%.3f  L=%.0f  T=%.0f  RSS=%.1f MiB  FP=%.1f MiB\n",
       mc + 1L, num_MC, m$dgp_s, m$select_s, m$fdp, m$tpp, m$L, m$T,
-      m$rss_mib, m$fp_mib))
+      m$rss_mib, m$fp_mib
+    ))
   }
 
   agg <- .aggregate_cell(cell_cache, n, p)
@@ -513,7 +514,8 @@ run_scalability_grid_point <- function(n, p, num_MC, is_barrier, solver_entry,
     "  [%s] n=%d, p=%d done (%d trials). select median=%.2fs [%.2f, %.2f]  peakRSS=%.0f MiB  FDR=%.3f  TPR=%.3f\n\n",
     solver_entry$name, n, p, agg$num_mc,
     agg$sel_med_s, agg$sel_min_s, agg$sel_max_s,
-    agg$peak_rss_mib, agg$avg_fdr, agg$avg_tpr))
+    agg$peak_rss_mib, agg$avg_fdr, agg$avg_tpr
+  ))
   list(agg = agg, cell_cache = cell_cache)
 }
 
@@ -541,7 +543,7 @@ METRICS <- list(
   list("Avg_T",       2L, "avg_T")
 )
 
-save_and_print_scalability_results <- function(file_stem, tFDR, snr, grid,
+save_and_print_scalability_results <- function(file_stem, tFDR, snr, grid,  # nolint: object_length_linter. C++ name
                                                solvers, results,
                                                num_MC_target) {
   # Print the scalability results as an aligned per-solver table (rows = (n, p)
@@ -555,8 +557,7 @@ save_and_print_scalability_results <- function(file_stem, tFDR, snr, grid,
 
   fmt_val <- function(v, prec, width) {
     # (R's sprintf allows at most one '*' per conversion — build the format.)
-    if (is.na(v)) sprintf("%*s", width, "NA")
-    else sprintf(sprintf("%%%d.%df", width, prec), v)
+    if (is.na(v)) sprintf("%*s", width, "NA") else sprintf(sprintf("%%%d.%df", width, prec), v)
   }
 
   out(sprintf("\n%s\n", strrep("=", 70L)))
@@ -642,10 +643,13 @@ demo_trex_scalability <- function(grid, file_stem, num_MC_target,
   # Out-of-core count over the FULL n x p grid (header info; mirrors Python).
   n_over <- sum(vapply(
     N_VALUES,
-    function(n) sum(vapply(P_VALUES,
-                           function(p) isTRUE(.design_gib(n, p) > RAM_GIB),
-                           FALSE)),
-    0L))
+    function(n) {
+      sum(vapply(P_VALUES,
+                 function(p) isTRUE(.design_gib(n, p) > RAM_GIB),
+                 FALSE))
+    },
+    0L
+  ))
   cat("Fully memory-mapped pipeline (X mmap + D mmap + solver serialization)\n")
   cat(sprintf("Physical RAM: %.0f GiB\n", RAM_GIB))
   cat(sprintf("Grid: n in {%s} x p in {%s}  (%d points)\n",
@@ -683,7 +687,8 @@ demo_trex_scalability <- function(grid, file_stem, num_MC_target,
       cell_cache <- if (is.null(cache[[key]])) list() else cache[[key]]
       point <- run_scalability_grid_point(
         gp$n, gp$p, gp$num_MC, gp$is_barrier, solver_entry, TFDR, SNR,
-        rnd_coef, S_TRUE, cell_cache, raw_path)
+        rnd_coef, S_TRUE, cell_cache, raw_path
+      )
       cache[[key]] <- point$cell_cache
       results[[solver_entry$name]][[key]] <- point$agg
     }

@@ -42,8 +42,7 @@ this_dir_ <- tryCatch(
     args <- commandArgs(trailingOnly = FALSE)
     flag <- grep("^--file=", args, value = TRUE)
     if (length(flag) > 0L)
-      dirname(normalizePath(sub("^--file=", "", flag[1L])))
-    else "."
+      dirname(normalizePath(sub("^--file=", "", flag[1L]))) else "."
   }
 )
 
@@ -139,7 +138,8 @@ run_scattered_part1_2d_sweep <- function(cfg, preset) {
         sd_x <- sqrt((1 - rho) / rho)
         .scattered_point(m, snr, sd_x, preset)
       },
-      preset$snr_grid_2d, preset$rho_grid_2d, m$label, cfg$num_MC)
+      preset$snr_grid_2d, preset$rho_grid_2d, m$label, cfg$num_MC
+    )
   })
   en     <- sweeps[[1L]]
   en_aug <- sweeps[[2L]]
@@ -169,11 +169,12 @@ run_scattered_part1_2d_sweep <- function(cfg, preset) {
 # Top-level driver
 # ==============================================================================
 
-run_scattered_grouped_benchmark <- function(cfg, preset) {
+run_scattered_grouped_benchmark <- function(cfg, preset) {  # nolint: object_length_linter. C++ name
   print_section_header(sprintf(
     "Scattered-grouped benchmark | %s\nDGP = dgp_scattered_grouped_snr\nn_groups = %d, group_size = %d, s = %d",
     preset$scenario_tag, preset$n_groups, preset$group_size,
-    preset$n_groups * preset$group_size))
+    preset$n_groups * preset$group_size
+  ))
 
   run_scattered_part1_2d_sweep(cfg, preset)
 

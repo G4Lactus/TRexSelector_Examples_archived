@@ -66,7 +66,9 @@ OUT_DIR <- file.path(this_dir_, "simulation_results", "data")
 # Monte Carlo count mirrors the cpp/Python reference (num_MC = 200).
 NUM_MC <- 200L
 
-N <- 300L; P <- 1000L; P1 <- 10L
+N <- 300L
+P <- 1000L
+P1 <- 10L
 SNR_GRID <- c(0.01, 0.1, 0.2, 0.5, 0.6, 1.0, 2.0, 5.0)
 RHO_GRID <- c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
 
@@ -90,16 +92,23 @@ methods_for <- function(da_method, da_label) {
 run_sweep <- function(part_title, methods, dgp_fn, sweep_name, sweep_values,
                       file_stem) {
   cat("\n", strrep("=", 70L), "\n", sep = "")
-  cat(part_title, "\n"); cat(strrep("=", 70L), "\n\n", sep = "")
+  cat(part_title, "\n")
+  cat(strrep("=", 70L), "\n\n", sep = "")
   method_names <- vapply(methods, function(m) m$name, character(1))
-  init <- function() setNames(
-    lapply(method_names, function(x) numeric(length(sweep_values))), method_names)
-  fdr_map <- init(); tpr_map <- init(); est_fdr_map <- init()
+  init <- function() {
+    setNames(
+      lapply(method_names, function(x) numeric(length(sweep_values))), method_names
+    )
+  }
+  fdr_map <- init()
+  tpr_map <- init()
+  est_fdr_map <- init()
   trex_ctrl <- make_scr_trex_ctrl()
 
   for (m in methods) {
     cat(strrep("=", 70L), "\n", sep = "")
-    cat(sprintf("Method: %s\n", m$name)); cat(strrep("=", 70L), "\n", sep = "")
+    cat(sprintf("Method: %s\n", m$name))
+    cat(strrep("=", 70L), "\n", sep = "")
     for (vi in seq_along(sweep_values)) {
       v <- sweep_values[vi]
       make_data <- function(seed) dgp_fn(v, seed)   # v = SNR or rho
@@ -107,7 +116,8 @@ run_sweep <- function(part_title, methods, dgp_fn, sweep_name, sweep_values,
       res <- run_mc_screen(
         NUM_MC, sprintf("%s  %s=%.2f", m$name, sweep_name, v), make_data, trex_ctrl,
         screen_args = list(trex_method = m$trex_method, use_bootstrap_CI = m$bootstrap),
-        base_seed = base_seed, num_cores = num_cores)
+        base_seed = base_seed, num_cores = num_cores
+      )
       fdr_map[[m$name]][vi]     <- res$avg_fdr
       tpr_map[[m$name]][vi]     <- res$avg_tpr
       est_fdr_map[[m$name]][vi] <- res$avg_est_fdr

@@ -200,11 +200,13 @@ run_mc_trials <- function(num_MC, progress_label, n, p, dgp, dgp_kwargs,
     sel <- if (!is.null(da_spec)) {
       TRexSelectorNeo::TRexDASelector$new(
         dat$X, dat$y, tFDR = tFDR, seed = -1L, verbose = FALSE,
-        da_control = .make_da_ctrl(da_spec), control = ctrl)
+        da_control = .make_da_ctrl(da_spec), control = ctrl
+      )
     } else {
       TRexSelectorNeo::TRexSelector$new(
         dat$X, dat$y, tFDR = tFDR, seed = -1L, verbose = FALSE,
-        control = ctrl)
+        control = ctrl
+      )
     }
     sel$select()
 
@@ -333,8 +335,7 @@ save_and_print_grid_results <- function(out_dir, scenario_tag, grid_label,
                          abs(grid_values) < 1e6)
   th <- paste0(strrep(" ", indent_w), sprintf("%-*s", metric_w, grid_label))
   for (v in grid_values) {
-    th <- paste0(th, if (integral_grid) sprintf("%*d", col_w, as.integer(v))
-                 else sprintf("%*.2f", col_w, v))
+    th <- paste0(th, if (integral_grid) sprintf("%*d", col_w, as.integer(v)) else sprintf("%*.2f", col_w, v))
   }
   txt <- paste0(txt, th, "\n", strrep("-", sep_w), "\n")
 
@@ -410,9 +411,14 @@ run_param_sweep <- function(out_dir, scenario_tag, param_label, grid_values,
   all_names <- vapply(solvers, `[[`, character(1L), "name")
   zero <- stats::setNames(rep(list(numeric(length(grid_values))), length(all_names)),
                           all_names)
-  fdr <- zero; tpr <- zero; sd_fdr <- zero; sd_tpr <- zero
-  avg_L <- zero; avg_T <- zero
+  fdr <- zero
+  tpr <- zero
+  sd_fdr <- zero
+  sd_tpr <- zero
+  avg_L <- zero
+  avg_T <- zero
 
+  acc <- environment()  # the result lists that sweep_one fills
   sweep_one <- function(solver_desc, name, spec_da) {
     for (gi in seq_along(grid_values)) {
       val <- grid_values[gi]
@@ -421,13 +427,14 @@ run_param_sweep <- function(out_dir, scenario_tag, param_label, grid_values,
         num_MC, sprintf("%s = %.2f", param_label, val),
         d$n, d$p, d$dgp, d$kwargs, d$support, d$s,
         tFDR, solver_desc, K, spec_da,
-        base_seed + (gi - 1L) * 10000L, n_cores)
-      fdr[[name]][gi]    <<- res$avg_fdr
-      tpr[[name]][gi]    <<- res$avg_tpr
-      sd_fdr[[name]][gi] <<- res$sd_fdr
-      sd_tpr[[name]][gi] <<- res$sd_tpr
-      avg_L[[name]][gi]  <<- res$avg_L
-      avg_T[[name]][gi]  <<- res$avg_T
+        base_seed + (gi - 1L) * 10000L, n_cores
+      )
+      acc$fdr[[name]][gi] <- res$avg_fdr
+      acc$tpr[[name]][gi] <- res$avg_tpr
+      acc$sd_fdr[[name]][gi] <- res$sd_fdr
+      acc$sd_tpr[[name]][gi] <- res$sd_tpr
+      acc$avg_L[[name]][gi] <- res$avg_L
+      acc$avg_T[[name]][gi] <- res$avg_T
     }
   }
 
@@ -484,7 +491,7 @@ run_snr_sweep <- function(out_dir, scenario_tag, snr_values, num_MC, tFDR,
 #' Write the 2D Gap x Rho sweep (CappedSpread matrices [n_rho x n_gap] plus
 #' Random vectors [n_rho]) to console, TXT, and CSV
 #' (`solver,metric,rho,support_type,gap,value`).
-save_and_print_2d_gap_rho_results <- function(out_dir, scenario_tag, gap_grid,
+save_and_print_2d_gap_rho_results <- function(out_dir, scenario_tag, gap_grid,  # nolint: object_length_linter. C++ name
                                               rho_grid, kappa_boundary, num_MC,
                                               solver_names, tpp_cs, fdp_cs,
                                               sd_tpp_cs, sd_fdp_cs, tpp_rand,
@@ -588,7 +595,7 @@ save_and_print_2d_gap_rho_results <- function(out_dir, scenario_tag, gap_grid,
 #' Write a 2D parameter sweep with full CappedSpread and Random matrices
 #' [n_row x n_col] per solver to console, TXT, and CSV
 #' (`solver,support_type,metric,<ROW>,<COL>,value`).
-save_and_print_2d_two_support_results <- function(out_dir, scenario_tag,
+save_and_print_2d_two_support_results <- function(out_dir, scenario_tag,  # nolint: object_length_linter. C++ name
                                                   row_label, col_label,
                                                   row_grid, col_grid, num_MC,
                                                   solver_names, tpp_cs, fdp_cs,

@@ -51,8 +51,7 @@ this_dir_ <- tryCatch(
     args <- commandArgs(trailingOnly = FALSE)
     flag <- grep("^--file=", args, value = TRUE)
     if (length(flag) > 0L)
-      dirname(normalizePath(sub("^--file=", "", flag[1L])))
-    else "."
+      dirname(normalizePath(sub("^--file=", "", flag[1L]))) else "."
   }
 )
 
@@ -81,16 +80,18 @@ demo_trex_spca_mc_snr_sweep <- function(cfg, snr_values, stem) {
                     "TRexSPCA-EN-Thr", "TRexSPCA-ENaug-Thr")
 
   empty_grid <- setNames(
-    rep(list(numeric(length(snr_values))), length(method_names)), method_names)
+    rep(list(numeric(length(snr_values))), length(method_names)), method_names
+  )
   fdr_map <- tpr_map <- pev_map <- pev_sig_map <- pev_sigmix_map <- empty_grid
+  acc <- environment()  # the result grids that store() fills
 
   for (si in seq_along(snr_values)) {
     store <- function(name, r) {
-      fdr_map[[name]][si] <<- r$avg_fdr
-      tpr_map[[name]][si] <<- r$avg_tpr
-      pev_map[[name]][si] <<- r$avg_pev
-      pev_sig_map[[name]][si] <<- r$avg_pev_sig
-      pev_sigmix_map[[name]][si] <<- r$avg_pev_sigmix
+      acc$fdr_map[[name]][si] <- r$avg_fdr
+      acc$tpr_map[[name]][si] <- r$avg_tpr
+      acc$pev_map[[name]][si] <- r$avg_pev
+      acc$pev_sig_map[[name]][si] <- r$avg_pev_sig
+      acc$pev_sigmix_map[[name]][si] <- r$avg_pev_sigmix
     }
     snr <- snr_values[si]
     offset <- cfg$base_seed + as.integer(round(snr))
@@ -144,7 +145,8 @@ demo_trex_spca_mc_snr_sweep <- function(cfg, snr_values, stem) {
     file_stem = stem, num_MC = cfg$num_MC,
     snr_values = snr_values, method_names = method_names,
     fdr_map = fdr_map, tpr_map = tpr_map, pev_map = pev_map,
-    pev_sig_map = pev_sig_map, pev_sigmix_map = pev_sigmix_map)
+    pev_sig_map = pev_sig_map, pev_sigmix_map = pev_sigmix_map
+  )
 }
 
 
@@ -197,7 +199,8 @@ demo_trex_spca_union_fdr_sweep <- function(cfg, snr_values, stem) {
                                   en_solver = "TENET",
                                   lambda_2 = cfg$lambda_2,
                                   lambda2_method = "CV_1SE_CCD"),
-      seed = -1L, verbose = FALSE)
+      seed = -1L, verbose = FALSE
+    )
     sel$select()
 
     fdr <- numeric(M)
@@ -249,7 +252,8 @@ demo_trex_spca_union_fdr_sweep <- function(cfg, snr_values, stem) {
         metric = c("FDRunion", "k"),
         snr_db = sprintf("%.6f", snr_values[si]),
         value  = sprintf("%.6f", c(fdr_mean[m, si], k_mean[m, si])),
-        stringsAsFactors = FALSE)
+        stringsAsFactors = FALSE
+      )
     }
   }
   csv_path <- file.path(out_dir, paste0(stem, ".csv"))

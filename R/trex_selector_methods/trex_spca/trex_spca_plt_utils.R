@@ -61,7 +61,8 @@ METHOD_ORDER <- c("OrdPCA", "OraclePCA",
 #' Integer-dB x-axis: major ticks on whole decibels at the coarsest step that
 #' keeps <= 8 major intervals, one minor tick per dB, 4% padding.
 .db_x_scale <- function(values) {
-  lo <- min(values); hi <- max(values)
+  lo <- min(values)
+  hi <- max(values)
   span <- hi - lo
   pad <- if (span > 0) span * 0.04 else 0.5
   steps <- c(1, 2, 5, 10, 20, 25, 50, 100)
@@ -71,7 +72,8 @@ METHOD_ORDER <- c("OrdPCA", "OraclePCA",
     breaks = seq(ceiling(lo / step) * step, hi, by = step),
     minor_breaks = seq(ceiling(lo), floor(hi), by = 1),
     limits = c(lo - pad, hi + pad),
-    expand = expansion(0))
+    expand = expansion(0)
+  )
 }
 
 #' The shared panel look: light major/minor grid, bold panel title.
@@ -84,7 +86,8 @@ METHOD_ORDER <- c("OrdPCA", "OraclePCA",
       plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
       legend.title = element_text(size = 10, face = "bold"),
       legend.text = element_text(size = 9),
-      legend.background = element_rect(colour = "grey55", linewidth = 0.3))
+      legend.background = element_rect(colour = "grey55", linewidth = 0.3)
+    )
 }
 
 #' Method colour/fill/shape scales over a fixed ordered set.
@@ -94,7 +97,8 @@ METHOD_ORDER <- c("OrdPCA", "OraclePCA",
                                    length(METHOD_SHAPES) + 1L], methods)
   list(
     scale_color_manual(name = group_label, values = cols),
-    scale_shape_manual(name = group_label, values = shps))
+    scale_shape_manual(name = group_label, values = shps)
+  )
 }
 
 save_figure <- function(plot, outdir, stem, formats = c("png", "pdf"),
@@ -111,8 +115,7 @@ save_figure <- function(plot, outdir, stem, formats = c("png", "pdf"),
 #' `.../simulation_results/data/x.csv` -> `.../simulation_results/plots`.
 default_plots_dir <- function(csv_path) {
   parent <- dirname(csv_path)
-  if (basename(parent) == "data") file.path(dirname(parent), "plots")
-  else file.path(parent, "plots")
+  if (basename(parent) == "data") file.path(dirname(parent), "plots") else file.path(parent, "plots")
 }
 
 load_csv <- function(path) {
@@ -142,7 +145,8 @@ load_csv <- function(path) {
   if (tfdr > 0) {
     p <- p + geom_hline(
       aes(yintercept = tfdr, linetype = sprintf("tFDR = %g", tfdr)),
-      color = "black", linewidth = 0.8) +
+      color = "black", linewidth = 0.8
+    ) +
       scale_linetype_manual(name = NULL, values = "dotted",
                             guide = guide_legend(order = 1))
   }
@@ -168,7 +172,8 @@ plot_spca_sweep <- function(df, title, tfdr = DEFAULT_TFDR) {
     plot_layout(guides = "collect") +
     plot_annotation(title = title,
                     theme = theme(plot.title = element_text(
-                      size = 14, face = "bold", hjust = 0.5)))
+                      size = 14, face = "bold", hjust = 0.5
+                    )))
 }
 
 
@@ -194,7 +199,8 @@ plot_spca_pev_normalizations <- function(df, title) {
   ref_layers <- list(
     geom_hline(aes(yintercept = 100,
                    linetype = "Signal + Mixed EV = 100%"),
-               color = "black", linewidth = 0.8))
+               color = "black", linewidth = 0.8)
+  )
 
   # The paper's "Ordinary PCA (Sig + Mix)" dashed reference curve.
   ref_sub <- df[df$method == "OrdPCA" & df$metric == "PEVsigmix", ]
@@ -205,7 +211,8 @@ plot_spca_pev_normalizations <- function(df, title) {
       geom_line(data = ref_sub,
                 aes(x = snr_db, y = value,
                     linetype = "OrdPCA (Sig + Mix part)"),
-                color = "grey35", linewidth = 0.7, inherit.aes = FALSE)))
+                color = "grey35", linewidth = 0.7, inherit.aes = FALSE)
+    ))
     lt_values <- c(lt_values, "OrdPCA (Sig + Mix part)" = "dashed")
   }
   p_sig <- p_sig + ref_layers +
@@ -216,7 +223,8 @@ plot_spca_pev_normalizations <- function(df, title) {
     plot_layout(guides = "collect") +
     plot_annotation(title = title,
                     theme = theme(plot.title = element_text(
-                      size = 14, face = "bold", hjust = 0.5)))
+                      size = 14, face = "bold", hjust = 0.5
+                    )))
 }
 
 
@@ -238,7 +246,8 @@ plot_union_fdr <- function(df, title, tfdr = DEFAULT_TFDR) {
     if (tfdr > 0) {
       p <- p + geom_hline(
         aes(yintercept = tfdr, linetype = sprintf("tFDR = %g", tfdr)),
-        color = "black", linewidth = 0.8) +
+        color = "black", linewidth = 0.8
+      ) +
         scale_linetype_manual(name = NULL, values = "dotted",
                               guide = guide_legend(order = 1))
     }
@@ -264,7 +273,8 @@ plot_union_fdr <- function(df, title, tfdr = DEFAULT_TFDR) {
     plot_layout(guides = "collect") +
     plot_annotation(title = title,
                     theme = theme(plot.title = element_text(
-                      size = 14, face = "bold", hjust = 0.5)))
+                      size = 14, face = "bold", hjust = 0.5
+                    )))
 }
 
 
@@ -279,15 +289,32 @@ plot_union_fdr <- function(df, title, tfdr = DEFAULT_TFDR) {
   i <- 1L
   while (i <= length(argv)) {
     a <- argv[[i]]
-    flag <- function() { i <<- i + 1L; argv[[i]] }
+    flag <- function() {
+      i <<- i + 1L
+      argv[[i]]
+    }
     switch(a,
-      "--outdir"    = { args$outdir <- flag() },
-      "--title"     = { args$title <- flag() },
-      "--pev-title" = { args$pev_title <- flag() },
-      "--tfdr"      = { args$tfdr <- as.numeric(flag()) },
-      "--formats"   = { args$formats <- strsplit(flag(), ",")[[1]] },
-      "--stem"      = { args$stem <- flag() },
-      { args$csv <- c(args$csv, a) })
+           "--outdir"    = {
+             args$outdir <- flag()
+           },
+           "--title"     = {
+             args$title <- flag()
+           },
+           "--pev-title" = {
+             args$pev_title <- flag()
+           },
+           "--tfdr"      = {
+             args$tfdr <- as.numeric(flag())
+           },
+           "--formats"   = {
+             args$formats <- strsplit(flag(), ",")[[1]]
+           },
+           "--stem"      = {
+             args$stem <- flag()
+           },
+           {
+             args$csv <- c(args$csv, a)
+           })
     i <- i + 1L
   }
   if (length(args$csv) != 1L)
@@ -302,16 +329,14 @@ main <- function() {
   csv_path <- args$csv[[1]]
   df <- load_csv(csv_path)
 
-  outdir <- if (is.null(args$outdir)) default_plots_dir(csv_path)
-            else args$outdir
-  stem <- if (is.null(args$stem)) sub("[.]csv$", "", basename(csv_path))
-          else args$stem
+  outdir <- if (is.null(args$outdir)) default_plots_dir(csv_path) else args$outdir
+  stem <- if (is.null(args$stem)) sub("[.]csv$", "", basename(csv_path)) else args$stem
 
   # Union-FDR CSV (pc,metric,snr_db,value) gets its own two-panel figure.
   if ("pc" %in% names(df)) {
     fig <- plot_union_fdr(
-      df, if (is.null(args$title)) "T-Rex SPCA: union-support FDR per PC"
-          else args$title, args$tfdr)
+      df, if (is.null(args$title)) "T-Rex SPCA: union-support FDR per PC" else args$title, args$tfdr
+    )
     save_figure(fig, outdir, stem, args$formats)
     return(invisible(0L))
   }
@@ -321,15 +346,16 @@ main <- function() {
     stop("CSV is missing columns: ", paste(missing, collapse = ", "))
 
   fig <- plot_spca_sweep(
-    df, if (is.null(args$title)) stem else args$title, args$tfdr)
+    df, if (is.null(args$title)) stem else args$title, args$tfdr
+  )
   save_figure(fig, outdir, stem, args$formats)
 
   # Extra figure — only if the demo reported the second normalization.
   if ("PEVsig" %in% df$metric) {
     fig2 <- plot_spca_pev_normalizations(
       df, if (is.null(args$pev_title))
-            "T-Rex SPCA: cumulative PEV under both normalizations"
-          else args$pev_title)
+        "T-Rex SPCA: cumulative PEV under both normalizations" else args$pev_title
+    )
     save_figure(fig2, outdir, paste0(stem, "_pev"), args$formats)
   }
   invisible(0L)
