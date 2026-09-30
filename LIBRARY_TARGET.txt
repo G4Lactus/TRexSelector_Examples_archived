@@ -15,7 +15,10 @@ Validated R:    TRexSelectorNeo 2.0.0 reinstalled from 44cf1ab (links R's own li
 Validated perf: demo_ts_perf_03 rerun on 44cf1ab in C++, Python and R on the memory report (500 runs,
                 no failed solver runs); the R tsolvers demos and P1, P2, P4 (R runs of 2026-09-27/28; their
                 Part 5 path data reproduce on 44cf1ab byte for byte) and their results committed.
-Pending:        the Python and R trex_selector_methods demos.
+Pending:        the trex_selector_methods Monte Carlo demos. C++ trex_screening, trex_spca and trex_core 02-03
+                are rerun on 44cf1ab (data only, figures and READMEs to follow); the other C++ results and all
+                Python and R results come from the July 2026 library. The single runs demo_trex_01 and
+                demo_trex_06 are validated in all three languages.
 Previous pins:  b95b984 (2026-09-27), 8ad3376 (2026-09-26), f390bfc (2026-09-25), d404033 (2026-09-25); what
                 changed between pins is in the git log of this file and in the library's HISTORY.md.
 
