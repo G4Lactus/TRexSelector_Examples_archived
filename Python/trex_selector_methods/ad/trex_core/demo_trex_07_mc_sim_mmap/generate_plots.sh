@@ -11,7 +11,7 @@
 # whether the storage medium is transparent to the algorithm, so the headline
 # figure overlays both scenarios on one pair of axes -- the curves should
 # coincide up to MC noise. This script produces:
-#   * the C-vs-D scenario overlay (+ interactive html) -- the core figure;
+#   * the C-vs-D scenario overlay (+ interactive html with --plotly) -- the core figure;
 #   * a per-scenario FDR/TPR overview (+ html) for each CSV, for reading exact
 #     values off a single run.
 #

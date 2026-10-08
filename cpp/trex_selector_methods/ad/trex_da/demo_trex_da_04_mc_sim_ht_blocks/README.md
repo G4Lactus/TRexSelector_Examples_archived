@@ -121,10 +121,10 @@ the dedicated linkage-sweep section's 2 stems
 `da_trex_mc_da_ht_blocks_linkage_{s1_Gauss|s2_Heavy}.{txt,csv}` (which omit the trailing linkage suffix
 since linkage itself is the swept variable).
 
-Figures go to `simulation_results/plots/`: per-CSV FDR and true positive rate (TPR) overviews (`.png`, `.pdf` and an
-interactive Plotly `.html` page), one linkage-comparison grid per (sweep × scenario), and — embedded below — one
-**Gaussian-vs-heavy scenario grid** per sweep (at Average linkage). The scenario grid is the figure for this demo's core
-question, namely how much heavy tails cost in FDR control and power.
+Figures go to `simulation_results/plots/`: per-CSV FDR and true positive rate (TPR) overviews (`.png` and `.pdf`, plus
+an interactive Plotly `.html` page with `--plotly`), one linkage-comparison grid per (sweep × scenario), and
+— embedded below — one **Gaussian-vs-heavy scenario grid** per sweep (at Average linkage). The scenario grid is the
+figure for this demo's core question, namely how much heavy tails cost in FDR control and power.
 
 ---
 

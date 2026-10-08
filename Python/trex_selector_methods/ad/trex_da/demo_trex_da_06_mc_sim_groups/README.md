@@ -117,8 +117,8 @@ Data tables are written to `simulation_results/data/`:
 
 - `da_trex_mc_da_groups_toeplitz_leaf.txt` / `.csv`
 
-The figure (Portable Network Graphics (PNG) and Portable Document Format (PDF), plus interactive Plotly `.html`)
-goes to `simulation_results/plots/`.
+The figure (Portable Network Graphics (PNG) and Portable Document Format (PDF), plus interactive Plotly `.html` with
+`--plotly`) goes to `simulation_results/plots/`.
 
 ---
 

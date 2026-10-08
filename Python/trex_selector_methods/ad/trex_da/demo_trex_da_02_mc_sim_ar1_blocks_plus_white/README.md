@@ -138,8 +138,8 @@ Data tables are written to `simulation_results/data/` (24 files = 12 scenario st
 - `da_trex_mc_da_ar1_blocks_plus_white_M_{Single,Complete,Average}.txt` / `.csv`
 
 Figures go to `simulation_results/plots/`: one FDR/TPR overview (Portable Network Graphics (PNG) and Portable
-Document Format (PDF), plus interactive Plotly `.html`) per sweep × linkage, plus one linkage-comparison grid
-(Single/Complete/Average columns) per sweep — the four grids embedded below.
+Document Format (PDF), plus interactive Plotly `.html` with `--plotly`) per sweep × linkage, plus one
+linkage-comparison grid (Single/Complete/Average columns) per sweep — the four grids embedded below.
 
 ---
 

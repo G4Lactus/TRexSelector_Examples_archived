@@ -8,7 +8,7 @@
 # Demo 02 (BT on block AR(1) + i.i.d. white-noise columns) sweeps SNR, rho, block size Q, and number
 # of blocks M, each looped over HAC linkage {Single, Complete, Average}. This
 # script produces:
-#   * a per-CSV FDR/TPR overview (+ interactive html) for every sweep x linkage;
+#   * a per-CSV FDR/TPR overview (+ interactive html with --plotly) for every sweep x linkage;
 #   * one linkage-comparison grid per sweep (Single/Complete/Average columns) --
 #     the figure for this demo's core question, whether the choice of HAC linkage
 #     materially changes FDR/TPR.
@@ -79,7 +79,7 @@ for sweep in snr rho Q M; do
   # shellcheck disable=SC2046
   xscale=$(sweep_xscale "$sweep")
 
-  # Per-linkage overview (+ interactive html).
+  # Per-linkage overview (+ interactive html with --plotly).
   for linkage in Single Complete Average; do
     csv="$data/${prefix}_${sweep}_${linkage}.csv"
     "$venv_python" "$plotter" "$csv" \

@@ -27,7 +27,7 @@ Plot patterns hosted here:
                                      read via read_scalability()).
 
 Three CLI modes (all typically driven from a demo's generate_plots.sh):
-    # default -- per-CSV overview + grouped + interactive html
+    # default -- per-CSV overview + grouped (--plotly adds the interactive html)
     python trex_plt_utils.py <csv> --title "..." --legend-title "L-strategy"
     # cross-solver comparison grid from several per-solver CSVs
     python trex_plt_utils.py grid --labels TLARS TOMP TAFS \
@@ -548,7 +548,7 @@ def write_fdr_tpr_vs_snr_html(
     except ImportError:
         print(
             "note: plotly not installed - skipping interactive HTML "
-            "(pip install plotly, or pass --no-plotly to silence)."
+            "(pip install plotly, or drop --plotly)."
         )
         return False
 
@@ -1114,23 +1114,28 @@ def parse_args() -> argparse.Namespace:
         help="Skip the grouped static figure (<stem>_grouped).",
     )
     parser.add_argument(
-        "--no-plotly",
+        "--plotly",
         action="store_true",
-        help="Skip the interactive Plotly HTML (<stem>.html).",
+        help=(
+            "Also write the interactive Plotly HTML (<stem>.html, about 5 MB, "
+            "gitignored). Off by default."
+        ),
     )
     parser.add_argument(
         "--plotly-cdn",
         action="store_true",
         help=(
-            "Load plotly.js from a CDN instead of inlining it: a tiny HTML "
-            "file that needs internet to render (default: self-contained)."
+            "Write the interactive HTML with plotly.js loaded from a CDN: a tiny "
+            "file that needs internet to render (implies --plotly)."
         ),
     )
+    # Former switch from the time the HTML was written by default; now a no-op.
+    parser.add_argument("--no-plotly", action="store_true", help=argparse.SUPPRESS)
     return parser.parse_args()
 
 
 def main_fdr_tpr() -> None:
-    """Default mode: per-CSV overview + grouped + interactive HTML."""
+    """Default mode: per-CSV overview + grouped (+ interactive HTML with --plotly)."""
     args = parse_args()
     csv_path = args.csv_path.resolve()
 
@@ -1162,8 +1167,8 @@ def main_fdr_tpr() -> None:
         save_figure(grouped_fig, outdir, stem + "_grouped", args.formats)
         plt.close(grouped_fig)
 
-    # 3. Interactive HTML.
-    if not args.no_plotly:
+    # 3. Interactive HTML, only on request.
+    if args.plotly or args.plotly_cdn:
         write_fdr_tpr_vs_snr_html(
             df, title, outdir / f"{stem}.html",
             tfdr=args.tfdr, legend_title=args.legend_title,
@@ -1201,7 +1206,7 @@ def main_grid(argv: list) -> None:
     parser.add_argument("--tfdr", type=float, default=DEFAULT_TFDR)
     parser.add_argument("--xscale", choices=XSCALES, default=DEFAULT_XSCALE)
     # generate_plots.sh forwards its "$@" to every plotter; ignore flags only
-    # the default mode understands (--no-plotly, --no-grouped, ...).
+    # the default mode understands (--plotly, --no-grouped, ...).
     args, _ignored = parser.parse_known_args(argv)
 
     if len(args.labels) != len(args.csvs):

@@ -91,6 +91,7 @@ Afterwards, regenerate the figures from the comma-separated values (CSV) files w
 
 ```bash
 ./generate_plots.sh                 # this demo's full figure set
+./generate_plots.sh --plotly        # plus the interactive html (not committed)
 ./generate_plots.sh <other.csv>     # just that CSV (default FDR/TPR mode)
 ./generate_plots.sh --formats png   # extra args pass through to the plotter
 ```
@@ -107,10 +108,9 @@ Data tables are written to `simulation_results/data/` (`.txt` pretty-printed, `.
 - `da_trex_mc_da_ar1_rho_random.txt` / `.csv`
 - `da_trex_mc_da_ar1_gap_rho.txt` / `.csv`
 
-Figures in Portable Network Graphics (PNG) and Portable Document Format (PDF), plus interactive Plotly `.html` for
-the per-CSV overviews, go to `simulation_results/plots/`.
-The `.html` files are not committed to the repository (each embeds a full copy of plotly.js),
-and `./generate_plots.sh` produces them locally alongside the `.png` and `.pdf` files.
+Figures in Portable Network Graphics (PNG) and Portable Document Format (PDF) go to `simulation_results/plots/`.
+With `--plotly`, `./generate_plots.sh` also writes interactive Plotly `.html` pages for the per-CSV overviews. They
+are not committed to the repository, since each embeds a full copy of plotly.js (about 5 MB).
 
 ---
 

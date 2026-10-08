@@ -100,8 +100,8 @@ Data tables are written to `simulation_results/data/` (24 files = 12 scenario st
 - `da_trex_mc_da_ar1_blocks_M_{Single,Complete,Average}.txt` / `.csv`
 
 Figures go to `simulation_results/plots/`: one overview of the FDR and the true positive rate (TPR) per sweep × linkage
-(`.png`, `.pdf` and an interactive Plotly `.html` page), plus one linkage-comparison grid (Single/Complete/Average
-columns) per sweep — the four grids embedded below.
+(`.png` and `.pdf`, plus an interactive Plotly `.html` page with `--plotly`), plus one linkage-comparison grid
+(Single/Complete/Average columns) per sweep — the four grids embedded below.
 
 ---
 

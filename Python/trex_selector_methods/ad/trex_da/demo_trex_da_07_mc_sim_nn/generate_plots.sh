@@ -6,7 +6,7 @@
 # simulation_results/plots/.
 #
 # Demo 07 (NN: banded MA(kappa) data + AR(1) method-mismatch study) produces:
-#   * per-CSV FDR/TPR overviews (+ interactive html) for the SNR sweeps on NN
+#   * per-CSV FDR/TPR overviews (+ interactive html with --plotly) for the SNR sweeps on NN
 #     data, each comparing DA-TRex+NN against the classical (no-DA) T-Rex baseline;
 #   * a support-placement comparison grid (CappedSpread vs Random columns);
 #   * the kappa x rho 2D study on NN data (per-solver TPR/FDR heatmaps, one

@@ -113,9 +113,9 @@ Data tables are written to `simulation_results/data/` (24 files = 12 scenario st
 - `da_trex_mc_da_ar1_blocks_plus_white_Q_{Single,Complete,Average}.txt` / `.csv`
 - `da_trex_mc_da_ar1_blocks_plus_white_M_{Single,Complete,Average}.txt` / `.csv`
 
-Figures go to `simulation_results/plots/`: one FDR/TPR overview (`.png`, `.pdf` and an interactive Plotly `.html` page)
-per sweep × linkage, plus one linkage-comparison grid (Single/Complete/Average columns) per sweep —
-the four grids embedded below.
+Figures go to `simulation_results/plots/`: one FDR/TPR overview (`.png` and `.pdf`, plus an interactive Plotly
+`.html` page with `--plotly`) per sweep × linkage, plus one linkage-comparison grid (Single/Complete/Average
+columns) per sweep — the four grids embedded below.
 
 ---
 

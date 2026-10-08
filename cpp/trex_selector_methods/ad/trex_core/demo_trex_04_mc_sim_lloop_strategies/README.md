@@ -187,7 +187,7 @@ check to the fixed-budget SKIPL regime.)
 
 For each base solver, the suite-level [../trex_plt_utils.py](../trex_plt_utils.py)
 also renders the usual overview (all eight strategies on one FDR | TPR pair), a
-de-cluttered grouped 2×2 view, and a self-contained interactive Plotly `.html` page (the
+de-cluttered grouped 2×2 view, and with `--plotly` a self-contained interactive Plotly `.html` page (the
 CSV's "solver" column holds the strategy name, so the strategies are the legend).
 The TLARS overview, for example:
 
@@ -196,8 +196,8 @@ The TLARS overview, for example:
 The `_grouped` `.png` / `.pdf` and the interactive `.html` (hover for values, **click a
 strategy in the legend to isolate it** in both panels) sit alongside, one set per
 solver (`tlars` / `tomp` / `tafs`). Open an `.html` file directly in a browser.
-The `.html` figures are not committed to the repository (each embeds a full copy of
-plotly.js). Run `./generate_plots.sh` to produce them locally.
+The `.html` figures are off by default and never committed, since each embeds a full copy
+of plotly.js (about 5 MB). Run `./generate_plots.sh --plotly` to produce them locally.
 
 ```bash
 open simulation_results/plots/demo_trex_04_lloop_strategies_results_n300_p1000_tlars_random_support_fdr_tpr_vs_snr.html
@@ -213,8 +213,8 @@ per-solver sets plus the comparison grid:
 
 ```bash
 # From this demo folder:
-./generate_plots.sh                 # 3 per-solver sets (png+pdf+html) + the grid
-./generate_plots.sh --no-plotly     # skip the interactive html
+./generate_plots.sh                 # 3 per-solver sets (png+pdf) + the grid
+./generate_plots.sh --plotly        # plus the interactive html (not committed)
 ./generate_plots.sh --tfdr 0.05     # e.g. a different target-FDR line
 ```
 

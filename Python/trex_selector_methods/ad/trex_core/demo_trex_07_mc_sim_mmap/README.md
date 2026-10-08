@@ -128,13 +128,13 @@ view to de-clutter, so it is skipped:
 
 ![Part D: FDR and TPR versus SNR](simulation_results/plots/d03_trex_mmap_demo_d_n300_p1000_sw7_fdr_tpr_vs_snr.png)
 
-### Interactive (Plotly HTML)
+### Interactive (Plotly HTML, on request)
 
-Each static figure has a self-contained `.html` twin — hover for exact values,
+With `--plotly`, each static figure gets a self-contained `.html` twin — hover for exact values,
 click a scenario in the legend to isolate its curve in both panels. Open it
 directly in a browser (it is not rendered inline on GitHub).
-The `.html` figures are not committed to the repository (each embeds a full copy of
-plotly.js). Run `./generate_plots.sh` to produce them locally.
+The `.html` figures are off by default and never committed, since each embeds a full copy
+of plotly.js (about 5 MB). Run `./generate_plots.sh --plotly` to produce them locally.
 
 ```bash
 open simulation_results/plots/d03_trex_mmap_demo_c_vs_d.html
@@ -144,7 +144,8 @@ open simulation_results/plots/d03_trex_mmap_demo_c_vs_d.html
 
 ```bash
 # From this demo folder:
-./generate_plots.sh
+./generate_plots.sh                 # overlay + per-scenario (png+pdf)
+./generate_plots.sh --plotly        # plus the interactive html (not committed)
 ```
 
 The overlay is assembled by merging the two per-scenario CSVs into one tidy frame

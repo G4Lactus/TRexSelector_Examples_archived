@@ -148,8 +148,9 @@ the dedicated linkage-sweep section's 2 stems
 since linkage itself is the swept variable).
 
 Figures go to `simulation_results/plots/`: per-CSV FDR and true positive rate (TPR) overviews (Portable Network
-Graphics (PNG) and Portable Document Format (PDF), plus interactive Plotly `.html`), one linkage-comparison grid per
-(sweep × scenario), and — embedded below — one **Gaussian-vs-heavy scenario grid** per sweep (at Average linkage).
+Graphics (PNG) and Portable Document Format (PDF), plus interactive Plotly `.html` with `--plotly`), one
+linkage-comparison grid per (sweep × scenario), and — embedded below — one **Gaussian-vs-heavy scenario grid** per
+sweep (at Average linkage).
 The scenario grid is the figure for this demo's core question, namely how much heavy tails cost in FDR control and
 power.
 

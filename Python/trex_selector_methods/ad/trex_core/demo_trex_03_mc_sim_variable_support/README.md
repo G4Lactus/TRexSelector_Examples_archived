@@ -81,7 +81,7 @@ Written to `simulation_results/data/`, stem
   renders the same figures (it plots the FDR/TPR rows and ignores AvgL/AvgT).
 
 The rendered figures, as Portable Network Graphics (PNG) and Portable Document
-Format (PDF) files plus the interactive Plotly `.html` page, are written to
+Format (PDF) files plus the interactive Plotly `.html` page on request, are written to
 `simulation_results/plots/` — see [Results Visualization](#results-visualization).
 
 ---
@@ -117,13 +117,13 @@ up. Both FDR panels share a y-scale for comparison:
 
 ![FDR and TPR versus SNR, solvers split across a 2x2 grid](simulation_results/plots/demo_trex_03_mc_sim_variable_support_trex_results_n300_p1000_stagnation_window_5_fdr_tpr_vs_snr_grouped.png)
 
-### Interactive (Plotly HTML)
+### Interactive (Plotly HTML, on request)
 
 `..._fdr_tpr_vs_snr.html` is a self-contained interactive figure — hover for exact
 values and **click a solver in the legend to isolate its curve** in both panels.
 Open it directly in a browser (it is not rendered inline on GitHub).
-The `.html` figures are not committed to the repository (each embeds a full copy of
-plotly.js). Run `./generate_plots.sh` to produce them locally.
+The `.html` figures are off by default and never committed, since each embeds a full copy
+of plotly.js (about 5 MB). Run `./generate_plots.sh --plotly` to produce them locally.
 
 ```bash
 open simulation_results/plots/demo_trex_03_mc_sim_variable_support_trex_results_n300_p1000_stagnation_window_5_fdr_tpr_vs_snr.html
@@ -138,8 +138,8 @@ The wrapper picks up the repo's local `.venv` automatically (no manual path or
 
 ```bash
 # From this demo folder:
-./generate_plots.sh                 # overview + grouped (png+pdf) + interactive html
-./generate_plots.sh --no-plotly     # skip the interactive html
+./generate_plots.sh                 # overview + grouped (png+pdf)
+./generate_plots.sh --plotly        # plus the interactive html (not committed)
 ./generate_plots.sh --tfdr 0.05     # e.g. a different target-FDR line
 ```
 

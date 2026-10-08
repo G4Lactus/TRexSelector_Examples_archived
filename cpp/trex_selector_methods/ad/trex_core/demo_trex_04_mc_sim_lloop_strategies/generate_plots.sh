@@ -52,7 +52,7 @@ solver_label() {
   esac
 }
 
-# One per-solver figure set (overview + grouped + interactive html) per base
+# One per-solver figure set (overview + grouped, html with --plotly) per base
 # solver, via the suite-level plotter.
 for solver in TLARS TOMP TAFS; do
   token="$(echo "$solver" | tr '[:upper:]' '[:lower:]')"

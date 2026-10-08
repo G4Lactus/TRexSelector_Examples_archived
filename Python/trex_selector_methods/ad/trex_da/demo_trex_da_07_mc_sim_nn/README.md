@@ -137,9 +137,9 @@ Data tables are written to `simulation_results/data/` (`.txt` pretty-printed, `.
 - `da_trex_mc_da_nn_kappa_rho.txt` / `.csv` (Part 2, two-support 2D schema)
 - `da_trex_mc_da_nn_ar_snr_rho.txt` / `.csv` (Part 3, two-support 2D schema)
 
-Figures (Portable Network Graphics (PNG) and Portable Document Format (PDF) — the `.html` are not committed,
-`./generate_plots.sh` produces them locally) go to `simulation_results/plots/`,
-and the 2D CSVs are rendered by the plotter's `sweep2d` mode.
+Figures (Portable Network Graphics (PNG) and Portable Document Format (PDF), plus uncommitted interactive `.html`
+pages with `./generate_plots.sh --plotly`) go to `simulation_results/plots/`, and the 2D CSVs are rendered by the
+plotter's `sweep2d` mode.
 
 ---
 

@@ -154,7 +154,7 @@ Each demo subfolder typically contains:
   demo's figures via the suite-level [trex_plt_utils.py](trex_plt_utils.py).
 - **`simulation_results/`**: generated artifacts only, split into
   - **`data/`** — text summaries and comma-separated values (CSV) tables written by the demo binary,
-  - **`plots/`** — figures (png/pdf/html) written by the plotting scripts.
+  - **`plots/`** — figures (png/pdf, html on request) written by the plotting scripts.
 
 Everything under `simulation_results/` is machine-generated and can be
 regenerated. Source files (demo code, plot scripts) never live there. This makes
@@ -203,7 +203,7 @@ trex_core/
   │       │   ├── demo_trex_02_mc_sim_fixed_support_trex_results_n300_p1000_stagnation_window_7.txt
   │       │   └── demo_trex_02_mc_sim_fixed_support_trex_results_n300_p1000_stagnation_window_7.csv
   │       └── plots/
-  │           ├── ..._fdr_tpr_vs_snr.{png,pdf,html}
+  │           ├── ..._fdr_tpr_vs_snr.{png,pdf}
   │           └── ..._fdr_tpr_vs_snr_grouped.{png,pdf}
   │
   ├── demo_trex_03_mc_sim_variable_support/
@@ -316,9 +316,9 @@ Each demo's `simulation_results/` folder holds machine-generated artifacts only:
   (tidy tables for plotting and post-processing), written by the demo binary.
 - **`plots/`** — figures (`.png`/`.pdf`) rendered from the `data/` CSVs by each
   demo's `generate_plots.sh` via the shared
-  [trex_plt_utils.py](trex_plt_utils.py). The same script also writes interactive
-  Plotly `.html` twins, which are **not committed** (each embeds a full copy of
-  plotly.js) and are regenerated locally on demand.
+  [trex_plt_utils.py](trex_plt_utils.py). With `--plotly` the same script also writes
+  interactive Plotly `.html` twins, which are **not committed** (each embeds a full copy
+  of plotly.js).
 
 ---
 

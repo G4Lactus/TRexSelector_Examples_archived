@@ -10,7 +10,7 @@
 # each under two noise scenarios {s1_Gauss, s2_Heavy} x HAC linkage
 # {Single, Complete, Average}, plus a dedicated linkage sweep per scenario. This
 # script produces:
-#   * a per-CSV FDR/TPR overview (+ interactive html) for every sweep x scenario
+#   * a per-CSV FDR/TPR overview (+ interactive html with --plotly) for every sweep x scenario
 #     x linkage, and for the two dedicated linkage-sweep files;
 #   * one linkage-comparison grid per (sweep x scenario);
 #   * one Gaussian-vs-heavy scenario grid per sweep (at Average linkage) -- the
@@ -92,7 +92,7 @@ for sweep in snr rho Q M tFDR; do
   for scen in s1_Gauss s2_Heavy; do
     slab="$(scen_label "$scen")"
 
-    # Per-linkage overview (+ interactive html).
+    # Per-linkage overview (+ interactive html with --plotly).
     for linkage in Single Complete Average; do
       csv="$data/${prefix}_${sweep}_${scen}_${linkage}.csv"
       "$venv_python" "$plotter" "$csv" \

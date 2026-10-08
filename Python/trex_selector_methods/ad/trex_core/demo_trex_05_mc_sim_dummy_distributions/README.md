@@ -133,7 +133,7 @@ once and renders them on a shared scale.
 
 For each base solver, the suite-level [`../trex_plt_utils.py`](../trex_plt_utils.py)
 also renders the usual overview (all twelve distributions on one FDR | TPR pair),
-a de-cluttered grouped 2×2 view, and a self-contained interactive Plotly `.html` page.
+a de-cluttered grouped 2×2 view, and with `--plotly` a self-contained interactive Plotly `.html` page.
 The TLARS overview, for example:
 
 ![TLARS: FDR and TPR versus SNR for all 12 dummy distributions](simulation_results/plots/demo_trex_05_dummy_distributions_results_n300_p1000_tlars_random_support_fdr_tpr_vs_snr.png)
@@ -142,8 +142,8 @@ The `_grouped` Portable Network Graphics (PNG) figure and the interactive `.html
 (hover for values, **click a distribution in the legend to isolate it** in both
 panels) sit alongside, one set per solver — the `_tomp_` and `_tafs_` files
 replicate the same layout. Open an `.html` file directly in a browser.
-The `.html` figures are not committed to the repository (each embeds a full copy of
-plotly.js). Run `./generate_plots.sh` to produce them locally.
+The `.html` figures are off by default and never committed, since each embeds a full copy
+of plotly.js (about 5 MB). Run `./generate_plots.sh --plotly` to produce them locally.
 
 ```bash
 open simulation_results/plots/demo_trex_05_dummy_distributions_results_n300_p1000_tlars_random_support_fdr_tpr_vs_snr.html
@@ -153,7 +153,8 @@ open simulation_results/plots/demo_trex_05_dummy_distributions_results_n300_p100
 
 ```bash
 # From this demo folder:
-./generate_plots.sh                 # 3 per-solver sets (png+html) + the grid
+./generate_plots.sh                 # 3 per-solver sets (png+pdf) + the grid
+./generate_plots.sh --plotly        # plus the interactive html (not committed)
 ```
 
 ---

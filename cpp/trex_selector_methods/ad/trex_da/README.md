@@ -232,7 +232,7 @@ naming pattern `da_trex_mc_{scenario_tag}.{txt,csv}`.
 
 Each demo has a `generate_plots.sh` that renders its figures from the committed
 `simulation_results/data/*.csv` into `simulation_results/plots/` (as
-`png` / `pdf`, plus interactive `html`), via the suite-level plotting module
+`png` / `pdf`, plus interactive `html` with `--plotly`), via the suite-level plotting module
 [trex_da_plt_utils.py](trex_da_plt_utils.py). The scripts use the repo-root
 `.venv` (`pip install matplotlib pandas plotly`):
 

@@ -6,7 +6,7 @@
 # simulation_results/plots/.
 #
 # Demo 01 (AR(1) Toeplitz) produces:
-#   * per-CSV FDR/TPR overviews (+ interactive html) for the SNR and rho sweeps,
+#   * per-CSV FDR/TPR overviews (+ interactive html with --plotly) for the SNR and rho sweeps,
 #     each comparing DA-TRex+AR1 against the classical (no-DA) T-Rex baseline;
 #   * two support-placement comparison grids (CappedSpread vs Random columns);
 #   * the gap x rho 2D study (kappa-boundary heatmaps) from the wide CSV.

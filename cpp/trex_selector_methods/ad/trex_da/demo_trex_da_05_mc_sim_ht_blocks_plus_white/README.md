@@ -91,10 +91,10 @@ Data tables are written to `simulation_results/data/` (60 files = 30 scenario st
 `.txt`+`.csv` pair each):
 `da_trex_mc_da_ht_blocks_plus_white_{snr,rho,Q,M,tFDR}_{s1_Gauss,s2_Heavy}_{Single,Complete,Average}.txt` / `.csv`.
 
-Figures go to `simulation_results/plots/`: one FDR and true positive rate (TPR) overview (`.png`, `.pdf` and an
-interactive Plotly `.html` page) per sweep × scenario × linkage, one linkage-comparison grid per sweep × scenario, and
-one **Gaussian-vs-heavy scenario grid** per sweep (at Average linkage) — the five scenario grids, this demo's core
-exhibits, are embedded below.
+Figures go to `simulation_results/plots/`: one FDR and true positive rate (TPR) overview (`.png` and `.pdf`, plus an
+interactive Plotly `.html` page with `--plotly`) per sweep × scenario × linkage, one linkage-comparison grid per
+sweep × scenario, and one **Gaussian-vs-heavy scenario grid** per sweep (at Average linkage) — the five scenario
+grids, this demo's core exhibits, are embedded below.
 
 ---
 
