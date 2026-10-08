@@ -35,10 +35,12 @@
 # Usage: Rscript demo_trex_spca_01_mc_sim.R [num_worker_cores]
 #   Env: TREX_SPCA_PARTS  — section selection, default "12" (e.g. "2")
 #        TREX_SPCA_NUM_MC — pilot-run MC override (e.g. 10)
+#
+# Resumable: every finished (method x SNR) cell is cached in
+# simulation_results/cache/, so a stopped run continues where it left off.
 # ==============================================================================
 
 library(TRexSelectorNeo)
-library(parallel)
 
 num_cores <- local({
   a <- suppressWarnings(as.integer(commandArgs(trailingOnly = TRUE)[1L]))
@@ -55,6 +57,7 @@ this_dir_ <- tryCatch(
   }
 )
 
+source(file.path(this_dir_, "..", "..", "..", "mc_runtime.R"))
 source(file.path(this_dir_, "..", "trex_spca_sim_utils.R"))
 
 
@@ -68,7 +71,8 @@ source(file.path(this_dir_, "..", "trex_spca_sim_utils.R"))
 #'                   overlap_pool_size, tFDR, lambda_2, num_MC, base_seed).
 #' @param snr_values SNR grid in dB.
 #' @param stem       Output file stem (no folder, no extension).
-demo_trex_spca_mc_snr_sweep <- function(cfg, snr_values, stem) {
+#' @param cache      Cell cache from cell_cache_open().
+demo_trex_spca_mc_snr_sweep <- function(cfg, snr_values, stem, cache) {
   cat("================================================================\n")
   cat("  T-Rex SPCA MC Simulation — SNR Sweep\n")
   cat("================================================================\n")
@@ -104,40 +108,37 @@ demo_trex_spca_mc_snr_sweep <- function(cfg, snr_values, stem) {
       generate_sparse_factor_model(cfg$n, cfg$p, cfg$p1, cfg$M, snr,
                                    cfg$overlap_pool_size, seed)
     }
+    # One (method x SNR) cell, restored from the cache when already finished.
+    cell <- function(name, compute) {
+      store(name, cell_cached(cache, sprintf("s1|snr=%.1f|%s", snr, name), compute))
+    }
+    trex_spca <- function(name, mode, en_solver) {
+      cell(name, function() {
+        run_mc_trials_trex_spca(cfg$num_MC, paste0(snr_lbl, " [", name, "]"),
+                                make_data, cfg$tFDR, mode, offset,
+                                lambda_2 = cfg$lambda_2, en_solver = en_solver,
+                                num_cores = num_cores)
+      })
+    }
 
     # 1. Ordinary PCA
-    r <- run_mc_trials_pca(cfg$num_MC, paste0(snr_lbl, " [OrdPCA]"),
-                           make_data, offset, num_cores)
-    store("OrdPCA", r)
+    cell("OrdPCA", function() {
+      run_mc_trials_pca(cfg$num_MC, paste0(snr_lbl, " [OrdPCA]"), make_data,
+                        offset, num_cores = num_cores)
+    })
 
     # 2. Oracle Thresholded PCA
-    r <- run_mc_trials_oracle_pca(cfg$num_MC, paste0(snr_lbl, " [OraclePCA]"),
-                                  make_data, cfg$p1, offset, num_cores)
-    store("OraclePCA", r)
+    cell("OraclePCA", function() {
+      run_mc_trials_oracle_pca(cfg$num_MC, paste0(snr_lbl, " [OraclePCA]"),
+                               make_data, cfg$p1, offset, num_cores = num_cores)
+    })
 
-    # 3. T-Rex SPCA — EN (Gram-based TENET) + ActiveSet
-    r <- run_mc_trials_trex_spca(cfg$num_MC, paste0(snr_lbl, " [TRexSPCA-EN-Act]"),
-                                 make_data, cfg$tFDR, "ActiveSet", offset,
-                                 cfg$lambda_2, "TENET", num_cores)
-    store("TRexSPCA-EN-Act", r)
-
-    # 4. T-Rex SPCA — ENaug (augmented TENET) + ActiveSet
-    r <- run_mc_trials_trex_spca(cfg$num_MC, paste0(snr_lbl, " [TRexSPCA-ENaug-Act]"),
-                                 make_data, cfg$tFDR, "ActiveSet", offset,
-                                 cfg$lambda_2, "TENET_AUG", num_cores)
-    store("TRexSPCA-ENaug-Act", r)
-
-    # 5. T-Rex SPCA — EN (Gram-based TENET) + Thresholded
-    r <- run_mc_trials_trex_spca(cfg$num_MC, paste0(snr_lbl, " [TRexSPCA-EN-Thr]"),
-                                 make_data, cfg$tFDR, "Thresholded", offset,
-                                 cfg$lambda_2, "TENET", num_cores)
-    store("TRexSPCA-EN-Thr", r)
-
-    # 6. T-Rex SPCA — ENaug (augmented TENET) + Thresholded
-    r <- run_mc_trials_trex_spca(cfg$num_MC, paste0(snr_lbl, " [TRexSPCA-ENaug-Thr]"),
-                                 make_data, cfg$tFDR, "Thresholded", offset,
-                                 cfg$lambda_2, "TENET_AUG", num_cores)
-    store("TRexSPCA-ENaug-Thr", r)
+    # 3.-6. T-Rex SPCA — EN (Gram-based TENET) / ENaug (augmented TENET),
+    # each with the ActiveSet and the Thresholded loading assembly
+    trex_spca("TRexSPCA-EN-Act", "ActiveSet", "TENET")
+    trex_spca("TRexSPCA-ENaug-Act", "ActiveSet", "TENET_AUG")
+    trex_spca("TRexSPCA-EN-Thr", "Thresholded", "TENET")
+    trex_spca("TRexSPCA-ENaug-Thr", "Thresholded", "TENET_AUG")
   }
 
   save_and_print_spca_mc_results(
@@ -173,7 +174,7 @@ demo_trex_spca_mc_snr_sweep <- function(cfg, snr_values, stem) {
 #' PC m: mean union-FDR and mean support size |A_m|.
 #'
 #' Output: tidy CSV "pc,metric,snr_db,value" (metrics FDRunion / k).
-demo_trex_spca_union_fdr_sweep <- function(cfg, snr_values, stem) {
+demo_trex_spca_union_fdr_sweep <- function(cfg, snr_values, stem, cache) {
   cat("================================================================\n")
   cat("  T-Rex SPCA — union-support FDR per PC (ActiveSet/TENET)\n")
   cat("================================================================\n")
@@ -218,12 +219,16 @@ demo_trex_spca_union_fdr_sweep <- function(cfg, snr_values, stem) {
     snr <- snr_values[si]
     offset <- cfg$base_seed + as.integer(round(snr))
 
-    res_list <- .mc_map(cfg$num_MC,
-                        function(mc) one_trial(offset + mc * 1000L, snr),
-                        num_cores)
-    res_mat <- do.call(rbind, res_list)         # (num_MC, 2*M)
-    fdr_mean[, si] <- colMeans(res_mat[, seq_len(M), drop = FALSE])
-    k_mean[, si] <- colMeans(res_mat[, M + seq_len(M), drop = FALSE])
+    r <- unlist(cell_cached(cache, sprintf("s2|snr=%.1f", snr), function() {
+      res_list <- .mc_map(cfg$num_MC,
+                          function(mc) one_trial(offset + mc * 1000L, snr),
+                          num_cores)
+      res_mat <- do.call(rbind, res_list)       # (num_MC, 2*M)
+      c(fdr = colMeans(res_mat[, seq_len(M), drop = FALSE]),
+        k = colMeans(res_mat[, M + seq_len(M), drop = FALSE]))
+    }))
+    fdr_mean[, si] <- r[seq_len(M)]
+    k_mean[, si] <- r[M + seq_len(M)]
 
     cat(sprintf("  SNR=%5g dB — union-FDR:", snr),
         sprintf("  PC%d=%.3f", seq_len(M), fdr_mean[, si]), "\n", sep = "")
@@ -289,11 +294,14 @@ snr_values <- c(-10.0, -7.0, -5.0, -3.0, 0.0, 3.0, 5.0, 7.0, 10.0)
 # Part selection, e.g. TREX_SPCA_PARTS=2 runs only the union-FDR sweep.
 parts <- Sys.getenv("TREX_SPCA_PARTS", "12")
 
+cache <- cell_cache_open(file.path(this_dir_, "simulation_results", "cache"),
+                         "demo_trex_spca_01_mc_sim", list(cfg, snr_values))
+
 # =========================================================
 # Section 1: SNR sweep
 # =========================================================
 if (grepl("1", parts, fixed = TRUE)) {
-  demo_trex_spca_mc_snr_sweep(cfg, snr_values, "demo_trex_spca_01_mc_sim")
+  demo_trex_spca_mc_snr_sweep(cfg, snr_values, "demo_trex_spca_01_mc_sim", cache)
 }
 
 # =========================================================
@@ -301,5 +309,7 @@ if (grepl("1", parts, fixed = TRUE)) {
 # =========================================================
 if (grepl("2", parts, fixed = TRUE)) {
   demo_trex_spca_union_fdr_sweep(cfg, snr_values,
-                                 "demo_trex_spca_01_mc_sim_union_fdr")
+                                 "demo_trex_spca_01_mc_sim_union_fdr", cache)
 }
+
+cell_cache_done(cache)

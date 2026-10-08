@@ -15,13 +15,16 @@
 #   Evaluation:
 #     evaluate_spca()                 — PC1 TPR/FDR + cumulative PEV (QR-adjusted)
 #
-#   MC loop functions (parallel via parallel::mclapply):
+#   MC loop functions (PSOCK workers via mc_map() of mc_runtime.R, which the
+#   demos source first):
 #     run_mc_trials_trex_spca()       — MC loop for T-Rex SPCA
 #     run_mc_trials_pca()             — MC loop for the ordinary PCA baseline
 #     run_mc_trials_oracle_pca()      — MC loop for oracle thresholded PCA
 #
 #   Output:
-#     save_and_print_spca_mc_results() — table (console + .txt) + tidy .csv
+#     save_and_print_spca_sweep_results() — generic sweep table (console + .txt)
+#                                           + tidy .csv
+#     save_and_print_spca_mc_results()    — SNR-sweep convenience wrapper
 #
 # Reproducibility pattern (mirrors cpp):
 #   - Each trial's DATA is drawn from a deterministic seed
@@ -38,7 +41,6 @@
 # ==============================================================================
 
 library(TRexSelectorNeo)
-library(parallel)
 
 
 # ==============================================================================
@@ -222,11 +224,7 @@ evaluate_spca <- function(X, V_est, Z_est, V_true) {
 
 .mc_map <- function(num_MC, one_trial, num_cores) {
   # mc index runs 0..num_MC-1 (matches the cpp seed bands)
-  res_list <- parallel::mclapply(0:(num_MC - 1L), one_trial,
-                                 mc.cores = num_cores, mc.preschedule = FALSE)
-  errs <- vapply(res_list, inherits, logical(1), what = "try-error")
-  if (any(errs)) stop("MC trial failed: ", res_list[[which(errs)[1]]])
-  res_list
+  mc_map(0:(num_MC - 1L), one_trial, num_cores)
 }
 
 
@@ -252,7 +250,7 @@ evaluate_spca <- function(X, V_est, Z_est, V_true) {
 #' @param en_solver         "TENET" or "TENET_AUG".
 #' @param num_components    > 0 extracts that many PCs instead of the number
 #'                          of true factors (Fig. 3(a) decoupling).
-#' @param num_cores         Worker processes for mclapply.
+#' @param num_cores         Worker processes for mc_map().
 #'
 #' @return list(avg_tpr, avg_fdr, avg_pev, avg_pev_sig, avg_pev_sigmix,
 #'   sd_tpr, sd_fdr)

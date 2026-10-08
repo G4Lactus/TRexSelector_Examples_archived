@@ -12,6 +12,10 @@
 # local; the PNG/PDF twins are what the READMEs display.
 **/simulation_results/plots/*.html
 
+# Resume caches of the Monte Carlo demos: finished grid cells of an interrupted
+# run. A demo removes its cache once all results are written.
+**/simulation_results/cache/
+
 # Memory-mapped backing files of the ml_methods demos (up to 320 GB). The demos
 # remove them on exit; an aborted run leaves one behind in the demo folder.
 trex_mlm_demo_*_mmap.bin

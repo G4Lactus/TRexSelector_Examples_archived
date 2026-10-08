@@ -38,7 +38,7 @@ History note below).
 ```text
 tFDR = 0.10
 lambda_2 = -1         # < 0 triggers k-fold CV for ridge-penalty selection (lambda2_method = "CV_1SE_CCD")
-num_MC = 200          # single SNR point -10 dB ("TEMP fast-validation", mirroring the cpp main())
+num_MC = 200          # per SNR point of the grid {-10, -7, -5, -3, 0, 3, 5, 7, 10} dB
 base_seed = 42        # seeds the per-trial DATA DGP deterministically:
                       #   trial mc uses base_seed_offset + mc*1000, where
                       #   base_seed_offset = base_seed + round(snr)
@@ -123,58 +123,27 @@ TREX_SPCA_PARTS=2 Rscript .../demo_trex_spca_01_mc_sim.R      # only Section 2 (
 TREX_SPCA_NUM_MC=10 Rscript .../demo_trex_spca_01_mc_sim.R    # pilot-run MC override
 ```
 
-Dependencies: `TRexSelectorNeo` and base-R `parallel` only (figures additionally need `ggplot2` + `patchwork`). The
-Monte Carlo trials run in parallel via `parallel::mclapply` (see `../trex_spca_sim_utils.R`).
+Dependencies: `TRexSelectorNeo` only (figures additionally need `ggplot2` + `patchwork`). The Monte Carlo trials run
+on spawned R worker processes (a PSOCK cluster via `mc_map()` in [../../../mc_runtime.R](../../../mc_runtime.R)), each
+with single-threaded solvers.
+
+The demo is **resumable**. Every finished cell (one method at one SNR point, or one SNR point of Section 2) is appended
+to `simulation_results/cache/demo_trex_spca_01_mc_sim.cells.tsv`, and a restarted run reads those cells back instead
+of recomputing them. The cache is removed once all results are written, and a change of the configuration or of the
+run tag `TREX_RUN_TAG` sets an old cache aside.
 
 ---
 
-## Real Results (SNR = -10 dB, num_MC = 200, as committed, 2026-07-08)
+## Simulation Results
 
-| Method | FDR | TPR | PEV |
-|---|---|---|---|
-| OrdPCA | 0.9500 | 1.0000 | 0.2017 |
-| OraclePCA | 0.0040 | 0.9960 | 0.1234 |
-| TRexSPCA-EN-Act | 0.1410 | 0.9990 | 0.1206 |
-| TRexSPCA-ENaug-Act | 0.1288 | 0.9990 | 0.1213 |
-| TRexSPCA-EN-Thr | 0.1355 | 1.0000 | 0.1328 |
-| TRexSPCA-ENaug-Thr | 0.1345 | 0.9990 | 0.1331 |
-
-As reference points, the legacy CRAN R implementation reports FDR $0.100$ / TPR $\approx 1.0$ at this same operating
-point. The C++ counterpart's committed table (same configuration, C++ random number generator (RNG) streams) reads
-OrdPCA 0.9500/1.0000/0.2021, OraclePCA 0.0060/0.9940/0.1241, and T-Rex FDR $\approx 0.123\text{–}0.131$ with TPR
-$\approx 0.996\text{–}0.997$. Python reads OraclePCA 0.0080/0.9920 and T-Rex FDR $\approx 0.132\text{–}0.136$ with TPR
-$\approx 0.997\text{–}0.998$. All are within Monte Carlo noise of the R table — exact numbers cannot match because the
-data RNG streams differ across languages. Trial-for-trial reproduction of the R table itself is also intentionally
-impossible. The per-trial **data** is deterministic in `base_seed`, but the dummies use hardware entropy (selector
-`seed = -1L`), so re-runs reproduce the table to within MC noise ($\approx \pm 0.01$ at 200 trials).
+No R results are committed yet. They follow with the first full run of the R suite. The
+[C++ README](../../../../../cpp/trex_selector_methods/ad/trex_spca/demo_trex_spca_01_mc_sim/README.md) shows the
+reference results over the same grid, and the R run is expected to agree with them within Monte Carlo noise. Exact
+numbers cannot match, because R's generator draws other data from the same seeds, and the dummies use hardware entropy
+(selector `seed = -1L`), so even an R rerun reproduces its table only within Monte Carlo noise ($\approx \pm 0.01$ at
+200 trials).
 
 > **History note (z-scoring episode, fixed 2026-07-08)**: an earlier version of this pipeline z-score-standardized
-> $\boldsymbol{X}$, which converts the covariance PCA into a correlation PCA and destroys the factor amplitude signal —
-> the measured T-Rex FDR inflated to $\approx 0.53$ and OraclePCA TPR dropped to $\approx 0.84$ at this same nominal
-> SNR. The C++ validation program `validation_trex_spca_06_handrolled_comparison` isolated the cause (the `TRexSPCA`
-> class and a hand-rolled pipeline replicating the legacy R recipe agree within MC noise, and only the preprocessing
-> differed), and the pipeline is back to center-only.
-
----
-
-## Interpretation
-
-- **OrdPCA**'s $\mathrm{FDR}\approx0.95$ and $\mathrm{TPR}=1.0$ are trivial artifacts of retaining all $p=100$
-  loadings (true support is $p_1=5$) — not a genuine comparison point, only a non-sparse reference.
-- **OraclePCA** achieves near-perfect PC1 recovery (it is told the true support size), and its PEV ($0.123$) is the
-  useful reference value here — how much variance the true sparse signal explains, independent of any estimation
-  procedure.
-- All four **T-Rex SPCA** variants recover PC1's support almost perfectly (TPR $\approx 1.0$) with FDR close to the
-  $\mathrm{tFDR}=0.10$ target — even though $-10$ dB sounds like a very weak signal, the strong first factor (standard
-  deviation $5$) dominates PC1 recovery on the covariance-PCA footing.
-- The realized FDR ($\approx 0.13\text{–}0.14$) sits $\approx 0.03$ above the target and the legacy CRAN R reference
-  ($0.100$). This is the long-known residual gap between the C++ core and the CRAN R implementation, investigated by
-  the programs now in the TRexSelector library test suite
-  (`TRexSelector/cpp/tests/validation/trex_selector_methods/ad/trex_spca/`). The suspects are the internal CD-ridge λ₂
-  cross-validation (CV) vs. R's `cv.glmnet`, and dummy-generation details. The program `validation_trex_spca_06`
-  confirms it is **not** a `TRexSPCASelector` artifact.
-- The four T-Rex variants are statistically indistinguishable from each other at this single SNR point, so no solver
-  (`TENET` vs. `TENET_AUG`) or mode (`ActiveSet` vs. `Thresholded`) conclusion should be drawn from it. The
-  **Thresholded** variants' slightly higher PEV ($\approx 0.133$ vs. $\approx 0.121$) is the one systematic
-  difference. They rebuild loadings from the full ordinary-PCA solution on the selected support, which preserves more
-  explained variance than the active-set coefficients.
+> $\boldsymbol{X}$, which converts the covariance PCA into a correlation PCA and destroys the factor amplitude signal.
+> The measured T-Rex FDR inflated to $\approx 0.53$ at $-10$ dB. The C++ validation program
+> `validation_trex_spca_06_handrolled_comparison` isolated the cause, and the pipeline is back to center-only.
