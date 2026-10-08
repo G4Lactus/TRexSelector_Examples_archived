@@ -122,7 +122,7 @@ renders the tidy comma-separated values (CSV) file three ways (all written to `s
 
 ### Overview (all 14 solvers)
 
-FDR and TPR versus SNR (log-scaled x-axis), all solvers on one pair of panels:
+FDR and TPR versus SNR, all solvers on one pair of panels:
 
 ![FDR and TPR versus SNR for all 14 solvers](simulation_results/plots/demo_trex_02_mc_sim_fixed_support_trex_results_n300_p1000_stagnation_window_7_fdr_tpr_vs_snr.png)
 
@@ -196,7 +196,8 @@ count.
 
 ### FDR Control
 
-- FDR is **maintained near or below the target $\mathrm{tFDR} = 0.1$** across SNR levels for the LARS-path solvers.
+- FDR stays **below the target $\mathrm{tFDR} = 0.1$ for every solver at every SNR level**, at most $0.044$
+  (TLASSO at SNR 1.0).
 - At low SNR, FDR tends to be conservative due to few selections, and it stabilizes as SNR increases.
 
 ### Power (TPR)
@@ -208,6 +209,10 @@ count.
 ### Solver Comparison
 
 - The 14 solvers do **not** produce identical selections, so FDR/TPR curves differ between them.
+- **Two groups separate at moderate SNR.** At SNR 1.0 the four LARS-path solvers (TLARS, TLASSO, TENET,
+  TSTAGEWISE) reach a TPR of $0.71\text{–}0.72$ at an FDR of $0.038\text{–}0.044$, while the ten pursuit and
+  forward-selection solvers reach $0.84\text{–}0.87$ at $0.023\text{–}0.032$. By SNR 2.0 every solver recovers
+  at least $97\%$ of the support.
 - This lets you compare the statistical behaviour of the different base solvers under a shared DGP and FDR target.
 
 ---

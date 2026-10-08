@@ -20,7 +20,7 @@ Demo 02.
 - **True coefficients**: fixed $\beta_j = 1$ (`rnd_coef = false`)
 - **Signal-to-noise ratio (SNR) grid**: a **21-point grid** — $\lbrace0.1, 0.2, \ldots, 2.0\rbrace$ (step $0.1$)
   plus $5.0$
-- **Monte Carlo repetitions**: `num_MC = 10` trials per solver × SNR level
+- **Monte Carlo repetitions**: `num_MC = 200` trials per solver × SNR level
 - **Data-generating process (DGP)**: $\mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\epsilon}$,
   $\boldsymbol{\epsilon} \sim N(0, \sigma^2 I_n)$, Normal predictors and Normal noise
 
@@ -91,17 +91,16 @@ by the plotter.
 
 ### Overview (all 14 solvers)
 
-FDR and TPR versus SNR (log-scaled x-axis) over the fine 21-point grid, all
+FDR and TPR versus SNR over the fine 21-point grid, all
 solvers on one pair of panels, with the legend just right of the TPR panel:
 
 ![FDR and TPR versus SNR for all 14 solvers](simulation_results/plots/demo_trex_03_mc_sim_variable_support_trex_results_n300_p1000_stagnation_window_5_fdr_tpr_vs_snr.png)
 
 *Left:* even with the support indices redrawn every trial, FDR stays well below
 the target `tFDR = 0.1` (black dotted line) for every solver across the whole SNR
-grid — FDR control is robust to the location of the active set. *Right:* the fine
-grid gives a smooth power curve, TPR climbing from near-zero at SNR 0.1 to
-near-perfect recovery by SNR ≈ 2. The curves are noisier than Demo 02's because
-`num_MC = 10` here (vs 200).
+grid, at most $0.059$ (TENET at SNR 0.6) — FDR control is robust to the location of the active set.
+*Right:* the fine grid gives a smooth power curve, TPR climbing from near-zero at SNR 0.1 to
+at least $0.97$ for every solver at SNR 2.0.
 
 ### Grouped 2×2 view (de-cluttered)
 
@@ -173,12 +172,16 @@ builds are silent here unless verbosity is enabled.
 
 1. **Is FDR control robust to the location of the active set?**
    - Expected: FDR remains $\leq \mathrm{tFDR}$ regardless of which 10 indices are active.
+   - The committed run confirms it, with a highest FDR of $0.059$ over all 14 solvers and 21 SNR points.
 
 2. **How do the averaged $L$ and $T$ behave across SNR?**
    - The Avg L and Avg T rows expose how the dummy multiplier and stopping time adapt as signal strength rises.
+   - In the committed run, averaged over the solvers, Avg L climbs from $2.6$ at SNR 0.1 to a peak of $7.1$ at
+     SNR 0.4 and falls to $1.1$ at SNR 5.0. Avg T peaks later, at $6.5$ around SNR 0.8, and settles near $5$.
 
 3. **How does TPR climb across the fine SNR grid?**
    - The 21-point grid gives a smooth power curve from weak to strong signal.
+   - In the committed run the lowest TPR over the solvers is $0.735$ at SNR 1.0 and $0.976$ at SNR 2.0.
 
 ---
 
@@ -193,5 +196,6 @@ builds are silent here unless verbosity is enabled.
 **Comparison with Demo 02:**
 
 - Demo 02 (fixed support indices) is the baseline.
-- Demo 03 (support indices redrawn per trial, fixed cardinality) tests robustness to support location. Note the
-  smaller MC count (`num_MC = 10`) — averages are noisier than Demo 02's 200 trials.
+- Demo 03 (support indices redrawn per trial, fixed cardinality) tests robustness to support location. Both demos
+  run 200 trials per point, but demo 03 also uses the `HCONCAT` L-loop strategy and a stagnation window of 5
+  (demo 02 uses `STANDARD` and 7), so the two are not a pure support-location comparison.

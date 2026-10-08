@@ -206,11 +206,10 @@ and `TREX_SPCA_PARTS` selects the sections (default `12`, with `1` = method comp
 ## Simulation Results
 
 - **All four T-Rex SPCA variants hold the FDR at the $\mathrm{tFDR} = 0.10$ target across the whole sweep**,
-   with realized values between $0.052$ and $0.101$ — highest at the hardest point ($-10$ dB) and settling
-   around $0.06\text{–}0.08$ from $-7$ dB upward. The single reading fractionally above target
-   (`TRexSPCA-EN-Thr`, $0.1007$ at $-10$ dB) is inside Monte Carlo noise. The standard error of a
-   200-trial mean FDR is $\approx \pm 0.009$, so it is not evidence of a breach. TPR is $1.000$ everywhere
-   except $-10$ dB, where it is $0.995\text{–}0.997$.
+   with realized values between $0.053$ and $0.099$ — highest at the hardest point ($-10$ dB) and settling
+   around $0.05\text{–}0.08$ from $-7$ dB upward. The highest reading (`TRexSPCA-EN-Act`, $0.0990$ at
+   $-10$ dB) stays just below the target, and the standard error of a 200-trial mean FDR is
+   $\approx \pm 0.009$. TPR is $1.000$ everywhere except $-10$ dB, where it is $0.995\text{–}0.996$.
 - **OrdPCA's FDR of $0.95$ is not a defeat, it is arithmetic.** Retaining all $p = 100$ loadings against a
    true support of $p_1 = 5$ makes 95 of every 100 selections false by construction. It is a non-sparse
    reference line, not a competitor.
@@ -257,17 +256,17 @@ again as a Monte Carlo mean, while the right panel of the figure reports the com
  more lenient truth ($\mathcal S_1 \subseteq \mathcal S_{\cup}$), which is why PC1's union-FDR sits
  slightly below its per-factor FDR.
 
-- **PC1 is controlled everywhere** (union-FDR $0.014\text{–}0.067$, the union is a more lenient truth than factor 1's
+- **PC1 is controlled everywhere** (union-FDR $0.013\text{–}0.065$, the union is a more lenient truth than factor 1's
    own support).
 - **PC2 and PC3 are controlled exactly where their factors are alive, and break where they drown.** The
    factors have amplitudes $\sigma = (5, 3, 1)$, so relative to factor 1 the second factor sits
    $\approx 4$ dB and the third $\approx 14$ dB lower in effective SNR. That offset is precisely what the
-   curves show. PC2 holds the target from $-5$ dB up ($\leq 0.06$) and breaks below it ($0.16$ at $-7$ dB,
-   $0.45$ at $-10$ dB), while PC3 holds only from $+5$ dB up ($\leq 0.04$) and collapses below ($0.42$ at
-   $0$ dB, $0.71\text{–}0.83$ at $\leq -3$ dB). Once a factor is buried, its plug-in PC is essentially a noise
+   curves show. PC2 holds the target from $-5$ dB up ($\leq 0.06$) and breaks below it ($0.15$ at $-7$ dB,
+   $0.43$ at $-10$ dB), while PC3 holds only from $+5$ dB up ($\leq 0.04$) and collapses below ($0.40$ at
+   $0$ dB, $0.74\text{–}0.83$ at $\leq -3$ dB). Once a factor is buried, its plug-in PC is essentially a noise
    direction, and the selector — asked to explain a noise response — dutifully selects noise variables.
-   The support-size panel corroborates it. PC3's selection is inflated ($6\text{–}7.3$ variables) exactly in
-   its broken regime and drops to $\approx 3.7$ once the factor emerges.
+   The support-size panel corroborates it. PC3's selection is inflated ($6.3\text{–}7.5$ variables) exactly in
+   its broken regime and drops to $\approx 3.6$ once the factor emerges.
 
 **Consequences**: the FDR guarantee is **conditional on the plug-in PC being a faithful proxy for its
 factor**. Where a factor is buried, the selector still controls the FDR of the noise regression it was
@@ -308,7 +307,7 @@ with the dashed reference in the right panel showing OrdPCA's own Signal + Mixed
    null variables. The sparse methods carry almost no Null EV (their solid and Sig + Mix readings nearly
    coincide), with `Thresholded` reaching $95.7\%$ and OraclePCA $96.9\%$ at $+10$ dB. (With only $M = 3$
    extracted PCs the ordinary-PCA overshoot past $100\%$ stays latent, and demo 02's PC-count sweep is where it
-   erupts to $163\%$.)
+   erupts to $165\%$.)
 - **The two panels together are the actual result.** Ordinary PCA's lead in the left panel is bought with
    exactly the variance the dashed decomposition in the right panel exposes as null. The FDR-controlled
    variants pay a modest, quantified price in captured variance and in exchange claim almost nothing that

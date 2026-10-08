@@ -163,11 +163,11 @@ trial, so Part 1 alone costs several times what the other parts cost together.
    and the renormalization hands them full weight — the $\approx 10$-point gap above the dashed curve is
    its accumulated Null EV. Knowing the cardinality does not protect against thresholding noise. Only the
    FDR-controlled selection, which may return (near-)empty supports on noise components, stays flat. The
-   four T-Rex variants flatten out by three-to-five PCs and stay there ($79.6\text{–}80.0\%$ `ActiveSet`,
-   $85.5\text{–}85.7\%$ `Thresholded` at 49), declining to claim variance that is not theirs even when handed
+   four T-Rex variants flatten out by three-to-five PCs and stay there ($79.7\text{–}79.9\%$ `ActiveSet`,
+   $85.5\text{–}85.6\%$ `Thresholded` at 49), declining to claim variance that is not theirs even when handed
    46 components they do not need.
 - **Panel (b) rises with SNR, as in the published Fig. 3(b).** At $-10$ dB the true active columns are
-   dominated by noise that no 3-component method can capture, so everything sits low: $40.6\text{–}45.8\%$ for
+   dominated by noise that no 3-component method can capture, so everything sits low: $40.7\text{–}45.8\%$ for
    the T-Rex variants, $48.1\%$ for OraclePCA, $72.1\%$ for ordinary PCA — whose head start is exactly its
    Null EV, as the dashed Sig + Mix curve at $51.8\%$ shows. With rising SNR the `Thresholded` variants and
    OraclePCA converge toward the line ($93.0\%$ and $94.5\%$ at $+10$ dB), the `ActiveSet` variants level
@@ -175,15 +175,15 @@ trial, so Part 1 alone costs several times what the other parts cost together.
    curves merge at $98.8\%$ — at high SNR there is hardly any null variance left to harvest.
 - **Panel (c) is non-monotone, and both ends are easy for the wrong reason.** All methods start near
    $100\%$ at $p_1 = 1$ (ordinary PCA at $106.8\%$, again split by its dashed curve at $103.6\%$), sag to a
-   minimum around $p_1 = 15\text{–}20$ ($74.4\%$ `ActiveSet`, $78.5\%$ `Thresholded`, $80.0\%$ OraclePCA,
+   minimum around $p_1 = 15\text{–}20$ ($74.3\%$ `ActiveSet`, $78.5\%$ `Thresholded`, $79.9\%$ OraclePCA,
    $85.7\%$ ordinary), and recover toward $p_1 = 30$, where the true support fills the entire overlap pool
    and there are few null variables left to miss. The middle of the range is where support selection
    actually matters.
 - **Panel (d) reproduces the paper's headline reading that T-Rex is insensitive to the target above
    $\approx 5\%$.** The two ordinary-PCA references are `tFDR`-blind and sit flat ($90.9\%$ solid,
-   $88.7\%$ dashed). The T-Rex variants pay visibly only at the strictest target ($60.3\%$ `ActiveSet` /
-   $64.5\%$ `Thresholded` at $\mathrm{tFDR} = 0.01$, where the selector keeps too few variables), then climb
-   onto a gentle plateau ($75.7 \to 81.5\%$ and $81.2 \to 88.8\%$ from $\mathrm{tFDR} = 0.10$ to $0.50$).
+   $88.7\%$ dashed). The T-Rex variants pay visibly only at the strictest target ($60.0\%$ `ActiveSet` /
+   $64.4\%$ `Thresholded` at $\mathrm{tFDR} = 0.01$, where the selector keeps too few variables), then climb
+   onto a gentle plateau ($75.6 \to 81.5\%$ and $81.2 \to 88.7\%$ from $\mathrm{tFDR} = 0.10$ to $0.50$).
    Loosening the target buys captured variance slowly — and pays for it in realized FDR (see the caveat
    below).
 
@@ -233,20 +233,22 @@ Part 5 maps the realized FDR and TPR of PC1's support over the **full** (target 
 What the grid shows:
 
 - **Under the plug-in response, control holds up to the targets this suite actually uses, then breaks everywhere.**
-   At $\mathrm{tFDR} = 0.05$ the realized FDR is $0.04\text{–}0.10$, and at $0.10$ it is $0.08\text{–}0.16$ (fraying
-   mildly above target from $+5$ dB up). From $\mathrm{tFDR} = 0.15$ the exceedance is systematic at every
-   SNR — $+0.06$ to $+0.09$ at $0.15$, growing to $+0.12$ to $+0.18$ at $0.50$ (realized $0.62\text{–}0.68$).
+   At $\mathrm{tFDR} = 0.05$ the realized FDR is $0.04\text{–}0.10$, and at $0.10$ it is $0.08\text{–}0.15$ (fraying
+   mildly above target from $0$ dB up, by at most $+0.05$). From $\mathrm{tFDR} = 0.15$ the exceedance is
+   systematic at every SNR — $+0.04$ to $+0.09$ at $0.15$, growing to $+0.12$ to $+0.18$ at $0.50$ (realized
+   $0.62\text{–}0.68$).
    The pattern is nearly SNR-independent, so this is not a noise effect. The standard error (SE) is
    $\approx 0.02\text{–}0.03$ per cell.
 - **Under the oracle response the overshoot largely vanishes — the mechanism is confirmed.** With the true factor
    as response, the realized FDR stays **at or below target through $\mathrm{tFDR} \approx 0.30$ at every
-   SNR** (e.g. $0.06\text{–}0.10$ against $0.15$, $0.14\text{–}0.18$ against $0.20$), and even at the loosest targets
+   SNR** (e.g. $0.06\text{–}0.10$ against $0.15$, $0.14\text{–}0.18$ against $0.20$, and at most $0.32$ against
+   $0.30$, inside the standard error), and even at the loosest targets
    the residual exceedance is only $+0.03\text{–}0.04$ ($0.53\text{–}0.54$ against $0.50$). The bulk of the plug-in
    overshoot is therefore a property of the **evaluation mismatch** — a dense-truth regression scored
    against a sparse truth — not of the selector. A small selector-level residual remains at very loose
    targets.
-- **TPR is a non-issue except in the strict-target / low-SNR corner.** It is $\geq 0.97$ everywhere except
-   at $\mathrm{tFDR} = 0.01$, $-10$ dB, where the selector keeps too few variables ($0.65$ plug-in, $0.47$
+- **TPR is a non-issue except in the strict-target / low-SNR corner.** It is $\geq 0.95$ everywhere except
+   at $\mathrm{tFDR} = 0.01$, $-10$ dB, where the selector keeps too few variables ($0.62$ plug-in, $0.48$
    oracle) — the same corner that produces the PEV dip in panel (d).
 
 **Consequences**: At this suite's default $\mathrm{tFDR} = 0.10$ the pipeline is safe across the whole

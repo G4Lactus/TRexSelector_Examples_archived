@@ -168,7 +168,7 @@ each demo self-contained and easier to inspect independently.
 |---|------|---------|---------|-----------------|
 | **01** | Single Run | Demonstrates basic T-Rex usage | One low-dimensional and one high-dimensional scenario | $n \in \lbrace150, 5{,}000\rbrace$, $p \in \lbrace300, 1{,}000\rbrace$, $s = 6$, SNR = 1.0, tFDR = 0.1 |
 | **02** | MC: Fixed Support | Studies FDR/TPR over an SNR range for 14 base solvers | Moderate dimension, fixed random support | $n = 300$, $p = 1{,}000$, $s = 10$ (fixed, random indices, seed 24), SNR $\in \lbrace0.1, 0.5, 1, 2, 5\rbrace$, tFDR = 0.1, MC = 200 |
-| **03** | MC: Variable Support | Studies FDR/TPR/L/T when support indices are redrawn per trial | Moderate dimension, variable support indices | $n = 300$, $p = 1{,}000$, $s = 10$ (cardinality fixed, indices vary per trial), 21-point SNR grid $\lbrace0.1,\ldots,2.0, 5.0\rbrace$, tFDR = 0.1, MC = 10 |
+| **03** | MC: Variable Support | Studies FDR/TPR/L/T when support indices are redrawn per trial | Moderate dimension, variable support indices | $n = 300$, $p = 1{,}000$, $s = 10$ (cardinality fixed, indices vary per trial), 21-point SNR grid $\lbrace0.1,\ldots,2.0, 5.0\rbrace$, tFDR = 0.1, MC = 200 |
 | **04** | MC: L-loop Strategies | Compares the 6 L-loop strategy types (TLARS fixed) | Moderate dimension, random support | $n = 300$, $p = 1{,}000$, $s = 10$, 21-point SNR grid, tFDR = 0.1, MC = 10, 8 strategy rows (incl. SKIPL 5p/10p/20p) |
 | **05** | MC: Dummy Distributions | Compares dummy distribution shapes across 3 base solvers (TLARS/TOMP/TAFS, STANDARD L-loop fixed) | Moderate dimension, random support | $n = 300$, $p = 1{,}000$, $s = 10$, 21-point SNR grid, tFDR = 0.1, MC = 10, 12 distribution rows (Normal … UnifSphere_d5) × 3 solvers (one file pair each) |
 | **06** | Memory-Mapped Single Run | Demonstrates memory-mapped (mmap) workflows | Larger data and reduced RAM usage | Two scenarios ($n=5{,}000,p=1{,}000$ and $n=1{,}000,p=5{,}000$): in-memory X + D mmap, and full X+D mmap pipeline |
@@ -246,16 +246,16 @@ trex_core/
 ## Example results
 
 The following comes from **Demo 02**, which evaluates performance across several SNR levels for multiple base
-solvers within the T-Rex framework. The numbers below are **illustrative** of the expected pattern for the TLARS
-solver (exact values depend on the run). Consult the generated `simulation_results/` files for actual figures.
+solvers within the T-Rex framework. The table quotes the committed TLARS results (200 Monte Carlo trials per SNR
+level), and the demo's `simulation_results/` files hold all 14 solvers.
 
 | SNR | FDR (TLARS) | TPR (TLARS) |
 | ----- | ------------- | ------------- |
-| 0.1 | low         | low         |
-| 0.5 | ≤ tFDR      | rising      |
-| 1.0 | ≤ tFDR      | high        |
-| 2.0 | ≤ tFDR      | near 1.0    |
-| 5.0 | ≤ tFDR      | 1.0         |
+| 0.1 | 0.0250      | 0.0035      |
+| 0.5 | 0.0353      | 0.2780      |
+| 1.0 | 0.0402      | 0.7225      |
+| 2.0 | 0.0315      | 0.9835      |
+| 5.0 | 0.0285      | 1.0000      |
 
 ### Interpretation
 
