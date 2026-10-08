@@ -38,6 +38,7 @@ if _THIS_DIR not in sys.path:
 
 from trex_scr_common import (dgp_iid_snr, _make_response,  # noqa: E402
                              _get_executor)
+import cell_cache  # family folder, put on sys.path by trex_scr_common
 
 # Canonical method-name keys returned in each result's `method_used` field.
 BIOBANK_METHODS = ["Screen-TRex (ordinary)",
@@ -202,6 +203,20 @@ def accumulate_snr(records, target_FDR_trex):
             "est":   (est[m] / total) if total else 0.0,       # unconditional mean
         }
     return out
+
+
+def run_biobank_snr_cell(worker, args_list, max_workers, target_FDR_trex):
+    """One SNR level as a resumable grid cell: run_mc_biobank + accumulate_snr,
+    restored from the cell cache after a restart. Same return as accumulate_snr."""
+    fields = ("usage", "fdp", "tpp", "est")
+
+    def compute():
+        stats = accumulate_snr(run_mc_biobank(worker, args_list, max_workers), target_FDR_trex)
+        return {f"m{i}.{k}": stats[m][k] for i, m in enumerate(BIOBANK_METHODS) for k in fields}
+
+    key = f"biobank|{worker.__name__}|{cell_cache.digest(args_list, target_FDR_trex)}"
+    flat = cell_cache.cached(key, compute)
+    return {m: {k: flat[f"m{i}.{k}"] for k in fields} for i, m in enumerate(BIOBANK_METHODS)}
 
 
 # ==============================================================================

@@ -48,6 +48,12 @@ import pandas as pd
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
     sys.path.insert(0, _THIS_DIR)
+# Family folder: cell_cache.py (resumable grid cells).
+_FAMILY_DIR = os.path.dirname(os.path.dirname(_THIS_DIR))
+if _FAMILY_DIR not in sys.path:
+    sys.path.insert(0, _FAMILY_DIR)
+
+import cell_cache
 
 # ------------------------------------------------------------------------------
 # Worker budget  (identical helper in every suite's *_common / *_utils module)
@@ -343,22 +349,26 @@ def run_gvs_mc_trials(dgp_name, dgp_kwargs, num_MC, progress_label, tFDR, K,
     seed = cv_seed = trial seed. Returns dict(mean_fdp, mean_tpp, sd_fdp,
     sd_tpp), matching the cpp GVSGridPointResult.
     """
-    print(f"  {progress_label} — Running {num_MC} MC trials ...", flush=True)
-
     tasks = [(base_seed + mc, dgp_name, dgp_kwargs, tFDR, K, gvs_type,
               corr_max, hc_linkage, en_solver, lambda2_method)
              for mc in range(num_MC)]
-    if max_workers > 1:
-        results = list(_get_executor(max_workers, len(tasks)).map(_gvs_trial_worker,
-                                                   tasks))
-    else:
-        results = [_gvs_trial_worker(t) for t in tasks]
 
-    fdp = np.array([r[0] for r in results])
-    tpp = np.array([r[1] for r in results])
-    out = dict(mean_fdp=float(fdp.mean()), mean_tpp=float(tpp.mean()),
-               sd_fdp=float(fdp.std(ddof=1)) if num_MC > 1 else 0.0,
-               sd_tpp=float(tpp.std(ddof=1)) if num_MC > 1 else 0.0)
+    # One resumable grid cell (cell_cache): restored after a restart.
+    def compute():
+        print(f"  {progress_label} — Running {num_MC} MC trials ...", flush=True)
+        if max_workers > 1:
+            results = list(_get_executor(max_workers, len(tasks)).map(
+                _gvs_trial_worker, tasks))
+        else:
+            results = [_gvs_trial_worker(t) for t in tasks]
+
+        fdp = np.array([r[0] for r in results])
+        tpp = np.array([r[1] for r in results])
+        return dict(mean_fdp=float(fdp.mean()), mean_tpp=float(tpp.mean()),
+                    sd_fdp=float(fdp.std(ddof=1)) if num_MC > 1 else 0.0,
+                    sd_tpp=float(tpp.std(ddof=1)) if num_MC > 1 else 0.0)
+
+    out = cell_cache.cached(f"gvs|{progress_label}|{cell_cache.digest(tasks)}", compute)
 
     print(f"  {progress_label} — done. TPP={out['mean_tpp']:.3f}"
           f"  FDP={out['mean_fdp']:.3f}\n", flush=True)
@@ -713,25 +723,30 @@ def run_block_mc(cfg, scenario, rho, snr, cell_base_seed, label,
     """Run num_MC parallel trials at one (scenario, rho, snr) cell and
     aggregate all four methods. Trial i uses seed = cell_base_seed + i; all
     four methods see identical data within a trial."""
-    print(f"  {label} — running {cfg['num_MC']} MC trials...", flush=True)
-
     tasks = [(cell_base_seed + mc, cfg, scenario, rho, snr)
              for mc in range(cfg["num_MC"])]
-    if max_workers > 1:
-        trials = list(_get_executor(max_workers, len(tasks)).map(_block_trial_worker,
-                                                   tasks))
-    else:
-        trials = [_block_trial_worker(t) for t in tasks]
 
-    out = {}
-    for mk in ("M1", "M2", "M3", "M4"):
-        agg = {}
-        for metric in _BLOCK_METRICS:
-            vals = np.array([float(t[mk][metric]) for t in trials])
-            agg[f"mean_{metric}"] = float(vals.mean())
-            agg[f"sd_{metric}"] = float(vals.std(ddof=1)) \
-                if len(vals) > 1 else 0.0
-        out[mk] = agg
+    # One resumable grid cell (cell_cache), flattened to "M1.mean_coord_tpr" etc.
+    def compute():
+        print(f"  {label} — running {cfg['num_MC']} MC trials...", flush=True)
+        if max_workers > 1:
+            trials = list(_get_executor(max_workers, len(tasks)).map(
+                _block_trial_worker, tasks))
+        else:
+            trials = [_block_trial_worker(t) for t in tasks]
+
+        flat = {}
+        for mk in ("M1", "M2", "M3", "M4"):
+            for metric in _BLOCK_METRICS:
+                vals = np.array([float(t[mk][metric]) for t in trials])
+                flat[f"{mk}.mean_{metric}"] = float(vals.mean())
+                flat[f"{mk}.sd_{metric}"] = float(vals.std(ddof=1)) \
+                    if len(vals) > 1 else 0.0
+        return flat
+
+    flat = cell_cache.cached(f"block|{label}|{cell_cache.digest(tasks)}", compute)
+    out = {mk: {k.split(".", 1)[1]: v for k, v in flat.items() if k.startswith(mk + ".")}
+           for mk in ("M1", "M2", "M3", "M4")}
 
     print(f"  {label} — done."
           f"  M1 TPR={out['M1']['mean_coord_tpr']:.3f}"

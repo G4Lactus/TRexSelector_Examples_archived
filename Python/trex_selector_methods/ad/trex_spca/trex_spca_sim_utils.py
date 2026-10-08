@@ -44,6 +44,7 @@
 import atexit
 import multiprocessing
 import os
+import sys
 from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
@@ -51,6 +52,12 @@ import pandas as pd
 
 import trex_selector_neo as trex
 from trex_selector_neo.ml_methods import PCA
+
+# Family folder: cell_cache.py (resumable grid cells).
+_FAMILY_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if _FAMILY_DIR not in sys.path:
+    sys.path.insert(0, _FAMILY_DIR)
+import cell_cache
 
 # ------------------------------------------------------------------------------
 # Worker budget  (identical helper in every suite's *_common / *_utils module)
@@ -423,18 +430,22 @@ def _trial_oracle_pca(task):
 # ==============================================================================
 
 def _run_mc(worker, tasks, label, n_cores):
-    print(f"  {label} — Running {len(tasks)} MC trials ...", flush=True)
-    if n_cores > 1:
-        res = list(get_executor(n_cores, len(tasks)).map(worker, tasks))
-    else:
-        res = [worker(t) for t in tasks]
+    # One resumable grid cell (cell_cache): restored after a restart.
+    def compute():
+        print(f"  {label} — Running {len(tasks)} MC trials ...", flush=True)
+        if n_cores > 1:
+            res = list(get_executor(n_cores, len(tasks)).map(worker, tasks))
+        else:
+            res = [worker(t) for t in tasks]
 
-    arr = np.asarray(res)  # (num_MC, 5): tpr, fdr, pev, pev_sig, pev_sigmix
-    out = dict(avg_tpr=arr[:, 0].mean(), avg_fdr=arr[:, 1].mean(),
-               avg_pev=arr[:, 2].mean(), avg_pev_sig=arr[:, 3].mean(),
-               avg_pev_sigmix=arr[:, 4].mean(),
-               sd_tpr=arr[:, 0].std(ddof=1) if len(arr) > 1 else 0.0,
-               sd_fdr=arr[:, 1].std(ddof=1) if len(arr) > 1 else 0.0)
+        arr = np.asarray(res)  # (num_MC, 5): tpr, fdr, pev, pev_sig, pev_sigmix
+        return dict(avg_tpr=arr[:, 0].mean(), avg_fdr=arr[:, 1].mean(),
+                    avg_pev=arr[:, 2].mean(), avg_pev_sig=arr[:, 3].mean(),
+                    avg_pev_sigmix=arr[:, 4].mean(),
+                    sd_tpr=arr[:, 0].std(ddof=1) if len(arr) > 1 else 0.0,
+                    sd_fdr=arr[:, 1].std(ddof=1) if len(arr) > 1 else 0.0)
+
+    out = cell_cache.cached(f"{worker.__name__}|{label}|{cell_cache.digest(tasks)}", compute)
     print(f"  {label} — done. TPR={out['avg_tpr']:.3f}  FDR={out['avg_fdr']:.3f}\n",
           flush=True)
     return out

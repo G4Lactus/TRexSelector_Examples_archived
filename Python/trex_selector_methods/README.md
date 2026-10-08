@@ -67,6 +67,18 @@ python ad/trex_core/demo_trex_01_single_run/demo_trex_01_single_run.py
 
 For each variant's demo lineup and required parameters, see the corresponding subfolder README.
 
+To run the Monte Carlo demos back to back as an unattended job, use the batch runner, which runs every suite's
+`run_overnight.sh` (or the ones named as arguments) on the repository's `.venv`:
+
+```bash
+nohup Python/trex_selector_methods/run_all_overnight.sh > /dev/null 2>&1 &
+```
+
+Both levels are resumable. A demo that finishes is recorded under the run tag (the pinned library commit of
+`LIBRARY_TARGET.txt`) and skipped by the next run, and the demo in flight keeps every finished grid cell in
+`simulation_results/cache/cells.tsv` ([cell_cache.py](cell_cache.py)), so a stopped batch continues where it
+stopped. `FRESH=1` reruns everything.
+
 ---
 
 ## Folder contents
@@ -74,6 +86,8 @@ For each variant's demo lineup and required parameters, see the corresponding su
 ```txt
 trex_selector_methods/
   ├── README.md
+  ├── cell_cache.py           # resumable grid cells of the Monte Carlo demos
+  ├── run_all_overnight.sh    # batch runner over the suites' run_overnight.sh
   ├── ad/   # augmented dummies (AD)
   │   ├── trex_core/
   │   ├── trex_screening/

@@ -42,6 +42,12 @@ from concurrent.futures import ProcessPoolExecutor
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
     sys.path.insert(0, _THIS_DIR)
+# Family folder: cell_cache.py (resumable grid cells).
+_FAMILY_DIR = os.path.dirname(os.path.dirname(_THIS_DIR))
+if _FAMILY_DIR not in sys.path:
+    sys.path.insert(0, _FAMILY_DIR)
+
+import cell_cache
 
 from dgp_gauss_snr import dgp_gauss_snr          # noqa: E402 (after sys.path setup)
 from support_generators import make_support_random  # noqa: E402
@@ -536,8 +542,6 @@ def run_mc_trex(
     dict with keys: mean_FDR, mean_TPR, sd_FDR, sd_TPR,
     and (if track_L_T) mean_L, mean_T.
     """
-    if label:
-        print(f"  {label} — Running {num_MC} MC trials ...")
 
     # Convert fixed_support to a plain list so it is unconditionally picklable
     fixed_supp_list = fixed_support.tolist() if fixed_support is not None else None
@@ -571,24 +575,31 @@ def run_mc_trex(
         for mc in range(1, num_MC + 1)
     ]
 
-    results = list(_get_executor(max_workers, len(args_list)).map(_trial_worker,
-                                                     args_list))
+    # One resumable grid cell (cell_cache): restored after a restart.
+    def compute():
+        if label:
+            print(f"  {label} — Running {num_MC} MC trials ...")
+        results = list(_get_executor(max_workers, len(args_list)).map(
+            _trial_worker, args_list))
 
-    fdps = np.array([r["fdp"] for r in results])
-    tpps = np.array([r["tpp"] for r in results])
+        fdps = np.array([r["fdp"] for r in results])
+        tpps = np.array([r["tpp"] for r in results])
 
-    out = {
-        "mean_FDR": float(np.mean(fdps)),
-        "mean_TPR": float(np.mean(tpps)),
-        "sd_FDR":   float(np.std(fdps, ddof=1)),
-        "sd_TPR":   float(np.std(tpps, ddof=1)),
-    }
-    if track_L_T:
-        Ls = np.array([r["L"] for r in results], dtype=float)
-        Ts = np.array([r["T"] for r in results], dtype=float)
-        out["mean_L"] = float(np.mean(Ls))
-        out["mean_T"] = float(np.mean(Ts))
+        out = {
+            "mean_FDR": float(np.mean(fdps)),
+            "mean_TPR": float(np.mean(tpps)),
+            "sd_FDR":   float(np.std(fdps, ddof=1)),
+            "sd_TPR":   float(np.std(tpps, ddof=1)),
+        }
+        if track_L_T:
+            Ls = np.array([r["L"] for r in results], dtype=float)
+            Ts = np.array([r["T"] for r in results], dtype=float)
+            out["mean_L"] = float(np.mean(Ls))
+            out["mean_T"] = float(np.mean(Ts))
 
+        return out
+
+    out = cell_cache.cached(f"trex|{label}|{cell_cache.digest(args_list)}", compute)
     if label:
         print(f"  {label} — done.  mean_TPR={out['mean_TPR']:.3f}  "
               f"mean_FDR={out['mean_FDR']:.3f}\n")
@@ -857,8 +868,6 @@ def run_mc_trex_full_mmap(
     The caller should set use_memory_mapping=True in base_ctrl_dict to also
     enable internal D-mmap and solver serialization on top of the X mmap layer.
     """
-    if label:
-        print(f"  {label} — Running {num_MC} MC trials (full-mmap X) ...")
 
     fixed_supp_list = fixed_support.tolist() if fixed_support is not None else None
 
@@ -885,24 +894,31 @@ def run_mc_trex_full_mmap(
         for mc in range(1, num_MC + 1)
     ]
 
-    results = list(_get_executor(max_workers, len(args_list)).map(_trial_worker_full_mmap,
-                                                  args_list))
+    # One resumable grid cell (cell_cache): restored after a restart.
+    def compute():
+        if label:
+            print(f"  {label} — Running {num_MC} MC trials (full-mmap X) ...")
+        results = list(_get_executor(max_workers, len(args_list)).map(
+            _trial_worker_full_mmap, args_list))
 
-    fdps = np.array([r["fdp"] for r in results])
-    tpps = np.array([r["tpp"] for r in results])
+        fdps = np.array([r["fdp"] for r in results])
+        tpps = np.array([r["tpp"] for r in results])
 
-    out = {
-        "mean_FDR": float(np.mean(fdps)),
-        "mean_TPR": float(np.mean(tpps)),
-        "sd_FDR":   float(np.std(fdps, ddof=1)),
-        "sd_TPR":   float(np.std(tpps, ddof=1)),
-    }
-    if track_L_T:
-        Ls = np.array([r["L"] for r in results], dtype=float)
-        Ts = np.array([r["T"] for r in results], dtype=float)
-        out["mean_L"] = float(np.mean(Ls))
-        out["mean_T"] = float(np.mean(Ts))
+        out = {
+            "mean_FDR": float(np.mean(fdps)),
+            "mean_TPR": float(np.mean(tpps)),
+            "sd_FDR":   float(np.std(fdps, ddof=1)),
+            "sd_TPR":   float(np.std(tpps, ddof=1)),
+        }
+        if track_L_T:
+            Ls = np.array([r["L"] for r in results], dtype=float)
+            Ts = np.array([r["T"] for r in results], dtype=float)
+            out["mean_L"] = float(np.mean(Ls))
+            out["mean_T"] = float(np.mean(Ts))
 
+        return out
+
+    out = cell_cache.cached(f"trex_mmap|{label}|{cell_cache.digest(args_list)}", compute)
     if label:
         print(f"  {label} — done.  mean_TPR={out['mean_TPR']:.3f}  "
               f"mean_FDR={out['mean_FDR']:.3f}\n")

@@ -48,6 +48,12 @@ import trex_selector_neo as trex
 from trex_selector_neo.ml_methods.clustering import LinkageMethod
 from trex_selector_neo.utils import compute_fdp, compute_tpp, set_num_threads
 
+# Family folder: cell_cache.py (resumable grid cells).
+_FAMILY_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if _FAMILY_DIR not in sys.path:
+    sys.path.insert(0, _FAMILY_DIR)
+import cell_cache
+
 # ------------------------------------------------------------------------------
 # Ensure this directory is on sys.path so that spawned workers (ProcessPool-
 # Executor uses spawn on macOS) can import this module and dgp_generators.
@@ -386,22 +392,26 @@ def run_mc_trials(num_MC, progress_label, n, p, dgp, dgp_kwargs, support, s,
                   da_spec=da_spec)
              for mc in range(num_MC)]
 
-    print(f"  {progress_label} — Running {num_MC} MC trials ...", flush=True)
+    # One resumable grid cell (cell_cache): restored after a restart.
+    def compute():
+        print(f"  {progress_label} — Running {num_MC} MC trials ...", flush=True)
 
-    if n_cores > 1:
-        res = list(_get_executor(n_cores, len(tasks)).map(_mc_worker, tasks))
-    else:
-        res = [_mc_worker(t) for t in tasks]
+        if n_cores > 1:
+            res = list(_get_executor(n_cores, len(tasks)).map(_mc_worker, tasks))
+        else:
+            res = [_mc_worker(t) for t in tasks]
 
-    fdp = np.array([r[0] for r in res])
-    tpp = np.array([r[1] for r in res])
-    L = np.array([r[2] for r in res])
-    T = np.array([r[3] for r in res])
+        fdp = np.array([r[0] for r in res])
+        tpp = np.array([r[1] for r in res])
+        L = np.array([r[2] for r in res])
+        T = np.array([r[3] for r in res])
 
-    out = dict(avg_fdr=float(fdp.mean()), avg_tpr=float(tpp.mean()),
-               avg_L=float(L.mean()), avg_T=float(T.mean()),
-               sd_fdr=float(fdp.std(ddof=1)) if num_MC > 1 else 0.0,
-               sd_tpr=float(tpp.std(ddof=1)) if num_MC > 1 else 0.0)
+        return dict(avg_fdr=float(fdp.mean()), avg_tpr=float(tpp.mean()),
+                    avg_L=float(L.mean()), avg_T=float(T.mean()),
+                    sd_fdr=float(fdp.std(ddof=1)) if num_MC > 1 else 0.0,
+                    sd_tpr=float(tpp.std(ddof=1)) if num_MC > 1 else 0.0)
+
+    out = cell_cache.cached(f"da|{progress_label}|{cell_cache.digest(tasks)}", compute)
 
     print(f"  {progress_label} — done. TPP={out['avg_tpr']:.3f}"
           f"  FDP={out['avg_fdr']:.3f}\n", flush=True)

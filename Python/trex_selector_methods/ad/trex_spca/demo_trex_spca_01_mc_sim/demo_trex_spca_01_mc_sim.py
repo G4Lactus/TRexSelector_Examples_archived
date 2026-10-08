@@ -67,6 +67,7 @@ from trex_spca_sim_utils import (N_CORES, center_columns,  # noqa: E402
                                  run_mc_trials_oracle_pca, run_mc_trials_pca,
                                  run_mc_trials_trex_spca,
                                  save_and_print_spca_mc_results)
+import cell_cache  # family folder, put on sys.path by trex_spca_sim_utils
 
 N_WORKERS = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else N_CORES
 
@@ -240,16 +241,21 @@ def demo_trex_spca_union_fdr_sweep(cfg, snr_values, stem):
         tasks = [(offset + mc * 1000, dgp_kwargs, cfg["tFDR"], cfg["lambda_2"])
                  for mc in range(cfg["num_MC"])]
 
-        if N_WORKERS > 1:
-            res = list(get_executor(N_WORKERS, len(tasks)).map(_trial_union_fdr,
-                                                    tasks))
-        else:
-            res = [_trial_union_fdr(t) for t in tasks]
+        # One SNR cell (per-PC union-FDR and support size), restored from the
+        # cell cache after a restart.
+        def compute(tasks=tasks):
+            if N_WORKERS > 1:
+                res = list(get_executor(N_WORKERS, len(tasks)).map(_trial_union_fdr, tasks))
+            else:
+                res = [_trial_union_fdr(t) for t in tasks]
+            fdr_trial = np.array([r[0] for r in res])   # (num_MC, M)
+            k_trial = np.array([r[1] for r in res])     # (num_MC, M)
+            return {**{f"fdr{m}": fdr_trial[:, m].mean() for m in range(M)},
+                    **{f"k{m}": k_trial[:, m].mean() for m in range(M)}}
 
-        fdr_trial = np.array([r[0] for r in res])   # (num_MC, M)
-        k_trial = np.array([r[1] for r in res])     # (num_MC, M)
-        fdr_mean[:, si] = fdr_trial.mean(axis=0)
-        k_mean[:, si] = k_trial.mean(axis=0)
+        cell = cell_cache.cached(f"union_fdr|snr={snr:g}|{cell_cache.digest(tasks)}", compute)
+        fdr_mean[:, si] = [cell[f"fdr{m}"] for m in range(M)]
+        k_mean[:, si] = [cell[f"k{m}"] for m in range(M)]
 
         print(f"  SNR={snr:>5g} dB — union-FDR:"
               + "".join(f"  PC{m + 1}={fdr_mean[m, si]:.3f}" for m in range(M)),

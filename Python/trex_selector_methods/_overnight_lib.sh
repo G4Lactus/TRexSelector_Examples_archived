@@ -11,7 +11,18 @@
 #   * per-demo timestamped logs + a run summary under <suite>/_overnight_logs/;
 #   * SKIP_HEAVY=1 skips the demos listed in HEAVY_DEMOS (RAM/time hogs);
 #   * no leaked workers — each demo runs in its own process group, which is
-#     reaped when the demo exits (see _reap_group) and on runner INT/TERM/EXIT.
+#     reaped when the demo exits (see _reap_group) and on runner INT/TERM/EXIT;
+#   * resumable — see "Run tag and resume" below.
+#
+# Run tag and resume
+# ------------------
+# TREX_RUN_TAG names the library state the results come from: the pinned
+# commit of LIBRARY_TARGET.txt unless the caller sets it. A demo that exits 0
+# is recorded in <suite>/_overnight_logs/done_<tag>.txt, and later runs with
+# the same tag skip it, so a stopped batch restarts at the demo it was in. The
+# demos cache their finished grid cells under the same tag, so the demo in
+# flight continues where it stopped too. FRESH=1 ignores the record and makes
+# the demos set their caches aside, which reruns everything.
 #
 # Worker reaping
 # --------------
@@ -41,6 +52,22 @@ _find_venv() {
     d="$(dirname "$d")"
   done
   return 1
+}
+
+# _run_tag <dir>
+# TREX_RUN_TAG if set, else the pinned commit of the nearest LIBRARY_TARGET.txt
+# above <dir>, else "untagged".
+_run_tag() {
+  if [[ -n "${TREX_RUN_TAG:-}" ]]; then echo "$TREX_RUN_TAG"; return 0; fi
+  local d="$1"
+  while [[ "$d" != "/" ]]; do
+    if [[ -f "$d/LIBRARY_TARGET.txt" ]]; then
+      awk '/^Pinned commit:/ { print $3; exit }' "$d/LIBRARY_TARGET.txt"
+      return 0
+    fi
+    d="$(dirname "$d")"
+  done
+  echo "untagged"
 }
 
 # _reap_group <pgid>
@@ -120,21 +147,31 @@ run_suite() {
   local summary="$logdir/summary_${stamp}.txt"
   local skip_heavy="${SKIP_HEAVY:-0}"
 
+  # The demos read the tag (cell-cache fingerprint) and FRESH (set caches aside).
+  TREX_RUN_TAG="$(_run_tag "$suite_dir")"; export TREX_RUN_TAG
+  export TREX_FRESH="${FRESH:-0}"
+  local done_file="$logdir/done_${TREX_RUN_TAG}.txt"
+
   {
     echo "=============================================================="
     echo " overnight run: $suite_name"
     echo " started : $(date)"
     echo " venv    : $venv"
+    echo " run tag : $TREX_RUN_TAG   FRESH=$TREX_FRESH   (record: $(basename "$done_file"))"
     echo " SKIP_HEAVY=$skip_heavy   HEAVY_DEMOS='${HEAVY_DEMOS:-}'"
     echo "=============================================================="
     echo
   } | tee "$summary"
 
-  local name dir log t0 rc demo_pid corr_pid ok=0 fail=0 skip=0
+  local name dir log t0 rc demo_pid corr_pid ok=0 fail=0 skip=0 done_n=0
   for name in "$@"; do
     dir="$suite_dir/$name"
     if [[ ! -f "$dir/$name.py" ]]; then
       echo "[MISS ] $name  (no $name.py)" | tee -a "$summary"; continue
+    fi
+    if [[ "$TREX_FRESH" != "1" ]] && grep -qx "$name" "$done_file" 2>/dev/null; then
+      echo "[DONE ] $name  (finished earlier on $TREX_RUN_TAG, FRESH=1 reruns it)" | tee -a "$summary"
+      done_n=$((done_n + 1)); continue
     fi
     if [[ "$skip_heavy" == "1" && " ${HEAVY_DEMOS:-} " == *" $name "* ]]; then
       echo "[SKIP ] $name  (HEAVY, SKIP_HEAVY=1)" | tee -a "$summary"
@@ -158,6 +195,7 @@ run_suite() {
 
     if [[ $rc -eq 0 ]]; then
       echo "[ OK  ] $name  $((SECONDS - t0))s  -> $(basename "$log")" | tee -a "$summary"
+      grep -qx "$name" "$done_file" 2>/dev/null || echo "$name" >> "$done_file"
       ok=$((ok + 1))
     else
       echo "[FAIL ] $name  $((SECONDS - t0))s  rc=$rc  -> $(basename "$log")" | tee -a "$summary"
@@ -190,7 +228,7 @@ run_suite() {
 
   {
     echo
-    echo "=== $suite_name done: $ok ok, $fail failed, $skip skipped ==="
+    echo "=== $suite_name done: $ok ok, $fail failed, $skip skipped, $done_n done earlier ==="
     echo " finished: $(date)"
     echo " summary : $summary"
   } | tee -a "$summary"

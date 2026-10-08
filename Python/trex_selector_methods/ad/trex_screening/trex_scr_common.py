@@ -41,7 +41,12 @@ import trex_selector_neo as trex
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
     sys.path.insert(0, _THIS_DIR)
+# Family folder: cell_cache.py (resumable grid cells).
+_FAMILY_DIR = os.path.dirname(os.path.dirname(_THIS_DIR))
+if _FAMILY_DIR not in sys.path:
+    sys.path.insert(0, _FAMILY_DIR)
 
+import cell_cache
 
 # ------------------------------------------------------------------------------
 # Worker budget  (identical helper in every suite's *_common / *_utils module)
@@ -432,19 +437,23 @@ def run_mc_screen(num_MC, label, dgp_args, trex_args, screen_args,
         for mc in range(num_MC)
     ]
 
-    results = list(_get_executor(max_workers, len(args_list)).map(_screen_trial_worker,
-                                                  args_list))
+    # One resumable grid cell (cell_cache): restored after a restart.
+    def compute():
+        results = list(_get_executor(max_workers, len(args_list)).map(
+            _screen_trial_worker, args_list))
 
-    fdp = np.array([r["fdp"] for r in results])
-    tpp = np.array([r["tpp"] for r in results])
-    est = np.array([r["est"] for r in results])
-    out = {
-        "avg_fdr": float(fdp.mean()),
-        "avg_tpr": float(tpp.mean()),
-        "avg_est_fdr": float(est.mean()),
-        "sd_fdr": float(fdp.std(ddof=1)) if num_MC > 1 else 0.0,
-        "sd_tpr": float(tpp.std(ddof=1)) if num_MC > 1 else 0.0,
-    }
+        fdp = np.array([r["fdp"] for r in results])
+        tpp = np.array([r["tpp"] for r in results])
+        est = np.array([r["est"] for r in results])
+        return {
+            "avg_fdr": float(fdp.mean()),
+            "avg_tpr": float(tpp.mean()),
+            "avg_est_fdr": float(est.mean()),
+            "sd_fdr": float(fdp.std(ddof=1)) if num_MC > 1 else 0.0,
+            "sd_tpr": float(tpp.std(ddof=1)) if num_MC > 1 else 0.0,
+        }
+
+    out = cell_cache.cached(f"scr|{label}|{cell_cache.digest(args_list)}", compute)
     print(f"  {label} - done.  TPR={out['avg_tpr']:.4f}  "
           f"FDR={out['avg_fdr']:.4f}  Est.FDR={out['avg_est_fdr']:.4f}")
     return out

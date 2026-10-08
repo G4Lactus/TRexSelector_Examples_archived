@@ -36,7 +36,7 @@ for _p in (_THIS_DIR, _PARENT_DIR):
 
 from trex_scr_bb_common import (BIOBANK_METHODS, BIOBANK_DISPLAY,  # noqa: E402
                                 _biobank_single_worker, _biobank_multi_worker,
-                                run_mc_biobank, accumulate_snr,
+                                run_biobank_snr_cell,
                                 save_and_print_biobank_mc)
 from trex_scr_common import resolve_workers  # noqa: E402
 
@@ -94,8 +94,8 @@ def part_1(num_MC=_NUM_MC, num_workers=_NUM_WORKERS):
                      trial_seed=1000 * si + mc)          # mirrors cpp seed = 1000*snr_idx + mc
             for mc in range(num_MC)
         ]
-        records = run_mc_biobank(_biobank_single_worker, args_list, num_workers)
-        _store(accumulate_snr(records, TARGET_FDR_TREX), maps, si)
+        _store(run_biobank_snr_cell(_biobank_single_worker, args_list, num_workers, TARGET_FDR_TREX),
+               maps, si)
         print(f"  SNR {snr:.2f} - completed {num_MC} runs.")
 
     save_and_print_biobank_mc(num_MC, _OUT_DIR,
@@ -123,8 +123,8 @@ def part_2(num_MC=_NUM_MC_MULTI, num_workers=_NUM_WORKERS):
                      sup_seed_base=770000 + q * (num_MC * si + mc))
             for mc in range(num_MC)
         ]
-        records = run_mc_biobank(_biobank_multi_worker, args_list, num_workers)
-        _store(accumulate_snr(records, TARGET_FDR_TREX), maps, si)
+        _store(run_biobank_snr_cell(_biobank_multi_worker, args_list, num_workers, TARGET_FDR_TREX),
+               maps, si)
         print(f"  SNR {snr:.2f} - completed {num_MC} runs ({q} phenotypes each).")
 
     save_and_print_biobank_mc(num_MC, _OUT_DIR,

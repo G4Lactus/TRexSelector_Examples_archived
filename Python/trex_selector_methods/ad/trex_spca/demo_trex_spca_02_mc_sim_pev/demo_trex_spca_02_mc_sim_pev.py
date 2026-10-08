@@ -96,6 +96,7 @@ from trex_spca_sim_utils import (N_CORES, center_columns,  # noqa: E402
                                  run_mc_trials_oracle_pca, run_mc_trials_pca,
                                  run_mc_trials_trex_spca,
                                  save_and_print_spca_sweep_results)
+import cell_cache  # family folder, put on sys.path by trex_spca_sim_utils
 
 N_WORKERS = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else N_CORES
 
@@ -320,15 +321,19 @@ def run_fdr_tpr_heatmap(cfg):
             tasks = [(cfg["base_seed"] + int(round(snr)) + mc * 1000,
                       dgp_kwargs, tfdr) for mc in range(cfg["num_MC"])]
 
-            if N_WORKERS > 1:
-                out = list(get_executor(N_WORKERS, len(tasks)).map(_trial_heatmap,
-                                                        tasks))
-            else:
-                out = [_trial_heatmap(t) for t in tasks]
+            # One heatmap cell, restored from the cell cache after a restart.
+            def compute(tasks=tasks):
+                if N_WORKERS > 1:
+                    out = list(get_executor(N_WORKERS, len(tasks)).map(_trial_heatmap, tasks))
+                else:
+                    out = [_trial_heatmap(t) for t in tasks]
+                arr = np.asarray(out)  # (num_MC, 4)
+                return {f"r{r}": arr[:, r].mean() for r in range(4)}
 
-            arr = np.asarray(out)  # (num_MC, 4)
+            cell = cell_cache.cached(f"heatmap|snr={snr:g}|tfdr={tfdr:.2f}|"
+                                     f"{cell_cache.digest(tasks)}", compute)
             for r in range(4):
-                res[r][si, ti] = arr[:, r].mean()
+                res[r][si, ti] = cell[f"r{r}"]
 
             print(f"  SNR={snr:>5g}  tFDR={tfdr:.2f}  ->  "
                   f"FDR {res[0][si, ti]:.3f} (plugin) / "
