@@ -32,6 +32,7 @@ this_dir_ <- tryCatch(
   }
 )
 
+source(file.path(this_dir_, "..", "..", "..", "mc_runtime.R"))  # PSOCK workers, cell cache
 source(file.path(this_dir_, "..", "..", "..", "support_generators.R"))
 source(file.path(this_dir_, "..", "..", "..", "simulation_utils.R"))
 source(file.path(this_dir_, "..", "trex_sim_utils.R"))
@@ -153,3 +154,6 @@ trx_03_mc_sim_variable_support <- function(num_MC = NUM_MC, high_dim = TRUE, rnd
 
 if (run_trex_03) trx_03_mc_sim_variable_support(NUM_MC, high_dim = TRUE, rnd_coef = FALSE)
 cat("\ndemo_trex_03_mc_sim_variable_support.R complete.\n")
+
+# All results are written: the cell cache of a stopped run is no longer needed.
+cell_cache_done()

@@ -11,22 +11,34 @@
 #   * per-demo timestamped logs + a run summary under <suite>/_overnight_logs/;
 #   * SKIP_HEAVY=1 skips the demos listed in HEAVY_DEMOS (RAM/time hogs);
 #   * no leaked workers — each demo runs in its own process group, which is
-#     reaped when the demo exits (see _reap_group) and on runner INT/TERM/EXIT.
+#     reaped when the demo exits (see _reap_group) and on runner INT/TERM/EXIT;
+#   * resumable — see "Run tag and resume" below.
+#
+# Run tag and resume
+# ------------------
+# TREX_RUN_TAG names the library state the results come from: the pinned
+# commit of LIBRARY_TARGET.txt unless the caller sets it. A demo that exits 0
+# is recorded in <suite>/_overnight_logs/done_<tag>.txt, and later runs with
+# the same tag skip it, so a stopped batch restarts at the demo it was in. The
+# demos cache their finished grid cells under the same tag, so the demo in
+# flight continues where it stopped too. FRESH=1 ignores the record and makes
+# the demos set their caches aside, which reruns everything.
 #
 # Thread capping
 # --------------
-# The demos parallelise with parallel::mclapply at 6 forked workers. R's
-# bundled reference BLAS is single-threaded, but TRexSelectorNeo carries its
-# own OpenMP — 6 forks x all-core OpenMP would oversubscribe the machine.
+# The demos parallelise over 6 worker processes (PSOCK workers via
+# mc_runtime.R, no fork).
+# R's bundled reference BLAS is single-threaded, but TRexSelectorNeo carries
+# its own OpenMP — 6 workers x all-core OpenMP would oversubscribe the machine.
 # The runner therefore exports OMP_NUM_THREADS=1 (plus the usual BLAS caps
-# for portability to builds linked against OpenBLAS/vecLib/MKL); forked
-# children inherit the environment, so the 6-core worker budget holds.
+# for portability to builds linked against OpenBLAS/vecLib/MKL); the workers
+# inherit the environment, so the 6-core worker budget holds.
 #
 # Worker reaping
 # --------------
-# A clean exit ends the mclapply forks with the demo, but a hard kill / crash
-# / OOM of the demo can leave forked workers behind, reparented to init and
-# each still holding a copy-on-write share of the design matrices.
+# A clean exit ends the workers with the demo, but a hard kill / crash / OOM
+# of the demo can leave workers behind, reparented to init and each still
+# holding its share of the design matrices.
 #
 # Each demo is therefore started as a background job with job control enabled
 # (set -m), which puts it in a NEW process group with PGID == the job's PID.
@@ -51,6 +63,22 @@ _find_rscript() {
     if [[ -x "$cand" ]]; then echo "$cand"; return 0; fi
   done
   return 1
+}
+
+# _run_tag <dir>
+# TREX_RUN_TAG if set, else the pinned commit of the nearest LIBRARY_TARGET.txt
+# above <dir>, else "untagged".
+_run_tag() {
+  if [[ -n "${TREX_RUN_TAG:-}" ]]; then echo "$TREX_RUN_TAG"; return 0; fi
+  local d="$1"
+  while [[ "$d" != "/" ]]; do
+    if [[ -f "$d/LIBRARY_TARGET.txt" ]]; then
+      awk '/^Pinned commit:/ { print $3; exit }' "$d/LIBRARY_TARGET.txt"
+      return 0
+    fi
+    d="$(dirname "$d")"
+  done
+  echo "untagged"
 }
 
 # _reap_group <pgid>
@@ -117,7 +145,7 @@ run_suite() {
     return 1
   }
 
-  # One thread per forked worker — see "Thread capping" above.
+  # One thread per worker — see "Thread capping" above.
   export OMP_NUM_THREADS=1
   export OPENBLAS_NUM_THREADS=1
   export VECLIB_MAXIMUM_THREADS=1
@@ -135,21 +163,31 @@ run_suite() {
   local summary="$logdir/summary_${stamp}.txt"
   local skip_heavy="${SKIP_HEAVY:-0}"
 
+  # The demos read the tag (cell-cache fingerprint) and FRESH (set caches aside).
+  TREX_RUN_TAG="$(_run_tag "$suite_dir")"; export TREX_RUN_TAG
+  export TREX_FRESH="${FRESH:-0}"
+  local done_file="$logdir/done_${TREX_RUN_TAG}.txt"
+
   {
     echo "=============================================================="
     echo " overnight run: $suite_name"
     echo " started : $(date)"
     echo " Rscript : $rscript"
+    echo " run tag : $TREX_RUN_TAG   FRESH=$TREX_FRESH   (record: $(basename "$done_file"))"
     echo " SKIP_HEAVY=$skip_heavy   HEAVY_DEMOS='${HEAVY_DEMOS:-}'"
     echo "=============================================================="
     echo
   } | tee "$summary"
 
-  local name dir log t0 rc demo_pid corr_pid ok=0 fail=0 skip=0
+  local name dir log t0 rc demo_pid corr_pid ok=0 fail=0 skip=0 done_n=0
   for name in "$@"; do
     dir="$suite_dir/$name"
     if [[ ! -f "$dir/$name.R" ]]; then
       echo "[MISS ] $name  (no $name.R)" | tee -a "$summary"; continue
+    fi
+    if [[ "$TREX_FRESH" != "1" ]] && grep -qx "$name" "$done_file" 2>/dev/null; then
+      echo "[DONE ] $name  (finished earlier on $TREX_RUN_TAG, FRESH=1 reruns it)" | tee -a "$summary"
+      done_n=$((done_n + 1)); continue
     fi
     if [[ "$skip_heavy" == "1" && " ${HEAVY_DEMOS:-} " == *" $name "* ]]; then
       echo "[SKIP ] $name  (HEAVY, SKIP_HEAVY=1)" | tee -a "$summary"
@@ -173,6 +211,7 @@ run_suite() {
 
     if [[ $rc -eq 0 ]]; then
       echo "[ OK  ] $name  $((SECONDS - t0))s  -> $(basename "$log")" | tee -a "$summary"
+      grep -qx "$name" "$done_file" 2>/dev/null || echo "$name" >> "$done_file"
       ok=$((ok + 1))
     else
       echo "[FAIL ] $name  $((SECONDS - t0))s  rc=$rc  -> $(basename "$log")" | tee -a "$summary"
@@ -205,7 +244,7 @@ run_suite() {
 
   {
     echo
-    echo "=== $suite_name done: $ok ok, $fail failed, $skip skipped ==="
+    echo "=== $suite_name done: $ok ok, $fail failed, $skip skipped, $done_n done earlier ==="
     echo " finished: $(date)"
     echo " summary : $summary"
   } | tee -a "$summary"

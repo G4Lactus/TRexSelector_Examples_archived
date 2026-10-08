@@ -31,9 +31,9 @@ only the storage medium differs between them:
 - Part B (`run_part_b`, header "Part D") — MC with memory-mapped `X` + `use_memory_mapping = TRUE`.
   Here `.run_mc_trex_full_mmap` writes each trial's `X` to its own temporary mmap file and
   runs the selector **inside** the `execute_with_temp_mmap` callback (the backing file
-  is unlinked on return, so the view must not escape). Because `mclapply` forks, each
-  trial runs in its own address space with no cross-trial file conflicts (mirrors the
-  C++ Resource Acquisition Is Initialization (RAII) `MmapFileGuard`).
+  is unlinked on return, so the view must not escape). Each worker is its own R process
+  with its own temp folder, so trials have no file conflicts (mirrors the C++ Resource
+  Acquisition Is Initialization (RAII) `MmapFileGuard`).
 
 Both report averaged FDR, TPR, Avg L, Avg T per SNR (`track_L_T = TRUE`). MC trials run
 in parallel over a hardcoded `num_cores <- 6L` (set at the top of the file).

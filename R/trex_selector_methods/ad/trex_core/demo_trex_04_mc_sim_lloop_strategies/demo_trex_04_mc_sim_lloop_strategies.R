@@ -56,6 +56,7 @@ this_dir_ <- tryCatch(
   }
 )
 
+source(file.path(this_dir_, "..", "..", "..", "mc_runtime.R"))  # PSOCK workers, cell cache
 source(file.path(this_dir_, "..", "..", "..", "support_generators.R"))
 source(file.path(this_dir_, "..", "..", "..", "simulation_utils.R"))
 source(file.path(this_dir_, "..", "trex_sim_utils.R"))
@@ -223,3 +224,6 @@ if (run_trex_04) {
   # trx_04_lloop_strategies(NUM_MC, rnd_coef = FALSE, block_support = TRUE)
 }
 cat("\ndemo_trex_04_lloop_strategies.R complete.\n")
+
+# All results are written: the cell cache of a stopped run is no longer needed.
+cell_cache_done()

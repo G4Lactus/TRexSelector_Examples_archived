@@ -5,7 +5,7 @@
 #
 # The & puts it in the background and nohup shields it from HUP when the terminal is closed.
 # The lib is written for exactly this (no tty/jobs dependence, each demo in its own process group,
-# stray mclapply forks reaped on demo exit and on runner INT/TERM).
+# stray PSOCK workers reaped on demo exit and on runner INT/TERM).
 #
 # Watch progress with tail:
 #   -f _overnight_logs/summary_*.txt (newest stamp)

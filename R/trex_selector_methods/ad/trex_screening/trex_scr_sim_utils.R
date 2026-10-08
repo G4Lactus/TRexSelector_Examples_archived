@@ -17,10 +17,10 @@
 #   Section 3 — parallel Monte Carlo runner + dual TXT/CSV table output,
 #   Section 4 — Biobank (Algorithm 1) MC helpers + table output.
 #
-# Parallelism follows the suite convention: Monte Carlo trials run through
-# parallel::mclapply with mc.preschedule = FALSE, so every trial executes in
-# its own forked child process (deterministic teardown of the C++ selector
-# state, and set.seed() inside the trial is process-local).
+# Parallelism: Monte Carlo trials run on spawned PSOCK workers via mc_map() of
+# mc_runtime.R (no fork), which frees the C++ selector state after every trial;
+# set.seed() inside a trial is process-local. Every grid point is a resumable
+# cell (cell_cached()), restored from the cell cache after a restart.
 #
 # NOTE on reproducibility: the C++ demos draw with std::mt19937 and the Python
 # suite with NumPy's Generator; R uses its own RNG stream. Seeds are mirrored
@@ -181,18 +181,13 @@ default_scr_methods <- function() {
 # Section 3 — Parallel Monte Carlo runner + table output (Screen-TRex)
 # ==============================================================================
 
-#' Internal: run one_trial over mc = 0..num_MC-1 in parallel (fork per trial).
-#'
-#' mc.preschedule = FALSE: each trial runs in its own forked child process, so
-#' the OS reclaims all memory (R heap + C++ heap) deterministically when the
-#' child exits, and per-trial set.seed() calls never interleave.
+#' Internal: run one_trial over mc = 0..num_MC-1 on PSOCK workers (mc_map() of
+#' mc_runtime.R, which the demos source first). Each worker is its own R
+#' process, so per-trial set.seed() calls never interleave, and mc_map() frees
+#' the selectors' C++ memory after every trial.
 .mc_map <- function(num_MC, one_trial, num_cores) {
   # mc index runs 0..num_MC-1 (matches the cpp/Python seed bands)
-  res_list <- parallel::mclapply(0:(num_MC - 1L), one_trial,
-                                 mc.cores = num_cores, mc.preschedule = FALSE)
-  errs <- vapply(res_list, inherits, logical(1), what = "try-error")
-  if (any(errs)) stop("MC trial failed: ", res_list[[which(errs)[1]]])
-  res_list
+  mc_map(0:(num_MC - 1L), one_trial, num_cores)
 }
 
 #' Run num_MC Screen-TRex trials for one grid point in parallel.
@@ -207,8 +202,9 @@ default_scr_methods <- function() {
 #' @param trex_ctrl    trex_control() object (constant across trials).
 #' @param screen_args  named list of trex_screen_control() arguments.
 #' @param base_seed    Trial seed base.
-#' @param num_cores    Worker processes for mclapply.
-#' @return list(avg_fdr, avg_tpr, avg_est_fdr, sd_fdr, sd_tpr).
+#' @param num_cores    Worker processes for mc_map().
+#' @return list(avg_fdr, avg_tpr, avg_est_fdr, sd_fdr, sd_tpr); a resumable grid
+#'   cell (cell_cached()).
 run_mc_screen <- function(num_MC, label, make_data, trex_ctrl,
                           screen_args, base_seed, num_cores = 1L) {
   one_trial <- function(mc) {
@@ -224,14 +220,17 @@ run_mc_screen <- function(num_MC, label, make_data, trex_ctrl,
       tpp = trex_tpp(sel, dat$true_support),
       est = sc$estimated_FDR)
   }
-  res_mat <- do.call(rbind, .mc_map(num_MC, one_trial, num_cores))
-  out <- list(
-    avg_fdr     = mean(res_mat[, "fdp"]),
-    avg_tpr     = mean(res_mat[, "tpp"]),
-    avg_est_fdr = mean(res_mat[, "est"]),
-    sd_fdr      = if (num_MC > 1L) stats::sd(res_mat[, "fdp"]) else 0.0,
-    sd_tpr      = if (num_MC > 1L) stats::sd(res_mat[, "tpp"]) else 0.0
-  )
+  key <- paste0("scr|", label, "|", cell_digest(trex_ctrl, screen_args, base_seed, num_MC))
+  out <- cell_cached(key, function() {
+    res_mat <- do.call(rbind, .mc_map(num_MC, one_trial, num_cores))
+    list(
+      avg_fdr     = mean(res_mat[, "fdp"]),
+      avg_tpr     = mean(res_mat[, "tpp"]),
+      avg_est_fdr = mean(res_mat[, "est"]),
+      sd_fdr      = if (num_MC > 1L) stats::sd(res_mat[, "fdp"]) else 0.0,
+      sd_tpr      = if (num_MC > 1L) stats::sd(res_mat[, "tpp"]) else 0.0
+    )
+  })
   cat(sprintf("  %s - done.  TPR=%.4f  FDR=%.4f  Est.FDR=%.4f\n",
               label, out$avg_tpr, out$avg_fdr, out$avg_est_fdr))
   out
@@ -440,7 +439,7 @@ biobank_multi_trial <- function(n, p, q, support_size, snr, x_seed,
 #'
 #' @param num_MC    Monte Carlo trials.
 #' @param trial_fn  function(mc) -> list of per-phenotype records.
-#' @param num_cores Worker processes for mclapply.
+#' @param num_cores Worker processes for mc_map().
 run_mc_biobank <- function(num_MC, trial_fn, num_cores = 1L) {
   chunks <- .mc_map(num_MC, trial_fn, num_cores)
   do.call(c, chunks)
@@ -485,6 +484,30 @@ accumulate_snr <- function(records, target_FDR_trex) {
     )
   }
   out
+}
+
+#' One SNR level of a biobank sweep as a resumable grid cell:
+#' run_mc_biobank() + accumulate_snr(), restored from the cell cache after a
+#' restart. Same return as accumulate_snr().
+#'
+#' @param label           Cell label naming the part and SNR level (the trial
+#'                        function itself cannot be told apart by its code).
+#' @param num_MC          Monte Carlo trials.
+#' @param trial_fn        function(mc) -> list of per-phenotype records.
+#' @param num_cores       Worker processes for mc_map().
+#' @param target_FDR_trex Target FDR of the classical T-Rex fallback.
+run_biobank_snr_cell <- function(label, num_MC, trial_fn, num_cores, target_FDR_trex) {
+  fields <- c("usage", "fdp", "tpp", "est")
+  flat <- cell_cached(paste0("biobank|", label, "|", cell_digest(num_MC, target_FDR_trex)), function() {
+    agg <- accumulate_snr(run_mc_biobank(num_MC, trial_fn, num_cores), target_FDR_trex)
+    unlist(lapply(seq_along(BIOBANK_METHODS), function(j) {
+      setNames(vapply(fields, function(k) agg[[BIOBANK_METHODS[j]]][[k]], numeric(1)),
+               paste0("m", j, ".", fields))
+    }))
+  })
+  setNames(lapply(seq_along(BIOBANK_METHODS), function(j) {
+    setNames(lapply(fields, function(k) flat[[paste0("m", j, ".", k)]]), fields)
+  }), BIOBANK_METHODS)
 }
 
 #' Save + print a Biobank MC table with per-method Usage (%) rows

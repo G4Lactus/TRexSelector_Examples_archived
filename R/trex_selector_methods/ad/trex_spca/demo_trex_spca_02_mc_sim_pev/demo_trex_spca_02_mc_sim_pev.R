@@ -105,11 +105,10 @@ make_point <- function(snr = 0.0, p1 = 10L, tFDR = 0.10, num_comp = 0L,
 #' @param sweep_precision Decimals of the axis values in the table header.
 #' @param banner          Console banner line.
 #' @param stem            Output file stem.
-#' @param cache           Cell cache from cell_cache_open().
 #' @param pev_only_table  TRUE shows only the cumulative-PEV rows in the table
 #'                        (parts 2-4); FDR/TPR remain in the CSV.
 run_sweep <- function(cfg, points, sweep_col, sweep_header, sweep_precision,
-                      banner, stem, cache, pev_only_table = FALSE) {
+                      banner, stem, pev_only_table = FALSE) {
   cat("================================================================\n")
   cat(sprintf("  %s\n", banner))
   cat("================================================================\n")
@@ -149,7 +148,7 @@ run_sweep <- function(cfg, points, sweep_col, sweep_header, sweep_precision,
     }
     # One (method x grid point) cell, restored from the cache when finished.
     cell <- function(name, compute) {
-      store(name, cell_cached(cache, sprintf("%s=%.4f|%s", sweep_col, pt$axis_value, name),
+      store(name, cell_cached(sprintf("%s=%.4f|%s", sweep_col, pt$axis_value, name),
                               compute))
     }
     trex_spca <- function(name, mode, en_solver) {
@@ -256,7 +255,7 @@ run_sweep <- function(cfg, points, sweep_col, sweep_header, sweep_precision,
 #'
 #' Output: tidy CSV "response,metric,tfdr,snr_db,value" (metrics FDR / TPR),
 #' plus compact console matrices.
-run_fdr_tpr_heatmap <- function(cfg, cache) {
+run_fdr_tpr_heatmap <- function(cfg) {
   tfdr_grid <- c(0.01, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50)
   snr_grid <- c(-10.0, -7.0, -5.0, -3.0, 0.0, 3.0, 5.0, 7.0, 10.0)
   n_tfdr <- length(tfdr_grid)
@@ -278,7 +277,7 @@ run_fdr_tpr_heatmap <- function(cfg, cache) {
       tfdr <- tfdr_grid[ti]
       # Data seed depends on (mc, snr) only — the SAME datasets are reused
       # across the tFDR axis, so the columns of each heatmap row are paired.
-      v <- unlist(cell_cached(cache, sprintf("p5|snr=%.1f|tfdr=%.2f", snr, tfdr), function() {
+      v <- unlist(cell_cached(sprintf("p5|snr=%.1f|tfdr=%.2f", snr, tfdr), function() {
         out <- .mc_map(cfg$num_MC, function(mc) {
           .trial_heatmap(cfg$base_seed + as.integer(round(snr)) + mc * 1000L,
                          cfg, snr, tfdr)
@@ -353,9 +352,6 @@ if (nzchar(Sys.getenv("TREX_SPCA_NUM_MC"))) {
 # Part selection, e.g. TREX_SPCA_PARTS=5 runs only the FDR/TPR heatmap.
 parts <- Sys.getenv("TREX_SPCA_PARTS", "12345")
 
-cache <- cell_cache_open(file.path(this_dir_, "simulation_results", "cache"),
-                         "demo_trex_spca_02_mc_sim_pev", cfg)
-
 # =========================================================
 # Part 1: number of extracted PCs
 # =========================================================
@@ -375,7 +371,7 @@ if (grepl("1", parts, fixed = TRUE)) {
   })
   run_sweep(cfg, points, "n_pcs", "#PCs", 0L,
             "T-Rex SPCA — Cumulative PEV vs. number of extracted PCs",
-            "demo_trex_spca_02_mc_sim_pev_pcs", cache)
+            "demo_trex_spca_02_mc_sim_pev_pcs")
 }
 
 # =========================================================
@@ -389,7 +385,7 @@ if (grepl("2", parts, fixed = TRUE)) {
   })
   run_sweep(cfg, points, "snr_db", "SNR(dB)", 1L,
             "T-Rex SPCA — Cumulative PEV (PCs 1-3) vs. SNR",
-            "demo_trex_spca_02_mc_sim_pev_snr", cache, pev_only_table = TRUE)
+            "demo_trex_spca_02_mc_sim_pev_snr", pev_only_table = TRUE)
 }
 
 # =========================================================
@@ -405,7 +401,7 @@ if (grepl("3", parts, fixed = TRUE)) {
   })
   run_sweep(cfg, points, "p1", "#Active", 0L,
             "T-Rex SPCA — Cumulative PEV (PCs 1-3) vs. number of true active loadings",
-            "demo_trex_spca_02_mc_sim_pev_loadings", cache, pev_only_table = TRUE)
+            "demo_trex_spca_02_mc_sim_pev_loadings", pev_only_table = TRUE)
 }
 
 # =========================================================
@@ -419,14 +415,14 @@ if (grepl("4", parts, fixed = TRUE)) {
   })
   run_sweep(cfg, points, "tfdr", "tFDR", 2L,
             "T-Rex SPCA — Cumulative PEV (PCs 1-3) vs. target FDR",
-            "demo_trex_spca_02_mc_sim_pev_tfdr", cache, pev_only_table = TRUE)
+            "demo_trex_spca_02_mc_sim_pev_tfdr", pev_only_table = TRUE)
 }
 
 # =========================================================
 # Part 5: FDR/TPR heatmaps over (target FDR x SNR)
 # =========================================================
 if (grepl("5", parts, fixed = TRUE)) {
-  run_fdr_tpr_heatmap(cfg, cache)
+  run_fdr_tpr_heatmap(cfg)
 }
 
-cell_cache_done(cache)
+cell_cache_done()

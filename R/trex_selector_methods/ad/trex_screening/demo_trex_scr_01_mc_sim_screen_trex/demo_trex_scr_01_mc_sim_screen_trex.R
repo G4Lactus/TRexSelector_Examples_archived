@@ -28,7 +28,7 @@
 # streams). Support indices are 1-based (R convention).
 #
 # Usage: Rscript demo_trex_scr_01_mc_sim_screen_trex.R [num_worker_cores]
-#   (default 6 worker cores; MC trials run via parallel::mclapply)
+#   (default 6 worker cores; MC trials run on PSOCK workers via mc_map)
 # ==============================================================================
 
 library(TRexSelectorNeo)
@@ -51,6 +51,7 @@ this_dir_ <- tryCatch(
     if (length(file_arg) > 0) dirname(normalizePath(sub("--file=", "", file_arg[1]))) else "."
   }
 )
+source(file.path(this_dir_, "..", "..", "..", "mc_runtime.R"))  # PSOCK workers, cell cache
 source(file.path(this_dir_, "..", "trex_scr_sim_utils.R"))
 
 OUT_DIR <- file.path(this_dir_, "simulation_results", "data")
@@ -125,3 +126,6 @@ demo_screen_trex_monte_carlo <- function() {
 
 demo_screen_trex_monte_carlo()
 cat("\ndemo_trex_scr_01_mc_sim_screen_trex.R complete.\n")
+
+# All results are written: the cell cache of a stopped run is no longer needed.
+cell_cache_done()

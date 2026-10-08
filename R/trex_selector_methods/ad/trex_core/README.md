@@ -76,8 +76,8 @@ C++ `trex_sim_utils.hpp` and is sourced by every demo in this folder:
   - `execute_with_temp_mmap()` — lifecycle manager for temporary mmap files, in the style of Resource Acquisition Is
     Initialization (RAII).
   - `.make_trex_ctrl()` — builds a `trex_control()` from a solver descriptor.
-  - `.run_mc_trex()` — parallel MC runner over the R6 API
-    (`parallel::mclapply` on Unix, `parLapply` on Windows).
+  - `.run_mc_trex()` — parallel MC runner over the R6 API on PSOCK workers (`mc_map()` of
+    `../../mc_runtime.R`), resumable per grid cell.
   - `.print_solver_table()`, `.save_mc_csv()`, `.save_and_print_mc()` —
     console table plus combined `.txt` / `.csv` output.
 

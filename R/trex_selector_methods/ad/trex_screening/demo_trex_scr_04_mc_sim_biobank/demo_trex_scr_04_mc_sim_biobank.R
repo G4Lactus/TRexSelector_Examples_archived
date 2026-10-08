@@ -40,7 +40,7 @@
 # 1-based (R convention).
 #
 # Usage: Rscript demo_trex_scr_04_mc_sim_biobank.R [num_worker_cores]
-#   (default 6 worker cores; MC trials run via parallel::mclapply)
+#   (default 6 worker cores; MC trials run on PSOCK workers via mc_map)
 # ==============================================================================
 
 library(TRexSelectorNeo)
@@ -63,6 +63,7 @@ this_dir_ <- tryCatch(
     if (length(file_arg) > 0) dirname(normalizePath(sub("--file=", "", file_arg[1]))) else "."
   }
 )
+source(file.path(this_dir_, "..", "..", "..", "mc_runtime.R"))  # PSOCK workers, cell cache
 source(file.path(this_dir_, "..", "trex_scr_sim_utils.R"))
 
 OUT_DIR <- file.path(this_dir_, "simulation_results", "data")
@@ -124,8 +125,9 @@ part_1 <- function() {
                            use_memory_mapping = USE_MMAP, R_boot = R_BOOT,
                            tFDR = TARGET_FDR_TREX)
     }
-    records <- run_mc_biobank(NUM_MC, trial_fn, num_cores)
-    maps <- store_agg(accumulate_snr(records, TARGET_FDR_TREX), maps, si)
+    agg <- run_biobank_snr_cell(sprintf("part1|snr=%.2f", snr), NUM_MC, trial_fn,
+                                num_cores, TARGET_FDR_TREX)
+    maps <- store_agg(agg, maps, si)
     cat(sprintf("  SNR %.2f - completed %d runs.\n", snr, NUM_MC))
   }
 
@@ -162,8 +164,9 @@ part_2 <- function() {
         use_memory_mapping = USE_MMAP, R_boot = R_BOOT, tFDR = TARGET_FDR_TREX
       )
     }
-    records <- run_mc_biobank(NUM_MC_MULTI, trial_fn, num_cores)
-    maps <- store_agg(accumulate_snr(records, TARGET_FDR_TREX), maps, si)
+    agg <- run_biobank_snr_cell(sprintf("part2|snr=%.2f|q=%d", snr, q), NUM_MC_MULTI,
+                                trial_fn, num_cores, TARGET_FDR_TREX)
+    maps <- store_agg(agg, maps, si)
     cat(sprintf("  SNR %.2f - completed %d runs (%d phenotypes each).\n",
                 snr, NUM_MC_MULTI, q))
   }
@@ -183,3 +186,6 @@ part_2 <- function() {
 part_1()
 part_2()
 cat("\ndemo_trex_scr_04_mc_sim_biobank.R complete.\n")
+
+# All results are written: the cell cache of a stopped run is no longer needed.
+cell_cache_done()

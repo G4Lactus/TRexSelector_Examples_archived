@@ -71,8 +71,7 @@ source(file.path(this_dir_, "..", "trex_spca_sim_utils.R"))
 #'                   overlap_pool_size, tFDR, lambda_2, num_MC, base_seed).
 #' @param snr_values SNR grid in dB.
 #' @param stem       Output file stem (no folder, no extension).
-#' @param cache      Cell cache from cell_cache_open().
-demo_trex_spca_mc_snr_sweep <- function(cfg, snr_values, stem, cache) {
+demo_trex_spca_mc_snr_sweep <- function(cfg, snr_values, stem) {
   cat("================================================================\n")
   cat("  T-Rex SPCA MC Simulation — SNR Sweep\n")
   cat("================================================================\n")
@@ -110,7 +109,7 @@ demo_trex_spca_mc_snr_sweep <- function(cfg, snr_values, stem, cache) {
     }
     # One (method x SNR) cell, restored from the cache when already finished.
     cell <- function(name, compute) {
-      store(name, cell_cached(cache, sprintf("s1|snr=%.1f|%s", snr, name), compute))
+      store(name, cell_cached(sprintf("s1|snr=%.1f|%s", snr, name), compute))
     }
     trex_spca <- function(name, mode, en_solver) {
       cell(name, function() {
@@ -174,7 +173,7 @@ demo_trex_spca_mc_snr_sweep <- function(cfg, snr_values, stem, cache) {
 #' PC m: mean union-FDR and mean support size |A_m|.
 #'
 #' Output: tidy CSV "pc,metric,snr_db,value" (metrics FDRunion / k).
-demo_trex_spca_union_fdr_sweep <- function(cfg, snr_values, stem, cache) {
+demo_trex_spca_union_fdr_sweep <- function(cfg, snr_values, stem) {
   cat("================================================================\n")
   cat("  T-Rex SPCA — union-support FDR per PC (ActiveSet/TENET)\n")
   cat("================================================================\n")
@@ -219,7 +218,7 @@ demo_trex_spca_union_fdr_sweep <- function(cfg, snr_values, stem, cache) {
     snr <- snr_values[si]
     offset <- cfg$base_seed + as.integer(round(snr))
 
-    r <- unlist(cell_cached(cache, sprintf("s2|snr=%.1f", snr), function() {
+    r <- unlist(cell_cached(sprintf("s2|snr=%.1f", snr), function() {
       res_list <- .mc_map(cfg$num_MC,
                           function(mc) one_trial(offset + mc * 1000L, snr),
                           num_cores)
@@ -294,14 +293,11 @@ snr_values <- c(-10.0, -7.0, -5.0, -3.0, 0.0, 3.0, 5.0, 7.0, 10.0)
 # Part selection, e.g. TREX_SPCA_PARTS=2 runs only the union-FDR sweep.
 parts <- Sys.getenv("TREX_SPCA_PARTS", "12")
 
-cache <- cell_cache_open(file.path(this_dir_, "simulation_results", "cache"),
-                         "demo_trex_spca_01_mc_sim", list(cfg, snr_values))
-
 # =========================================================
 # Section 1: SNR sweep
 # =========================================================
 if (grepl("1", parts, fixed = TRUE)) {
-  demo_trex_spca_mc_snr_sweep(cfg, snr_values, "demo_trex_spca_01_mc_sim", cache)
+  demo_trex_spca_mc_snr_sweep(cfg, snr_values, "demo_trex_spca_01_mc_sim")
 }
 
 # =========================================================
@@ -309,7 +305,7 @@ if (grepl("1", parts, fixed = TRUE)) {
 # =========================================================
 if (grepl("2", parts, fixed = TRUE)) {
   demo_trex_spca_union_fdr_sweep(cfg, snr_values,
-                                 "demo_trex_spca_01_mc_sim_union_fdr", cache)
+                                 "demo_trex_spca_01_mc_sim_union_fdr")
 }
 
-cell_cache_done(cache)
+cell_cache_done()

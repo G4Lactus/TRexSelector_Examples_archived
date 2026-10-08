@@ -18,6 +18,9 @@
 #   .run_mc_t3_equi_blocks()   — Wrapper: dgp_t3_equi_blocks_snr     + trex+GVS (EN or IEN).
 #   .run_mc_ar1_blocks()       — Wrapper: dgp_ar1_blocks_snr         + trex+GVS (EN or IEN).
 #   .run_mc_arma_blocks()      — Wrapper: dgp_arma_blocks_snr        + trex+GVS (EN or IEN).
+#
+# The .run_mc_*() runners use PSOCK workers via mc_map() and are resumable grid
+# cells (cell_cached()), both from mc_runtime.R, which the demos source first.
 # ==============================================================================
 
 
@@ -274,35 +277,22 @@ cap_hc <- function(hc_dist) {
       TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
   }
 
-  mc_indices <- seq_len(num_MC)
+  # One resumable grid cell: restored from the cell cache after a restart. The
+  # arguments (all but the worker count) identify the cell.
+  args <- mget(setdiff(names(formals(sys.function())), "n_cores"), envir = environment())
+  cell_cached(paste0(".run_mc_hastie|", cell_digest(args)), function() {
+    results <- mc_map(seq_len(num_MC), one_trial, n_cores)
 
-  if (.Platform$OS.type == "unix" && n_cores > 1L) {
-    results <- parallel::mclapply(mc_indices, one_trial, mc.cores = n_cores)
-  } else if (n_cores > 1L) {
-    cl <- parallel::makeCluster(n_cores)
-    parallel::clusterExport(cl,
-                            varlist = c("dgp_hastie_snr", "n", "p", "snr",
-                                        "sd_x", "tFDR", "K", "GVS_type",
-                                        "hc_dist", "corr_max", "seed", "cap_hc",
-                                        "en_solver", "lambda2_method",
-                                        ".gvs_select"),
-                            envir   = environment())
-    parallel::clusterEvalQ(cl, library(TRexSelectorNeo))
-    results <- parallel::parLapply(cl, mc_indices, one_trial)
-    parallel::stopCluster(cl)
-  } else {
-    results <- lapply(mc_indices, one_trial)
-  }
+    fdp_vec <- sapply(results, `[[`, "FDP")
+    tpp_vec <- sapply(results, `[[`, "TPP")
 
-  fdp_vec <- sapply(results, `[[`, "FDP")
-  tpp_vec <- sapply(results, `[[`, "TPP")
-
-  list(
-    mean_FDP = mean(fdp_vec),
-    mean_TPP = mean(tpp_vec),
-    sd_FDP   = sd(fdp_vec),
-    sd_TPP   = sd(tpp_vec)
-  )
+    list(
+      mean_FDP = mean(fdp_vec),
+      mean_TPP = mean(tpp_vec),
+      sd_FDP   = sd(fdp_vec),
+      sd_TPP   = sd(tpp_vec)
+    )
+  })
 }
 
 
@@ -364,37 +354,22 @@ cap_hc <- function(hc_dist) {
       TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
   }
 
-  mc_indices <- seq_len(num_MC)
+  # One resumable grid cell: restored from the cell cache after a restart. The
+  # arguments (all but the worker count) identify the cell.
+  args <- mget(setdiff(names(formals(sys.function())), "n_cores"), envir = environment())
+  cell_cached(paste0(".run_mc_scattered|", cell_digest(args)), function() {
+    results <- mc_map(seq_len(num_MC), one_trial, n_cores)
 
-  if (.Platform$OS.type == "unix" && n_cores > 1L) {
-    results <- parallel::mclapply(mc_indices, one_trial, mc.cores = n_cores)
-  } else if (n_cores > 1L) {
-    cl <- parallel::makeCluster(n_cores)
-    parallel::clusterExport(cl,
-                            varlist = c("dgp_scattered_grouped_snr",
-                                        "n", "p", "snr", "sd_x",
-                                        "n_groups", "group_size",
-                                        "tFDR", "K", "GVS_type",
-                                        "hc_dist", "corr_max", "seed", "cap_hc",
-                                        "en_solver", "lambda2_method",
-                                        ".gvs_select"),
-                            envir   = environment())
-    parallel::clusterEvalQ(cl, library(TRexSelectorNeo))
-    results <- parallel::parLapply(cl, mc_indices, one_trial)
-    parallel::stopCluster(cl)
-  } else {
-    results <- lapply(mc_indices, one_trial)
-  }
+    fdp_vec <- sapply(results, `[[`, "FDP")
+    tpp_vec <- sapply(results, `[[`, "TPP")
 
-  fdp_vec <- sapply(results, `[[`, "FDP")
-  tpp_vec <- sapply(results, `[[`, "TPP")
-
-  list(
-    mean_FDP = mean(fdp_vec),
-    mean_TPP = mean(tpp_vec),
-    sd_FDP   = sd(fdp_vec),
-    sd_TPP   = sd(tpp_vec)
-  )
+    list(
+      mean_FDP = mean(fdp_vec),
+      mean_TPP = mean(tpp_vec),
+      sd_FDP   = sd(fdp_vec),
+      sd_TPP   = sd(tpp_vec)
+    )
+  })
 }
 
 
@@ -437,36 +412,22 @@ cap_hc <- function(hc_dist) {
       TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
   }
 
-  mc_indices <- seq_len(num_MC)
+  # One resumable grid cell: restored from the cell cache after a restart. The
+  # arguments (all but the worker count) identify the cell.
+  args <- mget(setdiff(names(formals(sys.function())), "n_cores"), envir = environment())
+  cell_cached(paste0(".run_mc_mixed_blocks|", cell_digest(args)), function() {
+    results <- mc_map(seq_len(num_MC), one_trial, n_cores)
 
-  if (.Platform$OS.type == "unix" && n_cores > 1L) {
-    results <- parallel::mclapply(mc_indices, one_trial, mc.cores = n_cores)
-  } else if (n_cores > 1L) {
-    cl <- parallel::makeCluster(n_cores)
-    parallel::clusterExport(cl,
-                            varlist = c("dgp_mixed_blocks_snr",
-                                        "n", "p", "snr", "sd_x",
-                                        "tFDR", "K", "GVS_type",
-                                        "hc_dist", "corr_max", "seed", "cap_hc",
-                                        "en_solver", "lambda2_method",
-                                        ".gvs_select"),
-                            envir   = environment())
-    parallel::clusterEvalQ(cl, library(TRexSelectorNeo))
-    results <- parallel::parLapply(cl, mc_indices, one_trial)
-    parallel::stopCluster(cl)
-  } else {
-    results <- lapply(mc_indices, one_trial)
-  }
+    fdp_vec <- sapply(results, `[[`, "FDP")
+    tpp_vec <- sapply(results, `[[`, "TPP")
 
-  fdp_vec <- sapply(results, `[[`, "FDP")
-  tpp_vec <- sapply(results, `[[`, "TPP")
-
-  list(
-    mean_FDP = mean(fdp_vec),
-    mean_TPP = mean(tpp_vec),
-    sd_FDP   = sd(fdp_vec),
-    sd_TPP   = sd(tpp_vec)
-  )
+    list(
+      mean_FDP = mean(fdp_vec),
+      mean_TPP = mean(tpp_vec),
+      sd_FDP   = sd(fdp_vec),
+      sd_TPP   = sd(tpp_vec)
+    )
+  })
 }
 
 
@@ -509,36 +470,22 @@ cap_hc <- function(hc_dist) {
       TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
   }
 
-  mc_indices <- seq_len(num_MC)
+  # One resumable grid cell: restored from the cell cache after a restart. The
+  # arguments (all but the worker count) identify the cell.
+  args <- mget(setdiff(names(formals(sys.function())), "n_cores"), envir = environment())
+  cell_cached(paste0(".run_mc_neg_traps|", cell_digest(args)), function() {
+    results <- mc_map(seq_len(num_MC), one_trial, n_cores)
 
-  if (.Platform$OS.type == "unix" && n_cores > 1L) {
-    results <- parallel::mclapply(mc_indices, one_trial, mc.cores = n_cores)
-  } else if (n_cores > 1L) {
-    cl <- parallel::makeCluster(n_cores)
-    parallel::clusterExport(cl,
-                            varlist = c("dgp_neg_traps_snr",
-                                        "n", "p", "snr", "sd_x",
-                                        "tFDR", "K", "GVS_type",
-                                        "hc_dist", "corr_max", "seed", "cap_hc",
-                                        "en_solver", "lambda2_method",
-                                        ".gvs_select"),
-                            envir   = environment())
-    parallel::clusterEvalQ(cl, library(TRexSelectorNeo))
-    results <- parallel::parLapply(cl, mc_indices, one_trial)
-    parallel::stopCluster(cl)
-  } else {
-    results <- lapply(mc_indices, one_trial)
-  }
+    fdp_vec <- sapply(results, `[[`, "FDP")
+    tpp_vec <- sapply(results, `[[`, "TPP")
 
-  fdp_vec <- sapply(results, `[[`, "FDP")
-  tpp_vec <- sapply(results, `[[`, "TPP")
-
-  list(
-    mean_FDP = mean(fdp_vec),
-    mean_TPP = mean(tpp_vec),
-    sd_FDP   = sd(fdp_vec),
-    sd_TPP   = sd(tpp_vec)
-  )
+    list(
+      mean_FDP = mean(fdp_vec),
+      mean_TPP = mean(tpp_vec),
+      sd_FDP   = sd(fdp_vec),
+      sd_TPP   = sd(tpp_vec)
+    )
+  })
 }
 
 
@@ -585,36 +532,22 @@ cap_hc <- function(hc_dist) {
       TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
   }
 
-  mc_indices <- seq_len(num_MC)
+  # One resumable grid cell: restored from the cell cache after a restart. The
+  # arguments (all but the worker count) identify the cell.
+  args <- mget(setdiff(names(formals(sys.function())), "n_cores"), envir = environment())
+  cell_cached(paste0(".run_mc_t3_equi_blocks|", cell_digest(args)), function() {
+    results <- mc_map(seq_len(num_MC), one_trial, n_cores)
 
-  if (.Platform$OS.type == "unix" && n_cores > 1L) {
-    results <- parallel::mclapply(mc_indices, one_trial, mc.cores = n_cores)
-  } else if (n_cores > 1L) {
-    cl <- parallel::makeCluster(n_cores)
-    parallel::clusterExport(cl,
-                            varlist = c("dgp_t3_equi_blocks_snr",
-                                        "n", "p", "snr", "rho", "df",
-                                        "tFDR", "K", "GVS_type",
-                                        "hc_dist", "corr_max", "seed", "cap_hc",
-                                        "en_solver", "lambda2_method",
-                                        ".gvs_select"),
-                            envir   = environment())
-    parallel::clusterEvalQ(cl, library(TRexSelectorNeo))
-    results <- parallel::parLapply(cl, mc_indices, one_trial)
-    parallel::stopCluster(cl)
-  } else {
-    results <- lapply(mc_indices, one_trial)
-  }
+    fdp_vec <- sapply(results, `[[`, "FDP")
+    tpp_vec <- sapply(results, `[[`, "TPP")
 
-  fdp_vec <- sapply(results, `[[`, "FDP")
-  tpp_vec <- sapply(results, `[[`, "TPP")
-
-  list(
-    mean_FDP = mean(fdp_vec),
-    mean_TPP = mean(tpp_vec),
-    sd_FDP   = sd(fdp_vec),
-    sd_TPP   = sd(tpp_vec)
-  )
+    list(
+      mean_FDP = mean(fdp_vec),
+      mean_TPP = mean(tpp_vec),
+      sd_FDP   = sd(fdp_vec),
+      sd_TPP   = sd(tpp_vec)
+    )
+  })
 }
 
 
@@ -658,36 +591,22 @@ cap_hc <- function(hc_dist) {
       TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
   }
 
-  mc_indices <- seq_len(num_MC)
+  # One resumable grid cell: restored from the cell cache after a restart. The
+  # arguments (all but the worker count) identify the cell.
+  args <- mget(setdiff(names(formals(sys.function())), "n_cores"), envir = environment())
+  cell_cached(paste0(".run_mc_ar1_blocks|", cell_digest(args)), function() {
+    results <- mc_map(seq_len(num_MC), one_trial, n_cores)
 
-  if (.Platform$OS.type == "unix" && n_cores > 1L) {
-    results <- parallel::mclapply(mc_indices, one_trial, mc.cores = n_cores)
-  } else if (n_cores > 1L) {
-    cl <- parallel::makeCluster(n_cores)
-    parallel::clusterExport(cl,
-                            varlist = c("dgp_ar1_blocks_snr",
-                                        "n", "p", "snr", "rho",
-                                        "tFDR", "K", "GVS_type",
-                                        "hc_dist", "corr_max", "seed", "cap_hc",
-                                        "en_solver", "lambda2_method",
-                                        ".gvs_select"),
-                            envir   = environment())
-    parallel::clusterEvalQ(cl, library(TRexSelectorNeo))
-    results <- parallel::parLapply(cl, mc_indices, one_trial)
-    parallel::stopCluster(cl)
-  } else {
-    results <- lapply(mc_indices, one_trial)
-  }
+    fdp_vec <- sapply(results, `[[`, "FDP")
+    tpp_vec <- sapply(results, `[[`, "TPP")
 
-  fdp_vec <- sapply(results, `[[`, "FDP")
-  tpp_vec <- sapply(results, `[[`, "TPP")
-
-  list(
-    mean_FDP = mean(fdp_vec),
-    mean_TPP = mean(tpp_vec),
-    sd_FDP   = sd(fdp_vec),
-    sd_TPP   = sd(tpp_vec)
-  )
+    list(
+      mean_FDP = mean(fdp_vec),
+      mean_TPP = mean(tpp_vec),
+      sd_FDP   = sd(fdp_vec),
+      sd_TPP   = sd(tpp_vec)
+    )
+  })
 }
 
 
@@ -738,34 +657,20 @@ cap_hc <- function(hc_dist) {
       TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
   }
 
-  mc_indices <- seq_len(num_MC)
+  # One resumable grid cell: restored from the cell cache after a restart. The
+  # arguments (all but the worker count) identify the cell.
+  args <- mget(setdiff(names(formals(sys.function())), "n_cores"), envir = environment())
+  cell_cached(paste0(".run_mc_arma_blocks|", cell_digest(args)), function() {
+    results <- mc_map(seq_len(num_MC), one_trial, n_cores)
 
-  if (.Platform$OS.type == "unix" && n_cores > 1L) {
-    results <- parallel::mclapply(mc_indices, one_trial, mc.cores = n_cores)
-  } else if (n_cores > 1L) {
-    cl <- parallel::makeCluster(n_cores)
-    parallel::clusterExport(cl,
-                            varlist = c("dgp_arma_blocks_snr",
-                                        "n", "p", "snr", "ar_coef",
-                                        "tFDR", "K", "GVS_type",
-                                        "hc_dist", "corr_max", "seed", "cap_hc",
-                                        "en_solver", "lambda2_method",
-                                        ".gvs_select"),
-                            envir   = environment())
-    parallel::clusterEvalQ(cl, library(TRexSelectorNeo))
-    results <- parallel::parLapply(cl, mc_indices, one_trial)
-    parallel::stopCluster(cl)
-  } else {
-    results <- lapply(mc_indices, one_trial)
-  }
+    fdp_vec <- sapply(results, `[[`, "FDP")
+    tpp_vec <- sapply(results, `[[`, "TPP")
 
-  fdp_vec <- sapply(results, `[[`, "FDP")
-  tpp_vec <- sapply(results, `[[`, "TPP")
-
-  list(
-    mean_FDP = mean(fdp_vec),
-    mean_TPP = mean(tpp_vec),
-    sd_FDP   = sd(fdp_vec),
-    sd_TPP   = sd(tpp_vec)
-  )
+    list(
+      mean_FDP = mean(fdp_vec),
+      mean_TPP = mean(tpp_vec),
+      sd_FDP   = sd(fdp_vec),
+      sd_TPP   = sd(tpp_vec)
+    )
+  })
 }

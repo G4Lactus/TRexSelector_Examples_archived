@@ -217,23 +217,23 @@ run_mc_trials <- function(num_MC, progress_label, n, p, dgp, dgp_kwargs,
       T   = as.numeric(sel$T_stop))
   }
 
-  cat(sprintf("  %s — Running %d MC trials ...\n", progress_label, num_MC))
-
-  res_list <- if (n_cores > 1L && .Platform$OS.type == "unix") {
-    parallel::mclapply(seq_len(num_MC), one_trial, mc.cores = n_cores)
-  } else {
-    lapply(seq_len(num_MC), one_trial)
-  }
-  res <- do.call(rbind, res_list)
-
-  out <- list(
-    avg_fdr = mean(res[, "FDP"]),
-    avg_tpr = mean(res[, "TPP"]),
-    avg_L   = mean(res[, "L"]),
-    avg_T   = mean(res[, "T"]),
-    sd_fdr  = if (num_MC > 1L) stats::sd(res[, "FDP"]) else 0.0,
-    sd_tpr  = if (num_MC > 1L) stats::sd(res[, "TPP"]) else 0.0
-  )
+  # One resumable grid cell (mc_runtime.R): restored from the cell cache after a
+  # restart; the trials run on PSOCK workers.
+  key <- paste0("da|", progress_label, "|",
+                cell_digest(n, p, dgp, dgp_kwargs, support, s, tFDR, solver_desc, K,
+                            da_spec, base_seed_offset, num_MC))
+  out <- cell_cached(key, function() {
+    cat(sprintf("  %s — Running %d MC trials ...\n", progress_label, num_MC))
+    res <- do.call(rbind, mc_map(seq_len(num_MC), one_trial, n_cores))
+    list(
+      avg_fdr = mean(res[, "FDP"]),
+      avg_tpr = mean(res[, "TPP"]),
+      avg_L   = mean(res[, "L"]),
+      avg_T   = mean(res[, "T"]),
+      sd_fdr  = if (num_MC > 1L) stats::sd(res[, "FDP"]) else 0.0,
+      sd_tpr  = if (num_MC > 1L) stats::sd(res[, "TPP"]) else 0.0
+    )
+  })
 
   cat(sprintf("  %s — done. TPP=%.3f  FDP=%.3f\n\n",
               progress_label, out$avg_tpr, out$avg_fdr))

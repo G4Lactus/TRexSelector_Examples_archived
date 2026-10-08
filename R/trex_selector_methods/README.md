@@ -32,6 +32,7 @@ comparison probes) moved to the TRexSelector library test suite
 
 | File | Status | Description |
 |---|---|---|
+| [mc_runtime.R](mc_runtime.R) | Shared | Monte Carlo runtime of every MC demo: `mc_map()` runs the trials on a persistent cluster of spawned R worker processes (PSOCK, no fork) with single-threaded solvers, and `cell_cached()` / `cell_cache_done()` make each grid cell resumable (see [Running](#running)). |
 | [support_generators.R](support_generators.R) | Shared | Support-index construction helpers, sourced by demos across all variants: `make_support_capped_spread()` (deterministic evenly-spaced support with capped gap), `make_support_random()` (uniformly random support, internally using `set.seed(seed + 500000L)`), `make_support_bt_one_per_block()` (one active predictor per Binary-Tree (BT) block). All return 1-based R indices and mirror the C++ helpers. |
 | [simulation_utils.R](simulation_utils.R) | NEW — migrated to the TRexSelectorNeo R6 API (`TRexGVSSelector` + `trex_fdp()` / `trex_tpp()`) | Shared MC engine for the trex_gvs demos plus generic output helpers: `plot_cormat()` (Plotly heatmap), table printers, and the GVS wrappers `.run_mc_hastie()` … `.run_mc_arma_blocks()` comparing EN / EN+AUG / IEN, plus the `.gvs_select()` adapter. (The DA-TRex MC engine lives in [ad/trex_da/da_sim_common.R](ad/trex_da/da_sim_common.R), sourced by the trex_da demos directly.) |
 
@@ -50,7 +51,18 @@ Rscript R/trex_selector_methods/ad/trex_core/demo_trex_02_mc_sim_fixed_support/d
 Rscript R/trex_selector_methods/ad/trex_da/demo_trex_da_01_mc_sim_ar1/demo_trex_da_01_mc_sim_ar1.R
 ```
 
-The gvs MC suite additionally requires `plotly` (correlation heatmaps), and the
-da / gvs MC suites use `parallel` for the MC loops. The trex_spca cross-check programs (which
+To run the Monte Carlo demos back to back as an unattended job, use the batch runner, which runs every suite's
+`run_overnight.sh` (or the ones named as arguments) with 6 workers per demo:
+
+```bash
+nohup R/trex_selector_methods/run_all_overnight.sh > /dev/null 2>&1 &
+```
+
+Both levels are resumable. A demo that finishes is recorded under the run tag (the pinned library commit of
+`LIBRARY_TARGET.txt`) and skipped by the next run, and the demo in flight keeps every finished grid cell in
+`simulation_results/cache/cells.tsv`, so a stopped batch continues where it stopped. `FRESH=1` reruns everything.
+
+The gvs MC suite additionally requires `plotly` (correlation heatmaps), and all MC suites use base-R `parallel`
+for their worker processes. The trex_spca cross-check programs (which
 additionally require `glmnet`) moved to the TRexSelector library test suite
 (`TRexSelector/cpp/tests/validation/trex_selector_methods/ad/trex_spca/`).

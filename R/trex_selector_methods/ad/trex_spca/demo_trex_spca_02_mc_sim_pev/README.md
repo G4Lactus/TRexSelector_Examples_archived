@@ -118,7 +118,7 @@ TREX_SPCA_NUM_MC=10 Rscript .../demo_trex_spca_02_mc_sim_pev.R    # pilot-run MC
 The Monte Carlo trials run on spawned R worker processes (a PSOCK cluster via `mc_map()` in
 [../../../mc_runtime.R](../../../mc_runtime.R)), each with single-threaded solvers. The demo is **resumable**. Every
 finished cell (one method at one grid point, or one heatmap cell) is appended to
-`simulation_results/cache/demo_trex_spca_02_mc_sim_pev.cells.tsv`, and a restarted run reads those cells back instead
+`simulation_results/cache/cells.tsv`, and a restarted run reads those cells back instead
 of recomputing them. The cache is removed once all results are written, and a change of the configuration or of the
 run tag `TREX_RUN_TAG` sets an old cache aside. Part 1 dominates the runtime, because extracting 49 components means 49
 T-Rex selections per trial.

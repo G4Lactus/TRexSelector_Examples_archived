@@ -45,6 +45,7 @@ this_dir_ <- tryCatch(
   }
 )
 
+source(file.path(this_dir_, "..", "..", "..", "mc_runtime.R"))  # PSOCK workers, cell cache
 source(file.path(this_dir_, "..", "..", "..", "support_generators.R"))
 source(file.path(this_dir_, "..", "trex_da_dgps.R"))
 source(file.path(this_dir_, "..", "da_sim_common.R"))
@@ -273,3 +274,6 @@ if (RUN_PART_1) part_1_snr_sweep()
 if (RUN_PART_2) part_2_kappa_rho_sweep()
 if (RUN_PART_3) part_3_nn_ar_snr_rho_sweep()
 cat("\nNN MC simulation complete.\n")
+
+# All results are written: the cell cache of a stopped run is no longer needed.
+cell_cache_done()

@@ -48,6 +48,7 @@ this_dir_ <- tryCatch(
     if (length(file_arg) > 0) dirname(normalizePath(sub("--file=", "", file_arg[1]))) else "."
   }
 )
+source(file.path(this_dir_, "..", "..", "..", "mc_runtime.R"))  # PSOCK workers, cell cache
 source(file.path(this_dir_, "..", "..", "..", "support_generators.R"))
 source(file.path(this_dir_, "..", "..", "..", "simulation_utils.R"))
 source(file.path(this_dir_, "..", "trex_sim_utils.R"))
@@ -151,8 +152,8 @@ trex_06_part_a <- function(num_MC = NUM_MC, high_dim = TRUE) {
 # (LIFO cleanup, exception-safe). The mmap view never escapes the callback
 # (its backing file is unlinked on return).
 #
-# NOTE: mclapply forks child processes, so each trial runs in its own address
-# space; no cross-trial file conflicts are possible when using tempfile().
+# NOTE: every PSOCK worker (mc_map) is its own R process with its own temp
+# folder, so tempfile() never collides across trials.
 
 trex_06_part_b <- function(num_MC = NUM_MC, high_dim = TRUE) {
 
@@ -233,3 +234,6 @@ trex_06_part_b <- function(num_MC = NUM_MC, high_dim = TRUE) {
 if (run_part_a) trex_06_part_a(NUM_MC, high_dim = TRUE)
 if (run_part_b) trex_06_part_b(NUM_MC, high_dim = TRUE)
 cat("\ndemo_trex_07_mc_sim_mmap.R complete.\n")
+
+# All results are written: the cell cache of a stopped run is no longer needed.
+cell_cache_done()

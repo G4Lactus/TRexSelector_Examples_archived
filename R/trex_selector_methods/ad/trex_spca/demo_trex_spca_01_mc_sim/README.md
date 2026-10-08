@@ -128,7 +128,7 @@ on spawned R worker processes (a PSOCK cluster via `mc_map()` in [../../../mc_ru
 with single-threaded solvers.
 
 The demo is **resumable**. Every finished cell (one method at one SNR point, or one SNR point of Section 2) is appended
-to `simulation_results/cache/demo_trex_spca_01_mc_sim.cells.tsv`, and a restarted run reads those cells back instead
+to `simulation_results/cache/cells.tsv`, and a restarted run reads those cells back instead
 of recomputing them. The cache is removed once all results are written, and a change of the configuration or of the
 run tag `TREX_RUN_TAG` sets an old cache aside.
 

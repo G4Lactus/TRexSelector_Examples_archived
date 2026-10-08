@@ -67,6 +67,7 @@ this_dir_ <- tryCatch(
   }
 )
 
+source(file.path(this_dir_, "..", "..", "..", "mc_runtime.R"))  # PSOCK workers, cell cache
 source(file.path(this_dir_, "..", "trex_gvs_dgps.R"))
 source(file.path(this_dir_, "..", "trex_gvs_sim_common.R"))
 
@@ -251,27 +252,35 @@ CFG <- list(
     .run_block_all_methods(dat, cfg, seed = trial_seed)
   }
 
-  mc_indices <- seq_len(cfg$num_MC)
-  if (.Platform$OS.type == "unix" && num_cores > 1L) {
-    trials <- parallel::mclapply(mc_indices, one_trial, mc.cores = num_cores)
-  } else {
-    trials <- lapply(mc_indices, one_trial)
-  }
-  ok <- vapply(trials, is.list, logical(1L))
-  trials <- trials[ok]
+  # A failed trial is dropped, as before (it returns NULL instead of a list).
+  safe_trial <- function(mc) tryCatch(one_trial(mc), error = function(e) NULL)
 
-  agg_method <- function(mkey) {
-    out <- list()
-    for (mt in .METRIC_NAMES) {
-      vals <- vapply(trials, function(t) as.numeric(t[[mkey]][[mt]]),
-                     numeric(1L))
-      out[[paste0("mean_", mt)]] <- mean(vals)
-      out[[paste0("sd_", mt)]]   <- if (length(vals) > 1L) sd(vals) else 0.0
+  # One resumable grid cell (cell_cached() of mc_runtime.R), flattened to
+  # "M1.mean_coord_tpr" etc.; the trials run on PSOCK workers.
+  key <- paste0("block|", scenario, "|", cell_digest(cfg, rho, snr, cell_base_seed))
+  flat <- cell_cached(key, function() {
+    trials <- mc_map(seq_len(cfg$num_MC), safe_trial, num_cores)
+    ok <- vapply(trials, is.list, logical(1L))
+    trials <- trials[ok]
+
+    agg_method <- function(mkey) {
+      out <- list()
+      for (mt in .METRIC_NAMES) {
+        vals <- vapply(trials, function(t) as.numeric(t[[mkey]][[mt]]),
+                       numeric(1L))
+        out[[paste0("mean_", mt)]] <- mean(vals)
+        out[[paste0("sd_", mt)]]   <- if (length(vals) > 1L) sd(vals) else 0.0
+      }
+      out
     }
-    out
-  }
-  list(M1 = agg_method("M1"), M2 = agg_method("M2"),
-       M3 = agg_method("M3"), M4 = agg_method("M4"))
+    list(M1 = agg_method("M1"), M2 = agg_method("M2"),
+         M3 = agg_method("M3"), M4 = agg_method("M4"))
+  })
+  methods <- c("M1", "M2", "M3", "M4")
+  setNames(lapply(methods, function(m) {
+    part <- flat[startsWith(names(flat), paste0(m, "."))]
+    setNames(part, sub("^M[1-4][.]", "", names(part)))
+  }), methods)
 }
 
 
@@ -351,3 +360,6 @@ run_block_benchmark <- function(cfg) {
 cat(sprintf("Running with %d worker cores\n\n", num_cores))
 
 run_block_benchmark(CFG)
+
+# All results are written: the cell cache of a stopped run is no longer needed.
+cell_cache_done()

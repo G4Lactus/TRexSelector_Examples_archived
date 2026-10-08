@@ -46,6 +46,7 @@ this_dir_ <- tryCatch(
   }
 )
 
+source(file.path(this_dir_, "..", "..", "..", "mc_runtime.R"))  # PSOCK workers, cell cache
 source(file.path(this_dir_, "..", "..", "..", "support_generators.R"))
 source(file.path(this_dir_, "..", "..", "..", "simulation_utils.R"))
 source(file.path(this_dir_, "..", "trex_gvs_dgps.R"))
@@ -155,3 +156,6 @@ cat(sprintf("Running with %d worker cores\n\n", num_cores))
 sim_neg_traps_part1(CFG, SCENARIO_TAG)
 
 cat(sprintf("%s GVS MC simulations complete.\n", SCENARIO_TAG))
+
+# All results are written: the cell cache of a stopped run is no longer needed.
+cell_cache_done()

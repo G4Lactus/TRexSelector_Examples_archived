@@ -575,9 +575,9 @@ execute_with_temp_mmap <- function(X_matrix, expr_func) {
 #' trial_seed)` to obtain the data, builds a TRexSelector with `ctrl`, and
 #' records FDP / TPP (and optionally L and T_stop).
 #'
-#' Parallelism uses `parallel::mclapply` on Unix (fork-based; each child has
-#' its own R process so set.seed() inside make_data_fn is thread-safe) and
-#' `parallel::parLapply` on Windows.
+#' Parallelism uses spawned PSOCK workers via mc_map() (mc_runtime.R, which the
+#' demos source first); each worker is its own R process, so set.seed() inside
+#' make_data_fn is safe. The run is a resumable grid cell (cell_cached()).
 #'
 #' @param make_data_fn  Factory: function(mc, trial_seed) -> list(X, y,
 #'                      true_support). Called once per trial.
@@ -619,54 +619,28 @@ execute_with_temp_mmap <- function(X_matrix, expr_func) {
     res
   }
 
-  if (nchar(label) > 0L)
-    cat(sprintf("  %s \u2014 Running %d MC trials ...\n", label, num_MC))
+  # One resumable grid cell: restored from the cell cache after a restart.
+  key <- paste0("trex|", label, "|", cell_digest(ctrl, tFDR, base_seed, num_MC, track_L_T))
+  out <- cell_cached(key, function() {
+    if (nchar(label) > 0L)
+      cat(sprintf("  %s \u2014 Running %d MC trials ...\n", label, num_MC))
+    res_list <- mc_map(seq_len(num_MC), one_trial, num_cores)
+    res_mat <- do.call(rbind, res_list)
+    fdps <- res_mat[, "FDP"]
+    tpps <- res_mat[, "TPP"]
 
-  if (.Platform$OS.type == "unix") {
-    # NOTE: mclappy on Unix forks a new R process for each trial
-    # mc.preschedule = FALSE: each trial runs in its own forked child process.
-    # When the child exits the OS reclaims all memory (R heap + C++ heap)
-    # unconditionally — no dependency on R's GC or finalizer timing.
-    #
-    # This mirrors the C++ behaviour where TRexSelector is stack-allocated and
-    # destroyed deterministically at end of the omp parallel for loop body.
-    #
-    # With mc.preschedule = TRUE (the default), long-lived workers accumulate
-    # C++ stored_dummies_ across trials because R6's internal self-reference
-    # cycle prevents gc() from reliably firing the EXTPTR finalizer in time.
-    res_list <- parallel::mclapply(
-      X               = seq_len(num_MC),
-      FUN             = one_trial,
-      mc.cores        = num_cores,
-      mc.preschedule  = FALSE
+    out <- list(
+      mean_FDR = mean(fdps),
+      mean_TPR = mean(tpps),
+      sd_FDR   = sd(fdps),
+      sd_TPR   = sd(tpps)
     )
-  } else {
-    # NOTE: parLapply on Windows spawns a new R process for each trial
-    cl <- parallel::makeCluster(num_cores)
-    on.exit(parallel::stopCluster(cl), add = TRUE)
-    parallel::clusterEvalQ(cl, library(TRexSelectorNeo))
-    parallel::clusterExport(
-      cl,
-      varlist = c("base_seed", "make_data_fn", "ctrl", "tFDR", "track_L_T"),
-      envir   = environment()
-    )
-    res_list <- parallel::parLapply(cl, seq_len(num_MC), one_trial)
-  }
-
-  res_mat <- do.call(rbind, res_list)
-  fdps <- res_mat[, "FDP"]
-  tpps <- res_mat[, "TPP"]
-
-  out <- list(
-    mean_FDR = mean(fdps),
-    mean_TPR = mean(tpps),
-    sd_FDR   = sd(fdps),
-    sd_TPR   = sd(tpps)
-  )
-  if (track_L_T) {
-    out$mean_L <- mean(res_mat[, "L"])
-    out$mean_T <- mean(res_mat[, "T"])
-  }
+    if (track_L_T) {
+      out$mean_L <- mean(res_mat[, "L"])
+      out$mean_T <- mean(res_mat[, "T"])
+    }
+    out
+  })
 
   if (nchar(label) > 0L)
     cat(sprintf("  %s \u2014 done. mean_TPR=%.3f  mean_FDR=%.3f\n\n",
@@ -729,43 +703,28 @@ execute_with_temp_mmap <- function(X_matrix, expr_func) {
     })
   }
 
-  if (nchar(label) > 0L)
-    cat(sprintf("  %s \u2014 Running %d MC trials (full-mmap X) ...\n", label, num_MC))
+  # One resumable grid cell: restored from the cell cache after a restart.
+  key <- paste0("trex_mmap|", label, "|", cell_digest(ctrl, tFDR, base_seed, num_MC, track_L_T))
+  out <- cell_cached(key, function() {
+    if (nchar(label) > 0L)
+      cat(sprintf("  %s \u2014 Running %d MC trials (full-mmap X) ...\n", label, num_MC))
+    res_list <- mc_map(seq_len(num_MC), one_trial, num_cores)
+    res_mat <- do.call(rbind, res_list)
+    fdps <- res_mat[, "FDP"]
+    tpps <- res_mat[, "TPP"]
 
-  if (.Platform$OS.type == "unix") {
-    # See .run_mc_trex for the rationale of mc.preschedule = FALSE.
-    res_list <- parallel::mclapply(
-      X               = seq_len(num_MC),
-      FUN             = one_trial,
-      mc.cores        = num_cores,
-      mc.preschedule  = FALSE
+    out <- list(
+      mean_FDR = mean(fdps),
+      mean_TPR = mean(tpps),
+      sd_FDR   = sd(fdps),
+      sd_TPR   = sd(tpps)
     )
-  } else {
-    cl <- parallel::makeCluster(num_cores)
-    on.exit(parallel::stopCluster(cl), add = TRUE)
-    parallel::clusterEvalQ(cl, library(TRexSelectorNeo))
-    parallel::clusterExport(
-      cl,
-      varlist = c("base_seed", "make_data_fn", "ctrl", "tFDR", "track_L_T"),
-      envir   = environment()
-    )
-    res_list <- parallel::parLapply(cl, seq_len(num_MC), one_trial)
-  }
-
-  res_mat <- do.call(rbind, res_list)
-  fdps <- res_mat[, "FDP"]
-  tpps <- res_mat[, "TPP"]
-
-  out <- list(
-    mean_FDR = mean(fdps),
-    mean_TPR = mean(tpps),
-    sd_FDR   = sd(fdps),
-    sd_TPR   = sd(tpps)
-  )
-  if (track_L_T) {
-    out$mean_L <- mean(res_mat[, "L"])
-    out$mean_T <- mean(res_mat[, "T"])
-  }
+    if (track_L_T) {
+      out$mean_L <- mean(res_mat[, "L"])
+      out$mean_T <- mean(res_mat[, "T"])
+    }
+    out
+  })
 
   if (nchar(label) > 0L)
     cat(sprintf("  %s \u2014 done. mean_TPR=%.3f  mean_FDR=%.3f\n\n",

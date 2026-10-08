@@ -36,7 +36,7 @@
 # Support indices are 1-based (R convention).
 #
 # Usage: Rscript demo_trex_scr_03_mc_sim_correlated.R [num_worker_cores]
-#   (default 6 worker cores; MC trials run via parallel::mclapply)
+#   (default 6 worker cores; MC trials run on PSOCK workers via mc_map)
 # ==============================================================================
 
 library(TRexSelectorNeo)
@@ -59,6 +59,7 @@ this_dir_ <- tryCatch(
     if (length(file_arg) > 0) dirname(normalizePath(sub("--file=", "", file_arg[1]))) else "."
   }
 )
+source(file.path(this_dir_, "..", "..", "..", "mc_runtime.R"))  # PSOCK workers, cell cache
 source(file.path(this_dir_, "..", "trex_scr_sim_utils.R"))
 
 OUT_DIR <- file.path(this_dir_, "simulation_results", "data")
@@ -164,3 +165,6 @@ run_sweep("Part 5: DA-BLOCK-EQUI Screen-TRex rho Sweep on Block-Equicorr Data",
           "rho", RHO_GRID, "scr_block_equi_rho_n300_p1000_blocks5_snr1.00")
 
 cat("\ndemo_trex_scr_03_mc_sim_correlated.R complete.\n")
+
+# All results are written: the cell cache of a stopped run is no longer needed.
+cell_cache_done()

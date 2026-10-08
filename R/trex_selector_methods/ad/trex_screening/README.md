@@ -100,7 +100,7 @@ sourced by every demo:
 - **Section 2 — control factories**: `make_scr_trex_ctrl()`,
   `default_scr_methods()`.
 - **Section 3 — Monte Carlo**: `run_mc_screen()` (parallel per-grid-point MC
-  runner, `parallel::mclapply` over trials) and `save_and_print_scr_mc()`
+  runner on PSOCK workers via `mc_map()`, resumable per grid cell) and `save_and_print_scr_mc()`
   (console table + `.txt` + tidy `.csv`).
 - **Section 4 — Biobank**: `biobank_single_trial()`, `biobank_multi_trial()`,
   `run_mc_biobank()` (parallel trial runner), `accumulate_snr()` (per-method
@@ -153,7 +153,7 @@ only.
 
 ```bash
 # Each demo takes an optional worker-core count as positional argument 1
-# (default 6); Monte Carlo trials run in parallel via parallel::mclapply.
+# (default 6); Monte Carlo trials run on PSOCK workers via mc_map().
 Rscript R/trex_selector_methods/ad/trex_screening/demo_trex_scr_01_mc_sim_screen_trex/demo_trex_scr_01_mc_sim_screen_trex.R [num_worker_cores]
 Rscript R/trex_selector_methods/ad/trex_screening/demo_trex_scr_02_mc_sim_screen_trex_mmap/demo_trex_scr_02_mc_sim_screen_trex_mmap.R [num_worker_cores]
 Rscript R/trex_selector_methods/ad/trex_screening/demo_trex_scr_03_mc_sim_correlated/demo_trex_scr_03_mc_sim_correlated.R [num_worker_cores]
