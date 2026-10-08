@@ -102,18 +102,18 @@ produced by `./generate_plots.sh`.
 ## Simulation Results
 
 - **Screening is not FDR-controlling at low SNR.** At $\mathrm{SNR} \le 0.2$ the realized FDR runs between
-   $0.16$ and $0.43$ for both rules. With almost no recoverable signal (TPR $\le 0.12$), nearly every
+   $0.22$ and $0.45$ for both rules. With almost no recoverable signal (TPR $\le 0.12$), nearly every
    selection is a false one — a property of thresholding a voting statistic without a target level, not a
    defect of the implementation.
 - **Both rules become reliable once signal is present.** From $\mathrm{SNR} \ge 0.5$ the Ordinary rule's
-   FDR drops to $0.12$ and settles around $0.05\text{–}0.07$, while its TPR climbs $0.44 \to 1.00$. All ten
+   FDR drops to $0.11$ and settles around $0.04\text{–}0.07$, while its TPR climbs $0.45 \to 1.00$. All ten
    active variables are recovered at $\mathrm{SNR} = 5$.
 - **Bootstrap-CI is the conservative rule, with lower FDR and clearly less power.** Its FDR stays below $0.06$ for
-   $\mathrm{SNR} \ge 0.5$ (roughly half the Ordinary rule's), paid for with TPR $0.87$ vs. $1.00$ at
-   $\mathrm{SNR} = 5$, and a much wider gap mid-sweep ($0.37$ vs. $0.83$ at $\mathrm{SNR} = 1$). Choose it
+   $\mathrm{SNR} \ge 0.5$ (roughly half the Ordinary rule's), paid for with TPR $0.84$ vs. $1.00$ at
+   $\mathrm{SNR} = 5$, and a much wider gap mid-sweep ($0.40$ vs. $0.82$ at $\mathrm{SNR} = 1$). Choose it
    when false discoveries are costlier than missed ones.
 - **The internal FDR estimate is conservative here.** For $\mathrm{SNR} \ge 0.5$ it sits *above* the
-   realized FDR for both rules (e.g. $0.115$ vs. $0.067$ for Ordinary at $\mathrm{SNR} = 1$) — it
+   realized FDR for both rules (e.g. $0.115$ vs. $0.069$ for Ordinary at $\mathrm{SNR} = 1$) — it
    over-states the error rate rather than hiding it. At the lowest SNR points it becomes unreliable in both
    directions. Demo 03 shows this same estimate failing far more dramatically under correlation.
 

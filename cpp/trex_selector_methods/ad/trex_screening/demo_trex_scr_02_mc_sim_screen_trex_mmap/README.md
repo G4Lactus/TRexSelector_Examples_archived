@@ -108,21 +108,21 @@ produced by `./generate_plots.sh`.
 
 - **Memory mapping changes the memory footprint, not the statistical behaviour.** Across the sweep the
    memory-mapped curves track the in-memory Demo 01 curves closely. For $\mathrm{SNR} \ge 0.5$ the largest
-   TPR difference is about $0.03$ (Bootstrap at $\mathrm{SNR} = 5$: $0.840$ here vs. $0.865$ in Demo 01) and
+   TPR difference is about $0.02$ (Bootstrap at $\mathrm{SNR} = 2$: $0.763$ here vs. $0.739$ in Demo 01) and
    the largest FDR difference about $0.01$. It is the same procedure on the same statistics — only the D
    matrices live on disk.
 - **Exact equality is not expected.** Both demos use nondeterministic selector seeds (the library resolves
    `seed = -1` via `std::random_device`), so the two runs draw different random experiments. The residual
    gaps are Monte Carlo noise, not a discrepancy in the memory-mapped path.
 - **The baseline conclusions carry over unchanged.** Screening is not FDR-controlling at low SNR — at
-   $\mathrm{SNR} \le 0.2$ the realized FDR runs between $0.19$ and $0.44$ with TPR $\le 0.12$ — and both
-   rules become reliable from $\mathrm{SNR} \ge 0.5$, where the Ordinary rule's FDR falls to $0.116$ and
-   settles around $0.05\text{–}0.07$ while its TPR climbs $0.446 \to 1.000$.
+   $\mathrm{SNR} \le 0.2$ the realized FDR runs between $0.16$ and $0.44$ with TPR $\le 0.12$ — and both
+   rules become reliable from $\mathrm{SNR} \ge 0.5$, where the Ordinary rule's FDR falls to $0.118$ and
+   settles around $0.05\text{–}0.07$ while its TPR climbs $0.448 \to 1.000$.
 - **Bootstrap-CI remains the conservative rule, with lower FDR and clearly less power.** Its FDR stays at or below
-   $0.050$ for $\mathrm{SNR} \ge 0.5$, roughly half the Ordinary rule's, paid for with TPR $0.840$ vs.
-   $1.000$ at $\mathrm{SNR} = 5$ and a wide mid-sweep gap ($0.393$ vs. $0.826$ at $\mathrm{SNR} = 1$).
+   $0.051$ for $\mathrm{SNR} \ge 0.5$, roughly half the Ordinary rule's, paid for with TPR $0.835$ vs.
+   $1.000$ at $\mathrm{SNR} = 5$ and a wide mid-sweep gap ($0.386$ vs. $0.816$ at $\mathrm{SNR} = 1$).
 - **The internal FDR estimate is conservative here.** For $\mathrm{SNR} \ge 0.5$ it sits *above* the
-   realized FDR for both rules (e.g. $0.114$ vs. $0.071$ for Ordinary at $\mathrm{SNR} = 1$), over-stating
+   realized FDR for both rules (e.g. $0.117$ vs. $0.069$ for Ordinary at $\mathrm{SNR} = 1$), over-stating
    the error rate rather than hiding it. At the lowest SNR points it becomes unreliable in both directions.
 
 TPR (left) and FDR (right) vs. SNR, one line per thresholding rule. On the FDR panel the solid

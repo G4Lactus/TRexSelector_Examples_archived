@@ -124,24 +124,24 @@ produced by `./generate_plots.sh`.
 
 - **The routing does what it is designed to do.** At $\mathrm{SNR} = 0.1$ essentially every phenotype
    ($100.0\%$) ends up at the classical T-Rex fallback — with no recoverable signal both screening rules
-   estimate an FDR far above the window ($0.428$ Ordinary, $0.339$ Bootstrap-CI). As SNR grows the traffic
-   shifts to the screening routes. At $\mathrm{SNR} = 1$ the split is $43.5\%$ Ordinary / $46.0\%$
-   Bootstrap-CI / $10.5\%$ fallback, and at $\mathrm{SNR} = 5$ Bootstrap-CI handles $87.0\%$ of all
+   estimate an FDR far above the window ($0.462$ Ordinary, $0.349$ Bootstrap-CI). As SNR grows the traffic
+   shifts to the screening routes. At $\mathrm{SNR} = 1$ the split is $50.5\%$ Ordinary / $41.5\%$
+   Bootstrap-CI / $8.0\%$ fallback, and at $\mathrm{SNR} = 5$ Bootstrap-CI handles $90.5\%$ of all
    screenings while the fallback is never invoked.
 - **Conditional error control on the screening routes is good once signal is present.** From
-   $\mathrm{SNR} \ge 1$ the realized FDR runs $0.067 \to 0.048$ for Ordinary and $0.063 \to 0.056$ for
-   Bootstrap-CI — around $0.05\text{–}0.06$ — while TPR reaches $1.000$ for both at $\mathrm{SNR} = 5$. The one
+   $\mathrm{SNR} \ge 1$ the realized FDR runs $0.061\text{–}0.069$ for Ordinary and $0.066 \to 0.046$ for
+   Bootstrap-CI — around $0.05\text{–}0.07$ — while TPR reaches $1.000$ for both at $\mathrm{SNR} = 5$. The one
    badly behaved point is $\mathrm{SNR} = 0.5$, where the few phenotypes that do pass the window still
-   realize an FDR of $0.209$ (Ordinary) and $0.164$ (Bootstrap-CI).
+   realize an FDR of $0.174$ (Ordinary) and $0.144$ (Bootstrap-CI).
 - **The fallback's TPR of $0.000$ at $\mathrm{SNR} = 2$ and $5$ is not a failure.** Its usage is $0.0\%$ at
    those points — nothing is routed to it, so the conditional average is taken over an empty set and prints
    as zero. Where the fallback *is* used it behaves as expected. At $\mathrm{SNR} = 1$ it realizes an FDR of
-   $0.008$ against its target of $0.10$ with a TPR of $0.548$, i.e. it is the conservative option that
+   $0.009$ against its target of $0.10$ with a TPR of $0.469$, i.e. it is the conservative option that
    trades away power for safety.
-- **The estimates track the realized rates reasonably here.** Bootstrap-CI's estimate falls from $0.339$ to
-   $0.058\text{–}0.082$ across the sweep and sits close to (mostly above) the realized $0.047\text{–}0.063$.
-   Ordinary's estimate settles near $0.094\text{–}0.120$ against a realized $0.048\text{–}0.067$, again erring on
-   the safe side.
+- **The estimates track the realized rates reasonably here.** Bootstrap-CI's estimate falls from $0.349$ to
+   $0.049\text{–}0.086$ for $\mathrm{SNR} \ge 1$ and sits close to the realized $0.046\text{–}0.066$, above it at
+   $\mathrm{SNR} = 2$ and $5$ and below it at $\mathrm{SNR} = 1$. Ordinary's estimate settles near
+   $0.095\text{–}0.117$ against a realized $0.061\text{–}0.069$, erring on the safe side.
 
 TPR (conditional on routing), FDR (solid = realized, dashed = the procedure's own estimate, with the
 $\lbrack 0.05, 0.15\rbrack$ routing window shaded), and per-method Usage % vs. SNR.
@@ -150,22 +150,22 @@ $\lbrack 0.05, 0.15\rbrack$ routing window shaded), and per-method Usage % vs. S
 
 ### Part 2 — Five Phenotypes Sharing One Design ($q = 5$, $s = 5$)
 
-- **The fallback dominates.** Across the whole sweep the classical T-Rex selector handles $84.0\%\text{–}99.9\%$
-   of all screenings ($99.9\%$ at $\mathrm{SNR} = 0.1$, $86.1\%$ at $\mathrm{SNR} = 5$). The screening rules
-   take only a few percent each (Ordinary $2.4\%\text{–}3.4\%$, Bootstrap-CI $8.0\%\text{–}12.8\%$ for
+- **The fallback dominates.** Across the whole sweep the classical T-Rex selector handles $84.2\%\text{–}100.0\%$
+   of all screenings ($100.0\%$ at $\mathrm{SNR} = 0.1$, $87.0\%$ at $\mathrm{SNR} = 5$). The screening rules
+   take only a few percent each (Ordinary $2.2\%\text{–}3.4\%$, Bootstrap-CI $9.0\%\text{–}12.4\%$ for
    $\mathrm{SNR} \ge 0.5$). Unlike Part 1, more signal does **not** shift the traffic to the screening
    routes.
 - **Where the screening routes are used, they are poorly calibrated.** For $\mathrm{SNR} \ge 0.5$ the
-   realized FDR of the accepted screening results is $0.303\text{–}0.318$ (Ordinary) and $0.306\text{–}0.314$
+   realized FDR of the accepted screening results is $0.306\text{–}0.338$ (Ordinary) and $0.307\text{–}0.316$
    (Bootstrap-CI) — roughly twice the upper edge of the routing window — while the corresponding estimates
-   are only $0.179\text{–}0.194$ and $0.146\text{–}0.163$. The estimate does not track the truth in this regime.
+   are only $0.180\text{–}0.192$ and $0.141\text{–}0.164$. The estimate does not track the truth in this regime.
 - **This is a sparsity effect, and the cautionary result of the pair.** With only $s = 5$ active variables
    per phenotype, a single false selection moves the false discovery proportion (FDP) by a large increment, so
    the realized FDR is coarse and high even when every true variable is found (TPR is $1.000$ for both screening
    rules from $\mathrm{SNR} = 1$ onward). Screening admits the phenotype on an estimate that is systematically
    too optimistic.
-- **The fallback stays well behaved on the bulk of the traffic.** Its realized FDR is $0.011\text{–}0.023$
-   against a target of $0.10$, with TPR rising $0.017 \to 1.000$ over the sweep. In this configuration the
+- **The fallback stays well behaved on the bulk of the traffic.** Its realized FDR is $0.012\text{–}0.019$
+   against a target of $0.10$, with TPR rising $0.014 \to 1.000$ over the sweep. In this configuration the
    conservative route is both the most-used and the most reliable one.
 
 TPR (conditional on routing), FDR (solid = realized, dashed = the procedure's own estimate, with the

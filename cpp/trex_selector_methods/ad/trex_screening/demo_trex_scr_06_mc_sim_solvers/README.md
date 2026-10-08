@@ -123,16 +123,16 @@ produced by `./generate_plots.sh`.
 ### Part 1 — Three Solvers, Ordinary Screening
 
 - **The solver is not a pure speed knob.** At mid SNR the greedier backends are markedly more powerful than
-   TLARS at comparable FDR. At $\mathrm{SNR} = 1$ the TPR is $0.931$ (TAFS-0.3) and $0.949$ (TOMP) against
-   $0.829$ (TLARS), while the realized FDR is $0.068$, $0.057$, and $0.070$ respectively. The gap is already
-   visible at $\mathrm{SNR} = 0.5\text{–}0.6$ ($0.498/0.496$ vs. $0.439$, and $0.619/0.634$ vs. $0.539$).
+   TLARS at comparable FDR. At $\mathrm{SNR} = 1$ the TPR is $0.933$ (TAFS-0.3) and $0.946$ (TOMP) against
+   $0.833$ (TLARS), while the realized FDR is $0.063$, $0.057$, and $0.071$ respectively. The gap is already
+   visible at $\mathrm{SNR} = 0.5\text{–}0.6$ ($0.497/0.505$ vs. $0.451$, and $0.617/0.637$ vs. $0.544$).
 - **All three converge at high SNR.** By $\mathrm{SNR} = 2$ TAFS-0.3 and TOMP reach TPR $1.000$ and TLARS
-   $0.993$, and at $\mathrm{SNR} = 5$ all three recover every active variable at FDR $0.061\text{–}0.067$. The choice
+   $0.994$, and at $\mathrm{SNR} = 5$ all three recover every active variable at FDR $0.061\text{–}0.071$. The choice
    of backend therefore only matters where the signal is neither absent nor obvious.
 - **At very low SNR the backends are indistinguishable — and all uncontrolled.** For $\mathrm{SNR} \le 0.2$
-   the realized FDR runs $0.262\text{–}0.463$ for all three with TPR $\le 0.122$, reproducing the Demo 01 finding
+   the realized FDR runs $0.272\text{–}0.457$ for all three with TPR $\le 0.124$, reproducing the Demo 01 finding
    that screening is not FDR-controlling when there is no recoverable signal.
-- **The internal FDR estimate behaves the same way for every backend.** It peaks around $0.46\text{–}0.50$ at
+- **The internal FDR estimate behaves the same way for every backend.** It peaks around $0.47\text{–}0.50$ at
    $\mathrm{SNR} = 0.1\text{–}0.2$ and then settles at $0.093\text{–}0.094$ for all three at $\mathrm{SNR} = 5$,
    sitting *above* the realized FDR once signal is present.
 
@@ -144,19 +144,17 @@ is the realized FDR and the dashed line the procedure's own estimated FDR.
 ### Part 2 — Three Solvers × Two Thresholding Rules
 
 - **Under Bootstrap-CI the backend matters far more than under the Ordinary rule.** At $\mathrm{SNR} = 1$
-   the bootstrap TPR spans $0.383$ (TLARS), $0.602$ (TAFS-0.3), and $0.915$ (TOMP) — more than half the
-   achievable power — against a spread of roughly $0.11$ for the same three backends under the Ordinary
+   the bootstrap TPR spans $0.341$ (TLARS), $0.635$ (TAFS-0.3), and $0.912$ (TOMP) — more than half the
+   achievable power — against a spread of roughly $0.12$ for the same three backends under the Ordinary
    rule.
-- **TLARS is by far the most conservative backend.** Its bootstrap FDR stays at or below $0.056$ from
-   $\mathrm{SNR} = 0.5$ onwards, but its TPR reaches only $0.890$ at $\mathrm{SNR} = 5$. TOMP under
+- **TLARS is by far the most conservative backend.** Its bootstrap FDR stays at or below $0.055$ from
+   $\mathrm{SNR} = 0.5$ onwards, but its TPR reaches only $0.855$ at $\mathrm{SNR} = 5$. TOMP under
    Bootstrap-CI, in contrast, behaves almost like Ordinary screening. At $\mathrm{SNR} = 1$ its TPR is
-   $0.915$ vs. $0.946$ ordinary, at FDR $0.063$ in both cases.
-- **Two mild non-monotonicities at high SNR, reported as observed.** TAFS-0.3 under Bootstrap-CI peaks at
-   TPR $0.735$ ($\mathrm{SNR} = 2$) and then *drops* to $0.685$ at $\mathrm{SNR} = 5$, while TOMP shows the same
-   pattern more weakly ($0.965 \to 0.945$). This is a non-monotonicity in the bootstrap threshold at high
-   SNR. No mechanism for it has been verified here, so it is flagged rather than explained away.
+   $0.912$ vs. $0.950$ ordinary, at FDR $0.063$ and $0.060$.
+- **Bootstrap-CI stops short of full power.** TAFS-0.3 levels off at TPR $0.68\text{–}0.70$ from
+   $\mathrm{SNR} = 2$ on and TOMP at $0.92\text{–}0.93$, while every Ordinary series reaches $1.000$.
 - **The low-SNR regime is unaffected by either choice.** For $\mathrm{SNR} \le 0.2$ all six series have
-   TPR $\le 0.124$ and FDR between $0.151$ and $0.450$. Neither the backend nor the thresholding rule
+   TPR $\le 0.127$ and FDR between $0.137$ and $0.452$. Neither the backend nor the thresholding rule
    rescues screening when there is nothing to find.
 - **Practical takeaway.** TLARS is the safe conservative default, while TOMP and TAFS-0.3 buy substantial power at
    mid SNR at a comparable error rate. Under Bootstrap-CI the backend choice moves the operating point more

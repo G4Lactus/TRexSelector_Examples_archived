@@ -117,8 +117,12 @@ As elsewhere in this project,
    thresholds at $\Phi_j > 0.5$, while the **Bootstrap-CI** rule builds a bootstrap confidence band
    (`R_boot = 1000` replicates, grid granularity `ci_grid_step = 0.001`) around the estimated FDR curve and
    picks its threshold from that band.
-- **Dependency-aware (DA) screening** (`rho_thr_DA`, `n_blocks`) — pre-groups strongly correlated variables
-   before voting, so redundant correlated variables do not split the evidence.
+- **Dependency-aware (DA) screening** (`rho_thr_DA`, `n_blocks`) — deflates each voting proportion by its
+   distance to the nearest one among its correlated neighbours (the AR(1) window, all variables, or the
+   variables of the same block), so redundant correlated variables cannot pass the vote together. Screen-TRex
+   runs a single step, so the proportions are coarse, and under (block-)equicorrelation many of them tie. A
+   tied proportion is halved onto the threshold and rejected, which makes DA-EQUI select nothing and
+   DA-BLOCK-EQUI select very little in Demo 03, exactly as the reference R package does.
 - **Biobank / "Algorithm 1"** (`BiobankScreenTRexControl`, Demos 04–05) — screens **multiple phenotypes
    against one shared design matrix**. Per phenotype it tries Screen-TRex Ordinary. If the estimated FDR
    falls outside `[lower_bound_FDR, upper_bound_FDR]` it tries Bootstrap-CI, and failing that it falls back to
