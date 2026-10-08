@@ -39,6 +39,7 @@
 
 // Screen-TRex demo DGPs (ScrDGPData + generators)
 #include "trex_screening_dgps.hpp"
+#include "../../cell_cache.hpp"   // resumable grid cells
 
 // std includes
 #include <algorithm>
@@ -354,30 +355,74 @@ struct ScrGridPointResult {
  */
 using ScrDGPFactory = std::function<ScrDGPData(unsigned seed)>;
 
+namespace cell_detail {
+
+/** @brief Cell key: label plus the parameters that tell cells apart. */
+inline std::string key(const std::string& label, std::size_t num_MC, unsigned base_seed_offset,
+                       const TRexControlParameter& trex_ctrl, const ScreenTRexControlParameter& screen) {
+    std::ostringstream os;
+    os << "scr|" << label << "|solver=" << static_cast<int>(trex_ctrl.solver_type)
+       << "|method=" << static_cast<int>(screen.trex_method) << "|seed=" << base_seed_offset
+       << "|mc=" << num_MC;
+    return os.str();
+}
+
+inline trex_cell_cache::Cell to_cell(const ScrGridPointResult& r) {
+    return {{"avg_fdr", r.avg_fdr}, {"avg_tpr", r.avg_tpr}, {"avg_est_fdr", r.avg_est_fdr},
+            {"sd_fdr", r.sd_fdr}, {"sd_tpr", r.sd_tpr}};
+}
+
+inline ScrGridPointResult from_cell(const trex_cell_cache::Cell& c) {
+    using trex_cell_cache::get;
+    return {get(c, "avg_fdr"), get(c, "avg_tpr"), get(c, "avg_est_fdr"),
+            get(c, "sd_fdr"), get(c, "sd_tpr")};
+}
+
+}  // namespace cell_detail
+
 /**
- * @brief Parallel MC loop for Screen-TRex.
- *
- * Uses `#pragma omp parallel for schedule(dynamic)`. Each trial calls
- * `make_data(base_seed_offset + mc)` and runs `ScreenTRexSelector`
- * independently.  Collects FDP, TPP, estimated FDR; returns averaged +
- * Bessel-corrected sd result.
- *
- * Thread safety:
- *   - Each trial owns its data (returned by-value from the factory).
- *   - `trex_ctrl` and `screen_ctrl` are passed by const-ref; each
- *     `ScreenTRexSelector` receives them as values / copies internally.
- *   - `TempDirManager::create()` uses `std::random_device` → unique temp
- *     directories per selector instance → safe under OpenMP.
- *
- * @param num_MC           Number of Monte Carlo trials.
- * @param progress_label   Label printed in the "Running … done." lines.
- * @param make_data        DGP factory; called once per trial with the trial seed.
- * @param trex_ctrl        TRex control parameter (constant across trials).
- * @param screen_ctrl      Screen-TRex control parameter (constant across trials).
- * @param base_seed_offset Trial seed = base_seed_offset + mc.
- * @return                 ScrGridPointResult with averaged metrics.
+ * @brief Sums of one biobank SNR cell per library method name: conditional FDP
+ *        and TPP sums, unconditional estimated-FDR sum and usage count.
  */
-inline ScrGridPointResult run_mc_trials_screen_trex(
+struct BiobankCellSums {
+    std::map<std::string, double> fdp, tpp, est_fdr, usage;
+
+    /** @brief Cell with four numbers per method, in the order of @p methods. */
+    trex_cell_cache::Cell to_cell(const std::vector<std::string>& methods) const {
+        const auto at = [](const std::map<std::string, double>& m, const std::string& k) {
+            const auto it = m.find(k);
+            return it == m.end() ? 0.0 : it->second;
+        };
+        trex_cell_cache::Cell c;
+        for (std::size_t k = 0; k < methods.size(); ++k) {
+            const std::string p = "m" + std::to_string(k) + ".";
+            c.emplace_back(p + "fdp", at(fdp, methods[k]));
+            c.emplace_back(p + "tpp", at(tpp, methods[k]));
+            c.emplace_back(p + "est_fdr", at(est_fdr, methods[k]));
+            c.emplace_back(p + "usage", at(usage, methods[k]));
+        }
+        return c;
+    }
+
+    /** @brief Add a cell's sums to the result maps at SNR index @p si. */
+    static void add_to(const trex_cell_cache::Cell& c, const std::vector<std::string>& methods,
+                       Eigen::Index si, std::map<std::string, Eigen::VectorXd>& fdp_map,
+                       std::map<std::string, Eigen::VectorXd>& tpp_map,
+                       std::map<std::string, Eigen::VectorXd>& est_fdr_map,
+                       std::map<std::string, Eigen::VectorXd>& usage_map) {
+        using trex_cell_cache::get;
+        for (std::size_t k = 0; k < methods.size(); ++k) {
+            const std::string p = "m" + std::to_string(k) + ".";
+            fdp_map[methods[k]](si)     += get(c, p + "fdp");
+            tpp_map[methods[k]](si)     += get(c, p + "tpp");
+            est_fdr_map[methods[k]](si) += get(c, p + "est_fdr");
+            usage_map[methods[k]](si)   += get(c, p + "usage");
+        }
+    }
+};
+
+/** @brief Uncached body of run_mc_trials_screen_trex(). */
+inline ScrGridPointResult run_mc_trials_screen_trex_impl(
     std::size_t                       num_MC,
     const std::string&                progress_label,
     const ScrDGPFactory&              make_data,
@@ -440,6 +485,44 @@ inline ScrGridPointResult run_mc_trials_screen_trex(
               << "  Est.FDR=" << mest << "\n" << std::flush;
 
     return {mfdr, mtpr, mest, sfdr, stpr};
+}
+
+/**
+ * @brief Parallel MC loop for Screen-TRex (resumable grid cell).
+ *
+ * Uses `#pragma omp parallel for schedule(dynamic)`. Each trial calls
+ * `make_data(base_seed_offset + mc)` and runs `ScreenTRexSelector`
+ * independently.  Collects FDP, TPP, estimated FDR; returns averaged +
+ * Bessel-corrected sd result.
+ *
+ * Thread safety:
+ *   - Each trial owns its data (returned by-value from the factory).
+ *   - `trex_ctrl` and `screen_ctrl` are passed by const-ref; each
+ *     `ScreenTRexSelector` receives them as values / copies internally.
+ *   - `TempDirManager::create()` uses `std::random_device` → unique temp
+ *     directories per selector instance → safe under OpenMP.
+ *
+ * @param num_MC           Number of Monte Carlo trials.
+ * @param progress_label   Label printed in the "Running … done." lines.
+ * @param make_data        DGP factory; called once per trial with the trial seed.
+ * @param trex_ctrl        TRex control parameter (constant across trials).
+ * @param screen_ctrl      Screen-TRex control parameter (constant across trials).
+ * @param base_seed_offset Trial seed = base_seed_offset + mc.
+ * @return                 ScrGridPointResult with averaged metrics.
+ */
+inline ScrGridPointResult run_mc_trials_screen_trex(
+    std::size_t                       num_MC,
+    const std::string&                progress_label,
+    const ScrDGPFactory&              make_data,
+    const TRexControlParameter&       trex_ctrl,
+    const ScreenTRexControlParameter& screen_ctrl,
+    unsigned                          base_seed_offset)
+{
+    return cell_detail::from_cell(TREX_CELL_CACHED(
+        cell_detail::key(progress_label, num_MC, base_seed_offset, trex_ctrl, screen_ctrl), [&] {
+            return cell_detail::to_cell(run_mc_trials_screen_trex_impl(
+                num_MC, progress_label, make_data, trex_ctrl, screen_ctrl, base_seed_offset));
+        }));
 }
 
 

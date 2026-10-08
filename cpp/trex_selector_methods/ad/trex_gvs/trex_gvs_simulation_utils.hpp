@@ -45,6 +45,7 @@
 // ==============================================================================
 
 #include "trex_gvs_dgps.hpp"
+#include "../../cell_cache.hpp"   // resumable grid cells
 
 // std includes
 #include <algorithm>
@@ -336,30 +337,38 @@ inline void print_single_run_result(const std::string&       tag,
 using GVSDGPFactory = std::function<GVSDGPResult(double snr, unsigned seed)>;
 
 
-/**
- * @brief Run num_MC parallel trials at a single parameter point.
- *
- * Each trial:
- *  1. Generates a fresh dataset via dgp_fn(param, trial_seed).
- *  2. Runs TRexGVSSelector (verbose=false).
- *  3. Collects FDP and TPP.
- *
- * @param dgp_fn         DGP factory — must be thread-safe (no shared mutable state).
- * @param param          Parameter value passed to dgp_fn (SNR or rho).
- * @param num_MC         Number of trials.
- * @param progress_label Label printed before/after the run.
- * @param tFDR           Target FDR level.
- * @param gvs_ctrl       GVS control parameters.
- * @param trex_ctrl      Base T-Rex control parameters.
- * @param base_seed      Seed for trial 0; trial i uses base_seed + i.
- *
- * @return GVSGridPointResult with mean and sd of FDP and TPP.
- *
- * @note The progress label should carry the parameter reading (e.g.
- *       "SNR = 0.10", as in the trex_da demos); @p param itself is only
- *       forwarded to the DGP factory.
- */
-inline GVSGridPointResult run_gvs_mc_trials(
+// ==============================================================================
+// Resumable grid cells (../../cell_cache.hpp)
+// ==============================================================================
+
+namespace cell_detail {
+
+/** @brief Cell key: label plus the GVS parameters that tell cells apart. */
+inline std::string key(const std::string& kind, const std::string& label, std::size_t num_MC,
+                       unsigned base_seed, double tFDR, const TRexGVSControlParameter& gvs) {
+    std::ostringstream os;
+    os << kind << '|' << label << "|gvs=" << static_cast<int>(gvs.gvs_type)
+       << "|en=" << static_cast<int>(gvs.en_solver) << "|link=" << static_cast<int>(gvs.hc_linkage)
+       << "|l2m=" << static_cast<int>(gvs.lambda2_method) << "|corr=" << gvs.corr_max
+       << "|seed=" << base_seed << "|mc=" << num_MC << "|tfdr=" << tFDR;
+    return os.str();
+}
+
+inline trex_cell_cache::Cell to_cell(const GVSGridPointResult& r) {
+    return {{"mean_fdp", r.mean_fdp}, {"mean_tpp", r.mean_tpp},
+            {"sd_fdp", r.sd_fdp}, {"sd_tpp", r.sd_tpp}};
+}
+
+inline GVSGridPointResult from_cell(const trex_cell_cache::Cell& c) {
+    using trex_cell_cache::get;
+    return {get(c, "mean_fdp"), get(c, "mean_tpp"), get(c, "sd_fdp"), get(c, "sd_tpp")};
+}
+
+}  // namespace cell_detail
+
+
+/** @brief Uncached body of run_gvs_mc_trials(). */
+inline GVSGridPointResult run_gvs_mc_trials_impl(
     const GVSDGPFactory&           dgp_fn,
     double                         param,
     std::size_t                    num_MC,
@@ -439,6 +448,48 @@ inline GVSGridPointResult run_gvs_mc_trials(
               << "  FDP=" << mean_fdp << "\n\n" << std::flush;
 
     return {mean_fdp, mean_tpp, sd_fdp, sd_tpp};
+}
+
+/**
+ * @brief Run num_MC parallel trials at a single parameter point (resumable grid cell).
+ *
+ * Each trial:
+ *  1. Generates a fresh dataset via dgp_fn(param, trial_seed).
+ *  2. Runs TRexGVSSelector (verbose=false).
+ *  3. Collects FDP and TPP.
+ *
+ * @param dgp_fn         DGP factory — must be thread-safe (no shared mutable state).
+ * @param param          Parameter value passed to dgp_fn (SNR or rho).
+ * @param num_MC         Number of trials.
+ * @param progress_label Label printed before/after the run.
+ * @param tFDR           Target FDR level.
+ * @param gvs_ctrl       GVS control parameters.
+ * @param trex_ctrl      Base T-Rex control parameters.
+ * @param base_seed      Seed for trial 0; trial i uses base_seed + i.
+ *
+ * @return GVSGridPointResult with mean and sd of FDP and TPP.
+ *
+ * @note The progress label should carry the parameter reading (e.g.
+ *       "SNR = 0.10", as in the trex_da demos); @p param itself is only
+ *       forwarded to the DGP factory.
+ */
+inline GVSGridPointResult run_gvs_mc_trials(
+    const GVSDGPFactory&           dgp_fn,
+    double                         param,
+    std::size_t                    num_MC,
+    const std::string&             progress_label,
+    double                         tFDR,
+    const TRexGVSControlParameter& gvs_ctrl,
+    const TRexControlParameter&    trex_ctrl,
+    unsigned                       base_seed)
+{
+    std::ostringstream lbl;
+    lbl << progress_label << "|param=" << param;
+    return cell_detail::from_cell(TREX_CELL_CACHED(
+        cell_detail::key("gvs", lbl.str(), num_MC, base_seed, tFDR, gvs_ctrl), [&] {
+            return cell_detail::to_cell(run_gvs_mc_trials_impl(dgp_fn, param, num_MC, progress_label,
+                                                               tFDR, gvs_ctrl, trex_ctrl, base_seed));
+        }));
 }
 
 
@@ -823,74 +874,79 @@ inline std::vector<std::vector<GVSGridPointResult>> run_gvs_2d_sweep(
                 << "  SNR=" << std::fixed << std::setprecision(2) << snr
                 << "  rho=" << rho;
 
-            std::cout << "  " << lbl.str()
-                      << " — Running " << cfg.num_MC << " MC trials ...\n"
-                      << std::flush;
+            // One cell: computed unless a restarted run finds it in the cache.
+            const auto compute_cell = [&]() -> trex_cell_cache::Cell {
+                std::cout << "  " << lbl.str()
+                          << " — Running " << cfg.num_MC << " MC trials ...\n"
+                          << std::flush;
 
-            std::vector<double> fdp_vec(cfg.num_MC, 0.0);
-            std::vector<double> tpp_vec(cfg.num_MC, 0.0);
+                std::vector<double> fdp_vec(cfg.num_MC, 0.0);
+                std::vector<double> tpp_vec(cfg.num_MC, 0.0);
 
-            #pragma omp parallel for schedule(dynamic)
-            for (int mc = 0; mc < iMC; ++mc) {
-                const unsigned trial_seed = base_seed + static_cast<unsigned>(mc);
-                auto dat = dgp_fn(snr, rho, trial_seed);
-
-                Eigen::Map<Eigen::MatrixXd> X_map(dat.X.data(),
-                                                   dat.X.rows(), dat.X.cols());
-                Eigen::Map<Eigen::VectorXd> y_map(dat.y.data(), dat.y.rows());
-
-                // Derive solver_type from gvs_ctrl (EN→TENET/TENET_AUG, IEN→TIENET_AUG).
-                // Per-trial cv_seed ensures unique fold assignments.
-                // TRexGVSControlParameter nests its own trex_ctrl member.
-                TRexGVSControlParameter trex_gvs_ctrl = gvs_ctrl;
-                trex_gvs_ctrl.trex_ctrl = trex_ctrl;
-                trex_gvs_ctrl.cv_seed = trial_seed;
-                if (trex_gvs_ctrl.gvs_type == GVSType::EN)
-                    trex_gvs_ctrl.trex_ctrl.solver_type =
-                        (trex_gvs_ctrl.en_solver == ENSolverType::TENET_AUG)
-                            ? SolverTypeForTRex::TENET_AUG
-                            : SolverTypeForTRex::TENET;
-                else
-                    trex_gvs_ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TIENET_AUG;
-
-                TRexGVSSelector selector(X_map, y_map, cfg.tFDR, trex_gvs_ctrl,
-                                         static_cast<int>(trial_seed),
-                                         /*verbose=*/false);
-                selector.select();
-
-                const auto& sel_idx = selector.getSelectedIndices();
-                fdp_vec[static_cast<std::size_t>(mc)] =
-                    rates::compute_fdp(sel_idx, dat.true_support);
-                tpp_vec[static_cast<std::size_t>(mc)] =
-                    rates::compute_tpp(sel_idx, dat.true_support);
-            }
-
-            const double dMC = static_cast<double>(cfg.num_MC);
-            double mean_fdp = 0.0, mean_tpp = 0.0;
-            for (int mc = 0; mc < iMC; ++mc) {
-                mean_fdp += fdp_vec[static_cast<std::size_t>(mc)];
-                mean_tpp += tpp_vec[static_cast<std::size_t>(mc)];
-            }
-            mean_fdp /= dMC;
-            mean_tpp /= dMC;
-
-            double sd_fdp = 0.0, sd_tpp = 0.0;
-            if (cfg.num_MC > 1) {
-                double sq_fdp = 0.0, sq_tpp = 0.0;
+                #pragma omp parallel for schedule(dynamic)
                 for (int mc = 0; mc < iMC; ++mc) {
-                    const std::size_t idx = static_cast<std::size_t>(mc);
-                    sq_fdp += (fdp_vec[idx] - mean_fdp) * (fdp_vec[idx] - mean_fdp);
-                    sq_tpp += (tpp_vec[idx] - mean_tpp) * (tpp_vec[idx] - mean_tpp);
+                    const unsigned trial_seed = base_seed + static_cast<unsigned>(mc);
+                    auto dat = dgp_fn(snr, rho, trial_seed);
+
+                    Eigen::Map<Eigen::MatrixXd> X_map(dat.X.data(),
+                                                       dat.X.rows(), dat.X.cols());
+                    Eigen::Map<Eigen::VectorXd> y_map(dat.y.data(), dat.y.rows());
+
+                    // Derive solver_type from gvs_ctrl (EN→TENET/TENET_AUG, IEN→TIENET_AUG).
+                    // Per-trial cv_seed ensures unique fold assignments.
+                    // TRexGVSControlParameter nests its own trex_ctrl member.
+                    TRexGVSControlParameter trex_gvs_ctrl = gvs_ctrl;
+                    trex_gvs_ctrl.trex_ctrl = trex_ctrl;
+                    trex_gvs_ctrl.cv_seed = trial_seed;
+                    if (trex_gvs_ctrl.gvs_type == GVSType::EN)
+                        trex_gvs_ctrl.trex_ctrl.solver_type =
+                            (trex_gvs_ctrl.en_solver == ENSolverType::TENET_AUG)
+                                ? SolverTypeForTRex::TENET_AUG
+                                : SolverTypeForTRex::TENET;
+                    else
+                        trex_gvs_ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TIENET_AUG;
+
+                    TRexGVSSelector selector(X_map, y_map, cfg.tFDR, trex_gvs_ctrl,
+                                             static_cast<int>(trial_seed),
+                                             /*verbose=*/false);
+                    selector.select();
+
+                    const auto& sel_idx = selector.getSelectedIndices();
+                    fdp_vec[static_cast<std::size_t>(mc)] =
+                        rates::compute_fdp(sel_idx, dat.true_support);
+                    tpp_vec[static_cast<std::size_t>(mc)] =
+                        rates::compute_tpp(sel_idx, dat.true_support);
                 }
-                sd_fdp = std::sqrt(sq_fdp / (dMC - 1.0));
-                sd_tpp = std::sqrt(sq_tpp / (dMC - 1.0));
-            }
 
-            results[i_snr][i_rho] = {mean_fdp, mean_tpp, sd_fdp, sd_tpp};
+                const double dMC = static_cast<double>(cfg.num_MC);
+                double mean_fdp = 0.0, mean_tpp = 0.0;
+                for (int mc = 0; mc < iMC; ++mc) {
+                    mean_fdp += fdp_vec[static_cast<std::size_t>(mc)];
+                    mean_tpp += tpp_vec[static_cast<std::size_t>(mc)];
+                }
+                mean_fdp /= dMC;
+                mean_tpp /= dMC;
 
-            std::cout << "  " << lbl.str()
-                      << " — done. TPP=" << std::fixed << std::setprecision(3) << mean_tpp
-                      << "  FDP=" << mean_fdp << "\n\n" << std::flush;
+                double sd_fdp = 0.0, sd_tpp = 0.0;
+                if (cfg.num_MC > 1) {
+                    double sq_fdp = 0.0, sq_tpp = 0.0;
+                    for (int mc = 0; mc < iMC; ++mc) {
+                        const std::size_t idx = static_cast<std::size_t>(mc);
+                        sq_fdp += (fdp_vec[idx] - mean_fdp) * (fdp_vec[idx] - mean_fdp);
+                        sq_tpp += (tpp_vec[idx] - mean_tpp) * (tpp_vec[idx] - mean_tpp);
+                    }
+                    sd_fdp = std::sqrt(sq_fdp / (dMC - 1.0));
+                    sd_tpp = std::sqrt(sq_tpp / (dMC - 1.0));
+                }
+
+                std::cout << "  " << lbl.str()
+                          << " — done. TPP=" << std::fixed << std::setprecision(3) << mean_tpp
+                          << "  FDP=" << mean_fdp << "\n\n" << std::flush;
+                return cell_detail::to_cell({mean_fdp, mean_tpp, sd_fdp, sd_tpp});
+            };
+            results[i_snr][i_rho] = cell_detail::from_cell(TREX_CELL_CACHED(
+                cell_detail::key("gvs2d", lbl.str(), cfg.num_MC, base_seed, cfg.tFDR, gvs_ctrl),
+                compute_cell));
         }
     }
 
@@ -1685,18 +1741,79 @@ inline void mean_sd(const std::vector<double>& v, double& mean, double& sd)
 // MC loop
 // ==============================================================================
 
-/**
- * @brief Run num_MC parallel trials at one (scenario, snr, rho) point.
- *
- * @param dgp_fn     DGP factory — captures scenario, n, p, G, block_size,
- *                   n_active_blocks, rho, snr, b via closure.
- *                   Signature: (seed) → GVSDGPResult.
- * @param cfg        Benchmark configuration.
- * @param trex_ctrl  Base T-Rex control parameters.
- * @param label      Progress label for console output.
- * @return BlockGridResult aggregating all four methods.
- */
-inline BlockGridResult run_block_mc(
+namespace cell_detail {
+
+/** @brief Cell of one block-benchmark grid point: M1-M4, 22 numbers each. */
+inline trex_cell_cache::Cell to_cell(const BlockGridResult& r) {
+    trex_cell_cache::Cell c;
+    const BlockMethodAggregate* ms[4] = {&r.M1, &r.M2, &r.M3, &r.M4};
+    for (int m = 0; m < 4; ++m) {
+        const BlockMethodAggregate& a = *ms[m];
+        const std::string p = "M" + std::to_string(m + 1) + ".";
+        c.emplace_back(p + "mean_coord_fdp", a.mean_coord_fdp);
+        c.emplace_back(p + "sd_coord_fdp", a.sd_coord_fdp);
+        c.emplace_back(p + "mcse_coord_fdp", a.mcse_coord_fdp);
+        c.emplace_back(p + "mean_coord_tpr", a.mean_coord_tpr);
+        c.emplace_back(p + "sd_coord_tpr", a.sd_coord_tpr);
+        c.emplace_back(p + "mcse_coord_tpr", a.mcse_coord_tpr);
+        c.emplace_back(p + "mean_exact_sup", a.mean_exact_sup);
+        c.emplace_back(p + "sd_exact_sup", a.sd_exact_sup);
+        c.emplace_back(p + "mean_block_hit", a.mean_block_hit);
+        c.emplace_back(p + "sd_block_hit", a.sd_block_hit);
+        c.emplace_back(p + "mean_block_fdp", a.mean_block_fdp);
+        c.emplace_back(p + "sd_block_fdp", a.sd_block_fdp);
+        c.emplace_back(p + "mean_full_block", a.mean_full_block);
+        c.emplace_back(p + "sd_full_block", a.sd_full_block);
+        c.emplace_back(p + "mean_null_act", a.mean_null_act);
+        c.emplace_back(p + "sd_null_act", a.sd_null_act);
+        c.emplace_back(p + "mean_purity", a.mean_purity);
+        c.emplace_back(p + "sd_purity", a.sd_purity);
+        c.emplace_back(p + "mean_lambda2", a.mean_lambda2);
+        c.emplace_back(p + "mean_T_stop", a.mean_T_stop);
+        c.emplace_back(p + "mean_M_found", a.mean_M_found);
+        c.emplace_back(p + "mean_elapsed", a.mean_elapsed);
+    }
+    return c;
+}
+
+inline BlockGridResult block_from_cell(const trex_cell_cache::Cell& c) {
+    using trex_cell_cache::get;
+    BlockGridResult r;
+    BlockMethodAggregate* ms[4] = {&r.M1, &r.M2, &r.M3, &r.M4};
+    for (int m = 0; m < 4; ++m) {
+        BlockMethodAggregate& a = *ms[m];
+        const std::string p = "M" + std::to_string(m + 1) + ".";
+        a.mean_coord_fdp = get(c, p + "mean_coord_fdp");
+        a.sd_coord_fdp = get(c, p + "sd_coord_fdp");
+        a.mcse_coord_fdp = get(c, p + "mcse_coord_fdp");
+        a.mean_coord_tpr = get(c, p + "mean_coord_tpr");
+        a.sd_coord_tpr = get(c, p + "sd_coord_tpr");
+        a.mcse_coord_tpr = get(c, p + "mcse_coord_tpr");
+        a.mean_exact_sup = get(c, p + "mean_exact_sup");
+        a.sd_exact_sup = get(c, p + "sd_exact_sup");
+        a.mean_block_hit = get(c, p + "mean_block_hit");
+        a.sd_block_hit = get(c, p + "sd_block_hit");
+        a.mean_block_fdp = get(c, p + "mean_block_fdp");
+        a.sd_block_fdp = get(c, p + "sd_block_fdp");
+        a.mean_full_block = get(c, p + "mean_full_block");
+        a.sd_full_block = get(c, p + "sd_full_block");
+        a.mean_null_act = get(c, p + "mean_null_act");
+        a.sd_null_act = get(c, p + "sd_null_act");
+        a.mean_purity = get(c, p + "mean_purity");
+        a.sd_purity = get(c, p + "sd_purity");
+        a.mean_lambda2 = get(c, p + "mean_lambda2");
+        a.mean_T_stop = get(c, p + "mean_T_stop");
+        a.mean_M_found = get(c, p + "mean_M_found");
+        a.mean_elapsed = get(c, p + "mean_elapsed");
+    }
+    return r;
+}
+
+}  // namespace cell_detail
+
+
+/** @brief Uncached body of run_block_mc(). */
+inline BlockGridResult run_block_mc_impl(
     const std::function<GVSDGPResult(unsigned)>& dgp_fn,
     const BlockBenchConfig&                      cfg,
     const TRexControlParameter&                  trex_ctrl,
@@ -1832,6 +1949,32 @@ inline BlockGridResult run_block_mc(
               << "\n\n" << std::flush;
 
     return out;
+}
+
+/**
+ * @brief Run num_MC parallel trials at one (scenario, snr, rho) point
+ *        (resumable grid cell).
+ *
+ * @param dgp_fn     DGP factory — captures scenario, n, p, G, block_size,
+ *                   n_active_blocks, rho, snr, b via closure.
+ *                   Signature: (seed) → GVSDGPResult.
+ * @param cfg        Benchmark configuration.
+ * @param trex_ctrl  Base T-Rex control parameters.
+ * @param label      Progress label for console output.
+ * @return BlockGridResult aggregating all four methods.
+ */
+inline BlockGridResult run_block_mc(
+    const std::function<GVSDGPResult(unsigned)>& dgp_fn,
+    const BlockBenchConfig&                      cfg,
+    const TRexControlParameter&                  trex_ctrl,
+    const std::string&                           label)
+{
+    std::ostringstream key;
+    key << "block|" << label << "|seed=" << cfg.base_seed << "|mc=" << cfg.num_MC
+        << "|tfdr=" << cfg.tFDR << "|corr=" << cfg.corr_max;
+    return cell_detail::block_from_cell(TREX_CELL_CACHED(key.str(), [&] {
+        return cell_detail::to_cell(run_block_mc_impl(dgp_fn, cfg, trex_ctrl, label));
+    }));
 }
 
 

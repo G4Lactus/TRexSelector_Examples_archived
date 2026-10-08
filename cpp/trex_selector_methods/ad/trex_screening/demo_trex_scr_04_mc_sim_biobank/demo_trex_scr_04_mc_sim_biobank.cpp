@@ -70,55 +70,64 @@ void demo_Biobank_MonteCarlo(std::size_t num_MC)
         usage_map[nm]   = Eigen::VectorXd::Zero(ns);
     }
 
-    std::mt19937 rng(24);
-    std::uniform_int_distribution<std::size_t> idx_dist(0, p - 1);
-
     for (std::size_t snr_idx = 0; snr_idx < snr_values.size(); ++snr_idx) {
         const double       snr = snr_values[snr_idx];
         const Eigen::Index si  = static_cast<Eigen::Index>(snr_idx);
 
-        for (std::size_t mc = 0; mc < num_MC; ++mc) {
-            // Random sparse support
-            std::unordered_set<std::size_t> sup_set;
-            while (sup_set.size() < support_size) { sup_set.insert(idx_dist(rng)); }
-            const std::vector<std::size_t> true_support(sup_set.begin(), sup_set.end());
-            const std::vector<double>      true_coefs(support_size, 1.0);
+        // One SNR cell, restored from the cache after a restart. Its supports
+        // come from an RNG seeded per cell, so the cells are independent.
+        const auto compute_cell = [&]() -> trex_cell_cache::Cell {
+            std::mt19937 rng(24u + 1000u * static_cast<unsigned>(snr_idx));
+            std::uniform_int_distribution<std::size_t> idx_dist(0, p - 1);
+            BiobankCellSums acc;
+            for (std::size_t mc = 0; mc < num_MC; ++mc) {
+                // Random sparse support
+                std::unordered_set<std::size_t> sup_set;
+                while (sup_set.size() < support_size) { sup_set.insert(idx_dist(rng)); }
+                const std::vector<std::size_t> true_support(sup_set.begin(), sup_set.end());
+                const std::vector<double>      true_coefs(support_size, 1.0);
 
-            datagen::SyntheticData data(
-                static_cast<Eigen::Index>(n), static_cast<Eigen::Index>(p),
-                true_support, true_coefs, snr,
-                /*seed=*/static_cast<int>(1000 * snr_idx + mc));
+                datagen::SyntheticData data(
+                    static_cast<Eigen::Index>(n), static_cast<Eigen::Index>(p),
+                    true_support, true_coefs, snr,
+                    /*seed=*/static_cast<int>(1000 * snr_idx + mc));
 
-            Eigen::Map<Eigen::MatrixXd> X_map(data.getX().data(),
-                                              data.rows(),
-                                              data.cols());
-            Eigen::Map<Eigen::VectorXd> y_map(data.getY().data(), data.rows());
+                Eigen::Map<Eigen::MatrixXd> X_map(data.getX().data(),
+                                                  data.rows(),
+                                                  data.cols());
+                Eigen::Map<Eigen::VectorXd> y_map(data.getY().data(), data.rows());
 
-            auto ctrl = makeBiobankControl(/*use_mmap=*/false);
-            tbs::BiobankScreenTRex biosctrex(X_map,
-                                             y_map,
-                                             ctrl,
-                                             /*seed=*/-1,
-                                             /*verbose=*/false);
-            const auto result = biosctrex.screenPhenotype();
+                auto ctrl = makeBiobankControl(/*use_mmap=*/false);
+                tbs::BiobankScreenTRex biosctrex(X_map,
+                                                 y_map,
+                                                 ctrl,
+                                                 /*seed=*/-1,
+                                                 /*verbose=*/false);
+                const auto result = biosctrex.screenPhenotype();
 
-            // Accumulate FDP/TPP only for the method that was actually used
-            fdp_map[result.method_used](si)  += rates::compute_fdp(
-                result.selected_indices, true_support);
-            tpp_map[result.method_used](si)  += rates::compute_tpp(
-                result.selected_indices, true_support);
-            usage_map[result.method_used](si) += 1.0;
+                // Accumulate FDP/TPP only for the method that was actually used
+                acc.fdp[result.method_used]  += rates::compute_fdp(
+                    result.selected_indices, true_support);
+                acc.tpp[result.method_used]  += rates::compute_tpp(
+                    result.selected_indices, true_support);
+                acc.usage[result.method_used] += 1.0;
 
-            // Estimated FDR values accumulated unconditionally for all methods
-            est_fdr_map["Screen-TRex (ordinary)"](si)     +=
-                                                        result.estimated_FDR_screen_ordinary;
-            est_fdr_map["Screen-TRex (bootstrap-CI)"](si) +=
-                                                        result.estimated_FDR_screen_bootstrap;
-            est_fdr_map["T-Rex (fallback)"](si)           += ctrl.target_FDR_trex;
+                // Estimated FDR values accumulated unconditionally for all methods
+                acc.est_fdr["Screen-TRex (ordinary)"]     +=
+                                                            result.estimated_FDR_screen_ordinary;
+                acc.est_fdr["Screen-TRex (bootstrap-CI)"] +=
+                                                            result.estimated_FDR_screen_bootstrap;
+                acc.est_fdr["T-Rex (fallback)"]           += ctrl.target_FDR_trex;
 
-            print_mc_progress(snr, mc, num_MC);
-        }
-        print_mc_done(snr, num_MC);
+                print_mc_progress(snr, mc, num_MC);
+            }
+            print_mc_done(snr, num_MC);
+            return acc.to_cell(method_names);
+        };
+        std::ostringstream key;
+        key << "biobank1|snr=" << snr << "|mc=" << num_MC;
+        BiobankCellSums::add_to(TREX_CELL_CACHED(key.str(), compute_cell), method_names, si,
+                                fdp_map, tpp_map, est_fdr_map, usage_map);
     }
 
     // ── Normalise ──────────────────────────────────────────────────────────
@@ -185,77 +194,87 @@ void demo_Biobank_MultiplePhenotypesMC(std::size_t num_MC)
         usage_map[nm]   = Eigen::VectorXd::Zero(ns);
     }
 
-    std::mt19937 rng(77);
-    std::uniform_int_distribution<std::size_t> idx_dist(0, p - 1);
     const std::vector<double> coefs(support_size, 1.0);
 
     for (std::size_t snr_idx = 0; snr_idx < snr_values.size(); ++snr_idx) {
         const double       snr = snr_values[snr_idx];
         const Eigen::Index si  = static_cast<Eigen::Index>(snr_idx);
 
-        for (std::size_t mc = 0; mc < num_MC; ++mc) {
-            // All phenotypes in this run share the same X via a fixed X_seed
-            const int x_seed = static_cast<int>(5000 * snr_idx + mc + 1);
+        // One SNR cell, restored from the cache after a restart. Its supports
+        // come from an RNG seeded per cell, so the cells are independent.
+        const auto compute_cell = [&]() -> trex_cell_cache::Cell {
+            std::mt19937 rng(77u + 1000u * static_cast<unsigned>(snr_idx));
+            std::uniform_int_distribution<std::size_t> idx_dist(0, p - 1);
+            BiobankCellSums acc;
+            for (std::size_t mc = 0; mc < num_MC; ++mc) {
+                // All phenotypes in this run share the same X via a fixed X_seed
+                const int x_seed = static_cast<int>(5000 * snr_idx + mc + 1);
 
-            // Draw random sparse supports for all q phenotypes
-            std::vector<std::vector<std::size_t>> true_supports(q);
-            for (std::size_t k = 0; k < q; ++k) {
-                std::unordered_set<std::size_t> sup_set;
-                while (sup_set.size() < support_size) { sup_set.insert(idx_dist(rng)); }
-                true_supports[k] = std::vector<std::size_t>(sup_set.begin(), sup_set.end());
+                // Draw random sparse supports for all q phenotypes
+                std::vector<std::vector<std::size_t>> true_supports(q);
+                for (std::size_t k = 0; k < q; ++k) {
+                    std::unordered_set<std::size_t> sup_set;
+                    while (sup_set.size() < support_size) { sup_set.insert(idx_dist(rng)); }
+                    true_supports[k] = std::vector<std::size_t>(sup_set.begin(), sup_set.end());
+                }
+
+                // Generate all SyntheticData with the same X_seed → shared design matrix
+                std::vector<datagen::SyntheticData> pheno_data;
+                pheno_data.reserve(q);
+                for (std::size_t k = 0; k < q; ++k) {
+                    pheno_data.emplace_back(
+                        static_cast<Eigen::Index>(n),
+                        static_cast<Eigen::Index>(p),
+                        /*num_dummies=*/0,
+                        true_supports[k], coefs, snr,
+                        /*seed=*/static_cast<int>(q * (num_MC * snr_idx + mc) + k + 1),
+                        /*X_seed=*/x_seed,
+                        /*dummy_seed=*/-1);
+                }
+
+                // X is identical for all phenotypes — taken from phenotype 0
+                Eigen::Map<Eigen::MatrixXd> X_map(
+                    pheno_data[0].getX().data(),
+                    pheno_data[0].rows(),
+                    pheno_data[0].cols());
+
+                // Stack Y columns
+                Eigen::MatrixXd Y(static_cast<Eigen::Index>(n),
+                                  static_cast<Eigen::Index>(q));
+                for (std::size_t k = 0; k < q; ++k)
+                    Y.col(static_cast<Eigen::Index>(k)) = pheno_data[k].getY();
+                Eigen::Map<Eigen::MatrixXd> Y_map(Y.data(), Y.rows(), Y.cols());
+
+                auto ctrl = makeBiobankControl(/*use_mmap=*/false);
+                tbs::BiobankScreenTRex biosctrex(X_map,
+                                                 Y_map,
+                                                 ctrl,
+                                                 /*seed=*/-1,
+                                                 /*verbose=*/false);
+                const auto results = biosctrex.screenPhenotypes();
+
+                // Accumulate per phenotype
+                for (std::size_t k = 0; k < q; ++k) {
+                    const auto& r = results[k];
+                    acc.fdp[r.method_used]  += rates::compute_fdp(r.selected_indices,
+                                                                       true_supports[k]);
+                    acc.tpp[r.method_used]  += rates::compute_tpp(r.selected_indices,
+                                                                       true_supports[k]);
+                    acc.usage[r.method_used] += 1.0;
+                    acc.est_fdr["Screen-TRex (ordinary)"]     += r.estimated_FDR_screen_ordinary;
+                    acc.est_fdr["Screen-TRex (bootstrap-CI)"] += r.estimated_FDR_screen_bootstrap;
+                    acc.est_fdr["T-Rex (fallback)"]           += ctrl.target_FDR_trex;
+                }
+
+                print_mc_progress(snr, mc, num_MC);
             }
-
-            // Generate all SyntheticData with the same X_seed → shared design matrix
-            std::vector<datagen::SyntheticData> pheno_data;
-            pheno_data.reserve(q);
-            for (std::size_t k = 0; k < q; ++k) {
-                pheno_data.emplace_back(
-                    static_cast<Eigen::Index>(n),
-                    static_cast<Eigen::Index>(p),
-                    /*num_dummies=*/0,
-                    true_supports[k], coefs, snr,
-                    /*seed=*/static_cast<int>(q * (num_MC * snr_idx + mc) + k + 1),
-                    /*X_seed=*/x_seed,
-                    /*dummy_seed=*/-1);
-            }
-
-            // X is identical for all phenotypes — taken from phenotype 0
-            Eigen::Map<Eigen::MatrixXd> X_map(
-                pheno_data[0].getX().data(),
-                pheno_data[0].rows(),
-                pheno_data[0].cols());
-
-            // Stack Y columns
-            Eigen::MatrixXd Y(static_cast<Eigen::Index>(n),
-                              static_cast<Eigen::Index>(q));
-            for (std::size_t k = 0; k < q; ++k)
-                Y.col(static_cast<Eigen::Index>(k)) = pheno_data[k].getY();
-            Eigen::Map<Eigen::MatrixXd> Y_map(Y.data(), Y.rows(), Y.cols());
-
-            auto ctrl = makeBiobankControl(/*use_mmap=*/false);
-            tbs::BiobankScreenTRex biosctrex(X_map,
-                                             Y_map,
-                                             ctrl,
-                                             /*seed=*/-1,
-                                             /*verbose=*/false);
-            const auto results = biosctrex.screenPhenotypes();
-
-            // Accumulate per phenotype
-            for (std::size_t k = 0; k < q; ++k) {
-                const auto& r = results[k];
-                fdp_map[r.method_used](si)  += rates::compute_fdp(r.selected_indices,
-                                                                   true_supports[k]);
-                tpp_map[r.method_used](si)  += rates::compute_tpp(r.selected_indices,
-                                                                   true_supports[k]);
-                usage_map[r.method_used](si) += 1.0;
-                est_fdr_map["Screen-TRex (ordinary)"](si)     += r.estimated_FDR_screen_ordinary;
-                est_fdr_map["Screen-TRex (bootstrap-CI)"](si) += r.estimated_FDR_screen_bootstrap;
-                est_fdr_map["T-Rex (fallback)"](si)           += ctrl.target_FDR_trex;
-            }
-
-            print_mc_progress(snr, mc, num_MC);
-        }
-        print_mc_done(snr, num_MC);
+            print_mc_done(snr, num_MC);
+            return acc.to_cell(method_names);
+        };
+        std::ostringstream key;
+        key << "biobank2|snr=" << snr << "|q=" << q << "|mc=" << num_MC;
+        BiobankCellSums::add_to(TREX_CELL_CACHED(key.str(), compute_cell), method_names, si,
+                                fdp_map, tpp_map, est_fdr_map, usage_map);
     }
 
     // ── Normalise over (q × num_MC) total phenotype screenings ────────────

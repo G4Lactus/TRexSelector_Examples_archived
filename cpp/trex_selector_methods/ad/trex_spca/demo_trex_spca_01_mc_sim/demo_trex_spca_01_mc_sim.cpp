@@ -277,56 +277,69 @@ void demo_trex_spca_union_fdr_sweep(const SimConfig&           cfg,
         const unsigned offset = static_cast<unsigned>(
             cfg.base_seed + static_cast<int>(std::round(snr)));
 
-        Eigen::MatrixXd fdr_trial = Eigen::MatrixXd::Zero(iMC, M);
-        Eigen::MatrixXd k_trial   = Eigen::MatrixXd::Zero(iMC, M);
+        // One SNR cell (per-PC union-FDR and support size), restored from the
+        // cache after a restart.
+        const auto compute_cell = [&]() -> trex_cell_cache::Cell {
+            Eigen::MatrixXd fdr_trial = Eigen::MatrixXd::Zero(iMC, M);
+            Eigen::MatrixXd k_trial   = Eigen::MatrixXd::Zero(iMC, M);
 
-        const auto make_data = [cfg, snr](unsigned seed) -> FactorModelData {
-            return DataGenerator::generate_sparse_factor_model(
-                cfg.n, cfg.p, cfg.p1, cfg.M, snr,
-                cfg.overlap_pool_size, seed);
-        };
+            const auto make_data = [cfg, snr](unsigned seed) -> FactorModelData {
+                return DataGenerator::generate_sparse_factor_model(
+                    cfg.n, cfg.p, cfg.p1, cfg.M, snr,
+                    cfg.overlap_pool_size, seed);
+            };
 
-        #pragma omp parallel for schedule(dynamic)
-        for (int mc = 0; mc < iMC; ++mc) {
-            const unsigned seed = offset + static_cast<unsigned>(mc) * 1000u;
-            auto dat = make_data(seed);
-            center_columns(dat.X);
+            #pragma omp parallel for schedule(dynamic)
+            for (int mc = 0; mc < iMC; ++mc) {
+                const unsigned seed = offset + static_cast<unsigned>(mc) * 1000u;
+                auto dat = make_data(seed);
+                center_columns(dat.X);
 
-            // Union of the true factor supports.
-            std::vector<char> in_union(static_cast<std::size_t>(dat.X.cols()), 0);
-            for (Eigen::Index j = 0; j < dat.V.rows(); ++j)
-                for (Eigen::Index m = 0; m < dat.V.cols(); ++m)
-                    if (dat.V(j, m) != 0.0) {
-                        in_union[static_cast<std::size_t>(j)] = 1;
-                        break;
-                    }
+                // Union of the true factor supports.
+                std::vector<char> in_union(static_cast<std::size_t>(dat.X.cols()), 0);
+                for (Eigen::Index j = 0; j < dat.V.rows(); ++j)
+                    for (Eigen::Index m = 0; m < dat.V.cols(); ++m)
+                        if (dat.V(j, m) != 0.0) {
+                            in_union[static_cast<std::size_t>(j)] = 1;
+                            break;
+                        }
 
-            TRexSPCAControlParameter ctrl;
-            ctrl.mode                    = SPCAMode::ActiveSet;
-            ctrl.en_solver               = ENSolverType::TENET;
-            ctrl.gvs_ctrl.trex_ctrl.scaling_mode = ScalingMode::L2;
-            ctrl.gvs_ctrl.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
-            ctrl.gvs_ctrl.lambda_2       = cfg.lambda_2;
+                TRexSPCAControlParameter ctrl;
+                ctrl.mode                    = SPCAMode::ActiveSet;
+                ctrl.en_solver               = ENSolverType::TENET;
+                ctrl.gvs_ctrl.trex_ctrl.scaling_mode = ScalingMode::L2;
+                ctrl.gvs_ctrl.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
+                ctrl.gvs_ctrl.lambda_2       = cfg.lambda_2;
 
-            Eigen::Map<Eigen::MatrixXd> X_map(dat.X.data(),
-                                              dat.X.rows(), dat.X.cols());
-            TRexSPCA       spca(X_map, M, cfg.tFDR, ctrl, -1);
-            TRexSPCAResult res = spca.select();
+                Eigen::Map<Eigen::MatrixXd> X_map(dat.X.data(),
+                                                  dat.X.rows(), dat.X.cols());
+                TRexSPCA       spca(X_map, M, cfg.tFDR, ctrl, -1);
+                TRexSPCAResult res = spca.select();
 
-            for (Eigen::Index m = 0; m < M; ++m) {
-                const auto& A = res.active_sets[static_cast<std::size_t>(m)];
-                int fd = 0;
-                for (const auto idx : A)
-                    if (!in_union[static_cast<std::size_t>(idx)]) ++fd;
-                fdr_trial(mc, m) = A.empty() ? 0.0
-                    : static_cast<double>(fd) / static_cast<double>(A.size());
-                k_trial(mc, m) = static_cast<double>(A.size());
+                for (Eigen::Index m = 0; m < M; ++m) {
+                    const auto& A = res.active_sets[static_cast<std::size_t>(m)];
+                    int fd = 0;
+                    for (const auto idx : A)
+                        if (!in_union[static_cast<std::size_t>(idx)]) ++fd;
+                    fdr_trial(mc, m) = A.empty() ? 0.0
+                        : static_cast<double>(fd) / static_cast<double>(A.size());
+                    k_trial(mc, m) = static_cast<double>(A.size());
+                }
             }
-        }
 
+            trex_cell_cache::Cell c;
+            for (Eigen::Index m = 0; m < M; ++m) {
+                c.emplace_back("fdr" + std::to_string(m), fdr_trial.col(m).mean());
+                c.emplace_back("k" + std::to_string(m), k_trial.col(m).mean());
+            }
+            return c;
+        };
+        std::ostringstream key;
+        key << "union_fdr|snr=" << snr << "|seed=" << offset << "|mc=" << iMC << "|tfdr=" << cfg.tFDR;
+        const auto cell = TREX_CELL_CACHED(key.str(), compute_cell);
         for (Eigen::Index m = 0; m < M; ++m) {
-            fdr_mean(m, si) = fdr_trial.col(m).mean();
-            k_mean(m, si)   = k_trial.col(m).mean();
+            fdr_mean(m, si) = trex_cell_cache::get(cell, "fdr" + std::to_string(m));
+            k_mean(m, si)   = trex_cell_cache::get(cell, "k" + std::to_string(m));
         }
         std::cout << "  SNR=" << std::setw(5) << snr << " dB — union-FDR:";
         for (Eigen::Index m = 0; m < M; ++m)

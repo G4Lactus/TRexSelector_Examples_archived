@@ -299,84 +299,95 @@ static void run_fdr_tpr_heatmap(const SimConfig& cfg) {
         for (std::size_t ti = 0; ti < n_tfdr; ++ti) {
             const double tfdr = tfdr_grid[ti];
 
-            // Per-(mc) sums, accumulated in vectors for OMP safety.
-            std::vector<double> fdr_p(cfg.num_MC), tpr_p(cfg.num_MC);
-            std::vector<double> fdr_o(cfg.num_MC), tpr_o(cfg.num_MC);
+            // One heatmap cell, restored from the cache after a restart.
+            const auto compute_cell = [&]() -> trex_cell_cache::Cell {
+                // Per-(mc) sums, accumulated in vectors for OMP safety.
+                std::vector<double> fdr_p(cfg.num_MC), tpr_p(cfg.num_MC);
+                std::vector<double> fdr_o(cfg.num_MC), tpr_o(cfg.num_MC);
 
-            const auto make_data = [cfg, snr](unsigned seed) -> FactorModelData {
-                return DataGenerator::generate_sparse_factor_model(
-                    cfg.n, cfg.p, cfg.p1, cfg.M, snr,
-                    cfg.overlap_pool_size, seed);
-            };
-
-            #pragma omp parallel for schedule(dynamic)
-            for (int mc = 0; mc < iMC; ++mc) {
-                // Data seed depends on (mc, snr) only — the SAME datasets are
-                // reused across the tFDR axis, so the columns of each heatmap
-                // row are paired comparisons.
-                const unsigned seed = static_cast<unsigned>(
-                    cfg.base_seed + static_cast<int>(std::round(snr)))
-                    + static_cast<unsigned>(mc) * 1000u;
-                auto dat = make_data(seed);
-                center_columns(dat.X);
-
-                // True support of factor 1 (the scoring truth).
-                std::vector<Eigen::Index> true_supp;
-                for (Eigen::Index j = 0; j < dat.X.cols(); ++j)
-                    if (dat.V(j, 0) != 0.0) true_supp.push_back(j);
-
-                // Responses: plug-in ordinary PC1 and true factor scores.
-                pca_ns::PCA       pca(dat.X, 1, /*center=*/false, /*normalize=*/false);
-                pca_ns::PCAResult ord = pca.fit();
-                Eigen::VectorXd y_plugin = ord.Z.col(0);
-                Eigen::VectorXd y_oracle = dat.Z.col(0);
-                y_oracle.array() -= y_oracle.mean();
-
-                // Same per-PC selector configuration as TRexSPCA internally.
-                TRexGVSControlParameter gvs_ctrl;
-                gvs_ctrl.gvs_type       = GVSType::EN;
-                gvs_ctrl.en_solver      = ENSolverType::TENET;
-                gvs_ctrl.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
-                gvs_ctrl.lambda_2       = -1.0;   // auto via CV
-                gvs_ctrl.trex_ctrl.scaling_mode = ScalingMode::L2;
-                gvs_ctrl.trex_ctrl.solver_type  = SolverTypeForTRex::TENET;
-
-                Eigen::Map<Eigen::MatrixXd> X_map(dat.X.data(),
-                                                  dat.X.rows(), dat.X.cols());
-
-                const auto score = [&](Eigen::VectorXd& y,
-                                       double& fdr_out, double& tpr_out) {
-                    Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
-                    // Selector seed -1: hardware-entropy dummies per trial
-                    // (required for valid MC FDR estimates).
-                    TRexGVSSelector sel(X_map, y_map, tfdr, gvs_ctrl,
-                                        /*seed=*/-1, /*verbose=*/false);
-                    sel.select();
-                    const auto& sel_idx = sel.getSelectedIndices();
-
-                    int tp = 0;
-                    for (const auto idx : sel_idx)
-                        if (std::find(true_supp.begin(), true_supp.end(), idx)
-                            != true_supp.end()) ++tp;
-                    const auto k = static_cast<int>(sel_idx.size());
-                    fdr_out = (k == 0) ? 0.0
-                        : static_cast<double>(k - tp) / static_cast<double>(k);
-                    tpr_out = true_supp.empty() ? 0.0
-                        : static_cast<double>(tp)
-                          / static_cast<double>(true_supp.size());
+                const auto make_data = [cfg, snr](unsigned seed) -> FactorModelData {
+                    return DataGenerator::generate_sparse_factor_model(
+                        cfg.n, cfg.p, cfg.p1, cfg.M, snr,
+                        cfg.overlap_pool_size, seed);
                 };
 
-                score(y_plugin, fdr_p[mc], tpr_p[mc]);
-                score(y_oracle, fdr_o[mc], tpr_o[mc]);
-            }
+                #pragma omp parallel for schedule(dynamic)
+                for (int mc = 0; mc < iMC; ++mc) {
+                    // Data seed depends on (mc, snr) only — the SAME datasets are
+                    // reused across the tFDR axis, so the columns of each heatmap
+                    // row are paired comparisons.
+                    const unsigned seed = static_cast<unsigned>(
+                        cfg.base_seed + static_cast<int>(std::round(snr)))
+                        + static_cast<unsigned>(mc) * 1000u;
+                    auto dat = make_data(seed);
+                    center_columns(dat.X);
 
-            const double dMC = static_cast<double>(cfg.num_MC);
+                    // True support of factor 1 (the scoring truth).
+                    std::vector<Eigen::Index> true_supp;
+                    for (Eigen::Index j = 0; j < dat.X.cols(); ++j)
+                        if (dat.V(j, 0) != 0.0) true_supp.push_back(j);
+
+                    // Responses: plug-in ordinary PC1 and true factor scores.
+                    pca_ns::PCA       pca(dat.X, 1, /*center=*/false, /*normalize=*/false);
+                    pca_ns::PCAResult ord = pca.fit();
+                    Eigen::VectorXd y_plugin = ord.Z.col(0);
+                    Eigen::VectorXd y_oracle = dat.Z.col(0);
+                    y_oracle.array() -= y_oracle.mean();
+
+                    // Same per-PC selector configuration as TRexSPCA internally.
+                    TRexGVSControlParameter gvs_ctrl;
+                    gvs_ctrl.gvs_type       = GVSType::EN;
+                    gvs_ctrl.en_solver      = ENSolverType::TENET;
+                    gvs_ctrl.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
+                    gvs_ctrl.lambda_2       = -1.0;   // auto via CV
+                    gvs_ctrl.trex_ctrl.scaling_mode = ScalingMode::L2;
+                    gvs_ctrl.trex_ctrl.solver_type  = SolverTypeForTRex::TENET;
+
+                    Eigen::Map<Eigen::MatrixXd> X_map(dat.X.data(),
+                                                      dat.X.rows(), dat.X.cols());
+
+                    const auto score = [&](Eigen::VectorXd& y,
+                                           double& fdr_out, double& tpr_out) {
+                        Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
+                        // Selector seed -1: hardware-entropy dummies per trial
+                        // (required for valid MC FDR estimates).
+                        TRexGVSSelector sel(X_map, y_map, tfdr, gvs_ctrl,
+                                            /*seed=*/-1, /*verbose=*/false);
+                        sel.select();
+                        const auto& sel_idx = sel.getSelectedIndices();
+
+                        int tp = 0;
+                        for (const auto idx : sel_idx)
+                            if (std::find(true_supp.begin(), true_supp.end(), idx)
+                                != true_supp.end()) ++tp;
+                        const auto k = static_cast<int>(sel_idx.size());
+                        fdr_out = (k == 0) ? 0.0
+                            : static_cast<double>(k - tp) / static_cast<double>(k);
+                        tpr_out = true_supp.empty() ? 0.0
+                            : static_cast<double>(tp)
+                              / static_cast<double>(true_supp.size());
+                    };
+
+                    score(y_plugin, fdr_p[mc], tpr_p[mc]);
+                    score(y_oracle, fdr_o[mc], tpr_o[mc]);
+                }
+
+                const double dMC = static_cast<double>(cfg.num_MC);
+                return {{"fdr_plugin", std::accumulate(fdr_p.begin(), fdr_p.end(), 0.0) / dMC},
+                        {"tpr_plugin", std::accumulate(tpr_p.begin(), tpr_p.end(), 0.0) / dMC},
+                        {"fdr_oracle", std::accumulate(fdr_o.begin(), fdr_o.end(), 0.0) / dMC},
+                        {"tpr_oracle", std::accumulate(tpr_o.begin(), tpr_o.end(), 0.0) / dMC}};
+            };
+            std::ostringstream key;
+            key << "heatmap|snr=" << snr << "|tfdr=" << tfdr << "|seed=" << cfg.base_seed
+                << "|mc=" << cfg.num_MC;
+            const auto cell = TREX_CELL_CACHED(key.str(), compute_cell);
             const auto ei_s = static_cast<Eigen::Index>(si);
             const auto ei_t = static_cast<Eigen::Index>(ti);
-            res[0](ei_s, ei_t) = std::accumulate(fdr_p.begin(), fdr_p.end(), 0.0) / dMC;
-            res[1](ei_s, ei_t) = std::accumulate(tpr_p.begin(), tpr_p.end(), 0.0) / dMC;
-            res[2](ei_s, ei_t) = std::accumulate(fdr_o.begin(), fdr_o.end(), 0.0) / dMC;
-            res[3](ei_s, ei_t) = std::accumulate(tpr_o.begin(), tpr_o.end(), 0.0) / dMC;
+            res[0](ei_s, ei_t) = trex_cell_cache::get(cell, "fdr_plugin");
+            res[1](ei_s, ei_t) = trex_cell_cache::get(cell, "tpr_plugin");
+            res[2](ei_s, ei_t) = trex_cell_cache::get(cell, "fdr_oracle");
+            res[3](ei_s, ei_t) = trex_cell_cache::get(cell, "tpr_oracle");
 
             std::cout << "  SNR=" << std::setw(5) << snr
                       << "  tFDR=" << std::fixed << std::setprecision(2) << tfdr

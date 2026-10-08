@@ -157,7 +157,6 @@ trex_gvs/
   ├── trex_gvs_dgps.hpp
   ├── trex_gvs_simulation_utils.hpp
   ├── trex_gvs_plt_utils.py           # shared plotting module (heatmaps / bars / line plots)
-  ├── run_gvs_demos_overnight.sh      # sequential batch runner for demos 02–08
   │
   ├── demo_trex_gvs_01_mc_sim_hastie_en_blocks/
   │   ├── demo_trex_gvs_01_mc_sim_hastie_en_blocks.cpp   # the demo source
@@ -208,9 +207,9 @@ For example, to run Demo 01:
 ```
 
 Every demo writes a human-readable `.txt` summary and a tidy `.csv` table into its local
-`simulation_results/data/` folder. To run all of demos 02–08 back to back as an unattended job,
-use `./run_gvs_demos_overnight.sh` (rebuilds the targets, logs each demo, keeps the machine
-awake).
+`simulation_results/data/` folder. To run all eight back to back as an unattended job, use the family runner
+[../../run_all_overnight.sh](../../run_all_overnight.sh) with `trex_gvs` as its argument (`--build` rebuilds the
+targets first). It logs each demo, keeps the machine awake, and resumes a stopped batch at the demo it was in.
 
 ### Figures
 

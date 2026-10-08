@@ -53,6 +53,7 @@
 
 // DGP generators
 #include "dgp_generators.hpp"
+#include "../../cell_cache.hpp"   // resumable grid cells
 
 
 // ==============================================================================
@@ -415,21 +416,8 @@ struct GridPointResult {
 
 using DGPFactory = std::function<DGPData(unsigned seed)>;
 
-/**
- * @brief Run num_MC parallel trials, printing a start and done line.
- *
- * @param num_MC            Number of Monte Carlo trials.
- * @param progress_label    Label printed in the progress line.
- * @param make_data         Lambda (seed) -> DGPData for generating data.
- * @param tFDR              Target FDR for the selector.
- * @param trex_ctrl         TRexControlParameter for the selector.
- * @param da_ctrl           TRexDAControlParameter for the selector.
- * @param base_seed_offset  Base offset for RNG seeds (each trial uses base_seed_offset + mc).
- * @param verbose           If true, enable selector verbose output (default: false).
- *
- * @return GridPointResult with average FDR, TPR, L, T, and sd FDR, TPR across trials.
- */
-inline GridPointResult run_mc_trials(
+/** @brief Uncached body of run_mc_trials(). */
+inline GridPointResult run_mc_trials_impl(
     std::size_t num_MC,
     const std::string& progress_label,
     const DGPFactory& make_data,
@@ -519,22 +507,8 @@ inline GridPointResult run_mc_trials(
 // Base T-Rex MC inner loop (no DA correction)
 // ==============================================================================
 
-/**
- * @brief Run num_MC parallel trials using base TRexSelector (no DA).
- *
- * Provides a baseline comparison against DA-TRex.
- *
- * @param num_MC            Number of Monte Carlo trials.
- * @param progress_label    Label printed in the progress line.
- * @param make_data         Lambda (seed) -> DGPData for generating data.
- * @param tFDR              Target FDR for the selector.
- * @param trex_ctrl         TRexControlParameter for the selector.
- * @param base_seed_offset  Base offset for RNG seeds.
- * @param verbose           If true, enable selector verbose output (default: false).
- *
- * @return GridPointResult with average FDR, TPR, L, T, and sd FDR, TPR across trials.
- */
-inline GridPointResult run_mc_trials_base(
+/** @brief Uncached body of run_mc_trials_base(). */
+inline GridPointResult run_mc_trials_base_impl(
     std::size_t num_MC,
     const std::string& progress_label,
     const DGPFactory& make_data,
@@ -608,6 +582,101 @@ inline GridPointResult run_mc_trials_base(
     return {avg_fdr, avg_tpr,
             avg_L, avg_T,
             sd_fdr, sd_tpr};
+}
+
+
+// ==============================================================================
+// Resumable grid cells (../../cell_cache.hpp)
+// ==============================================================================
+
+namespace cell_detail {
+
+/** @brief Cell key: label plus the parameters that tell cells apart. */
+inline std::string key(const std::string& kind, const std::string& label, std::size_t num_MC,
+                       unsigned base_seed_offset, double tFDR, const TRexControlParameter& ctrl,
+                       const TRexDAControlParameter* da) {
+    std::ostringstream os;
+    os << kind << '|' << label << "|solver=" << static_cast<int>(ctrl.solver_type);
+    if (da != nullptr) {
+        os << "|da=" << static_cast<int>(da->method) << "|link=" << static_cast<int>(da->hc_linkage);
+    }
+    os << "|seed=" << base_seed_offset << "|mc=" << num_MC << "|tfdr=" << tFDR;
+    return os.str();
+}
+
+inline trex_cell_cache::Cell to_cell(const GridPointResult& r) {
+    return {{"avg_fdr", r.avg_fdr}, {"avg_tpr", r.avg_tpr}, {"avg_L", r.avg_L},
+            {"avg_T", r.avg_T}, {"sd_fdr", r.sd_fdr}, {"sd_tpr", r.sd_tpr}};
+}
+
+inline GridPointResult from_cell(const trex_cell_cache::Cell& c) {
+    using trex_cell_cache::get;
+    return {get(c, "avg_fdr"), get(c, "avg_tpr"), get(c, "avg_L"),
+            get(c, "avg_T"), get(c, "sd_fdr"), get(c, "sd_tpr")};
+}
+
+}  // namespace cell_detail
+
+/**
+ * @brief Run num_MC parallel DA-T-Rex trials (resumable grid cell), printing a
+ *        start and done line.
+ *
+ * @param num_MC            Number of Monte Carlo trials.
+ * @param progress_label    Label printed in the progress line.
+ * @param make_data         Lambda (seed) -> DGPData for generating data.
+ * @param tFDR              Target FDR for the selector.
+ * @param trex_ctrl         TRexControlParameter for the selector.
+ * @param da_ctrl           TRexDAControlParameter for the selector.
+ * @param base_seed_offset  Base offset for RNG seeds (each trial uses base_seed_offset + mc).
+ * @param verbose           If true, enable selector verbose output (default: false).
+ *
+ * @return GridPointResult with average FDR, TPR, L, T, and sd FDR, TPR across trials.
+ */
+inline GridPointResult run_mc_trials(
+    std::size_t num_MC,
+    const std::string& progress_label,
+    const DGPFactory& make_data,
+    double tFDR,
+    const TRexControlParameter& trex_ctrl,
+    const TRexDAControlParameter& da_ctrl,
+    unsigned base_seed_offset,
+    bool verbose = false)
+{
+    return cell_detail::from_cell(TREX_CELL_CACHED(
+        cell_detail::key("da", progress_label, num_MC, base_seed_offset, tFDR, trex_ctrl, &da_ctrl), [&] {
+            return cell_detail::to_cell(run_mc_trials_impl(num_MC, progress_label, make_data, tFDR,
+                                                           trex_ctrl, da_ctrl, base_seed_offset, verbose));
+        }));
+}
+
+/**
+ * @brief Run num_MC parallel trials using base TRexSelector, no DA (resumable
+ *        grid cell). Provides a baseline comparison against DA-TRex.
+ *
+ * @param num_MC            Number of Monte Carlo trials.
+ * @param progress_label    Label printed in the progress line.
+ * @param make_data         Lambda (seed) -> DGPData for generating data.
+ * @param tFDR              Target FDR for the selector.
+ * @param trex_ctrl         TRexControlParameter for the selector.
+ * @param base_seed_offset  Base offset for RNG seeds.
+ * @param verbose           If true, enable selector verbose output (default: false).
+ *
+ * @return GridPointResult with average FDR, TPR, L, T, and sd FDR, TPR across trials.
+ */
+inline GridPointResult run_mc_trials_base(
+    std::size_t num_MC,
+    const std::string& progress_label,
+    const DGPFactory& make_data,
+    double tFDR,
+    const TRexControlParameter& trex_ctrl,
+    unsigned base_seed_offset,
+    bool verbose = false)
+{
+    return cell_detail::from_cell(TREX_CELL_CACHED(
+        cell_detail::key("base", progress_label, num_MC, base_seed_offset, tFDR, trex_ctrl, nullptr), [&] {
+            return cell_detail::to_cell(run_mc_trials_base_impl(num_MC, progress_label, make_data, tFDR,
+                                                                trex_ctrl, base_seed_offset, verbose));
+        }));
 }
 
 

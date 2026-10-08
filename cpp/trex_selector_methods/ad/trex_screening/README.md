@@ -137,7 +137,6 @@ trex_screening/
   ├── trex_screening_simulation_utils.hpp   # controls, MC loop, table + CSV output
   ├── trex_scr_plt_utils.py                 # shared plotting module (sweep / biobank figures)
   ├── reformat_result_txt.py                # re-render saved .txt tables from CSVs (maintenance)
-  ├── run_scr_demos_overnight.sh            # sequential batch runner for demos 01–06
   │
   ├── demo_trex_scr_01_mc_sim_screen_trex/
   │   ├── demo_trex_scr_01_mc_sim_screen_trex.cpp   # the demo source
@@ -191,9 +190,10 @@ For example, to run Demo 01:
 ```
 
 Every demo writes a human-readable `.txt` summary and a tidy `.csv` table into its local
-`simulation_results/data/` folder. To run all six back to back as an unattended job, use
-`./run_scr_demos_overnight.sh` (rebuilds the targets, logs each demo, keeps the machine awake, and prints a
-summary table of exit codes and wall-clock times).
+`simulation_results/data/` folder. To run all six back to back as an unattended job, use the family runner
+[../../run_all_overnight.sh](../../run_all_overnight.sh) with `trex_screening` as its argument (`--build` rebuilds the
+targets first). It logs each demo with its exit code and wall-clock time, keeps the machine awake, and resumes a
+stopped batch at the demo it was in.
 
 Note that the selector draws its dummies from a nondeterministic seed, so re-running a demo reproduces the
  reported behaviour but not the exact digits.

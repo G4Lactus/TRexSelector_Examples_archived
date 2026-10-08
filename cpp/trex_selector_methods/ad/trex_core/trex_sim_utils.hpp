@@ -28,6 +28,8 @@
  *  MC loop functions:
  *    - run_mc_trials_trex()      — parallel MC loop using in-memory TRexSelector
  *    - run_mc_trials_trex_mmap() — parallel MC loop using memory-mapped X
+ *    Both are resumable grid cells (../../cell_cache.hpp): a finished cell is
+ *    cached and restored by a restarted demo.
  *
  * Parallelism pattern:
  *   #pragma omp parallel for schedule(dynamic)
@@ -70,6 +72,9 @@
 // T-Rex Selector includes
 #include <trex_selector_methods/ad/trex_core/trex.hpp>
 #include <utils/eval_metrics/utils_eval_rates.hpp>
+
+// Resumable grid cells
+#include "../../cell_cache.hpp"
 
 
 // ==============================================================================
@@ -674,23 +679,40 @@ inline void save_and_print_mc_results(
 
 
 // ==============================================================================
+// Grid-cell cache helpers
+// ==============================================================================
+
+namespace detail {
+
+/** @brief Cell key: label plus the parameters that tell cells apart. */
+inline std::string cell_key(const std::string& kind, const std::string& label, std::size_t num_MC,
+                            unsigned base_seed_offset, double tFDR, const TRexControlParameter& ctrl) {
+    std::ostringstream os;
+    os << kind << '|' << label << "|solver=" << static_cast<int>(ctrl.solver_type)
+       << "|seed=" << base_seed_offset << "|mc=" << num_MC << "|tfdr=" << tFDR;
+    return os.str();
+}
+
+inline trex_cell_cache::Cell to_cell(const TrexGridPointResult& r) {
+    return {{"avg_fdr", r.avg_fdr}, {"avg_tpr", r.avg_tpr}, {"avg_L", r.avg_L},
+            {"avg_T", r.avg_T}, {"sd_fdr", r.sd_fdr}, {"sd_tpr", r.sd_tpr}};
+}
+
+inline TrexGridPointResult from_cell(const trex_cell_cache::Cell& c) {
+    using trex_cell_cache::get;
+    return {get(c, "avg_fdr"), get(c, "avg_tpr"), get(c, "avg_L"),
+            get(c, "avg_T"), get(c, "sd_fdr"), get(c, "sd_tpr")};
+}
+
+}  // namespace detail
+
+
+// ==============================================================================
 // Parallel MC inner loop — in-memory DGP
 // ==============================================================================
 
-/**
- * @brief Run num_MC parallel MC trials using TRexSelector.
- *
- * @param num_MC            Number of Monte Carlo trials.
- * @param progress_label    Label printed in the start / done lines.
- * @param make_data         Factory: seed → TrexDGPData (called per trial).
- * @param tFDR              Target FDR for the selector.
- * @param trex_ctrl         T-Rex control parameters (read-only; TRexSelector copies
- *                          by value so multiple threads are safe).
- * @param base_seed_offset  Base RNG seed offset; trial mc uses base_seed_offset + mc.
- *
- * @return TrexGridPointResult with avg/sd FDR, TPR and avg L, T.
- */
-inline TrexGridPointResult run_mc_trials_trex(
+/** @brief Uncached body of run_mc_trials_trex(). */
+inline TrexGridPointResult run_mc_trials_trex_impl(
     std::size_t                  num_MC,
     const std::string&           progress_label,
     const TrexDGPFactory&        make_data,
@@ -757,34 +779,41 @@ inline TrexGridPointResult run_mc_trials_trex(
     return {avg_fdr, avg_tpr, avg_L, avg_T, sd_fdr, sd_tpr};
 }
 
+/**
+ * @brief Run num_MC parallel MC trials using TRexSelector (resumable grid cell).
+ *
+ * @param num_MC            Number of Monte Carlo trials.
+ * @param progress_label    Label printed in the start / done lines.
+ * @param make_data         Factory: seed → TrexDGPData (called per trial).
+ * @param tFDR              Target FDR for the selector.
+ * @param trex_ctrl         T-Rex control parameters (read-only; TRexSelector copies
+ *                          by value so multiple threads are safe).
+ * @param base_seed_offset  Base RNG seed offset; trial mc uses base_seed_offset + mc.
+ *
+ * @return TrexGridPointResult with avg/sd FDR, TPR and avg L, T.
+ */
+inline TrexGridPointResult run_mc_trials_trex(
+    std::size_t                  num_MC,
+    const std::string&           progress_label,
+    const TrexDGPFactory&        make_data,
+    double                       tFDR,
+    const TRexControlParameter&  trex_ctrl,
+    unsigned                     base_seed_offset)
+{
+    return detail::from_cell(TREX_CELL_CACHED(
+        detail::cell_key("trex", progress_label, num_MC, base_seed_offset, tFDR, trex_ctrl), [&] {
+            return detail::to_cell(run_mc_trials_trex_impl(num_MC, progress_label, make_data,
+                                                           tFDR, trex_ctrl, base_seed_offset));
+        }));
+}
+
 
 // ==============================================================================
 // Parallel MC inner loop — fully memory-mapped X
 // ==============================================================================
 
-/**
- * @brief Run num_MC parallel MC trials using TRexSelector with memory-mapped X.
- *
- * Each OpenMP thread uses unique backing-file paths derived from mmap_filestem
- * and the thread ID (omp_get_thread_num()), preventing file-name collisions.
- * The factory lambda is responsible for the full lifecycle of SyntheticDataMapped
- * and its files: declare MmapFileGuard BEFORE SyntheticDataMapped inside the
- * lambda body so LIFO destruction closes mmap handles before removing files.
- *
- * @param num_MC            Number of Monte Carlo trials.
- * @param progress_label    Label printed in the start / done lines.
- * @param make_data         Factory: (seed, X_path, y_path) → TrexDGPData.
- *                          Must copy X and y into owned matrices and clean up files.
- * @param tFDR              Target FDR for the selector.
- * @param trex_ctrl         T-Rex control parameters (read-only; TRexSelector copies
- *                          by value so multiple threads are safe).
- * @param base_seed_offset  Base RNG seed offset; trial mc uses base_seed_offset + mc.
- * @param mmap_filestem     Stem for per-thread backing files.
- *                          Thread t uses: filestem_X_tid{t}.dat / filestem_y_tid{t}.dat
- *
- * @return TrexGridPointResult with avg/sd FDR, TPR and avg L, T.
- */
-inline TrexGridPointResult run_mc_trials_trex_mmap(
+/** @brief Uncached body of run_mc_trials_trex_mmap(). */
+inline TrexGridPointResult run_mc_trials_trex_mmap_impl(
     std::size_t                  num_MC,
     const std::string&           progress_label,
     const TrexMmapDGPFactory&    make_data,
@@ -853,6 +882,45 @@ inline TrexGridPointResult run_mc_trials_trex_mmap(
               << "  FDR=" << avg_fdr << "\n\n" << std::flush;
 
     return {avg_fdr, avg_tpr, avg_L, avg_T, sd_fdr, sd_tpr};
+}
+
+/**
+ * @brief Run num_MC parallel MC trials using TRexSelector with memory-mapped X
+ *        (resumable grid cell).
+ *
+ * Each OpenMP thread uses unique backing-file paths derived from mmap_filestem
+ * and the thread ID (omp_get_thread_num()), preventing file-name collisions.
+ * The factory lambda is responsible for the full lifecycle of SyntheticDataMapped
+ * and its files: declare MmapFileGuard BEFORE SyntheticDataMapped inside the
+ * lambda body so LIFO destruction closes mmap handles before removing files.
+ *
+ * @param num_MC            Number of Monte Carlo trials.
+ * @param progress_label    Label printed in the start / done lines.
+ * @param make_data         Factory: (seed, X_path, y_path) \u2192 TrexDGPData.
+ *                          Must copy X and y into owned matrices and clean up files.
+ * @param tFDR              Target FDR for the selector.
+ * @param trex_ctrl         T-Rex control parameters (read-only; TRexSelector copies
+ *                          by value so multiple threads are safe).
+ * @param base_seed_offset  Base RNG seed offset; trial mc uses base_seed_offset + mc.
+ * @param mmap_filestem     Stem for per-thread backing files.
+ *                          Thread t uses: filestem_X_tid{t}.dat / filestem_y_tid{t}.dat
+ *
+ * @return TrexGridPointResult with avg/sd FDR, TPR and avg L, T.
+ */
+inline TrexGridPointResult run_mc_trials_trex_mmap(
+    std::size_t                  num_MC,
+    const std::string&           progress_label,
+    const TrexMmapDGPFactory&    make_data,
+    double                       tFDR,
+    const TRexControlParameter&  trex_ctrl,
+    unsigned                     base_seed_offset,
+    const std::string&           mmap_filestem)
+{
+    return detail::from_cell(TREX_CELL_CACHED(
+        detail::cell_key("trex_mmap", progress_label, num_MC, base_seed_offset, tFDR, trex_ctrl), [&] {
+            return detail::to_cell(run_mc_trials_trex_mmap_impl(num_MC, progress_label, make_data, tFDR,
+                                                                trex_ctrl, base_seed_offset, mmap_filestem));
+        }));
 }
 
 } // namespace trex_sim

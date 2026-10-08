@@ -70,7 +70,21 @@ Run any demo executable from the build tree. For example:
 ./build/debug/bin/trex_selector_methods/ad/trex_core/demo_trex_01_single_run/demo_trex_01_single_run
 ```
 
-For each variant's demo lineup and required parameters, see the corresponding subfolder README (once available).
+For each variant's demo lineup and required parameters, see the corresponding subfolder README.
+
+To run the Monte Carlo demos back to back as an unattended job, use the batch runner on the release build:
+
+```bash
+cpp/trex_selector_methods/run_all_overnight.sh --list                # show the queue
+nohup cpp/trex_selector_methods/run_all_overnight.sh > /dev/null 2>&1 &
+cpp/trex_selector_methods/run_all_overnight.sh --build trex_gvs      # one suite, rebuilt first
+```
+
+It runs the suites trex_screening, trex_spca, trex_core (02 to 05 and 07), trex_da and trex_gvs on 6 threads, writes a
+log per demo to `logs/overnight_<timestamp>/` and keeps the machine awake. It is resumable. A demo that finishes is
+recorded under the run tag (the pinned library commit of `LIBRARY_TARGET.txt`) and skipped by the next run, so a
+stopped batch restarts at the demo it was in, and `FRESH=1` reruns everything. Python and R have runners of the same
+name.
 
 ---
 
@@ -81,6 +95,7 @@ trex_selector_methods/
   ├── README.md
   ├── CMakeLists.txt
   ├── reformat_result_txt.py    # re-render saved .txt tables from CSVs (maintenance)
+  ├── run_all_overnight.sh      # resumable batch runner of the Monte Carlo demos
   ├── ad/                       # augmented dummies (AD)
   │   ├── trex_core/
   │   ├── trex_screening/

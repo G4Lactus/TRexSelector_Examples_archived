@@ -81,6 +81,9 @@
 // PCA baseline
 #include <ml_methods/pca/pca.hpp>
 
+// Resumable grid cells
+#include "../../cell_cache.hpp"
+
 
 // ==============================================================================
 // Namespace
@@ -526,15 +529,17 @@ inline SPCAGridPointResult aggregate_mc(
     avg_tpr /= dMC;  avg_fdr /= dMC;  avg_pev /= dMC;  avg_pev_sig /= dMC;
     avg_pev_sigmix /= dMC;
 
-    double sd_tpr = 0.0, sd_fdr = 0.0;
+    double sd_tpr = 0.0, sd_fdr = 0.0, sd_pev = 0.0;
     if (num_MC > 1) {
-        double ss_tpr = 0.0, ss_fdr = 0.0;
+        double ss_tpr = 0.0, ss_fdr = 0.0, ss_pev = 0.0;
         for (int mc = 0; mc < iMC; ++mc) {
             ss_tpr += (tpr_vec[mc] - avg_tpr) * (tpr_vec[mc] - avg_tpr);
             ss_fdr += (fdr_vec[mc] - avg_fdr) * (fdr_vec[mc] - avg_fdr);
+            ss_pev += (pev_vec[mc] - avg_pev) * (pev_vec[mc] - avg_pev);
         }
         sd_tpr = std::sqrt(ss_tpr / (dMC - 1.0));
         sd_fdr = std::sqrt(ss_fdr / (dMC - 1.0));
+        sd_pev = std::sqrt(ss_pev / (dMC - 1.0));
     }
 
     std::cout << "  " << label
@@ -542,7 +547,20 @@ inline SPCAGridPointResult aggregate_mc(
               << "  FDR=" << avg_fdr << "\n\n" << std::flush;
 
     return {avg_tpr, avg_fdr, avg_pev, avg_pev_sig, avg_pev_sigmix,
-            sd_tpr, sd_fdr};
+            sd_tpr, sd_fdr, sd_pev};
+}
+
+/** @brief Cell of one SPCA grid point. */
+inline trex_cell_cache::Cell to_cell(const SPCAGridPointResult& r) {
+    return {{"avg_tpr", r.avg_tpr}, {"avg_fdr", r.avg_fdr}, {"avg_pev", r.avg_pev},
+            {"avg_pev_sig", r.avg_pev_sig}, {"avg_pev_sigmix", r.avg_pev_sigmix},
+            {"sd_tpr", r.sd_tpr}, {"sd_fdr", r.sd_fdr}, {"sd_pev", r.sd_pev}};
+}
+
+inline SPCAGridPointResult from_cell(const trex_cell_cache::Cell& c) {
+    using trex_cell_cache::get;
+    return {get(c, "avg_tpr"), get(c, "avg_fdr"), get(c, "avg_pev"), get(c, "avg_pev_sig"),
+            get(c, "avg_pev_sigmix"), get(c, "sd_tpr"), get(c, "sd_fdr"), get(c, "sd_pev")};
 }
 
 } // namespace detail
@@ -552,32 +570,8 @@ inline SPCAGridPointResult aggregate_mc(
 // Parallel MC inner loops
 // ==============================================================================
 
-/**
- * @brief Run num_MC parallel T-Rex SPCA trials.
- *
- * @details Data flow per trial:
- *          - make_data() returns raw FactorModelData (X = Z V^T + E, uncentered).
- *          - The pipeline centers X once (covariance-PCA convention); this same
- *            centered X is shared by the selector and by evaluate_spca().
- *          - TRexSPCA re-centers internally (a no-op on already-centered X) and
- *            restores X before returning, so dat.X stays centered for evaluation.
- *
- * @param num_MC            Number of Monte Carlo trials.
- * @param progress_label    Label printed in start/done lines.
- * @param make_data         Factory: seed → FactorModelData (called per trial).
- *                          Must capture all parameters by value for OMP safety.
- * @param tFDR              Target FDR for T-Rex SPCA.
- * @param mode              Loading assembly mode (ActiveSet or Thresholded).
- * @param base_seed_offset  Base seed; trial mc uses base_seed_offset + mc * 1000.
- * @param lambda_2          Ridge penalty (LARS units); < 0 = auto-compute via CV
- *                          (default), 0 = no ridge (pure T-LASSO), > 0 = fixed.
- * @param en_solver         EN solver variant (TENET or TENET_AUG; default TENET_AUG).
- * @param scaling_mode      Column scaling for X/dummies inside the per-PC
- *                          T-Rex selector (L2 or ZSCORE; default L2).
- *
- * @return SPCAGridPointResult with avg/sd TPR, FDR and avg PEV.
- */
-inline SPCAGridPointResult run_mc_trials_trex_spca(
+/** @brief Uncached body of run_mc_trials_trex_spca(). */
+inline SPCAGridPointResult run_mc_trials_trex_spca_impl(
     std::size_t           num_MC,
     const std::string&    progress_label,
     const SPCADGPFactory& make_data,
@@ -646,26 +640,58 @@ inline SPCAGridPointResult run_mc_trials_trex_spca(
                                 pev_vec, pev_sig_vec, pev_sigmix_vec);
 }
 
-
 /**
- * @brief Run num_MC parallel ordinary PCA trials.
+ * @brief Run num_MC parallel T-Rex SPCA trials (resumable grid cell).
  *
- * @details Ordinary PCA selects all p variables per component (no sparsity),
- *          so FDR ≈ (p - p1) / p and TPR = 1 regardless of SNR.
- *          The metric of interest is the cumulative PEV.
- *
- *          Data flow: make_data() returns raw data; the pipeline centers X once
- *          (covariance-PCA convention). PCA is then constructed with center=false
- *          (X is already centered), and evaluate_spca() shares the same centered X.
+ * @details Data flow per trial:
+ *          - make_data() returns raw FactorModelData (X = Z V^T + E, uncentered).
+ *          - The pipeline centers X once (covariance-PCA convention); this same
+ *            centered X is shared by the selector and by evaluate_spca().
+ *          - TRexSPCA re-centers internally (a no-op on already-centered X) and
+ *            restores X before returning, so dat.X stays centered for evaluation.
  *
  * @param num_MC            Number of Monte Carlo trials.
  * @param progress_label    Label printed in start/done lines.
- * @param make_data         Factory: seed → FactorModelData.
+ * @param make_data         Factory: seed → FactorModelData (called per trial).
+ *                          Must capture all parameters by value for OMP safety.
+ * @param tFDR              Target FDR for T-Rex SPCA.
+ * @param mode              Loading assembly mode (ActiveSet or Thresholded).
  * @param base_seed_offset  Base seed; trial mc uses base_seed_offset + mc * 1000.
+ * @param lambda_2          Ridge penalty (LARS units); < 0 = auto-compute via CV
+ *                          (default), 0 = no ridge (pure T-LASSO), > 0 = fixed.
+ * @param en_solver         EN solver variant (TENET or TENET_AUG; default TENET_AUG).
+ * @param scaling_mode      Column scaling for X/dummies inside the per-PC
+ *                          T-Rex selector (L2 or ZSCORE; default L2).
  *
  * @return SPCAGridPointResult with avg/sd TPR, FDR and avg PEV.
  */
-inline SPCAGridPointResult run_mc_trials_pca(
+inline SPCAGridPointResult run_mc_trials_trex_spca(
+    std::size_t           num_MC,
+    const std::string&    progress_label,
+    const SPCADGPFactory& make_data,
+    double                tFDR,
+    SPCAMode              mode,
+    unsigned              base_seed_offset,
+    double                lambda_2    = -1.0,
+    ENSolverType          en_solver   = ENSolverType::TENET,
+    ScalingMode           scaling_mode = ScalingMode::L2,
+    Eigen::Index          num_components = 0
+) {
+    std::ostringstream key;
+    key << "trex_spca|" << progress_label << "|mode=" << static_cast<int>(mode)
+        << "|en=" << static_cast<int>(en_solver) << "|scale=" << static_cast<int>(scaling_mode)
+        << "|l2=" << lambda_2 << "|comp=" << num_components << "|seed=" << base_seed_offset
+        << "|mc=" << num_MC << "|tfdr=" << tFDR;
+    return detail::from_cell(TREX_CELL_CACHED(key.str(), [&] {
+        return detail::to_cell(run_mc_trials_trex_spca_impl(num_MC, progress_label, make_data, tFDR, mode,
+                                                            base_seed_offset, lambda_2, en_solver,
+                                                            scaling_mode, num_components));
+    }));
+}
+
+
+/** @brief Uncached body of run_mc_trials_pca(). */
+inline SPCAGridPointResult run_mc_trials_pca_impl(
     std::size_t           num_MC,
     const std::string&    progress_label,
     const SPCADGPFactory& make_data,
@@ -709,29 +735,43 @@ inline SPCAGridPointResult run_mc_trials_pca(
                                 pev_vec, pev_sig_vec, pev_sigmix_vec);
 }
 
-
 /**
- * @brief Run num_MC parallel oracle-thresholded PCA trials.
+ * @brief Run num_MC parallel ordinary PCA trials (resumable grid cell).
  *
- * @details Oracle PCA uses the ordinary PCA loadings but retains exactly the
- *          top p1 entries (by absolute value) per component — i.e., it knows
- *          the true support cardinality. This provides an upper bound on what
- *          any data-driven thresholding method can achieve.
+ * @details Ordinary PCA selects all p variables per component (no sparsity),
+ *          so FDR ≈ (p - p1) / p and TPR = 1 regardless of SNR.
+ *          The metric of interest is the cumulative PEV.
  *
  *          Data flow: make_data() returns raw data; the pipeline centers X once
- *          (covariance-PCA convention). PCA is constructed with center=false
- *          (X is already centered). The oracle score matrix Z_oracle = X * V_oracle
- *          and evaluate_spca() share the same centered X.
+ *          (covariance-PCA convention). PCA is then constructed with center=false
+ *          (X is already centered), and evaluate_spca() shares the same centered X.
  *
  * @param num_MC            Number of Monte Carlo trials.
  * @param progress_label    Label printed in start/done lines.
  * @param make_data         Factory: seed → FactorModelData.
- * @param p1                Oracle threshold: true active loadings per factor.
  * @param base_seed_offset  Base seed; trial mc uses base_seed_offset + mc * 1000.
  *
  * @return SPCAGridPointResult with avg/sd TPR, FDR and avg PEV.
  */
-inline SPCAGridPointResult run_mc_trials_oracle_pca(
+inline SPCAGridPointResult run_mc_trials_pca(
+    std::size_t           num_MC,
+    const std::string&    progress_label,
+    const SPCADGPFactory& make_data,
+    unsigned              base_seed_offset,
+    Eigen::Index          num_components = 0)
+{
+    std::ostringstream key;
+    key << "pca|" << progress_label << "|comp=" << num_components << "|seed=" << base_seed_offset
+        << "|mc=" << num_MC;
+    return detail::from_cell(TREX_CELL_CACHED(key.str(), [&] {
+        return detail::to_cell(run_mc_trials_pca_impl(num_MC, progress_label, make_data,
+                                                      base_seed_offset, num_components));
+    }));
+}
+
+
+/** @brief Uncached body of run_mc_trials_oracle_pca(). */
+inline SPCAGridPointResult run_mc_trials_oracle_pca_impl(
     std::size_t           num_MC,
     const std::string&    progress_label,
     const SPCADGPFactory& make_data,
@@ -795,6 +835,44 @@ inline SPCAGridPointResult run_mc_trials_oracle_pca(
 
     return detail::aggregate_mc(num_MC, progress_label, tpr_vec, fdr_vec,
                                 pev_vec, pev_sig_vec, pev_sigmix_vec);
+}
+
+/**
+ * @brief Run num_MC parallel oracle-thresholded PCA trials (resumable grid cell).
+ *
+ * @details Oracle PCA uses the ordinary PCA loadings but retains exactly the
+ *          top p1 entries (by absolute value) per component — i.e., it knows
+ *          the true support cardinality. This provides an upper bound on what
+ *          any data-driven thresholding method can achieve.
+ *
+ *          Data flow: make_data() returns raw data; the pipeline centers X once
+ *          (covariance-PCA convention). PCA is constructed with center=false
+ *          (X is already centered). The oracle score matrix Z_oracle = X * V_oracle
+ *          and evaluate_spca() share the same centered X.
+ *
+ * @param num_MC            Number of Monte Carlo trials.
+ * @param progress_label    Label printed in start/done lines.
+ * @param make_data         Factory: seed → FactorModelData.
+ * @param p1                Oracle threshold: true active loadings per factor.
+ * @param base_seed_offset  Base seed; trial mc uses base_seed_offset + mc * 1000.
+ *
+ * @return SPCAGridPointResult with avg/sd TPR, FDR and avg PEV.
+ */
+inline SPCAGridPointResult run_mc_trials_oracle_pca(
+    std::size_t           num_MC,
+    const std::string&    progress_label,
+    const SPCADGPFactory& make_data,
+    Eigen::Index          p1,
+    unsigned              base_seed_offset,
+    Eigen::Index          num_components = 0)
+{
+    std::ostringstream key;
+    key << "oracle_pca|" << progress_label << "|p1=" << p1 << "|comp=" << num_components
+        << "|seed=" << base_seed_offset << "|mc=" << num_MC;
+    return detail::from_cell(TREX_CELL_CACHED(key.str(), [&] {
+        return detail::to_cell(run_mc_trials_oracle_pca_impl(num_MC, progress_label, make_data, p1,
+                                                             base_seed_offset, num_components));
+    }));
 }
 
 
