@@ -121,8 +121,10 @@ void demo_TRexSelector_varMonteCarlo(std::size_t num_MC, bool high_dim, bool rnd
             const double snr = snr_values[snr_idx];
             std::cout << "SNR = " << std::fixed << std::setprecision(1) << snr << "\n";
 
-            trex_ctrl.solver_type           = current_solver.solver_type;
-            trex_ctrl.solver_params.lambda2 = current_solver.lambda2;
+            trex_ctrl.solver_type                 = current_solver.solver_type;
+            trex_ctrl.solver_params.lambda2       = current_solver.lambda2;
+            trex_ctrl.solver_params.rho_afs       = current_solver.rho_afs;  // TAFS only
+            trex_ctrl.solver_params.ncgmp_variant = current_solver.ncgmp_variant;  // TNCGMP only
 
             const auto make_data = [=](unsigned seed) -> trex_sim::TrexDGPData {
                 std::mt19937 rng_sup(seed + 500000u);

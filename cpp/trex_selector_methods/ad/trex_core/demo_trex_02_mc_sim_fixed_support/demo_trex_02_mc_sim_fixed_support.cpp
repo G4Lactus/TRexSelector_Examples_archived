@@ -159,8 +159,10 @@ void demo_TRexSelector_MonteCarlo(std::size_t num_MC, bool high_dim, bool rnd_co
             std::cout << "SNR = " << std::fixed << std::setprecision(1) << snr << "\n";
 
             // Setup per-SNR solver control and DGP factory
-            trex_ctrl.solver_type           = current_solver.solver_type;
-            trex_ctrl.solver_params.lambda2 = current_solver.lambda2;
+            trex_ctrl.solver_type                 = current_solver.solver_type;
+            trex_ctrl.solver_params.lambda2       = current_solver.lambda2;
+            trex_ctrl.solver_params.rho_afs       = current_solver.rho_afs;  // TAFS only
+            trex_ctrl.solver_params.ncgmp_variant = current_solver.ncgmp_variant;  // TNCGMP only
 
             const auto make_data = [=](unsigned seed) -> trex_sim::TrexDGPData {
                 datagen::SyntheticData data(

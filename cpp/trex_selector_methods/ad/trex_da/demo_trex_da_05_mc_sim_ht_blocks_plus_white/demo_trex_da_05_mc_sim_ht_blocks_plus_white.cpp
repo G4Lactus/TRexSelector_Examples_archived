@@ -301,6 +301,7 @@ void demo_ht_block_white_mc_tfdr_sweep()
             for (const auto& sol : solvers) {
                 trex_ctrl.solver_type           = sol.type;
                 trex_ctrl.solver_params.rho_afs = sol.rho_afs;
+                trex_ctrl.solver_params.exch_tie_alpha = sol.exch_tie_alpha;
                 trex_ctrl.tloop_stagnation_stop = sol.use_stagnation;
 
                 for (Eigen::Index gi = 0; gi < ngrid; ++gi) {

@@ -154,6 +154,7 @@ void demo_nn_mc_kappa_rho_sweep()
         auto trex_ctrl = make_trex_control(K);
         trex_ctrl.solver_type           = sv.type;
         trex_ctrl.solver_params.rho_afs = sv.rho_afs;
+        trex_ctrl.solver_params.exch_tie_alpha = sv.exch_tie_alpha;
         trex_ctrl.tloop_stagnation_stop = sv.use_stagnation;
 
         std::cout << "\n  Solver: " << sv.name << "\n\n";
@@ -316,6 +317,7 @@ void demo_nn_ar_mc_snr_rho_sweep()
         auto trex_ctrl = make_trex_control(K);
         trex_ctrl.solver_type           = sv.type;
         trex_ctrl.solver_params.rho_afs = sv.rho_afs;
+        trex_ctrl.solver_params.exch_tie_alpha = sv.exch_tie_alpha;
         trex_ctrl.tloop_stagnation_stop = sv.use_stagnation;
 
         std::cout << "\n  Solver: " << sv.name << "\n\n";
