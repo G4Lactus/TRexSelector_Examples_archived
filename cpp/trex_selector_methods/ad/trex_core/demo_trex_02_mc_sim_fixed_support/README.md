@@ -85,13 +85,16 @@ Aligned tabular format showing FDR and TPR for each solver across SNR levels:
 === T-Rex Results (averaged over 200 Monte Carlo runs) ===
 ======================================================================
 
-Solver         Metric    SNR       0.1       0.5       1.0       2.0       5.0
-------------------------------------------------------------------------------
-TLARS          FDR              ...       ...       ...       ...       ...
-               TPR              ...       ...       ...       ...       ...
+  SNR                          0.10      0.50      1.00      2.00      5.00
+---------------------------------------------------------------------------
 
-TLASSO         FDR              ...       ...       ...       ...       ...
-               TPR              ...       ...       ...       ...       ...
+TLARS
+  FDR                        0.0200    0.0342    0.0367    0.0317    0.0317
+  TPR                        0.0035    0.2730    0.7220    0.9820    1.0000
+
+TLASSO
+  FDR                        0.0200    0.0294    0.0393    0.0305    0.0299
+  ...
 
 ... (12 more solvers)
 ```
@@ -197,8 +200,8 @@ count.
 
 ### FDR Control
 
-- FDR stays **below the target $\mathrm{tFDR} = 0.1$ for every solver at every SNR level**, at most $0.044$
-  (TLASSO at SNR 1.0).
+- FDR stays **below the target $\mathrm{tFDR} = 0.1$ for every solver at every SNR level**, at most $0.041$
+  (TENET at SNR 1.0).
 - At low SNR, FDR tends to be conservative due to few selections, and it stabilizes as SNR increases.
 
 ### Power (TPR)
@@ -211,8 +214,8 @@ count.
 
 - The 14 solvers do **not** produce identical selections, so FDR/TPR curves differ between them.
 - **Two groups separate at moderate SNR.** At SNR 1.0 the four LARS-path solvers (TLARS, TLASSO, TENET,
-  TSTAGEWISE) reach a TPR of $0.71\text{–}0.72$ at an FDR of $0.038\text{–}0.044$, while the ten pursuit and
-  forward-selection solvers reach $0.84\text{–}0.87$ at $0.023\text{–}0.032$. By SNR 2.0 every solver recovers
+  TSTAGEWISE) reach a TPR of $0.71\text{–}0.73$ at an FDR of $0.037\text{–}0.041$, while the ten pursuit and
+  forward-selection solvers reach $0.85\text{–}0.87$ at $0.021\text{–}0.030$. By SNR 2.0 every solver recovers
   at least $97\%$ of the support.
 - This lets you compare the statistical behaviour of the different base solvers under a shared DGP and FDR target.
 

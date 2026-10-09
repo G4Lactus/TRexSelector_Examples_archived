@@ -84,12 +84,14 @@ Avg T rows for the single TLARS solver across the 5 SNR columns:
 === T-Rex Results (averaged over 200 Monte Carlo runs) ===
 ======================================================================
 
-Solver         Metric    SNR       0.1       0.5       1.0       2.0       5.0
-------------------------------------------------------------------------------
-TLARS          FDR              ...
-               TPR              ...
-               Avg L            ...
-               Avg T            ...
+  SNR                          0.10      0.50      1.00      2.00      5.00
+---------------------------------------------------------------------------
+
+TLARS
+  FDR                        0.0250    0.0343    0.0412    0.0314    0.0307
+  TPR                        0.0015    0.2970    0.7320    0.9815    1.0000
+  Avg L                      2.7900    6.6300    3.5350    1.8850    1.1350
+  Avg T                      3.7600    5.6450    5.9800    5.5500    4.5800
 ```
 
 Both scenarios report "averaged over 200 Monte Carlo runs". The `.csv` uses the tidy header
@@ -112,11 +114,11 @@ scenario takes the place of the "solver" row that the other demos sweep:
 ![FDR and TPR versus SNR for Demo C and Demo D, the two curves coinciding](simulation_results/plots/d03_trex_mmap_demo_c_vs_d.png)
 
 *Left:* FDR stays far below the target `tFDR = 0.1` (black dotted line) across the whole SNR grid under **both**
-storage pipelines, peaking at only $0.046$ (C) / $0.043$ (D) at $\mathrm{SNR}=1$. *Right:* the power curves are
-indistinguishable — TPR climbs from $\approx 0.004$ at $\mathrm{SNR}=0.1$ to full recovery ($1.000$ in both) by
+storage pipelines, peaking at only $0.041$ (C) / $0.044$ (D) at $\mathrm{SNR}=1$. *Right:* the power curves are
+indistinguishable — TPR climbs from at most $0.003$ at $\mathrm{SNR}=0.1$ to full recovery ($1.000$ in both) by
 $\mathrm{SNR}=5$.
 
-The two pipelines agree to within **0.005 (FDR)** and **0.009 (TPR)** at every grid point — the scale of Monte
+The two pipelines agree to within **0.005 (FDR)** and **0.020 (TPR)** at every grid point — the scale of Monte
 Carlo noise at $\mathrm{MC}=200$, not of a systematic effect. This is the result the demo exists to show. Memory
 mapping $\mathbf{X}$ and $\mathbf{D}$ is transparent to the selector, so it buys its memory savings without moving
 the statistics. Note the curves are *not* expected to coincide exactly — the two scenarios drive different data
@@ -180,7 +182,7 @@ temporary file, so `simulation_results/data/` keeps only what the demo binary wr
 3. **Do the two storage pipelines agree?**
    - Expected: yes, up to MC noise. Both scenarios run the same sweep at `num_MC = 200`, so any systematic
      gap would point at the mmap pipeline rather than at sampling variability.
-   - Observed: max $|\text{C} - \text{D}|$ of $0.005$ (FDR) and $0.009$ (TPR) — see *Results Visualization*.
+   - Observed: max $|\text{C} - \text{D}|$ of $0.005$ (FDR) and $0.020$ (TPR) — see *Results Visualization*.
 
 ---
 

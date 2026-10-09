@@ -22,8 +22,8 @@ calibrated dummy multiplier $L$ / stopping time $T$ — and whether any such eff
   block support $\lbrace0, \ldots, s-1\rbrace$ is available via the `block_support = true` call, which is compiled but
   guarded by `if (false)`.
 - **True coefficients**: fixed $\beta_j = 1$ (`rnd_coef = false`)
-- **Signal-to-noise ratio (SNR) grid**: 21 values — $\lbrace0.1, 0.2, \ldots, 2.0\rbrace$ plus $5.0$
-- **Monte Carlo (MC) repetitions**: `num_MC = 10` trials per solver × distribution × SNR level
+- **Signal-to-noise ratio (SNR) grid**: 7 values — $\lbrace0.1, 0.2, 0.5, 0.6, 1, 2, 5\rbrace$
+- **Monte Carlo (MC) repetitions**: `num_MC = 200` trials per solver × distribution × SNR level
 - **Data-generating process (DGP)**: $\mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\epsilon}$,
   $\boldsymbol{\epsilon} \sim N(0, \sigma^2 I_n)$, Normal predictors and Normal noise
 - **Base solvers** (outer sweep, one result file pair each):
@@ -94,21 +94,23 @@ encodes the solver and the support scenario (`random_support` for the active run
 **`demo_trex_05_dummy_distributions_results_n300_p1000_{tlars,tomp,tafs}_random_support.txt`**
 
 Aligned table (written by the shared `save_and_print_mc_results`) with four metric rows — FDR, TPR, Avg L, Avg T — per
-distribution across the 21 SNR columns. The row label is the distribution name (Normal, Uniform, …, UnifSphere_d5):
+distribution across the 7 SNR columns. The row label is the distribution name (Normal, Uniform, …, UnifSphere_d5):
 
 ```text
 ======================================================================
-=== T-Rex Results (averaged over 10 Monte Carlo runs) ===
+=== T-Rex Results (averaged over 200 Monte Carlo runs) ===
 ======================================================================
 
-Solver         Metric    SNR       0.1       0.2  ...       2.0       5.0
---------------------------------------------------------------------------
-Normal         FDR              ...
-               TPR              ...
-               Avg L            ...
-               Avg T            ...
+  SNR                          0.10      0.20      0.50      0.60      1.00      2.00      5.00
+-----------------------------------------------------------------------------------------------
 
-Uniform        ...
+Normal
+  FDR                        0.0175    0.0132    0.0357    0.0492    0.0457    0.0379    0.0212
+  TPR                        0.0030    0.0200    0.2445    0.3545    0.7555    0.9775    1.0000
+  Avg L                      2.5300    4.4000    5.9900    5.2950    3.2200    1.7600    1.1550
+  Avg T                      4.6150    5.9000    5.4500    5.1250    6.0350    6.1250    5.0550
+
+Uniform
 ...
 ```
 
@@ -192,6 +194,9 @@ three per-solver sets plus the comparison grid:
 ./build/debug/bin/trex_selector_methods/ad/trex_core/demo_trex_05_mc_sim_dummy_distributions/demo_trex_05_mc_sim_dummy_distributions
 ```
 
+The sweep runs 3 solvers × 12 distributions × 7 SNR values × 200 trials. The committed results took about 7 hours on
+6 threads.
+
 ---
 
 ## Key Questions Addressed
@@ -219,7 +224,7 @@ three per-solver sets plus the comparison grid:
 **What to look for:**
 
 - **FDR equivalence**: the i.i.d. rows should all keep FDR $\leq$ tFDR with only MC noise between them.
-- **TPR consistency**: minor variation due to randomness and the small MC count (`num_MC = 10`).
+- **TPR consistency**: only minor variation from Monte Carlo noise (`num_MC = 200`).
 - **Avg L / Avg T**: whether the L-loop calibrates a different dummy budget for a given distribution shape.
 
 **Practical significance:**
@@ -229,13 +234,12 @@ three per-solver sets plus the comparison grid:
 - Systematic deviations for the dependent UnifSphere rows would illustrate why the exchangeability requirement in
   `utils_dummygen.hpp` matters.
 
-**Recorded results** (`simulation_results/`, 2026-07-11, num_MC = 10, TLARS + TOMP + TAFS): the FDR-equivalence
-pattern replicates across all three solver families. For every solver, all twelve distribution rows behave
-equivalently — the per-distribution mean FDR spread is tiny (TLARS 0.046–0.057, TOMP 0.025–0.035, TAFS 0.024–0.038),
-TPR curves are statistically indistinguishable and reach 1.0 at SNR 5.0, and even the dependent UnifSphere_d5 rows show
-no systematic deviation (they yield the *lowest* mean FDR under TOMP) — at this ($n$, $p$, dim) the within-group sphere
-dependence is too weak to break the calibration after L2 normalization. Isolated FDR exceedances up to ≈0.2 at
-SNR = 0.2 are 10-trial MC noise on near-empty selections and appear for all rows alike (mirroring Demo 04). From
-SNR ≥ 0.3 the greedy solvers stay ≤ 0.07 and TLARS ≤ 0.12. The greedy TOMP/TAFS runs (stagnation stop enabled) are
-systematically more conservative than TLARS (mean FDR ≈ 0.03 vs ≈ 0.05) with a tighter stopping-time range
-(Avg T ∈ [4, 9] vs [2, 23]).
+**Recorded results** (`simulation_results/`, `num_MC = 200`, TLARS + TOMP + TAFS). The FDR-equivalence pattern
+replicates across all three solver families. For every solver, all twelve distribution rows behave equivalently. The
+per-distribution mean FDR spans only 0.028–0.033 under TLARS, 0.017–0.021 under TOMP and 0.023–0.026 under TAFS, no
+row exceeds an FDR of 0.055 at any SNR, and the TPR curves are indistinguishable and reach 1.0 at SNR 5.0. Even the
+dependent UnifSphere_d5 rows show no systematic deviation. They have the highest mean FDR under TLARS (0.033 against
+0.031 over all rows) but sit mid-field under TOMP and TAFS, and their Avg L matches the i.i.d. rows. At this ($n$, $p$,
+dim) the within-group sphere dependence is too weak to break the calibration after L2 normalization. The greedy TOMP
+and TAFS runs (stagnation stop enabled) are more conservative than TLARS (mean FDR ≈ 0.019 and ≈ 0.025 against
+≈ 0.031), while the stopping times are similar (Avg T within 4.0–6.6 for TLARS, 4.8–6.3 for TOMP and 3.7–6.1 for TAFS).

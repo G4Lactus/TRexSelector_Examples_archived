@@ -97,14 +97,16 @@ PERMUTATION_SEEDED, SEEDED, SKIPL_5p, SKIPL_10p, SKIPL_20p):
 === T-Rex Results (averaged over 200 Monte Carlo runs) ===
 ======================================================================
 
-Solver         Metric    SNR       0.1       0.2  ...       2.0       5.0
---------------------------------------------------------------------------
-STANDARD       FDR              ...
-               TPR              ...
-               Avg L            ...
-               Avg T            ...
+  SNR                          0.10      0.20      0.30  ...
+-----------------------------------------------------------...
 
-HCONCAT        ...
+STANDARD
+  FDR                        0.0175    0.0000    0.0189  ...
+  TPR                        0.0030    0.0195    0.0530  ...
+  Avg L                      2.5400    4.2350    5.5800  ...
+  Avg T                      4.7400    4.7100    3.7750  ...
+
+HCONCAT
 ...
 ```
 
@@ -149,13 +151,13 @@ shared scale.
 Under **TLARS** (established, `num_MC = 200`, so a stable effect and not Monte
 Carlo noise), the adaptive strategies (STANDARD, HCONCAT, PERMUTATION,
 PERMUTATION_SEEDED, SEEDED) hold FDR near or below target — STANDARD even
-trends *down* to ≈0.037 at SNR 5 — while the fixed-budget `SKIPL` levels break FDR
+trends *down* to ≈0.031 at SNR 5 — while the fixed-budget `SKIPL` levels break FDR
 control in ascending order of budget. `SKIPL_5p` stays under target (max FDR
-≈0.078), `SKIPL_10p` crosses only at the very top of the grid (max ≈0.112), and
-`SKIPL_20p` climbs steadily past the line from SNR ≈1.8 to **≈0.136** at SNR 5 — a
-~3.6 pp overshoot. The overshoot is **monotone in the dummy budget** and tracks a
-runaway stopping time `T`, and at SNR 5 the `Avg T` rows read `SKIPL_5p` `T ≈ 23`,
-`SKIPL_10p` `T ≈ 86`, `SKIPL_20p` `T ≈ 146` — versus the true support size
+≈0.078), `SKIPL_10p` crosses only at the very top of the grid (max ≈0.115), and
+`SKIPL_20p` climbs steadily past the line from SNR ≈1.8 to **≈0.135** at SNR 5 — a
+~3.5 pp overshoot. The overshoot is **monotone in the dummy budget** and tracks a
+runaway stopping time `T`, and at SNR 5 the `Avg T` rows read `SKIPL_5p` `T ≈ 25`,
+`SKIPL_10p` `T ≈ 89`, `SKIPL_20p` `T ≈ 144` — versus the true support size
 `s = 10`.
 
 **Mechanism.** `SKIPL` disables the L-loop and freezes the dummy multiplier at
@@ -180,8 +182,15 @@ of the LARS path rather than of `SKIPL` in general. (Demo 05 already shows the
 *adaptive* STANDARD strategy holds FDR across all three families, and this extends that
 check to the fixed-budget SKIPL regime.)
 
-> **Verdict:** to be read off the regenerated grid once the demo has been run for
-> TOMP and TAFS. Fill in here after the run.
+> **Verdict.** The overshoot is confined to the TLARS column. Under TOMP the highest FDR over all eight
+> strategies and 21 SNR values is 0.037, and under TAFS it is 0.051 (`SKIPL_5p` at SNR 2). The larger fixed
+> budgets even turn conservative there. `SKIPL_20p` ends at an FDR of 0.012 (TOMP) and 0.022 (TAFS) at SNR 5, and
+> the T-loop stops at `T ≈ 6` instead of `T ≈ 144`. The grid therefore rules out a general `SKIPL` defect.
+>
+> It does not isolate the LARS path as the cause, though, because the columns also differ in the T-loop stop. The
+> AUTO setting of `tloop_stagnation_stop` enables the stagnation stop for the greedy solvers only, so TLARS runs
+> without it, and the runaway `T` appears only where it is off. A TLARS run with `tloop_stagnation_stop = true`
+> would separate the two explanations.
 
 ### Per-solver figure sets
 
@@ -230,9 +239,9 @@ per-solver sets plus the comparison grid:
 It writes one `.txt` + `.csv` pair per base solver into `simulation_results/data/`
 (`..._tlars_...`, `..._tomp_...`, `..._tafs_...`), re-saving after each solver
 finishes. The full run is long (the fixed-budget `SKIPL_20p`/`SKIPL_10p` points at
-high SNR dominate, where the T-loop runs to `T ≈ 90–150`), so expect a
-multi-hour/overnight run. Once the three CSVs exist, render every figure with
-`./generate_plots.sh`.
+high SNR dominate, where the T-loop runs to `T ≈ 90–150`), so expect an
+overnight run (the committed results took about 15.5 hours on 6 threads). Once
+the three CSVs exist, render every figure with `./generate_plots.sh`.
 
 ---
 
@@ -240,17 +249,25 @@ multi-hour/overnight run. Once the three CSVs exist, render every figure with
 
 1. **Do all L-loop strategies maintain FDR control?**
    - Expected: FDR $\leq$ tFDR across strategies.
+   - The adaptive strategies keep it under all three solvers (at most $0.056$), while `SKIPL_10p` and `SKIPL_20p`
+     exceed it under TLARS at high SNR.
 
 2. **How does the calibrated $L$ differ between adaptive strategies and the SKIPL levels?**
-   - The Avg L rows show the adaptive strategies' calibrated $L$ versus SKIPL's fixed 5p/10p/20p.
+   - The Avg L rows show the adaptive strategies' calibrated $L$ versus SKIPL's fixed 5p/10p/20p. At SNR 5 the
+     adaptive strategies settle at $L \approx 1.1$ under every solver.
 
 3. **Is TPR comparable across strategies at matched SNR?**
    - Expected: broadly comparable power, with strategy-specific variation.
+   - At SNR 1 the adaptive strategies reach a TPR of $0.74\text{–}0.75$ under TLARS and $0.87\text{–}0.88$ under
+     TOMP and TAFS. Under TLARS the SKIPL levels buy extra power ($0.80\text{–}0.85$) with their extra false
+     discoveries.
 
 4. **Is the `SKIPL` FDR overshoot specific to the LARS path?**
    - Compare the TLARS column of the grid (where `SKIPL_20p`/`SKIPL_10p` overshoot) against the greedy TOMP / TAFS
      columns. If the overshoot is absent or muted under the greedy solvers, it is a LARS-path property rather than a
      general `SKIPL` defect.
+   - It is absent under TOMP and TAFS, so it is not a general `SKIPL` defect. Whether the LARS path or the disabled
+     stagnation stop of TLARS causes it stays open (see the verdict above).
 
 ---
 
@@ -263,7 +280,7 @@ multi-hour/overnight run. Once the three CSVs exist, render every figure with
   `num_MC = 200` these curves are stable, so the overshoot is a real property of the fixed-budget regime, not sampling
   noise.
 - **Cross-solver**: whether that overshoot survives under the greedy TOMP / TAFS columns of the grid — the
-  LARS-specificity test.
+  LARS-specificity test. In the committed run it does not.
 - **Avg L / Avg T**: how each strategy calibrates the dummy structure and when the T-loop stops. Note the runaway
   `Avg T` under the larger SKIPL budgets.
 
@@ -278,6 +295,6 @@ multi-hour/overnight run. Once the three CSVs exist, render every figure with
 
 This C++ demo is based on the R demo
 `R/trex_selector_methods/ad/trex_core/demo_trex_04_mc_sim_lloop_strategies/demo_trex_04_mc_sim_lloop_strategies.R`
-and extends it.
-The R version fixes the base solver at TLARS, whereas the C++ version sweeps TLARS / TOMP / TAFS to test the
-LARS-specificity of the SKIPL overshoot.
+and mirrors it.
+Both versions sweep the same three base solvers (TLARS / TOMP / TAFS) to test the LARS-specificity of the SKIPL
+overshoot.

@@ -99,9 +99,9 @@ solvers on one pair of panels, with the legend just right of the TPR panel:
 
 *Left:* even with the support indices redrawn every trial, FDR stays well below
 the target `tFDR = 0.1` (black dotted line) for every solver across the whole SNR
-grid, at most $0.059$ (TENET at SNR 0.6) — FDR control is robust to the location of the active set.
+grid, at most $0.058$ (TSTAGEWISE at SNR 0.9) — FDR control is robust to the location of the active set.
 *Right:* the fine grid gives a smooth power curve, TPR climbing from near-zero at SNR 0.1 to
-at least $0.97$ for every solver at SNR 2.0.
+at least $0.98$ for every solver at SNR 2.0.
 
 ### Grouped 2×2 view (de-cluttered)
 
@@ -173,16 +173,16 @@ builds are silent here unless verbosity is enabled.
 
 1. **Is FDR control robust to the location of the active set?**
    - Expected: FDR remains $\leq \mathrm{tFDR}$ regardless of which 10 indices are active.
-   - The committed run confirms it, with a highest FDR of $0.059$ over all 14 solvers and 21 SNR points.
+   - The committed run confirms it, with a highest FDR of $0.058$ over all 14 solvers and 21 SNR points.
 
 2. **How do the averaged $L$ and $T$ behave across SNR?**
    - The Avg L and Avg T rows expose how the dummy multiplier and stopping time adapt as signal strength rises.
    - In the committed run, averaged over the solvers, Avg L climbs from $2.6$ at SNR 0.1 to a peak of $7.1$ at
-     SNR 0.4 and falls to $1.1$ at SNR 5.0. Avg T peaks later, at $6.5$ around SNR 0.8, and settles near $5$.
+     SNR 0.4 and falls to $1.1$ at SNR 5.0. Avg T peaks later, at $6.4$ around SNR 0.8, and settles near $5$.
 
 3. **How does TPR climb across the fine SNR grid?**
    - The 21-point grid gives a smooth power curve from weak to strong signal.
-   - In the committed run the lowest TPR over the solvers is $0.735$ at SNR 1.0 and $0.976$ at SNR 2.0.
+   - In the committed run the lowest TPR over the solvers is $0.731$ at SNR 1.0 and $0.979$ at SNR 2.0.
 
 ---
 

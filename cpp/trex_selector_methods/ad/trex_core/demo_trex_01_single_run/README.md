@@ -43,7 +43,7 @@ and share the same true support and coefficients. Only the dimensions differ.
 - True coefficients: Same as scenario A
 - SNR (linear): $1.0$
 
-Both scenarios share a deterministic data seed: `42`, used for a reproducible example.
+Both scenarios share the deterministic data seed `58` and the selector seed `42`, so the example is reproducible.
 
 **Coefficient note**: the `rnd_coef` code path does **not** draw from a uniform distribution — instead it selects
 a fixed hardcoded vector $\lbrace-0.4, -0.25, -0.8, 1.1, 2.5, -1.2\rbrace$ which mimics randomly drawn coefficients.

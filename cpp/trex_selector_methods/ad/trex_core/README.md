@@ -169,11 +169,11 @@ each demo self-contained and easier to inspect independently.
 | **01** | Single Run | Demonstrates basic T-Rex usage | One low-dimensional and one high-dimensional scenario | $n \in \lbrace150, 5{,}000\rbrace$, $p \in \lbrace300, 1{,}000\rbrace$, $s = 6$, SNR = 1.0, tFDR = 0.1 |
 | **02** | MC: Fixed Support | Studies FDR/TPR over an SNR range for 14 base solvers | Moderate dimension, fixed random support | $n = 300$, $p = 1{,}000$, $s = 10$ (fixed, random indices, seed 24), SNR $\in \lbrace0.1, 0.5, 1, 2, 5\rbrace$, tFDR = 0.1, MC = 200 |
 | **03** | MC: Variable Support | Studies FDR/TPR/L/T when support indices are redrawn per trial | Moderate dimension, variable support indices | $n = 300$, $p = 1{,}000$, $s = 10$ (cardinality fixed, indices vary per trial), 21-point SNR grid $\lbrace0.1,\ldots,2.0, 5.0\rbrace$, tFDR = 0.1, MC = 200 |
-| **04** | MC: L-loop Strategies | Compares the 6 L-loop strategy types (TLARS fixed) | Moderate dimension, random support | $n = 300$, $p = 1{,}000$, $s = 10$, 21-point SNR grid, tFDR = 0.1, MC = 10, 8 strategy rows (incl. SKIPL 5p/10p/20p) |
-| **05** | MC: Dummy Distributions | Compares dummy distribution shapes across 3 base solvers (TLARS/TOMP/TAFS, STANDARD L-loop fixed) | Moderate dimension, random support | $n = 300$, $p = 1{,}000$, $s = 10$, 21-point SNR grid, tFDR = 0.1, MC = 10, 12 distribution rows (Normal … UnifSphere_d5) × 3 solvers (one file pair each) |
+| **04** | MC: L-loop Strategies | Compares the 6 L-loop strategy types across 3 base solvers (TLARS/TOMP/TAFS) | Moderate dimension, random support | $n = 300$, $p = 1{,}000$, $s = 10$, 21-point SNR grid, tFDR = 0.1, MC = 200, 8 strategy rows (incl. SKIPL 5p/10p/20p) × 3 solvers (one file pair each) |
+| **05** | MC: Dummy Distributions | Compares dummy distribution shapes across 3 base solvers (TLARS/TOMP/TAFS, STANDARD L-loop fixed) | Moderate dimension, random support | $n = 300$, $p = 1{,}000$, $s = 10$, SNR $\in \lbrace0.1, 0.2, 0.5, 0.6, 1, 2, 5\rbrace$, tFDR = 0.1, MC = 200, 12 distribution rows (Normal … UnifSphere_d5) × 3 solvers (one file pair each) |
 | **06** | Memory-Mapped Single Run | Demonstrates memory-mapped (mmap) workflows | Larger data and reduced RAM usage | Two scenarios ($n=5{,}000,p=1{,}000$ and $n=1{,}000,p=5{,}000$): in-memory X + D mmap, and full X+D mmap pipeline |
-| **07** | MC: Memory-Mapped | Studies FDR/TPR under memory-mapped execution (TLARS) | Moderate dimension, mmap pipeline | $n = 300$, $p = 1{,}000$, $s = 10$, SNR $\in \lbrace0.1,0.5,1,2,5\rbrace$, MC = 10 (Demo C) / 500 (Demo D), mmap storage on disk |
-| **08** | MC: Scalability | Reserved for future scalability experiments | Placeholder | To be completed |
+| **07** | MC: Memory-Mapped | Studies FDR/TPR under memory-mapped execution (TLARS) | Moderate dimension, mmap pipeline | $n = 300$, $p = 1{,}000$, $s = 10$, SNR $\in \lbrace0.1,0.5,1,2,5\rbrace$, MC = 200 (Demo C and Demo D), mmap storage on disk |
+| **08** | MC: Scalability | Measures runtime and memory as $n$ and $p$ grow, up to designs larger than RAM (TLARS/TOMP/TAFS) | Fully memory-mapped pipeline, out-of-core | $n \in \lbrace1{,}000, \ldots, 5{,}000\rbrace$, $p \in \lbrace1{,}000, \ldots, 200{,}000\rbrace$, $s = 10$, SNR = 1, tFDR = 0.1, MC = 10 sequential trials per grid point |
 
 ---
 
@@ -238,7 +238,8 @@ trex_core/
   └── demo_trex_08_mc_sim_scalability/
       ├── demo_trex_08_mc_sim_scalability.cpp
       ├── README.md
-      └── simulation_results/
+      ├── generate_plots.sh
+      └── simulation_results/          <- data/ + plots/
 ```
 
 ---
@@ -251,11 +252,11 @@ level), and the demo's `simulation_results/` files hold all 14 solvers.
 
 | SNR | FDR (TLARS) | TPR (TLARS) |
 | ----- | ------------- | ------------- |
-| 0.1 | 0.0250      | 0.0035      |
-| 0.5 | 0.0353      | 0.2780      |
-| 1.0 | 0.0402      | 0.7225      |
-| 2.0 | 0.0315      | 0.9835      |
-| 5.0 | 0.0285      | 1.0000      |
+| 0.1 | 0.0200      | 0.0035      |
+| 0.5 | 0.0342      | 0.2730      |
+| 1.0 | 0.0367      | 0.7220      |
+| 2.0 | 0.0317      | 0.9820      |
+| 5.0 | 0.0317      | 1.0000      |
 
 ### Interpretation
 
