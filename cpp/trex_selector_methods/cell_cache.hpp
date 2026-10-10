@@ -12,8 +12,8 @@
  *
  * The fingerprint holds the build time of the demo, the run tag TREX_RUN_TAG
  * (the library pin, set by the runners) and the other TREX_* variables that
- * can change results (not TREX_FRESH, TREX_NUM_WORKERS or a *_PARTS
- * selection). A cache with another fingerprint, or any cache under
+ * can change results (not TREX_FRESH, TREX_NUM_WORKERS, TREX_SOLVERS or a
+ * *_PARTS selection). A cache with another fingerprint, or any cache under
  * TREX_FRESH=1, is set aside as cells.tsv.stale. A line without the closing
  * "." marker (cut off by a hard stop) is recomputed. The cache is removed when
  * the demo returns from main(), i.e. once all results are written; a crash or
@@ -73,9 +73,9 @@ inline std::string fingerprint(const char* build_time) {
     for (char** e = TREX_CELL_CACHE_ENVIRON; e != nullptr && *e != nullptr; ++e) {
         const std::string kv(*e);
         if (kv.rfind("TREX_", 0) != 0) continue;
-        // Worker count, fresh switch and part selection do not change any result.
+        // Worker count, fresh switch, solver and part selection do not change any result.
         const std::string name = kv.substr(0, kv.find('='));
-        if (name == "TREX_FRESH" || name == "TREX_NUM_WORKERS") continue;
+        if (name == "TREX_FRESH" || name == "TREX_NUM_WORKERS" || name == "TREX_SOLVERS") continue;
         if (name.size() >= 6 && name.compare(name.size() - 6, 6, "_PARTS") == 0) continue;
         env.push_back(kv);
     }

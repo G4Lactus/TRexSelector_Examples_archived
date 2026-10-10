@@ -5,8 +5,8 @@
  * @file demo_trex_04_mc_sim_lloop_strategies.cpp
  *
  * @brief Monte Carlo simulation comparing the six L-loop strategies of the
- *        T-Rex Selector, repeated across three base solvers (TLARS / TOMP /
- *        TAFS).
+ *        T-Rex Selector, repeated across four base solvers (TLARS / TOMP /
+ *        TAFS / TLARS_STAG, i.e. TLARS with the stagnation stop on).
  *
  * @details
  *  Demo content:
@@ -132,7 +132,7 @@ void demo_TRexSelector_lloop_strategies(std::size_t num_MC, bool rnd_coef,
     std::cout.setf(std::ios::unitbuf);
 
     cdianostics::print_section_header(
-        "Demo: T-Rex Selector MC \u2014 L-Strategy Comparison  |  TLARS / TOMP / TAFS");
+        "Demo: T-Rex Selector MC \u2014 L-Strategy Comparison  |  TLARS / TOMP / TAFS / TLARS_STAG");
 
     // -----------------------------------------------------------------------
     // Scenario parameters (always high-dimensional, mirrors R file)
@@ -161,11 +161,15 @@ void demo_TRexSelector_lloop_strategies(std::size_t num_MC, bool rnd_coef,
     // -----------------------------------------------------------------------
     // Base solvers to sweep
     // -----------------------------------------------------------------------
-    // Deviations between the solvers will be detectable in the results
+    // Deviations between the solvers will be detectable in the results.
+    // TLARS_STAG is TLARS with the stagnation stop ON (AUTO leaves it off for
+    // TLARS), the test of whether the SKIPL overshoot comes from the LARS path
+    // or from the missing stop. TREX_SOLVERS selects a subset (solver_filter.hpp).
     const std::vector<DemoSolverInfo> solvers = {
         {SolverTypeForTRex::TLARS, "TLARS"},
         {SolverTypeForTRex::TOMP,  "TOMP"},
-        {SolverTypeForTRex::TAFS,  "TAFS", 0.0, 0.3}
+        {SolverTypeForTRex::TAFS,  "TAFS", 0.0, 0.3},
+        {SolverTypeForTRex::TLARS, "TLARS_STAG", 0.0, 0.0, 0, true}
     };
 
     // Row labels (shared across solvers).
@@ -178,6 +182,7 @@ void demo_TRexSelector_lloop_strategies(std::size_t num_MC, bool rnd_coef,
     // Solver loop — one result file pair (txt + csv) per base solver
     // -----------------------------------------------------------------------
     for (const auto& solver : solvers) {
+        if (!trex_solver_filter::selected(solver.solver_name)) continue;
 
         cdianostics::print_section_header("Base solver: " + solver.solver_name);
 
@@ -209,6 +214,7 @@ void demo_TRexSelector_lloop_strategies(std::size_t num_MC, bool rnd_coef,
         ctrl.use_max_T_stop        = true;
         ctrl.dummy_distribution    = dummygen::Distribution::Normal();
         ctrl.lloop_strategy        = strat.strategy;
+        ctrl.tloop_stagnation_stop = solver.stagnation_stop;
 
         // Simulation loop: sweep over SNR values
         for (std::size_t snr_idx = 0; snr_idx < snr_values.size(); ++snr_idx) {

@@ -3,7 +3,8 @@
 # ==============================================================================
 #
 # Classical T-Rex selector demo — L-loop strategy comparison, repeated across
-# three base solvers (TLARS / TOMP / TAFS).
+# four base solvers (TLARS / TOMP / TAFS / TLARS_STAG = TLARS with the stagnation
+# stop on).
 #
 # Mirrors:
 # cpp/trex_selector_methods/ad/trex_core/demo_trex_04_mc_sim_lloop_strategies.cpp
@@ -28,7 +29,7 @@
 #  High-dimensional (n = 300, p = 1000, s = 10).
 #  SNR sweep: {0.1, 0.2, ..., 2.0, 5.0}  (21 values).
 #  Base solvers (outer sweep, one result file pair per solver):
-#    TLARS, TOMP, TAFS (rho_afs = 0.3).
+#    TLARS, TOMP, TAFS (rho_afs = 0.3), TLARS_STAG (stagnation stop on).
 #  Two support scenarios:
 #    random support — redrawn per trial;
 #    block support  — contiguous block {0, 1, ..., s-1}  (0-based).
@@ -83,10 +84,14 @@ L_STRATEGIES = [
 
 # Base solvers for the outer sweep (rho_afs only meaningful for TAFS).
 # Deviations between the solvers will be detectable in the results.
+# TLARS_STAG is TLARS with the stagnation stop ON (AUTO leaves it off for
+# TLARS): does the SKIPL overshoot come from the LARS path or the missing stop?
 _SOLVERS = [
     dict(solver_name="TLARS", name="TLARS", lambda2=0.0, rho_afs=0.0, ncgmp_variant=0),
     dict(solver_name="TOMP",  name="TOMP",  lambda2=0.0, rho_afs=0.0, ncgmp_variant=0),
     dict(solver_name="TAFS",  name="TAFS",  lambda2=0.0, rho_afs=0.3, ncgmp_variant=0),
+    dict(solver_name="TLARS", name="TLARS_STAG", lambda2=0.0, rho_afs=0.0, ncgmp_variant=0,
+         stagnation_stop=True),
 ]
 
 
@@ -105,7 +110,7 @@ def trx_04_lloop_strategies(num_MC=_NUM_MC, num_workers=_NUM_WORKERS,
 
     support_label = "block" if block_support else "random"
     print(f"\n{'=' * 70}")
-    print("MC Simulation — L-Strategy Comparison  |  TLARS / TOMP / TAFS")
+    print("MC Simulation — L-Strategy Comparison  |  TLARS / TOMP / TAFS / TLARS_STAG")
     print("  High-dimensional (p > n)")
     print(f"  n = {n},  p = {p},  s = {s},  num_MC = {num_MC}  [{support_label} support]\n")
 
@@ -135,15 +140,16 @@ def trx_04_lloop_strategies(num_MC=_NUM_MC, num_workers=_NUM_WORKERS,
             # Values taken from the C++ reference — every option explicit.
             # tloop_stagnation_stop = None is the tri-state AUTO (C++ nullopt):
             # the selector resolves it per solver family (disabled for TLARS,
-            # enabled for the greedy TOMP/TAFS). tloop_max_stagnant_steps = 5 is
-            # the C++ struct default (only active when AUTO enables the stop).
+            # enabled for the greedy TOMP/TAFS). TLARS_STAG sets it to True.
+            # tloop_max_stagnant_steps = 5 is the C++ struct default (only
+            # active when the stop is on).
             base_ctrl = dict(
                 K                        = 20,
                 max_dummy_multiplier     = strat["max_dummy_mult"],
                 use_max_T_stop           = True,
                 opt_threshold            = 0.75,
                 lloop_strategy           = strat["strategy"],
-                tloop_stagnation_stop    = None,    # AUTO (C++ nullopt)
+                tloop_stagnation_stop    = solver_desc.get("stagnation_stop"),  # None: AUTO
                 tloop_max_stagnant_steps = 5,
                 parallel_rnd_experiments = False,
                 use_memory_mapping       = False,

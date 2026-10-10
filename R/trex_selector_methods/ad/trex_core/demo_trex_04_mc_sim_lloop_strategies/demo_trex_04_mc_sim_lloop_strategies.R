@@ -4,7 +4,8 @@
 #
 # Classical T-Rex selector demo, where in part 4 a Monte Carlo simulation
 # compares the L-loop strategies implemented in the TRexSelector, repeated
-# across three base solvers (TLARS / TOMP / TAFS).
+# across four base solvers (TLARS / TOMP / TAFS / TLARS_STAG = TLARS with the
+# stagnation stop on).
 #
 # Mirrors:
 # cpp/trex_selector_methods/ad/trex_core/demo_trex_04_lloop_strategies.cpp
@@ -31,7 +32,7 @@
 #  High-dimensional  (n = 300, p = 1000, s = 10).
 #  SNR sweep: {0.1, 0.2, ..., 2.0, 5.0}  (21 values).
 #  Base solvers (outer sweep, one result file pair per solver):
-#    TLARS, TOMP, TAFS (rho_afs = 0.3).
+#    TLARS, TOMP, TAFS (rho_afs = 0.3), TLARS_STAG (stagnation stop on).
 #
 #  Two support scenarios:
 #    random support  — redrawn per trial;
@@ -100,13 +101,17 @@ L_STRATEGIES <- list(
 
 # Base solvers for the outer sweep (rho_afs only meaningful for TAFS).
 # Deviations between the solvers will be detectable in the results.
+# TLARS_STAG is TLARS with the stagnation stop ON (AUTO leaves it off for
+# TLARS): does the SKIPL overshoot come from the LARS path or the missing stop?
 SOLVERS <- list(
   list(solver = "TLARS", name = "TLARS", lambda2 = 0.0, rho_afs = 0.0,
        ncgmp_variant = 0L),
   list(solver = "TOMP",  name = "TOMP",  lambda2 = 0.0, rho_afs = 0.0,
        ncgmp_variant = 0L),
   list(solver = "TAFS",  name = "TAFS",  lambda2 = 0.0, rho_afs = 0.3,
-       ncgmp_variant = 0L)
+       ncgmp_variant = 0L),
+  list(solver = "TLARS", name = "TLARS_STAG", lambda2 = 0.0, rho_afs = 0.0,
+       ncgmp_variant = 0L, stagnation_stop = TRUE)
 )
 
 
@@ -125,7 +130,7 @@ trx_04_lloop_strategies <- function(num_MC = NUM_MC, rnd_coef = FALSE,
 
   support_label <- if (block_support) "block" else "random"
   cat("\n", strrep("=", 70L), "\n", sep = "")
-  cat("MC Simulation — L-Strategy Comparison  |  TLARS / TOMP / TAFS\n")
+  cat("MC Simulation — L-Strategy Comparison  |  TLARS / TOMP / TAFS / TLARS_STAG\n")
   cat("  High-dimensional (p > n)\n")
   cat(sprintf("  n = %d,  p = %d,  s = %d,  num_MC = %d  [%s support]\n\n",
               n, p, s, num_MC, support_label))
@@ -153,10 +158,10 @@ trx_04_lloop_strategies <- function(num_MC = NUM_MC, rnd_coef = FALSE,
 
       # Per-strategy ctrl — max_dummy_multiplier and lloop_strategy vary.
       # Values taken from the C++ reference — every option explicit.
-      # tloop_stagnation_stop is left unset (NULL = AUTO, C++ nullopt): it is
-      # resolved per solver family (disabled for TLARS, enabled for the greedy
-      # TOMP/TAFS). tloop_max_stagnant_steps = 5 is the C++ struct default
-      # (only active when AUTO enables the stop).
+      # tloop_stagnation_stop NULL = AUTO (C++ nullopt): it is resolved per
+      # solver family (disabled for TLARS, enabled for the greedy TOMP/TAFS).
+      # TLARS_STAG sets it to TRUE. tloop_max_stagnant_steps = 5 is the C++
+      # struct default (only active when the stop is on).
       ctrl <- TRexSelectorNeo::trex_control(
         solver                   = solver_entry$solver,
         lambda2                  = solver_entry$lambda2,
@@ -167,6 +172,7 @@ trx_04_lloop_strategies <- function(num_MC = NUM_MC, rnd_coef = FALSE,
         use_max_T_stop           = TRUE,
         opt_threshold            = 0.75,
         lloop_strategy           = strat$strategy,
+        tloop_stagnation_stop    = solver_entry$stagnation_stop,
         tloop_max_stagnant_steps = 5L,
         use_openmp               = FALSE,
         use_memory_mapping       = FALSE

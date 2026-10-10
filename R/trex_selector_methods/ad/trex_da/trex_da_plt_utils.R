@@ -147,10 +147,41 @@ sweep_config <- function(key) {
     )
 }
 
+# A "<solver>_STAG" row is <solver> with the T-loop stagnation stop on (the
+# TLARS_STAG comparison row of the suite). It shares its sibling's colour and
+# is drawn dashed, so each pair reads as one solver with and without the stop.
+STAG_SUFFIX <- "_STAG"
+
+#' Sibling row of each "_STAG" row (NA for the other rows).
+.stag_sibling <- function(methods) {
+  methods <- as.character(methods)
+  ifelse(endsWith(methods, STAG_SUFFIX),
+         substr(methods, 1L, nchar(methods) - nchar(STAG_SUFFIX)),
+         NA_character_)
+}
+
 #' Stable colour / shape maps keyed by position in the method list, so a
-#' given method is the same colour in every panel and every figure.
+#' given method is the same colour in every panel and every figure. A "_STAG"
+#' row takes its sibling's colour and no palette slot of its own.
 .method_cols <- function(methods) {
-  setNames(PALETTE[(seq_along(methods) - 1L) %% length(PALETTE) + 1L], methods)
+  sib <- .stag_sibling(methods)
+  paired <- !is.na(sib) & sib %in% methods
+  own <- methods[!paired]
+  cols <- setNames(PALETTE[(seq_along(own) - 1L) %% length(PALETTE) + 1L], own)
+  for (i in which(paired)) cols[methods[i]] <- cols[[sib[i]]]
+  cols[methods]
+}
+
+#' Method lines: solid, dashed for "_STAG" rows. The dashed layer draws a key
+#' for every method, and .method_ltys() sets each key's line type.
+.method_lines <- function(sub) {
+  stag <- !is.na(.stag_sibling(sub$solver))
+  list(geom_line(data = sub[!stag, ], linewidth = 0.7),
+       geom_line(data = sub[stag, ], linewidth = 0.7, linetype = "dashed",
+                 show.legend = TRUE))
+}
+.method_ltys <- function(methods) {
+  ifelse(is.na(.stag_sibling(methods)), "solid", "dashed")
 }
 .method_shps <- function(methods) {
   setNames(METHOD_SHAPES[(seq_along(methods) - 1L) %%
@@ -431,14 +462,16 @@ choose_ticks <- function(values, scale, max_ticks = MAX_XTICKS) {
   if (metric == "FDR")
     p <- p + .fdr_ref_layers(cfg, tfdr, all_values)
 
+  key_ltys <- list(linetype = .method_ltys(methods))
   p <- p +
-    geom_line(linewidth = 0.7) +
+    .method_lines(sub) +
     geom_point(size = 2.4, fill = NA, stroke = 0.9) +
     scale_color_manual(name = legend_title, values = cols, limits = methods,
                        drop = FALSE) +
     scale_shape_manual(name = legend_title, values = shps, limits = methods,
                        drop = FALSE) +
-    guides(colour = guide_legend(order = 2), shape = guide_legend(order = 2)) +
+    guides(colour = guide_legend(order = 2, override.aes = key_ltys),
+           shape = guide_legend(order = 2)) +
     labs(title = panel_title, x = x_lab, y = y_lab) +
     # Panel theme first: the sqrt-scale layers carry a theme tweak (slanted
     # tick labels) that must land on top of the full theme_bw reset.
@@ -708,12 +741,13 @@ plot_gap_rho <- function(df, title, tfdr = DEFAULT_TFDR) {
     }
     span <- max(rnd_rho) - min(rnd_rho)
     pad <- if (span > 0) span * 0.04 else 0.5
+    key_ltys <- list(linetype = .method_ltys(solvers))
     p +
-      geom_line(linewidth = 0.7) +
+      .method_lines(sub) +
       geom_point(size = 2.4, fill = NA, stroke = 0.9) +
       scale_color_manual(name = "Method", values = cols) +
       scale_shape_manual(name = "Method", values = shps) +
-      guides(colour = guide_legend(order = 2),
+      guides(colour = guide_legend(order = 2, override.aes = key_ltys),
              shape = guide_legend(order = 2)) +
       labs(title = panel_title, x = "AR(1) correlation ρ", y = y_lab) +
       scale_x_continuous(breaks = rnd_rho, labels = .fmt_g,

@@ -154,8 +154,9 @@ def default_solvers(da_variant=""):
     calibrated stochastic tie-breaking, required for DA FDR control at high
     correlation. Path solver TLARS stays 0.
     LARS-based solvers run with  stagnation control OFF; greedy solvers
-    default it ON. `da_variant` tags the DA method in the row label, e.g.
-    "+AR1" -> "TREX-DA+AR1: TLARS".
+    default it ON. TLARS_STAG is TLARS with the stagnation stop ON, the
+    comparison row for TLARS' long T-loops (last, as in cpp). `da_variant` tags
+    the DA method in the row label, e.g. "+AR1" -> "TREX-DA+AR1: TLARS".
     """
     p = "TREX-DA" + da_variant + ": "
     return [
@@ -165,6 +166,8 @@ def default_solvers(da_variant=""):
              use_stagnation=True, exch_tie_alpha=0.25),
         dict(solver="TOMP", name=p + "TOMP", rho_afs=0.0,
              use_stagnation=True, exch_tie_alpha=0.25),
+        dict(solver="TLARS", name=p + "TLARS_STAG", rho_afs=0.0,
+             use_stagnation=True, exch_tie_alpha=0.0),
     ]
 
 

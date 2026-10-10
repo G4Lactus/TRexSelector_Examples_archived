@@ -78,8 +78,9 @@ print_section_header <- function(title) {
 #' calibrated stochastic tie-breaking, required for DA FDR control at high
 #' correlation. Path solver TLARS stays 0.
 #' LARS-based solvers run with stagnation control OFF; greedy solvers
-#' default it ON. `da_variant` tags the DA method in the row label, e.g.
-#' "+AR1" -> "TREX-DA+AR1: TLARS".
+#' default it ON. TLARS_STAG is TLARS with the stagnation stop ON, the
+#' comparison row for TLARS' long T-loops (last, as in cpp). `da_variant` tags
+#' the DA method in the row label, e.g. "+AR1" -> "TREX-DA+AR1: TLARS".
 default_solvers <- function(da_variant = "") {
   p <- paste0("TREX-DA", da_variant, ": ")
   list(
@@ -88,7 +89,9 @@ default_solvers <- function(da_variant = "") {
     list(solver = "TAFS", name = paste0(p, "TAFS"), rho_afs = 0.3,
          use_stagnation = TRUE, exch_tie_alpha = 0.25),
     list(solver = "TOMP", name = paste0(p, "TOMP"), rho_afs = 0.0,
-         use_stagnation = TRUE, exch_tie_alpha = 0.25)
+         use_stagnation = TRUE, exch_tie_alpha = 0.25),
+    list(solver = "TLARS", name = paste0(p, "TLARS_STAG"), rho_afs = 0.0,
+         use_stagnation = TRUE, exch_tie_alpha = 0.0)
   )
 }
 

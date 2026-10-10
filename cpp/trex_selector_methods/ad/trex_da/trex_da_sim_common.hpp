@@ -54,6 +54,7 @@
 // DGP generators
 #include "dgp_generators.hpp"
 #include "../../cell_cache.hpp"   // resumable grid cells
+#include "../../solver_filter.hpp"  // optional solver selection (TREX_SOLVERS)
 
 
 // ==============================================================================
@@ -596,7 +597,9 @@ inline std::string key(const std::string& kind, const std::string& label, std::s
                        unsigned base_seed_offset, double tFDR, const TRexControlParameter& ctrl,
                        const TRexDAControlParameter* da) {
     std::ostringstream os;
-    os << kind << '|' << label << "|solver=" << static_cast<int>(ctrl.solver_type);
+    os << kind << '|' << label << "|solver=" << static_cast<int>(ctrl.solver_type)
+       << "|stag=" << (ctrl.tloop_stagnation_stop.has_value() ? (*ctrl.tloop_stagnation_stop ? "1" : "0") : "auto")
+       << "|afs=" << ctrl.solver_params.rho_afs << "|tie=" << ctrl.solver_params.exch_tie_alpha;
     if (da != nullptr) {
         os << "|da=" << static_cast<int>(da->method) << "|link=" << static_cast<int>(da->hc_linkage);
     }
@@ -794,7 +797,7 @@ inline void save_and_print_grid_results(
     const std::string& output_dir   = DEMO_OUTPUT_DIR)
 {
     std::filesystem::create_directories(output_dir);
-    const std::string filename = "da_trex_mc_" + scenario_tag + ".txt";
+    const std::string filename = "da_trex_mc_" + scenario_tag + trex_solver_filter::file_suffix() + ".txt";
     std::ofstream out_file(output_dir + filename);
 
     auto print_dual = [&](const std::string& text) {
@@ -884,7 +887,7 @@ inline void save_and_print_grid_results(
     }
 
     // CSV — tidy long format: solver,metric,grid_label,grid_value,value
-    const std::string csv_filename = "da_trex_mc_" + scenario_tag + ".csv";
+    const std::string csv_filename = "da_trex_mc_" + scenario_tag + trex_solver_filter::file_suffix() + ".csv";
     std::ofstream csv_file(output_dir + csv_filename);
     if (csv_file.is_open()) {
         // Sanitize grid_label to a valid CSV column name (replace spaces with _)
@@ -1126,7 +1129,9 @@ void run_snr_sweep(
  *  TRexControlParameter::tloop_stagnation_stop by run_param_sweep(). LARS-based
  *  solvers (TLARS/TLASSO/TENET/TENET_Aug) have monotone solution paths and can
  *  safely run with stagnation control OFF; greedy solvers (TAFS/TOMP) default
- *  it ON. Flip any flag on demand to compare with/without stagnation control.
+ *  it ON. TLARS_STAG is TLARS with the stagnation stop ON, the comparison row
+ *  for TLARS' long T-loops. It comes last, so a TREX_SOLVERS=TLARS_STAG run
+ *  merges into the full tables in full-run order.
  */
 inline std::vector<SolverInfo> default_solvers(const std::string& da_variant = "") {
     //          type                       name              rho_afs  use_stagnation  exch_tie_alpha
@@ -1138,11 +1143,17 @@ inline std::vector<SolverInfo> default_solvers(const std::string& da_variant = "
     // "+AR1" → "TREX-DA+AR1: TLARS". Empty (default) keeps the generic
     // "TREX-DA: <solver>" labels used by the rest of the suite.
     const std::string p = "TREX-DA" + da_variant + ": ";
-    return {
+    std::vector<SolverInfo> pool = {
         {SolverTypeForTRex::TLARS, p + "TLARS", 0.0,  /*stagnation=*/false, /*exch_tie=*/0.0},
         {SolverTypeForTRex::TAFS,  p + "TAFS",  0.3,  /*stagnation=*/true,  /*exch_tie=*/0.25},
         {SolverTypeForTRex::TOMP,  p + "TOMP",  0.0,  /*stagnation=*/true,  /*exch_tie=*/0.25},
+        {SolverTypeForTRex::TLARS, p + "TLARS_STAG", 0.0, /*stagnation=*/true,  /*exch_tie=*/0.0},
     };
+    // TREX_SOLVERS keeps only the selected solvers (see solver_filter.hpp).
+    std::vector<SolverInfo> selected;
+    for (const auto& sv : pool)
+        if (trex_solver_filter::selected(sv.name)) selected.push_back(sv);
+    return selected;
 }
 
 // ==============================================================================
@@ -1195,8 +1206,10 @@ inline void save_and_print_2d_two_support_results(
     const std::string&                              output_dir   = DEMO_OUTPUT_DIR)
 {
     std::filesystem::create_directories(output_dir);
-    const std::string txt_path = output_dir + "da_trex_mc_" + scenario_tag + ".txt";
-    const std::string csv_path = output_dir + "da_trex_mc_" + scenario_tag + ".csv";
+    const std::string txt_path =
+        output_dir + "da_trex_mc_" + scenario_tag + trex_solver_filter::file_suffix() + ".txt";
+    const std::string csv_path =
+        output_dir + "da_trex_mc_" + scenario_tag + trex_solver_filter::file_suffix() + ".csv";
 
     std::ofstream out_file(txt_path);
 
@@ -1392,8 +1405,10 @@ inline void save_and_print_2d_gap_rho_results(
     const std::string&                              output_dir   = DEMO_OUTPUT_DIR)
 {
     std::filesystem::create_directories(output_dir);
-    const std::string txt_path = output_dir + "da_trex_mc_" + scenario_tag + ".txt";
-    const std::string csv_path = output_dir + "da_trex_mc_" + scenario_tag + ".csv";
+    const std::string txt_path =
+        output_dir + "da_trex_mc_" + scenario_tag + trex_solver_filter::file_suffix() + ".txt";
+    const std::string csv_path =
+        output_dir + "da_trex_mc_" + scenario_tag + trex_solver_filter::file_suffix() + ".csv";
 
     std::ofstream out_file(txt_path);
 

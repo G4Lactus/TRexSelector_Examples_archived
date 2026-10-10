@@ -287,16 +287,40 @@ def qualitative_colors(name: str) -> list:
     return list(cast(Sequence[Any], cmap.colors))
 
 
+# A "<solver>_STAG" row is <solver> with the T-loop stagnation stop on (the
+# TLARS_STAG comparison row of the suite). It shares its sibling's colour and is
+# drawn dashed, so each pair reads as one solver with and without the stop.
+STAG_SUFFIX = "_STAG"
+
+
+def stag_sibling(row: str) -> str | None:
+    """The row a "_STAG" row is compared with, e.g. "TREX: TLARS" for "TREX: TLARS_STAG"."""
+    return row[: -len(STAG_SUFFIX)] if row.endswith(STAG_SUFFIX) else None
+
+
+def line_style(row: str) -> str:
+    """Dashed for a "_STAG" row, solid otherwise (matplotlib linestyle)."""
+    return "--" if stag_sibling(row) is not None else "-"
+
+
 def row_colors(rows: list[str]) -> dict[str, tuple]:
     """Assign a stable, clearly distinct colour to each method.
 
     Concatenates two qualitative colormaps (tab10 + Dark2 = 18 hand-picked,
     high-contrast colours) rather than sampling a gradient, so adjacent curves
     are easy to tell apart. Keyed by first-seen position, so the mapping is
-    deterministic and identical across the panels of a comparison grid.
+    deterministic and identical across the panels of a comparison grid. A
+    "_STAG" row takes its sibling's colour and no palette slot of its own, so
+    the other rows keep the colours they have without it.
     """
     palette = qualitative_colors("tab10") + qualitative_colors("Dark2")
-    return {row: palette[i % len(palette)] for i, row in enumerate(rows)}
+    own = [row for row in rows if stag_sibling(row) not in rows]
+    colors = {row: palette[i % len(palette)] for i, row in enumerate(own)}
+    for row in rows:
+        sibling = stag_sibling(row)
+        if sibling in colors:
+            colors[row] = colors[sibling]
+    return colors
 
 
 def rgba_to_css(color: tuple) -> str:
@@ -486,6 +510,7 @@ def _plot_method_curve(ax, df, method, metric, index, color, mev, bands):
     line, = ax.plot(
         sub["sweep"], sub["value"],
         color=color, marker=MARKERS[index % len(MARKERS)],
+        linestyle=line_style(method),
         markersize=6.5, markevery=mev, markeredgecolor="white",
         markeredgewidth=0.7, linewidth=2.0, label=method, zorder=3,
     )
@@ -627,7 +652,8 @@ def write_fdr_tpr_vs_sweep_html(
                     x=sub["sweep"], y=sub["value"],
                     mode="lines+markers", name=method,
                     legendgroup=method, showlegend=(metric == "FDR"),
-                    line=dict(color=rgba_to_css(colors[method]), width=2),
+                    line=dict(color=rgba_to_css(colors[method]), width=2,
+                              dash="dash" if stag_sibling(method) else "solid"),
                     marker=dict(size=7),
                     hovertemplate=(
                         f"<b>{method}</b><br>{cfg['label']}=%{{x}}<br>"
@@ -786,6 +812,7 @@ def plot_comparison_grid(
                 line, = ax.plot(
                     sub["sweep"], sub["value"],
                     color=colors[method], marker=markers[method],
+                    linestyle=line_style(method),
                     markersize=6.0, markevery=mev, markeredgecolor="white",
                     markeredgewidth=0.7, linewidth=1.9, label=method, zorder=3,
                 )
@@ -956,6 +983,7 @@ def plot_gap_rho(df: pd.DataFrame, title: str, tfdr: float = DEFAULT_TFDR) -> pl
     # --- Random support baseline (1D vs rho) --------------------------------
     rnd = df[df["support_type"] == "Random"]
     solver_markers = ("o", "s", "^", "D", "v")
+    solver_colors = row_colors(list(solvers))
     for ax, metric, abbrev, ylabel, ylim in (
         (ax_rt, "mean_TPP", "TPR", "True positive rate", (-0.02, 1.02)),
         (ax_rf, "mean_FDP", "FDR", "False discovery rate", None),
@@ -964,6 +992,7 @@ def plot_gap_rho(df: pd.DataFrame, title: str, tfdr: float = DEFAULT_TFDR) -> pl
             sub = (rnd[(rnd["metric"] == metric) & (rnd["solver"] == solver)]
                    .sort_values("rho"))
             ax.plot(sub["rho"], sub["value"],
+                    color=solver_colors[solver], linestyle=line_style(solver),
                     marker=solver_markers[si % len(solver_markers)],
                     markersize=7, markeredgecolor="white", linewidth=2.2,
                     label=solver)

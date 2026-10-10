@@ -59,6 +59,7 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -75,6 +76,7 @@
 
 // Resumable grid cells
 #include "../../cell_cache.hpp"
+#include "../../solver_filter.hpp"  // optional solver selection (TREX_SOLVERS)
 
 
 // ==============================================================================
@@ -142,6 +144,7 @@ struct DemoSolverInfo {
     double            lambda2       = 0.0;
     double            rho_afs       = 0.0;
     int               ncgmp_variant = 0;
+    std::optional<bool> stagnation_stop = std::nullopt;  // nullopt: library AUTO
 };
 
 
@@ -689,6 +692,9 @@ inline std::string cell_key(const std::string& kind, const std::string& label, s
                             unsigned base_seed_offset, double tFDR, const TRexControlParameter& ctrl) {
     std::ostringstream os;
     os << kind << '|' << label << "|solver=" << static_cast<int>(ctrl.solver_type)
+       << "|stag=" << (ctrl.tloop_stagnation_stop.has_value() ? (*ctrl.tloop_stagnation_stop ? "1" : "0") : "auto")
+       << "|l2=" << ctrl.solver_params.lambda2 << "|afs=" << ctrl.solver_params.rho_afs
+       << "|ncgmp=" << ctrl.solver_params.ncgmp_variant
        << "|seed=" << base_seed_offset << "|mc=" << num_MC << "|tfdr=" << tFDR;
     return os.str();
 }
