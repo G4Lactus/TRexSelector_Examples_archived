@@ -108,8 +108,8 @@ produced by `./generate_plots.sh`, which combines the four sweeps into one panel
 ## Running the Demo
 
 ```bash
-Rscript R/trex_selector_methods/ad/trex_spca/demo_trex_spca_02_mc_sim_pev/demo_trex_spca_02_mc_sim_pev.R      # 6 workers
-Rscript R/trex_selector_methods/ad/trex_spca/demo_trex_spca_02_mc_sim_pev/demo_trex_spca_02_mc_sim_pev.R 8    # 8 workers
+Rscript R/trex_selector_methods/ad/trex_spca/demo_trex_spca_02_mc_sim_pev/demo_trex_spca_02_mc_sim_pev.R      # 8 workers (default)
+Rscript R/trex_selector_methods/ad/trex_spca/demo_trex_spca_02_mc_sim_pev/demo_trex_spca_02_mc_sim_pev.R 4    # 4 workers
 TREX_SPCA_PARTS=5 Rscript .../demo_trex_spca_02_mc_sim_pev.R      # only the Part 5 heatmaps
 TREX_SPCA_NUM_MC=10 Rscript .../demo_trex_spca_02_mc_sim_pev.R    # pilot-run MC override
 ./generate_plots.sh                                               # figures from the saved CSVs

@@ -7,7 +7,7 @@
 #   SKIP_HEAVY=1 ./run_overnight.sh # skip demo 02 (49-PC sweep + heatmap grid)
 #
 # Demo 01 sweeps the 9-point SNR grid, demo 02 runs the four Fig.-3 sweeps and
-# the 99-cell heatmap grid, at num_MC=200 with 6 PSOCK workers each. Both
+# the 99-cell heatmap grid, at num_MC=200 with 8 PSOCK workers each. Both
 # demos are resumable (finished cells are cached). Figures are regenerated
 # separately via each demo's generate_plots.sh.
 set -uo pipefail

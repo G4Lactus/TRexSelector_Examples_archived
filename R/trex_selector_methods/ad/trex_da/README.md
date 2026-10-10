@@ -102,7 +102,7 @@ Rscript R/trex_selector_methods/ad/trex_da/demo_trex_da_01_mc_sim_ar1/demo_trex_
 ```
 
 The optional first command-line argument sets the number of parallel worker cores
-(default 6). Scripts resolve their own directory, so they run from any working
+(default `TREX_NUM_WORKERS`, else 8). Scripts resolve their own directory, so they run from any working
 directory. Individual parts are gated behind `RUN_PART_*` flags at the top of
 each file. Each demo folder has its own `README.md`, and
 [run_overnight.sh](run_overnight.sh) regenerates the whole suite's result data.

@@ -36,7 +36,7 @@ only the storage medium differs between them:
   Acquisition Is Initialization (RAII) `MmapFileGuard`).
 
 Both report averaged FDR, TPR, Avg L, Avg T per SNR (`track_L_T = TRUE`). MC trials run
-in parallel over a hardcoded `num_cores <- 6L` (set at the top of the file).
+in parallel over `num_cores` workers (first command-line argument, else `TREX_NUM_WORKERS`, else 8).
 
 ## Results
 

@@ -59,7 +59,8 @@ Shared control per solver x distribution: `K = 20`, `max_dummy_multiplier = 10`,
 `tloop_max_stagnant_steps = 5`, `use_openmp = FALSE`, `use_memory_mapping = FALSE`,
 `dummy_distribution` swept. The `tloop_stagnation_stop` option is left unset (AUTO — the
 per-solver-family default). Reports averaged FDR, TPR, Avg L, Avg T per distribution x
-SNR (`track_L_T = TRUE`). Monte Carlo (MC) trials run in parallel over a hardcoded `num_cores <- 6L`.
+SNR (`track_L_T = TRUE`). Monte Carlo (MC) trials run in parallel over `num_cores`
+workers (first command-line argument, else `TREX_NUM_WORKERS`, else 8).
 
 ## Expected pattern
 

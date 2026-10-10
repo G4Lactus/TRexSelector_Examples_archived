@@ -132,10 +132,9 @@ The target FDR is not part of the control object and is passed as `tFDR` to
 Rscript R/trex_selector_methods/ad/trex_core/demo_trex_02_mc_sim_fixed_support/demo_trex_02_mc_sim_fixed_support.R
 ```
 
-Demos run from any working directory. Unlike the `trex_da` / `trex_gvs` demos,
-these scripts do **not** take a worker-cores argument — MC parallelism uses a
-hardcoded `num_cores <- 6L` near the top of each MC demo (edit it to match your
-machine). The MC demos write into each demo's own
+Demos run from any working directory. As in the `trex_da` / `trex_gvs` demos,
+the optional first command-line argument sets the number of worker cores, else
+`TREX_NUM_WORKERS`, else 8 (`0` uses every core). The MC demos write into each demo's own
 `simulation_results/data/` subfolder (the `simulation_results/` umbrella holds
 generated artifacts only — `data/` for tables, `plots/` for figures, matching
 the C++ suite convention):

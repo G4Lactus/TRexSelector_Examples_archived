@@ -58,9 +58,11 @@
 
 library(TRexSelectorNeo)
 
+# Worker processes: first CLI argument, else TREX_NUM_WORKERS, else 8 (0 = all).
 num_cores <- local({
   a <- suppressWarnings(as.integer(commandArgs(trailingOnly = TRUE)[1L]))
-  if (!is.na(a) && a > 0L) a else 6L
+  if (is.na(a)) a <- suppressWarnings(as.integer(Sys.getenv("TREX_NUM_WORKERS", "8")))
+  if (is.na(a)) 8L else if (a < 1L) parallel::detectCores() else a
 })
 
 this_dir_ <- tryCatch(

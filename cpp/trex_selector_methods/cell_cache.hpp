@@ -1,3 +1,6 @@
+// ==============================================================================
+// cell_cache.hpp
+// ==============================================================================
 /**
  * @file cell_cache.hpp
  * @brief Resumable grid cells for the Monte Carlo demos.
@@ -22,8 +25,11 @@
  * Single-threaded use: call it from the thread that drives the Monte Carlo
  * loops, never from inside an OpenMP region.
  */
-#pragma once
+// ==============================================================================
+#ifndef DEMOS_TREX_SELECTOR_METHODS_CELL_CACHE_HPP
+#define DEMOS_TREX_SELECTOR_METHODS_CELL_CACHE_HPP
 
+// std includes
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -38,6 +44,7 @@
 #include <utility>
 #include <vector>
 
+// Process environment (POSIX environ, Windows _environ)
 #if defined(_WIN32)
 #define TREX_CELL_CACHE_ENVIRON _environ
 #else
@@ -47,10 +54,18 @@ extern char** environ;
 
 namespace trex_cell_cache {
 
+// ==============================================================================
+// Cell type
+// ==============================================================================
+
 /** @brief One cell: named numbers in a fixed order. */
 using Cell = std::vector<std::pair<std::string, double>>;
 
 inline void finish();
+
+// ==============================================================================
+// Cache file (internal)
+// ==============================================================================
 
 namespace detail {
 
@@ -157,6 +172,10 @@ inline void open(const char* output_dir, const char* build_time) {
 
 }  // namespace detail
 
+// ==============================================================================
+// Cached cells
+// ==============================================================================
+
 /**
  * @brief Result of one cell: from the cache when present, else computed and appended.
  *
@@ -212,9 +231,16 @@ inline double get(const Cell& cell, const std::string& name) {
 
 }  // namespace trex_cell_cache
 
+// ==============================================================================
+// Demo macro
+// ==============================================================================
+
 /**
  * @brief Cached cell in a demo translation unit: binds the demo's output folder
  *        (DEMO_OUTPUT_DIR, set by CMake) and its build time to the cache.
  */
 #define TREX_CELL_CACHED(key, compute) \
     ::trex_cell_cache::cached((key), (compute), DEMO_OUTPUT_DIR, __DATE__ " " __TIME__)
+
+#endif /* End of DEMOS_TREX_SELECTOR_METHODS_CELL_CACHE_HPP */
+// ==============================================================================

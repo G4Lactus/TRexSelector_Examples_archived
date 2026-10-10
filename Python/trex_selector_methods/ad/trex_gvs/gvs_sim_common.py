@@ -60,7 +60,7 @@ import cell_cache
 #
 # N_CORES MC worker processes, each pinned to one inner OpenMP thread by
 # _init_worker(), so a demo never exceeds N_CORES cores in total. The default
-# cap matches the cpp demos' omp_set_num_threads(6), keeping runtimes
+# cap matches the cpp demos' default of 8 threads, keeping runtimes
 # comparable across the C++ / Python suites.
 #
 # Override per run, no code edit needed:
@@ -72,7 +72,7 @@ import cell_cache
 # them, so a 128-core host that granted this process only 4 CPUs yields 4, not
 # 128 — relevant under containers, Slurm/PBS, taskset and CI runners.
 # ------------------------------------------------------------------------------
-_WORKER_CAP = 6
+_WORKER_CAP = 8
 
 
 def _usable_cpus():

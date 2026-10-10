@@ -43,7 +43,7 @@ use_memory_mapping = false       # In-memory data
 tFDR = 0.1                       # Target FDR control level
 ```
 
-The MC loop itself is parallelized with Open Multi-Processing (OpenMP) (`omp_set_num_threads(6)`).
+The MC loop itself is parallelized with Open Multi-Processing (OpenMP) (`TREX_NUM_WORKERS` threads, default 8).
 
 ---
 

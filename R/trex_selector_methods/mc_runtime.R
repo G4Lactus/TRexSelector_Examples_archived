@@ -7,7 +7,7 @@
 #   mc_map()           — runs a function over tasks on a persistent PSOCK
 #                        cluster (spawned R processes, no fork), results in
 #                        task order. Every worker loads the package and runs
-#                        its solvers single-threaded (6-core rule: the
+#                        its solvers single-threaded (core budget: the
 #                        parallelism lives in the workers).
 #   mc_stop_cluster()  — stops the persistent cluster (also done at exit).
 #   cell_cached()      — resumable grid cells: every finished cell (method x

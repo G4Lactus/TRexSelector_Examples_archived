@@ -60,7 +60,12 @@ source(file.path(this_dir_, "..", "trex_sim_utils.R"))
 OUT_DIR <- file.path(this_dir_, "simulation_results", "data")
 dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
 
-num_cores <- 6L
+# Worker processes: first CLI argument, else TREX_NUM_WORKERS, else 8 (0 = all).
+num_cores <- local({
+  a <- suppressWarnings(as.integer(commandArgs(trailingOnly = TRUE)[1L]))
+  if (is.na(a)) a <- suppressWarnings(as.integer(Sys.getenv("TREX_NUM_WORKERS", "8")))
+  if (is.na(a)) 8L else if (a < 1L) parallel::detectCores() else a
+})
 NUM_MC <- 200L
 
 # Run flags

@@ -32,7 +32,8 @@ essentially the identity:
 - Reports the averaged false discovery rate (FDR), true positive rate (TPR), Avg L, and Avg T per solver x SNR
   (`track_L_T = TRUE`).
 
-MC trials run in parallel over a hardcoded `num_cores <- 6L` (set at the top of the file).
+MC trials run in parallel over `num_cores` workers (first command-line argument, else
+`TREX_NUM_WORKERS`, else 8).
 
 ## Results
 

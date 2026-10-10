@@ -1,3 +1,6 @@
+// ==============================================================================
+// solver_filter.hpp
+// ==============================================================================
 /**
  * @file solver_filter.hpp
  * @brief Optional solver selection for the Monte Carlo demos.
@@ -11,8 +14,11 @@
  * committed results of the full solver pool stay untouched. The trex_da
  * merge_result_files.py adds such extra files to the full tables.
  */
-#pragma once
+// ==============================================================================
+#ifndef DEMOS_TREX_SELECTOR_METHODS_SOLVER_FILTER_HPP
+#define DEMOS_TREX_SELECTOR_METHODS_SOLVER_FILTER_HPP
 
+// std includes
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
@@ -21,6 +27,10 @@
 #include <vector>
 
 namespace trex_solver_filter {
+
+// ==============================================================================
+// Solver selection (TREX_SOLVERS)
+// ==============================================================================
 
 /** @brief Solver names listed in TREX_SOLVERS (empty: no selection). */
 inline std::vector<std::string> names() {
@@ -58,3 +68,6 @@ inline std::string file_suffix() {
 }
 
 }  // namespace trex_solver_filter
+
+#endif /* End of DEMOS_TREX_SELECTOR_METHODS_SOLVER_FILTER_HPP */
+// ==============================================================================

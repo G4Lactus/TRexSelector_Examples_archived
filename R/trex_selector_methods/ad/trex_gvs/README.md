@@ -104,6 +104,6 @@ Rscript R/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_08_mc_sim_block_bench/
 ```
 
 Scripts resolve their own directory, so they run from any working directory.
-The optional first argument sets the number of parallel worker cores (default 6).
+The optional first argument sets the number of parallel worker cores (default `TREX_NUM_WORKERS`, else 8).
 These are full Monte Carlo simulations (200 trials per grid point on n = 200,
 p = 500). For a quick smoke run, reduce `num_MC` / grid sizes.

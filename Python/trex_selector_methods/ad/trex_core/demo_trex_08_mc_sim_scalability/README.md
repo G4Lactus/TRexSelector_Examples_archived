@@ -45,9 +45,9 @@ independent columns, so the column-correlation is essentially the identity:
 Trials run **sequentially** (no `ProcessPoolExecutor`) so wall-clock and RSS
 readings are undistorted, while the K random experiments inside `select()` still
 run in parallel via the selector's inner Open Multi-Processing (OpenMP),
-**pinned to 6 threads**
-(`set_num_threads(6)`, `_NUM_THREADS`) to match the C++ demo's
-`omp_set_num_threads(6)`. Left at the library default (all logical cores) the
+**pinned to `TREX_NUM_WORKERS` threads (default 8)**
+(`set_num_threads(_NUM_THREADS)`) to match the C++ demo's
+thread count. Left at the library default (all logical cores) the
 $\text{large-}p$ points run 6 vs. 12 threads' worth of concurrent dummy matrices near
 the RAM limit, which distorts the timing — so both languages use the same thread
 budget for a fair comparison.

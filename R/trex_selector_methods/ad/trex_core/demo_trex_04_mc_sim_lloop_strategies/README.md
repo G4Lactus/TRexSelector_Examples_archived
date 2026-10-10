@@ -49,8 +49,8 @@ written per solver. Shared control per solver x strategy: `K = 20`,
 `use_openmp = FALSE`, `use_memory_mapping = FALSE`, `lloop_strategy` and
 `max_dummy_multiplier` swept. The `tloop_stagnation_stop` option is left unset (AUTO — the
 per-solver-family default). Reports averaged FDR, TPR, Avg L, Avg T per strategy
-x SNR (`track_L_T = TRUE`). Monte Carlo (MC) trials run in parallel over a hardcoded
-`num_cores <- 6L`.
+x SNR (`track_L_T = TRUE`). Monte Carlo (MC) trials run in parallel over
+`num_cores` workers (first command-line argument, else `TREX_NUM_WORKERS`, else 8).
 
 ## Results: the fixed-budget FDR overshoot is solver-specific
 

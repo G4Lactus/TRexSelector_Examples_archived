@@ -33,7 +33,7 @@ point. While `n` and `p` scale, the correlation structure does not:
 ![Design-matrix correlation of the shared i.i.d. Gaussian DGP (shown at n=300, p=1,000, natural order, no clustering)](../dgp_corr_plots/trex_gauss.png)
 
 Note (thread pinning): the C++/Python demos pin the selector's inner Open Multi-Processing (OpenMP) pool
-to 6 threads. The R package exports no equivalent, so the library defaults apply
+to `TREX_NUM_WORKERS` threads (default 8). The R package exports no equivalent, so the library defaults apply
 — a documented divergence.
 
 ## The grid

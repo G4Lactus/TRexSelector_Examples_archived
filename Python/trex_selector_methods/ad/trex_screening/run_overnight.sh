@@ -9,7 +9,7 @@
 # The demos use the cpp-reference Monte Carlo counts (num_MC = 200, biobank
 # num_MC_multi = 200, R_boot = 1000), so this run reproduces the C++ suite's
 # fidelity. Set SCR_NUM_WORKERS to change the parallel worker-process count
-# (default 6); it does not affect results.
+# (default 8); it does not affect results.
 #
 # HEAVY: demo_trex_scr_04 / _05 are the (synthetic) biobank studies — heaviest.
 set -uo pipefail

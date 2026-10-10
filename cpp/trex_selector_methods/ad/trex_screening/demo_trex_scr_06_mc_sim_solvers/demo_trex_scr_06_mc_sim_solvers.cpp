@@ -309,7 +309,7 @@ void demo_SolverAndMethod_MC(std::size_t num_MC, bool high_dim, bool rnd_coef)
 int main()
 {
     std::cout.setf(std::ios::unitbuf);
-    omp_set_num_threads(6);
+    omp_set_num_threads(trex_mc_workers::count());
 
     // -------------------------------------------------------------------------
     // Demo 01: MC SNR sweep — three solvers, ordinary Screen-TRex

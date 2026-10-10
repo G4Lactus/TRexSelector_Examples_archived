@@ -54,6 +54,7 @@
 // DGP generators
 #include "dgp_generators.hpp"
 #include "../../cell_cache.hpp"   // resumable grid cells
+#include "../../mc_workers.hpp"   // thread budget (TREX_NUM_WORKERS)
 #include "../../solver_filter.hpp"  // optional solver selection (TREX_SOLVERS)
 
 
@@ -688,12 +689,12 @@ inline GridPointResult run_mc_trials_base(
 // ==============================================================================
 
 /** @brief Console/TXT width of the "===" rules framing each result header. */
-inline constexpr std::size_t kHeaderWidth = 78;
+inline constexpr std::size_t header_width = 78;
 
 /**
  * @brief Lay a header info line out over as many rows as it needs.
  *
- * The config lines grew past the kHeaderWidth rule as demos added parameters
+ * The config lines grew past the header_width rule as demos added parameters
  * (e.g. the AR(1)+white Q sweep reaches 103 columns), so they are wrapped rather
  * than allowed to overrun it.
  *
@@ -718,7 +719,7 @@ inline constexpr std::size_t kHeaderWidth = 78;
  * @return The wrapped block; each row newline-terminated, empty if @p text is.
  */
 inline std::string wrap_header_extra(const std::string& text,
-                                     std::size_t width = kHeaderWidth,
+                                     std::size_t width = header_width,
                                      const std::string& indent = "  ") {
     // Each token carries the separator that followed it, so the exact spacing
     // is restored whenever two tokens end up on the same row.

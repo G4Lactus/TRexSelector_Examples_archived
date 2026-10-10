@@ -46,6 +46,7 @@
 
 #include "trex_gvs_dgps.hpp"
 #include "../../cell_cache.hpp"   // resumable grid cells
+#include "../../mc_workers.hpp"   // thread budget (TREX_NUM_WORKERS)
 
 // std includes
 #include <algorithm>

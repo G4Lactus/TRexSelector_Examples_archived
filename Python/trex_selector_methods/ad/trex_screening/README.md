@@ -299,8 +299,8 @@ demo you are running.
 ## Parallelism and worker budget
 
 Monte Carlo trials run in a `ProcessPoolExecutor` shared across a demo's parts.
-The worker count defaults to `min(6, usable CPUs)` — matching the C++ demos'
-`omp_set_num_threads(6)` so runtimes stay comparable across the ports — and each
+The worker count defaults to `min(8, usable CPUs)` — matching the C++ demos'
+default of 8 threads so runtimes stay comparable across the ports — and each
 worker pins its own Open Multi-Processing (OpenMP) pool to a single thread, so a
 demo never exceeds the worker count in total cores. Override per run, without editing sources:
 

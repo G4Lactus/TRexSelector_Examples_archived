@@ -24,7 +24,8 @@
 #   - continue-on-error: a failing demo does not stop the batch
 #   - per-demo console logs and a summary in logs/overnight_<timestamp>/
 #     (gitignored); the results overwrite the demos' simulation_results/
-#   - 6-core budget (OMP_NUM_THREADS=6), keeps the Mac awake (caffeinate)
+#   - core budget TREX_NUM_WORKERS (default 8, 0 = every processor), passed
+#     on to the demos and to OpenMP; keeps the Mac awake (caffeinate)
 #   - stopping the runner (Ctrl-C, kill) also stops the demo in flight
 #
 # Run tag and resume:
@@ -45,7 +46,8 @@ CPP_ROOT="$(cd "$HERE/.." && pwd)"
 REPO_ROOT="$(cd "$CPP_ROOT/.." && pwd)"
 BIN="$CPP_ROOT/build/release/bin/trex_selector_methods/ad"
 LOG_ROOT="$HERE/logs"
-export OMP_NUM_THREADS=6
+export TREX_NUM_WORKERS="${TREX_NUM_WORKERS:-8}"
+[ "$TREX_NUM_WORKERS" -gt 0 ] 2>/dev/null && export OMP_NUM_THREADS="$TREX_NUM_WORKERS"
 
 declare -a ORDER=(trex_screening trex_spca trex_core trex_da trex_gvs)
 suite_demos() {
@@ -135,7 +137,7 @@ if [ $BUILD -eq 1 ]; then
     declare -a TARGETS=()
     for q in "${QUEUE[@]}"; do TARGETS+=("$(basename "${q#*|}")"); done
     echo "[$(date '+%F %T')] building ${#TARGETS[@]} target(s)" | tee -a "$SUMMARY"
-    if ! cmake --build "$CPP_ROOT/build/release" --target "${TARGETS[@]}" -j 6 > "$LOG/build.log" 2>&1; then
+    if ! cmake --build "$CPP_ROOT/build/release" --target "${TARGETS[@]}" -j 8 > "$LOG/build.log" 2>&1; then
         echo "BUILD FAILED, see $LOG/build.log" | tee -a "$SUMMARY"
         exit 1
     fi

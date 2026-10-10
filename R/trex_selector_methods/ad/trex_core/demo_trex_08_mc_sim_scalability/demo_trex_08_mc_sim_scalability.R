@@ -104,7 +104,7 @@ CHUNK_COLS <- 1000L    # column-chunk size for the out-of-core X generation
 DUMMY_MULT <- 10L      # max_dummy_multiplier; drives the D volume (10 x p)
 
 # NOTE (thread pinning): the C++/Python demos pin the selector's inner OpenMP
-# pool to 6 threads (omp_set_num_threads(6) / set_num_threads(6)). The R
+# pool to TREX_NUM_WORKERS threads (default 8). The R
 # package exports no equivalent, so the library's own defaults apply here —
 # a documented divergence, not a config difference in trex_control().
 

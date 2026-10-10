@@ -41,7 +41,7 @@ tloop_max_stagnant_steps = 5     # Stagnation window (5 consecutive unchanged it
 tFDR = 0.1                       # Target FDR control level
 ```
 
-The MC loop is parallelized with Open Multi-Processing (OpenMP) (`omp_set_num_threads(6)`).
+The MC loop is parallelized with Open Multi-Processing (OpenMP) (`TREX_NUM_WORKERS` threads, default 8).
 
 ---
 

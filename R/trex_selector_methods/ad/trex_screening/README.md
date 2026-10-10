@@ -153,7 +153,7 @@ only.
 
 ```bash
 # Each demo takes an optional worker-core count as positional argument 1
-# (default 6); Monte Carlo trials run on PSOCK workers via mc_map().
+# (default 8); Monte Carlo trials run on PSOCK workers via mc_map().
 Rscript R/trex_selector_methods/ad/trex_screening/demo_trex_scr_01_mc_sim_screen_trex/demo_trex_scr_01_mc_sim_screen_trex.R [num_worker_cores]
 Rscript R/trex_selector_methods/ad/trex_screening/demo_trex_scr_02_mc_sim_screen_trex_mmap/demo_trex_scr_02_mc_sim_screen_trex_mmap.R [num_worker_cores]
 Rscript R/trex_selector_methods/ad/trex_screening/demo_trex_scr_03_mc_sim_correlated/demo_trex_scr_03_mc_sim_correlated.R [num_worker_cores]

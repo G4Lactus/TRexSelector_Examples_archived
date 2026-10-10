@@ -52,7 +52,7 @@ Rscript R/trex_selector_methods/ad/trex_da/demo_trex_da_01_mc_sim_ar1/demo_trex_
 ```
 
 To run the Monte Carlo demos back to back as an unattended job, use the batch runner, which runs every suite's
-`run_overnight.sh` (or the ones named as arguments) with 6 workers per demo:
+`run_overnight.sh` (or the ones named as arguments) with `TREX_NUM_WORKERS` workers per demo (default 8):
 
 ```bash
 nohup R/trex_selector_methods/run_all_overnight.sh > /dev/null 2>&1 &

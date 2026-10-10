@@ -963,9 +963,9 @@ int main(int argc, char** argv) {
     install_cleanup_handlers();
 
     // Inner OpenMP (the K random experiments per select()) runs with a fixed
-    // thread count (default 6); the outer MC loop stays sequential for
-    // undistorted timing.
-    omp_set_num_threads(6);
+    // thread count (TREX_NUM_WORKERS, default 8); the outer MC loop stays
+    // sequential for undistorted timing.
+    omp_set_num_threads(trex_mc_workers::count());
     std::cout << "Running with " << omp_get_max_threads() << " threads\n\n";
 
     const double ram_gib = physical_ram_gib();

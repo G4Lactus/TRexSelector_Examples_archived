@@ -423,7 +423,7 @@ void demo_nn_ar_mc_snr_rho_sweep()
 int main() {
 
     std::cout.setf(std::ios::unitbuf);
-    omp_set_num_threads(6);
+    omp_set_num_threads(trex_mc_workers::count());
     std::cout << "Running with " << omp_get_max_threads() << " threads\n\n";
 
     if (true) demo_nn_mc_snr_sweep();

@@ -150,6 +150,7 @@ run_suite() {
   # The demos read the tag (cell-cache fingerprint) and FRESH (set caches aside).
   TREX_RUN_TAG="$(_run_tag "$suite_dir")"; export TREX_RUN_TAG
   export TREX_FRESH="${FRESH:-0}"
+  export TREX_NUM_WORKERS="${TREX_NUM_WORKERS:-8}"   # worker processes per demo (0 = all CPUs)
   local done_file="$logdir/done_${TREX_RUN_TAG}.txt"
 
   {

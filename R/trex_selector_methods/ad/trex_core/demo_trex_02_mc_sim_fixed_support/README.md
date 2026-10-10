@@ -32,8 +32,8 @@ structure — the empirical column-correlation matrix is essentially the identit
 - Reports averaged FDR and TPR per solver x SNR (`track_L_T = FALSE`, so Avg L / Avg T
   are not computed here).
 
-MC trials run in parallel over a hardcoded `num_cores <- 6L` (set and edited at the top of the
-file).
+MC trials run in parallel over `num_cores` workers (first command-line argument, else
+`TREX_NUM_WORKERS`, else 8).
 
 ## Results
 

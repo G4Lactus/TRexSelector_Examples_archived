@@ -34,7 +34,7 @@
 #   rho_grid (INDIVIDUAL) = {0.35, 0.9}
 #   num_MC = 200 (the full run takes hours — reduce num_MC / the grids for a
 #   quick smoke test; the optional first CLI argument sets the number of
-#   parallel worker cores, default 6)
+#   parallel worker cores, default TREX_NUM_WORKERS, else 8)
 #
 # Seeds are staggered by grid-cell index so that each (rho, snr) cell uses a
 # distinct seed band:
@@ -52,9 +52,11 @@
 library(TRexSelectorNeo)
 library(parallel)
 
+# Worker processes: first CLI argument, else TREX_NUM_WORKERS, else 8 (0 = all).
 num_cores <- local({
   a <- suppressWarnings(as.integer(commandArgs(trailingOnly = TRUE)[1L]))
-  if (!is.na(a) && a > 0L) a else 6L
+  if (is.na(a)) a <- suppressWarnings(as.integer(Sys.getenv("TREX_NUM_WORKERS", "8")))
+  if (is.na(a)) 8L else if (a < 1L) parallel::detectCores() else a
 })
 
 this_dir_ <- tryCatch(

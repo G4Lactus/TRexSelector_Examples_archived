@@ -76,6 +76,7 @@
 
 // Resumable grid cells
 #include "../../cell_cache.hpp"
+#include "../../mc_workers.hpp"   // thread budget (TREX_NUM_WORKERS)
 #include "../../solver_filter.hpp"  // optional solver selection (TREX_SOLVERS)
 
 
@@ -287,7 +288,7 @@ inline void print_sparse_vector(const std::string& label,
         return;
     }
 
-    constexpr int kPerLine = 5;
+    constexpr int values_per_line = 5;
     int on_line = 0;
     ss << std::fixed << std::setprecision(6);
     for (Eigen::Index i = 0; i < n; ++i) {
@@ -295,7 +296,7 @@ inline void print_sparse_vector(const std::string& label,
         std::ostringstream cell;
         cell << "[" << i << "] " << std::fixed << std::setprecision(6) << vec(i);
         ss << "  " << std::left << std::setw(20) << cell.str();
-        if (++on_line == kPerLine) { ss << "\n"; on_line = 0; }
+        if (++on_line == values_per_line) { ss << "\n"; on_line = 0; }
     }
     if (on_line != 0) ss << "\n";
     out(ss.str());

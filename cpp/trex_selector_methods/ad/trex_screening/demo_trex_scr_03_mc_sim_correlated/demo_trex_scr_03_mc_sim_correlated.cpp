@@ -481,7 +481,7 @@ void demo_DA_BlockEqui_RhoSweep_MonteCarlo(
 int main()
 {
     std::cout.setf(std::ios::unitbuf);
-    omp_set_num_threads(6);
+    omp_set_num_threads(trex_mc_workers::count());
 
     // Part 1: SNR sweep — Ordinary vs. Bootstrap vs. DA-AR1 on AR(1) data
     demo_DA_AR1_MonteCarlo(200, 0.5, 1.0);

@@ -132,7 +132,7 @@ void demo_ScreenTRex_MMap_MonteCarlo(std::size_t num_MC,
 int main()
 {
     std::cout.setf(std::ios::unitbuf);
-    omp_set_num_threads(6);
+    omp_set_num_threads(trex_mc_workers::count());
 
     // -------------------------------------------------------------------------
     // Monte Carlo SNR sweep (Ordinary vs. Bootstrap-CI, memory-mapped)

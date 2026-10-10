@@ -40,6 +40,7 @@
 // Screen-TRex demo DGPs (ScrDGPData + generators)
 #include "trex_screening_dgps.hpp"
 #include "../../cell_cache.hpp"   // resumable grid cells
+#include "../../mc_workers.hpp"   // thread budget (TREX_NUM_WORKERS)
 
 // std includes
 #include <algorithm>

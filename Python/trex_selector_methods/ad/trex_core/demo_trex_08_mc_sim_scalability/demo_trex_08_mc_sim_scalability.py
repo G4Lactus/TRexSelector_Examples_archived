@@ -98,7 +98,7 @@ from trex_selector_neo.utils import (  # noqa: E402
 )
 
 from trex_helpers import make_dual_out  # noqa: E402
-from trex_sim_common import _make_trex_ctrl_from_dict, compute_fdp, compute_tpp  # noqa: E402
+from trex_sim_common import _make_trex_ctrl_from_dict, compute_fdp, compute_tpp, resolve_workers  # noqa: E402
 from support_generators import make_support_random  # noqa: E402
 
 # ==============================================================================
@@ -112,8 +112,8 @@ _TFDR       = 0.1
 _SNR        = 1.0      # fixed; SNR is not a scaling axis
 _CHUNK_COLS = 1000     # column-chunk size for the out-of-core X generation
 _DUMMY_MULT = 10       # max_dummy_multiplier; drives the D volume (10 x p)
-_NUM_THREADS = 6       # inner-OpenMP threads for select(); mirrors the C++ demo's
-                       # omp_set_num_threads(6). Left unset, the library defaults
+_NUM_THREADS = resolve_workers()  # inner-OpenMP threads for select(), TREX_NUM_WORKERS
+                       # (default 8) as in the C++ demo. Left unset, the library defaults
                        # to all logical cores, which multiplies the concurrent
                        # dummy-matrix D footprint near the RAM limit and slows the
                        # large-p points down — so we pin it for a fair, stable run.

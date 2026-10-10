@@ -116,7 +116,7 @@ struct SweepPoint {
 };
 
 /** @brief Ordered method names, shared by every part of this demo. */
-static const std::vector<std::string> kMethodNames = {
+static const std::vector<std::string> ordered_method_names = {
     "OrdPCA",
     "OraclePCA",
     "TRexSPCA-EN-Act",
@@ -157,7 +157,7 @@ static void run_sweep(const SimConfig&               cfg,
 
     std::map<std::string, Eigen::VectorXd> fdr_map, tpr_map, pev_map, pev_sig_map,
                                            pev_sigmix_map;
-    for (const auto& name : kMethodNames) {
+    for (const auto& name : ordered_method_names) {
         fdr_map[name]        = Eigen::VectorXd(points.size());
         tpr_map[name]        = Eigen::VectorXd(points.size());
         pev_map[name]        = Eigen::VectorXd(points.size());
@@ -236,7 +236,7 @@ static void run_sweep(const SimConfig&               cfg,
     }
 
     save_and_print_spca_sweep_results(cfg.num_MC, stem, sweep_col, sweep_header,
-                                      sweep_precision, axis_values, kMethodNames,
+                                      sweep_precision, axis_values, ordered_method_names,
                                       fdr_map, tpr_map, pev_map, pev_sig_map,
                                       pev_sigmix_map,
                                       /*include_support_metrics=*/!pev_only_table);
@@ -449,7 +449,7 @@ static void run_fdr_tpr_heatmap(const SimConfig& cfg) {
 int main() {
 
     std::cout.setf(std::ios::unitbuf);
-    omp_set_num_threads(6);
+    omp_set_num_threads(trex_mc_workers::count());
     std::cout << "Running with " << omp_get_max_threads() << " threads\n\n";
 
     // Defaults held fixed while a single axis is swept. p1 = 10 follows Fig. 3

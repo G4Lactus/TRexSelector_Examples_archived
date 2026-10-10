@@ -92,7 +92,7 @@ The data-generating process (DGP) mirrors **Demo 03** (variable support), with N
   object so the mmap handles close before the files are deleted — exception-safe).
 
 Trials run **sequentially** (no Open Multi-Processing (OpenMP) parallel MC loop) so
-wall-clock and RSS measurements are undistorted, while `omp_set_num_threads(6)` still applies to the K
+wall-clock and RSS measurements are undistorted, while the `TREX_NUM_WORKERS` threads (default 8) still apply to the K
 random experiments inside `select()` (inner OpenMP) — the parallelism this
 benchmark relies on.
 
@@ -122,7 +122,7 @@ tFDR                     = 0.1       # Target FDR control level
 across the K experiments) holds up to *K* dummy-augmented working sets in RAM at
 once, which defeats the out-of-core goal. With it off, the K experiments run
 sequentially and each one's linear algebra uses the inner OpenMP threads
-(`omp_set_num_threads(6)`).
+(`TREX_NUM_WORKERS`, default 8).
 
 ---
 

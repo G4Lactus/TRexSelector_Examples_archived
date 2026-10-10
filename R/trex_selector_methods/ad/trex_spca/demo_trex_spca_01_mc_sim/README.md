@@ -117,8 +117,8 @@ Figures (via `./generate_plots.sh`, written to `simulation_results/plots/`):
 ## Running the Demo
 
 ```bash
-Rscript R/trex_selector_methods/ad/trex_spca/demo_trex_spca_01_mc_sim/demo_trex_spca_01_mc_sim.R       # default 6 worker cores
-Rscript R/trex_selector_methods/ad/trex_spca/demo_trex_spca_01_mc_sim/demo_trex_spca_01_mc_sim.R 8     # 8 worker cores
+Rscript R/trex_selector_methods/ad/trex_spca/demo_trex_spca_01_mc_sim/demo_trex_spca_01_mc_sim.R       # default 8 worker cores
+Rscript R/trex_selector_methods/ad/trex_spca/demo_trex_spca_01_mc_sim/demo_trex_spca_01_mc_sim.R 4     # 4 worker cores
 TREX_SPCA_PARTS=2 Rscript .../demo_trex_spca_01_mc_sim.R      # only Section 2 (union-FDR)
 TREX_SPCA_NUM_MC=10 Rscript .../demo_trex_spca_01_mc_sim.R    # pilot-run MC override
 ```

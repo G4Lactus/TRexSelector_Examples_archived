@@ -22,7 +22,7 @@
 # Methods compared: TENET, TENET_AUG, TIENET_AUG.
 # MC: 200 trials per grid point (the full run takes hours — reduce num_MC and
 #     the grids for a quick smoke test). Optional first CLI argument sets the
-#     number of parallel worker cores (default 6).
+#     number of parallel worker cores (default TREX_NUM_WORKERS, else 8).
 # Results are written to simulation_results/data/ (.txt + .csv).
 # Indices are 1-based (R convention); the Python counterpart is 0-based.
 #
@@ -31,9 +31,11 @@
 library(TRexSelectorNeo)
 library(parallel)
 
+# Worker processes: first CLI argument, else TREX_NUM_WORKERS, else 8 (0 = all).
 num_cores <- local({
   a <- suppressWarnings(as.integer(commandArgs(trailingOnly = TRUE)[1L]))
-  if (!is.na(a) && a > 0L) a else 6L
+  if (is.na(a)) a <- suppressWarnings(as.integer(Sys.getenv("TREX_NUM_WORKERS", "8")))
+  if (is.na(a)) 8L else if (a < 1L) parallel::detectCores() else a
 })
 
 this_dir_ <- tryCatch(

@@ -80,8 +80,9 @@ nohup cpp/trex_selector_methods/run_all_overnight.sh > /dev/null 2>&1 &
 cpp/trex_selector_methods/run_all_overnight.sh --build trex_gvs      # one suite, rebuilt first
 ```
 
-It runs the suites trex_screening, trex_spca, trex_core (02 to 05 and 07), trex_da and trex_gvs on 6 threads, writes a
-log per demo to `logs/overnight_<timestamp>/` and keeps the machine awake. It is resumable. A demo that finishes is
+It runs the suites trex_screening, trex_spca, trex_core (02 to 05 and 07), trex_da and trex_gvs on
+`TREX_NUM_WORKERS` threads (default 8), writes a log per demo to `logs/overnight_<timestamp>/` and keeps the machine
+awake. It is resumable. A demo that finishes is
 recorded under the run tag (the pinned library commit of `LIBRARY_TARGET.txt`) and skipped by the next run, so a
 stopped batch restarts at the demo it was in, and `FRESH=1` reruns everything. Python and R have runners of the same
 name.

@@ -83,6 +83,7 @@
 
 // Resumable grid cells
 #include "../../cell_cache.hpp"
+#include "../../mc_workers.hpp"   // thread budget (TREX_NUM_WORKERS)
 
 
 // ==============================================================================

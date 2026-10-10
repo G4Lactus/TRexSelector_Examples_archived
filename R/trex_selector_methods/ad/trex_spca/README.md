@@ -181,9 +181,9 @@ use hardware entropy (selector `seed = -1L`), as required for a valid Monte Carl
 ## Running the demos
 
 ```bash
-Rscript R/trex_selector_methods/ad/trex_spca/demo_trex_spca_01_mc_sim/demo_trex_spca_01_mc_sim.R          # 6 workers
+Rscript R/trex_selector_methods/ad/trex_spca/demo_trex_spca_01_mc_sim/demo_trex_spca_01_mc_sim.R          # 8 workers
 Rscript R/trex_selector_methods/ad/trex_spca/demo_trex_spca_01_mc_sim/demo_trex_spca_01_mc_sim.R 8        # 8 workers
-Rscript R/trex_selector_methods/ad/trex_spca/demo_trex_spca_02_mc_sim_pev/demo_trex_spca_02_mc_sim_pev.R  # 6 workers
+Rscript R/trex_selector_methods/ad/trex_spca/demo_trex_spca_02_mc_sim_pev/demo_trex_spca_02_mc_sim_pev.R  # 8 workers
 R/trex_selector_methods/ad/trex_spca/run_overnight.sh                                                     # both demos
 ```
 
