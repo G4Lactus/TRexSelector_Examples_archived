@@ -4,11 +4,12 @@
 
 Compare the **L-loop strategies** of the Terminating Random Experiments (T-Rex) Selector — the different mechanisms by
 which the dummy-variable structure is generated/expanded across L-loop iterations — and repeat the whole comparison
-across **three base solver families** (TLARS, TOMP, TAFS). This shows how the L-loop strategy affects control of the
-false discovery rate (FDR), power as measured by the true positive rate (TPR), and the calibrated dummy multiplier $L$ /
-stopping time $T$, and — crucially — whether the fixed-budget `SKIPL` FDR overshoot seen under TLARS is **specific to
-the least-angle regression (LARS) path** or persists under the greedy solvers. (The demo originally fixed the solver at
-TLARS. It now sweeps all three, one result-file pair per solver, precisely to settle that question.)
+across **three base solver families** (TLARS, TOMP, TAFS), plus TLARS_STAG, TLARS with the T-loop stagnation stop.
+This shows how the L-loop strategy affects control of the false discovery rate (FDR), power as measured by the true
+positive rate (TPR), and the calibrated dummy multiplier $L$ / stopping time $T$, and — crucially — where the
+fixed-budget `SKIPL` FDR overshoot seen under TLARS comes from. It could be **specific to the least-angle regression
+(LARS) path** or come from TLARS running without the stagnation stop. (The demo originally fixed the solver at TLARS. It
+now sweeps all four, one result-file pair per solver, precisely to settle that question.)
 
 ---
 
@@ -28,7 +29,8 @@ TLARS. It now sweeps all three, one result-file pair per solver, precisely to se
 - **Base solvers** (outer sweep, one result-file pair each): **TLARS** (equiangular LARS path, and the stagnation stop
   AUTO-resolves to *disabled*), **TOMP** (greedy orthogonal matching pursuit, and the stagnation stop is *enabled*),
   **TAFS** (greedy adaptive forward selection, `rho_afs = 0.3`, and the stagnation stop is *enabled*) — the same three
-  families as demo 05. TAFS is the only one with a non-zero `rho_afs`, so the figures label it `TAFS (rho = 0.3)`
+  families as demo 05 — and **TLARS_STAG** (TLARS with the stagnation stop *enabled*, window 5). TAFS is the only one
+  with a non-zero `rho_afs`, so the figures label it `TAFS (rho = 0.3)`
 - **Target FDR (tFDR)**: $0.1$
 
 ---
@@ -65,8 +67,9 @@ renamed to `SEEDED` / `PERMUTATION_SEEDED`, and the old names no longer exist.)
 Set per solver × strategy (see the solver / strategy loops):
 
 ```text
-solver_type = <varies>           # TLARS / TOMP / TAFS (outer sweep)
+solver_type = <varies>           # TLARS / TOMP / TAFS / TLARS_STAG (outer sweep)
 solver_params.rho_afs = 0.3      # TAFS regularization (ignored by TLARS/TOMP)
+tloop_stagnation_stop = AUTO     # Off for TLARS, on for TOMP/TAFS, forced on for TLARS_STAG
 K = 20                           # Random experiments per T-loop iteration
 max_dummy_multiplier = 10        # Default for adaptive strategies; 5 / 10 / 20 for SKIPL
 use_max_T_stop = true            # Cap T ≤ ceil(n/2)
@@ -86,7 +89,7 @@ stem encodes the solver and the support scenario (`random_support` for the activ
 
 ### Main Result Files
 
-**`demo_trex_04_lloop_strategies_results_n300_p1000_{tlars,tomp,tafs}_random_support.txt`**
+**`demo_trex_04_lloop_strategies_results_n300_p1000_{tlars,tomp,tafs,tlars_stag}_random_support.txt`**
 
 Aligned table (written by the shared `save_and_print_mc_results`) with four metric rows — FDR, TPR, Avg L, Avg T — per
 strategy across the 21 SNR columns. The row label is the strategy name (STANDARD, HCONCAT, PERMUTATION,
@@ -112,7 +115,7 @@ HCONCAT
 
 ### Tidy-Format CSVs
 
-**`demo_trex_04_lloop_strategies_results_n300_p1000_{tlars,tomp,tafs}_random_support.csv`**
+**`demo_trex_04_lloop_strategies_results_n300_p1000_{tlars,tomp,tafs,tlars_stag}_random_support.csv`**
 
 Long/stacked format, header column order **`solver,metric,snr,value`** (here the "solver" column holds the strategy
 name, while the base solver is encoded in the file name), with `FDR`, `TPR`, `AvgL`, `AvgT` rows.
@@ -124,27 +127,26 @@ name, while the base solver is encoded in the file name), with `FDR`, `TPR`, `Av
 `./generate_plots.sh` renders two complementary views into
 `simulation_results/plots/`: a **cross-solver comparison grid** (the figure for
 this demo's core question) and the standard **per-solver figure sets**. Both are
-regenerated only after the demo has been run for all three base solvers (so the
-three per-solver comma-separated values (CSV) files exist).
+regenerated only after the demo has been run for the base solvers (so the
+per-solver comma-separated values (CSV) files exist), and TLARS_STAG joins once its CSV exists.
 
 ### Cross-solver comparison grid
 
-The headline figure — a 2×3 grid, rows = metric (FDR / TPR), columns = base
-solver (TLARS / TOMP / TAFS), with all eight L-loop strategies drawn as lines in
+The headline figure — a 2×4 grid, rows = metric (FDR / TPR), columns = base
+solver (TLARS / TOMP / TAFS / TLARS with the stagnation stop), with all eight L-loop strategies drawn as lines in
 every panel. Colours and markers are keyed to the strategy, so a given strategy is
 the same colour in every panel and can be tracked across solvers. All FDR panels
 share one y-scale and all TPR panels share `[0, 1]`, so the columns are directly
 comparable:
 
-![FDR/TPR per base solver per L-loop strategy, 2x3 comparison grid](simulation_results/plots/demo_trex_04_lloop_strategies_grid.png)
+![FDR/TPR per base solver per L-loop strategy, 2x4 comparison grid](simulation_results/plots/demo_trex_04_lloop_strategies_grid.png)
 
-This grid exists to answer one question. **Is the fixed-budget `SKIPL` FDR
-overshoot specific to the LARS path?** Read the top (FDR) row across the three
+This grid exists to answer one question. **Where does the fixed-budget `SKIPL` FDR
+overshoot come from?** Read the top (FDR) row across the four
 columns and check whether the `SKIPL_20p` / `SKIPL_10p` curves cross the
-`tFDR = 0.1` line under TOMP and TAFS the way they do under TLARS. It is produced
-by the suite plotter's `grid` mode (`../trex_plt_utils.py grid --labels TLARS TOMP
-TAFS --csvs ...`), which reads all three solver CSVs at once and renders them on a
-shared scale.
+`tFDR = 0.1` line under TOMP, TAFS and TLARS with the stagnation stop the way they do under TLARS. It is produced
+by the suite plotter's `grid` mode (`../trex_plt_utils.py grid --labels ... --csvs ...`), which reads all
+solver CSVs at once and renders them on a shared scale.
 
 #### What TLARS establishes, and the test the other columns run
 
@@ -168,7 +170,8 @@ which pushes the calibrated threshold down and lets the T-loop run much further
 before it trips — so many more original variables are admitted past the true
 support, and the dummy-based estimate of the false discovery proportion (FDP) no longer matches the realized FDP.
 
-**Working hypothesis.** The overshoot is **LARS-specific**. Once the 10 true variables are in
+**Original working hypothesis (refuted by the TLARS_STAG column).** The overshoot is **LARS-specific**. Once the 10
+true variables are in
 (early, at high SNR), the equiangular LARS path keeps admitting variables
 *equiangular* to the current residual, so borderline noise variables and null
 dummies enter at very similar correlation levels and are poorly separated in the
@@ -182,15 +185,17 @@ of the LARS path rather than of `SKIPL` in general. (Demo 05 already shows the
 *adaptive* STANDARD strategy holds FDR across all three families, and this extends that
 check to the fixed-budget SKIPL regime.)
 
-> **Verdict.** The overshoot is confined to the TLARS column. Under TOMP the highest FDR over all eight
-> strategies and 21 SNR values is 0.037, and under TAFS it is 0.051 (`SKIPL_5p` at SNR 2). The larger fixed
-> budgets even turn conservative there. `SKIPL_20p` ends at an FDR of 0.012 (TOMP) and 0.022 (TAFS) at SNR 5, and
-> the T-loop stops at `T ≈ 6` instead of `T ≈ 144`. The grid therefore rules out a general `SKIPL` defect.
+> **Verdict.** The overshoot comes from the missing stagnation stop, not from the LARS path. Under TOMP the highest
+> FDR over all eight strategies and 21 SNR values is 0.037, and under TAFS it is 0.051 (`SKIPL_5p` at SNR 2). Both
+> run with the stagnation stop, which the AUTO setting of `tloop_stagnation_stop` enables for the greedy solvers
+> only. The fourth column settles the cause. TLARS_STAG is the same LARS path with the stop on, and there the
+> overshoot vanishes. `SKIPL_20p` ends at an FDR of 0.027 at SNR 5 instead of 0.135 (at most 0.058 over all SNR
+> values), `SKIPL_10p` peaks at 0.071 instead of 0.115, no cell exceeds the target, and the T-loop stops at
+> `T ≈ 7` instead of `T ≈ 144`.
 >
-> It does not isolate the LARS path as the cause, though, because the columns also differ in the T-loop stop. The
-> AUTO setting of `tloop_stagnation_stop` enables the stagnation stop for the greedy solvers only, so TLARS runs
-> without it, and the runaway `T` appears only where it is off. A TLARS run with `tloop_stagnation_stop = true`
-> would separate the two explanations.
+> An over-large fixed dummy budget therefore only harms FDR control when nothing stops the T-loop. The price of the
+> stop is a little power for `SKIPL_20p` at moderate SNR (TPR 0.78 instead of 0.85 at SNR 1), which closes again at
+> high SNR. The adaptive strategies give the same FDR and TPR with and without the stop.
 
 ### Per-solver figure sets
 
@@ -204,7 +209,7 @@ The TLARS overview, for example:
 
 The `_grouped` `.png` / `.pdf` and the interactive `.html` (hover for values, **click a
 strategy in the legend to isolate it** in both panels) sit alongside, one set per
-solver (`tlars` / `tomp` / `tafs`). Open an `.html` file directly in a browser.
+solver (`tlars` / `tomp` / `tafs` / `tlars_stag`). Open an `.html` file directly in a browser.
 The `.html` figures are off by default and never committed, since each embeds a full copy
 of plotly.js (about 5 MB). Run `./generate_plots.sh --plotly` to produce them locally.
 
@@ -216,13 +221,13 @@ Vector `.pdf` copies of every static figure sit alongside the `.png` files.
 
 ### Regenerating the figures
 
-Run the demo first (it writes the three per-solver CSVs), then the wrapper — it
-picks up the repo's local `.venv` automatically and renders **all** three
+Run the demo first (it writes the per-solver CSVs), then the wrapper — it
+picks up the repo's local `.venv` automatically and renders **all**
 per-solver sets plus the comparison grid:
 
 ```bash
 # From this demo folder:
-./generate_plots.sh                 # 3 per-solver sets (png+pdf) + the grid
+./generate_plots.sh                 # 4 per-solver sets (png+pdf) + the grid
 ./generate_plots.sh --plotly        # plus the interactive html (not committed)
 ./generate_plots.sh --tfdr 0.05     # e.g. a different target-FDR line
 ```
@@ -232,16 +237,17 @@ per-solver sets plus the comparison grid:
 ## Running the Demo
 
 ```bash
-# Release build recommended — this sweep is 3 solvers × 8 strategies × 21 SNR × 200 MC.
+# Release build recommended — this sweep is 4 solvers × 8 strategies × 21 SNR × 200 MC.
 ./build/release/bin/trex_selector_methods/ad/trex_core/demo_trex_04_mc_sim_lloop_strategies/demo_trex_04_mc_sim_lloop_strategies
 ```
 
 It writes one `.txt` + `.csv` pair per base solver into `simulation_results/data/`
-(`..._tlars_...`, `..._tomp_...`, `..._tafs_...`), re-saving after each solver
-finishes. The full run is long (the fixed-budget `SKIPL_20p`/`SKIPL_10p` points at
+(`..._tlars_...`, `..._tomp_...`, `..._tafs_...`, `..._tlars_stag_...`), re-saving after each solver
+finishes. The full run is long (the fixed-budget `SKIPL_20p`/`SKIPL_10p` points of TLARS at
 high SNR dominate, where the T-loop runs to `T ≈ 90–150`), so expect an
-overnight run (the committed results took about 15.5 hours on 6 threads). Once
-the three CSVs exist, render every figure with `./generate_plots.sh`.
+overnight run (the first three solvers took about 15.5 hours on 6 threads, TLARS_STAG 3.7 hours on 8). With
+`TREX_SOLVERS=TLARS_STAG` the demo runs that solver alone. Once the CSVs exist, render every figure with
+`./generate_plots.sh`.
 
 ---
 
@@ -249,8 +255,8 @@ the three CSVs exist, render every figure with `./generate_plots.sh`.
 
 1. **Do all L-loop strategies maintain FDR control?**
    - Expected: FDR $\leq$ tFDR across strategies.
-   - The adaptive strategies keep it under all three solvers (at most $0.056$), while `SKIPL_10p` and `SKIPL_20p`
-     exceed it under TLARS at high SNR.
+   - The adaptive strategies keep it under all four solvers (at most $0.056$), while `SKIPL_10p` and `SKIPL_20p`
+     exceed it under TLARS at high SNR, and only there.
 
 2. **How does the calibrated $L$ differ between adaptive strategies and the SKIPL levels?**
    - The Avg L rows show the adaptive strategies' calibrated $L$ versus SKIPL's fixed 5p/10p/20p. At SNR 5 the
@@ -263,11 +269,10 @@ the three CSVs exist, render every figure with `./generate_plots.sh`.
      discoveries.
 
 4. **Is the `SKIPL` FDR overshoot specific to the LARS path?**
-   - Compare the TLARS column of the grid (where `SKIPL_20p`/`SKIPL_10p` overshoot) against the greedy TOMP / TAFS
-     columns. If the overshoot is absent or muted under the greedy solvers, it is a LARS-path property rather than a
-     general `SKIPL` defect.
-   - It is absent under TOMP and TAFS, so it is not a general `SKIPL` defect. Whether the LARS path or the disabled
-     stagnation stop of TLARS causes it stays open (see the verdict above).
+   - Compare the TLARS column of the grid (where `SKIPL_20p`/`SKIPL_10p` overshoot) against the TOMP / TAFS columns
+     and against TLARS with the stagnation stop.
+   - No. It is absent under TOMP and TAFS and also under TLARS_STAG, so it comes from TLARS running without the
+     stagnation stop (see the verdict above).
 
 ---
 
@@ -275,12 +280,12 @@ the three CSVs exist, render every figure with `./generate_plots.sh`.
 
 **What to look for:**
 
-- **FDR control**: the adaptive strategies keep FDR $\leq$ tFDR, while the fixed-budget SKIPL levels do **not** in
-  general — `SKIPL_10p` and `SKIPL_20p` overshoot at high SNR under TLARS (see the discussion above). At
-  `num_MC = 200` these curves are stable, so the overshoot is a real property of the fixed-budget regime, not sampling
-  noise.
-- **Cross-solver**: whether that overshoot survives under the greedy TOMP / TAFS columns of the grid — the
-  LARS-specificity test. In the committed run it does not.
+- **FDR control**: the adaptive strategies keep FDR $\leq$ tFDR, while the fixed-budget SKIPL levels do **not**
+  when the T-loop runs without the stagnation stop — `SKIPL_10p` and `SKIPL_20p` overshoot at high SNR under TLARS
+  (see the discussion above). At `num_MC = 200` these curves are stable, so the overshoot is a real property of that
+  regime, not sampling noise.
+- **Cross-solver**: whether that overshoot survives under the TOMP / TAFS columns and under TLARS with the stagnation
+  stop. In the committed run it survives under none of them.
 - **Avg L / Avg T**: how each strategy calibrates the dummy structure and when the T-loop stops. Note the runaway
   `Avg T` under the larger SKIPL budgets.
 
@@ -291,10 +296,11 @@ the three CSVs exist, render every figure with `./generate_plots.sh`.
 - PERMUTATION and PERMUTATION_SEEDED produce bit-identical selections for the same seed, and they differ only in
   memory footprint.
 - SKIPL trades adaptivity for a fixed, larger dummy budget — and, as this demo shows, an over-large fixed budget can
-  break FDR control. It is a convenience/speed knob, not a drop-in replacement for the calibrated L-loop.
+  break FDR control when the T-loop runs without the stagnation stop. It is a convenience/speed knob, not a drop-in
+  replacement for the calibrated L-loop, and it belongs with the stagnation stop on.
 
 This C++ demo is based on the R demo
 `R/trex_selector_methods/ad/trex_core/demo_trex_04_mc_sim_lloop_strategies/demo_trex_04_mc_sim_lloop_strategies.R`
 and mirrors it.
-Both versions sweep the same three base solvers (TLARS / TOMP / TAFS) to test the LARS-specificity of the SKIPL
+Both versions sweep the same four base solvers (TLARS / TOMP / TAFS / TLARS_STAG) to find the cause of the SKIPL
 overshoot.
