@@ -6,7 +6,8 @@ its dependency tree (constrained sub-clustering), instead of letting hierarchica
 discover the structure from scratch. The data-generating process (DGP) is a three-level nested latent-factor model with
 a non-exchangeable Toeplitz leaf layer. Common setup: $n=300$, $p=1{,}000$, $s=10$, `Random` support, target false
 discovery rate (FDR) $\mathrm{tFDR}=0.2$, $K=20$ random experiments, $\mathrm{MC}=200$ per grid point, solvers TLARS /
-TAFS / TOMP, and a signal-to-noise ratio (SNR) sweep $\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 1, 2, 5\rbrace$. The greedy
+TAFS / TOMP plus TLARS_STAG (TLARS with the T-loop stagnation stop, see the [suite README](../README.md)), and a
+signal-to-noise ratio (SNR) sweep $\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 1, 2, 5\rbrace$. The greedy
 solvers use *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for TAFS/TOMP, `0` for TLARS). See
 `Exchangeable_Tie_Breaking_DA_TRex.md` in the TRex_Research documentation. TAFS additionally runs with its adaptive
 forward-selection (AFS) correlation parameter `rho_afs = 0.3` (`0` for TLARS/TOMP), which is why the figures label it
@@ -98,14 +99,18 @@ The figure (`.png` and `.pdf`, plus an interactive Plotly `.html` page with `--p
 
 ## Results — SNR sweep
 
-- **The greedy solvers are controlled everywhere and win on power**. TOMP's maximum FDR is $0.128$
-  (dropping to $\approx 0.06$ at high SNR) with TPR up to $0.988$, while TAFS — which violated at
+- **The greedy solvers are controlled everywhere and win on power**. TOMP's maximum FDR is $0.135$
+  (dropping to $\approx 0.04\text{–}0.05$ at high SNR) with TPR up to $0.954$, while TAFS — which violated at
   $\mathrm{SNR}=0.5$ under the old raw-group deflation ($0.211$) — is now controlled at every grid
-  point (max $0.181$) with TPR up to $0.966$.
-- **TLARS remains the outlier of the suite**: FDR $\approx 0.37\text{–}0.40$ from $\mathrm{SNR}=0.5$ on
-  (vs. the $\mathrm{tFDR}=0.2$ target), with TPR $\approx 0.84$. Both axes moved *up* relative to
-  the old raw-group deflation (FDR $0.33\text{–}0.35$, TPR capped at $0.80$), because the tight neighbourhoods
-  deflate actives less, which buys power but also stops masking part of the least-angle regression (LARS) shadow leak.
+  point (max $0.185$) with TPR up to $0.949$.
+- **TLARS remains the outlier of the suite**: FDR $\approx 0.33\text{–}0.38$ from $\mathrm{SNR}=0.5$ on
+  (vs. the $\mathrm{tFDR}=0.2$ target), with TPR $\approx 0.84\text{–}0.85$. Its power is higher than under the old
+  raw-group deflation (TPR capped at $0.80$ there) while its FDR stays in the same range ($0.33\text{–}0.35$ there),
+  because the tight neighbourhoods deflate actives less, which buys power but also stops masking part of the
+  least-angle regression (LARS) shadow leak.
+- **TLARS_STAG shows the same violation** ($0.35\text{–}0.37$ from $\mathrm{SNR}=0.5$ on) with the same power,
+  although its T-loop stops after $4\text{–}5$ steps instead of TLARS' $8\text{–}11$. The leak therefore does not come
+  from a long T-loop, which supports the structural explanation below.
 - The BT reference run (see Setup) shows the same TLARS FDR on this DGP with *less* power — the
   residual violation is a property of the shared BT deflation machinery under LARS-type occurrence
   profiles, not of the prior-groups path.

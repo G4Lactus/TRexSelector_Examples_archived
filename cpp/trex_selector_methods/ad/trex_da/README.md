@@ -100,6 +100,13 @@ $\mathrm{SNR} = \mathrm{Var}(\boldsymbol{X}\boldsymbol{\beta})/\mathrm{Var}(\bol
   `TAFS (rho = 0.3)` (`TAFS_RHO` in `trex_da_plt_utils.py` — keep it in sync with `default_solvers()` in
   `trex_da_sim_common.hpp`). The comma-separated values (CSV) files keep the raw `TREX-DA...: TAFS` label the demo
   binaries write, so the annotation is applied at plot time and needs no re-run.
+- **TLARS_STAG, TLARS with the stagnation stop**: `default_solvers()` runs TLARS without the T-loop stagnation stop,
+  because its monotone path needs none, and in correlated designs its T-loop then often runs far, up to the cap of
+  $T = 150$. The fourth pool entry TLARS_STAG is the same TLARS with the stop on (window 7), on the same data and seeds.
+  In every demo it matches TLARS within Monte Carlo noise (mean TPR change at most $0.004$, mean FDR change at most
+  $+0.004$, never more target violations), while its T-loop stops after at most $8$ steps in the DA rows. The figures
+  draw it dashed in TLARS' colour. Its numbers were computed in a separate run with `TREX_SOLVERS=TLARS_STAG` and
+  merged into the tables by [merge_result_files.py](merge_result_files.py).
 
 ---
 
@@ -171,6 +178,7 @@ trex_da/
   ├── dgp_generators.hpp
   ├── trex_da_sim_common.hpp            <- shared MC / output helpers (C++)
   ├── trex_da_plt_utils.py              <- shared plotting module (all DA demos)
+  ├── merge_result_files.py             <- adds a TREX_SOLVERS selection run to the full tables
   ├── demo_trex_da_01_mc_sim_ar1/
   ├── demo_trex_da_02_mc_sim_ar1_blocks_plus_white/
   ├── demo_trex_da_03_mc_sim_ar1_blocks/
@@ -192,12 +200,12 @@ those CSVs.)
 
 Every demo now ships with real committed data, and a consistent pattern emerges. DA-TRex's FDR stays much closer to
 well-controlled than the classical (no-DA) T-Rex selector on the same correlated data — for example, in Demo 01 at
-$\mathrm{SNR}=2.0$, DA-TRex achieves $\mathrm{FDR}\approx0.06$ vs. base T-Rex's $\mathrm{FDR}\approx0.29$ at the same
+$\mathrm{SNR}=2.0$, DA-TRex achieves $\mathrm{FDR}\approx0.05$ vs. base T-Rex's $\mathrm{FDR}\approx0.29$ at the same
 TPR ballpark — at some cost in TPR, especially at low SNR. Since the 2026-07-15 exchangeable-tie fix (see *DA-TRex
 specific concepts* above), Demo 01's DA rows are FDR-controlled for **all three solvers across the full $\rho$ grid and
 both support placements** — including the previously violating greedy-solver cells at $\rho=0.9$ with power (e.g. for
-gap=100: TAFS $0.24\to0.15$, TOMP $0.21\to0.13$, and for Random support: TAFS $0.26\to0.17$, TOMP $0.27\to0.15$), where
-the greedy DA solvers now also retain *more* power than DA-TLARS. Heavy-tailed and grouped-DGP demos (03–05) show
+gap=100: TAFS $0.24\to0.15$, TOMP $0.21\to0.12$, and for Random support: TAFS $0.26\to0.16$, TOMP $0.27\to0.15$), where
+the greedy DA solvers now also retain *more* power than DA-TLARS. Heavy-tailed and grouped-DGP demos (04–06) show
 correspondingly higher realized FDR relative to the $\mathrm{tFDR}$ target, reflecting the added difficulty of heavy
 tails and multi-level dependency.
 
@@ -250,8 +258,8 @@ All the tidy demos share the CSV schema `solver,metric,<SWEEP>,value`, where
 matching x-axis. It offers four figure patterns:
 
 - **per-CSV FDR/TPR overview** — side-by-side FDR | TPR vs the swept quantity,
-  one line per method (`TREX-DA:` TLARS/TAFS/TOMP, and the classical `TREX:`
-  baseline in Demos 01 and 07), with the `tFDR` target drawn as a reference (a
+  one line per method (`TREX-DA:` TLARS/TAFS/TOMP/TLARS_STAG, and the classical `TREX:`
+  baseline in Demos 01, 07 and 08), with the `tFDR` target drawn as a reference (a
   horizontal line, or the identity line for a `tFDR` sweep),
 - **comparison grid** (`grid` mode) — a 2×N grid sharing FDR/TPR scales across
   columns, used for the HAC-linkage sensitivity study (Single/Complete/Average
@@ -276,10 +284,10 @@ matching x-axis. It offers four figure patterns:
 - See the BT diagnostic in the library test suite
   (`TRexSelector/cpp/tests/validation/trex_selector_methods/ad/trex_da/`) if you need to debug or verify the BT
   clustering pipeline itself against the R reference.
-- Cross-check against the R reference implementation in `R/trex_selector_methods/ad/trex_da/` (extensive, with per-demo
-  `.R` scripts plus shared `dgp_*.R`). The shared `simulation_utils.R` and `support_generators.R` helpers live one level
-  up, in `R/trex_selector_methods/`. Note that the R (and Python) suites keep their own legacy numbering (e.g. the NN
-  demos are still `03`/`03b` there), so match demos by name, not number.
+- Cross-check against the R implementation in `R/trex_selector_methods/ad/trex_da/` (one folder per demo, plus the
+  shared `da_sim_common.R` and `trex_da_dgps.R`). The shared `simulation_utils.R` and `support_generators.R` helpers
+  live one level up, in `R/trex_selector_methods/`. The R and Python suites use the same demo folders and numbers as
+  this one.
 
 ---
 

@@ -4,8 +4,9 @@ Monte-Carlo (MC) results for **DA-TRex+NN** — the Nearest-Neighbor (NN) Depend
 Experiments (T-Rex) selector (`DAMethod::NN`) — on banded moving-average (MA($\kappa$)) data — the correctly-specified
 case — plus a **method-mismatch stress test** applying the same NN correction to first-order autoregressive (AR(1))
 data. Common setup: $n=300$, $p=1{,}000$, $s=10$, amplitude $3.0$, target false discovery rate (FDR)
-$\mathrm{tFDR}=0.2$, $K=20$ random experiments, $\mathrm{MC}=200$ per grid point, and solvers TLARS / TAFS / TOMP (Part
-1 additionally runs the classical no-DA T-Rex baseline).
+$\mathrm{tFDR}=0.2$, $K=20$ random experiments, $\mathrm{MC}=200$ per grid point, and solvers TLARS / TAFS / TOMP, plus
+TLARS_STAG (TLARS with the T-loop stagnation stop, see the [suite README](../README.md)). Part 1 additionally runs the
+classical no-DA T-Rex baseline.
 
 The greedy solvers use *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for TAFS/TOMP, `0` for TLARS).
 See `Exchangeable_Tie_Breaking_DA_TRex.md` in the TRex_Research documentation.
@@ -122,11 +123,14 @@ Figures (`.png` and `.pdf`, plus uncommitted interactive `.html` pages with `./g
 
 DA-TRex+NN vs. base T-Rex over $\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 1, 2, 5\rbrace$, CappedSpread vs. Random support:
 
-- All three DA solvers stay below $\mathrm{tFDR}=0.2$ at every SNR (worst cell $\approx 0.13$), while base T-Rex TLARS
+- All four DA solvers stay below $\mathrm{tFDR}=0.2$ at every SNR (worst cell $\approx 0.12$), while base T-Rex TLARS
   violates from $\mathrm{SNR}=0.5$ on (FDR $\approx 0.23\text{–}0.27$), and base TAFS grazes the target at
   $\mathrm{SNR}=5$.
-- The DA cost in true positive rate (TPR) is modest and concentrates in DA-TLARS (e.g. $0.87$ vs. base $1.00$ at
-  $\mathrm{SNR}=2$), while DA-TAFS/TOMP reach $\approx 0.96\text{–}1.00$.
+- The DA cost in true positive rate (TPR) is modest and concentrates in DA-TLARS (e.g. $0.85\text{–}0.87$ vs. base
+  $1.00$ at $\mathrm{SNR}=2$), while DA-TAFS/TOMP reach $\approx 0.95\text{–}0.99$.
+- DA-TLARS runs its T-loop almost to the cap ($T \approx 138$ of $150$), and TLARS' path then selects so many columns
+  that some of them become linearly dependent, which the console reports as `collinear; dropped`. TLARS_STAG stops
+  after $8$ steps with the same FDR and TPR.
 - The two support placements behave nearly identically — with a hard correlation cutoff at $\kappa=3$ and a
   minimum spacing of 20, even the deterministic support keeps all actives far outside each other's bands.
 
@@ -140,14 +144,15 @@ Per-solver TPR/FDR heatmaps over $\kappa \in \lbrace1,2,3,5,7,10,15\rbrace$ (ban
 $\rho \in \lbrace0.1, 0.3, 0.5, 0.7, 0.8, 0.9\rbrace$ (filter common ratio). FDR cells above the target are outlined in
 cyan.
 
-- **FDR control holds almost everywhere**. Violations appear only in the top-right corner ($\rho \geq 0.8$ *and*
+- **FDR control holds almost everywhere**. Violations appear only in the top-right corner ($\rho = 0.9$ *and*
   $\kappa \geq 7$), where the effective correlation neighborhood is both wide and strong. TLARS is hit hardest
-  ($0.39$ at $\kappa=15$, $\rho=0.9$, CappedSpread), TOMP mildest ($\leq 0.25$, violating only at $\rho = 0.9$).
-- Once $\kappa \geq 7$ implied spacing safety margin, group sizes grow with $\kappa$ and residual shadow
-  discoveries accumulate — the NN analogue of Demo 01's gap-vs-window story, but entering through the band width
-  rather than the support spacing.
-- **TPR degrades gracefully** toward the same corner (TLARS $0.64\text{–}0.68$, while TAFS/TOMP stay $\geq 0.77$) and is
-  essentially flat elsewhere.
+  ($0.36$ at $\kappa=15$, $\rho=0.9$, CappedSpread), TAFS exceeds the target once ($0.21$), and TOMP stays
+  controlled everywhere (at most $0.18$).
+- From $\kappa = 7$ on, the groups grow with $\kappa$ and residual shadow discoveries accumulate — the NN analogue
+  of Demo 01's gap-vs-window story, but entering through the band width rather than the support spacing.
+- **TPR degrades gracefully** toward the same corner, down to about $0.6$ for every solver at $\kappa = 15$,
+  $\rho = 0.9$, and is essentially flat elsewhere.
+- TLARS_STAG gives the same heatmaps as TLARS (mean FDR and TPR changes below $0.003$).
 
 ![kappa x rho, CappedSpread support](simulation_results/plots/da_trex_mc_da_nn_kappa_rho_capped.png)
 
@@ -165,7 +170,7 @@ $\rho \in \lbrace0.1, \ldots, 0.9\rbrace$:
 - **At $\rho = 0.8\text{–}0.9$ control breaks down sharply** (up to $0.65$ for TLARS at $\mathrm{SNR}=0.5$,
   $\rho=0.9$). AR(1) correlation beyond the effective NN window leaks through as false discoveries, exactly the
   failure mode the finite-range group design cannot see. TOMP is again the most robust but still violates at
-  $\rho \geq 0.8$.
+  $\rho \geq 0.8$, and TLARS_STAG shows the same violations as TLARS.
 - Read this against **Demo 01** (same AR(1) data, correctly-specified `AR1` correction, FDR-controlled over the
   full $\rho$ grid). The gap between the two quantifies the price of the wrong dependency model — negligible at
   moderate correlation, large in the strong-correlation regime.
