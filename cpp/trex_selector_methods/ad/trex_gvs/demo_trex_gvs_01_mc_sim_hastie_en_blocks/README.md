@@ -112,12 +112,13 @@ produced by `./generate_plots.sh`.
 
 ### Part 1 — 2-D SNR $\times$ $\rho$ sweep
 
-- FDR stays at or below the $\mathrm{tFDR} = 0.1$ target everywhere (no cyan violation outlines),
-  and **TENET** and **TENET_AUG** reach a true positive rate (TPR) of $\approx 1$ once $\mathrm{SNR} \gtrsim 1$.
-- **TIENET_AUG** is more conservative (very low FDR, low TPR that grows only slowly with SNR) and
-  its power collapses in the extreme $\rho = 0.99$ column, where the within-group columns become
-  nearly collinear. This conservatism is not specific to this design — the same pattern recurs
-  across the other block demos in this folder.
+- FDR stays at or below the $\mathrm{tFDR} = 0.1$ target everywhere (no cyan violation outlines, at most $0.09$),
+  and **TENET** and **TENET_AUG** reach a true positive rate (TPR) of $\approx 1$ once $\mathrm{SNR} \gtrsim 1$ and
+  $\rho \ge 0.5$.
+- **TIENET_AUG** is more conservative (FDR at most $0.044$) and has less power at low SNR, but from
+  $\mathrm{SNR} = 1$ on it reaches TPR $\approx 1$ for $\rho = 0.7\text{–}0.95$. Its power collapses in the extreme
+  $\rho = 0.99$ column (TPR $\le 0.02$), where the within-group columns become nearly collinear. This conservatism is
+  not specific to this design — the same pattern recurs across the other block demos in this folder.
 - Along the $\rho$ axis, performance is stable across most within-group correlation levels, since
   all three methods use HAC-based grouping to aggregate evidence across strongly correlated
   columns. Only the extreme $\rho = 0.99$ column stresses TIENET_AUG.

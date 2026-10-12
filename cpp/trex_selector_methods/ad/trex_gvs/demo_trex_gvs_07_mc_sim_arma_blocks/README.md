@@ -103,11 +103,15 @@ produced by `./generate_plots.sh`.
    recovery is **uneven across blocks** — the MA(3) block (short-range, decaying-but-bounded correlation) and the
    ARMA(2,1) block behave differently from the pure AR(1) block, so the aggregate true positive rate (TPR) blends these
    per-block difficulties.
-- **TENET** and **TENET_AUG** track each other closely and keep the false discovery rate (FDR) near or below the
-   $\mathrm{tFDR} = 0.1$ target.
+- **TENET** and **TENET_AUG** track each other closely and keep the false discovery rate (FDR) below the
+   $\mathrm{tFDR} = 0.1$ target (at most $0.08$), with a TPR that levels off at $0.55\text{–}0.62$ from
+   `ar_coef` $= 0.7\text{–}0.8$ on.
    The trap block (AR(1), same `ar_coef` as the active AR(1) block) is structurally similar to an active block and
    is the main test of false-group exclusion here.
-- **TIENET_AUG** is markedly more conservative — lower FDR, with a TPR collapse in the high-`ar_coef` columns.
+- **TIENET_AUG** is markedly more conservative — lower FDR (at most $0.04$), with a TPR collapse in the
+   high-`ar_coef` columns ($\approx 0.01$ at `ar_coef` $\ge 0.9$, after up to $0.44$ at $0.8$). Almost all of the
+   console's `collinear; dropped` messages of this demo come from TIENET_AUG at `ar_coef` $= 0.95$, where its inner
+   terminating lasso meets nearly collinear augmented columns.
 - Compare against Demo 06 (uniform AR(1) blocks) to see whether heterogeneity across blocks costs additional power
    beyond what AR(1) decay alone costs.
 

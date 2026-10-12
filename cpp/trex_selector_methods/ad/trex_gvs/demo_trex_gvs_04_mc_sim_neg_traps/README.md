@@ -107,11 +107,13 @@ produced by `./generate_plots.sh`.
    rate (FDR) at or just below target — the two inactive traps are excluded rather than falsely selected.
 - The mechanism behind that recovery is that HAC clusters on **unsigned** correlation, so the sign-flipped active
    group is identified as a *single* group rather than split into its positive and negative halves.
-- **TIENET_AUG** is far more conservative (FDR $\le 0.03$ everywhere) and its TPR collapses to near zero in the
+- **TIENET_AUG** is far more conservative (FDR $\le 0.045$ everywhere) and its TPR collapses to near zero in the
    extreme $\rho = 0.99$ column. Otherwise it behaves as in the uniformly-positive-correlation scenarios of
    Demos 01–03 — the sign-flipped halves do not by themselves trigger different informed elastic net (IEN) behavior.
 - The two spatially separated traps are a stronger test of false-group exclusion than a single trap. Watch whether
-   FDR creeps up with SNR, which would indicate one of the traps starting to be (partially) selected.
+   FDR creeps up with SNR, which would indicate one of the traps starting to be (partially) selected. It does so
+   only slightly, and only at $\rho = 0.99$, where TENET's FDR rises from $0.085$ to $0.098$ with SNR and stays below
+   the target.
 
 TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver.
 FDR cells above the $\mathrm{tFDR} = 0.1$ target are outlined in cyan.

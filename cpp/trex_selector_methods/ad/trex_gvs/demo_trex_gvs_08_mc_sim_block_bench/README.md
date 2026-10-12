@@ -72,7 +72,9 @@ The group information enters the two solvers differently. The EN variants use it
  well, so every variable's group-aligned dummies share its group geometry. The oracle prior can therefore
  matter more — in either direction — for IEN than for EN. Note also that $\lambda_2$ is cross-validated on the
  original $(\boldsymbol{X}, \boldsymbol{y})$ only, so the chosen penalty is identical for the clustered and
- oracle variants and never adapts to the supplied group structure.
+ oracle variants and never adapts to the supplied group structure. At $\mathrm{SNR} \le 0.5$ the cross-validation
+ lands on large values ($10^6$ to $10^7$), often the first point of its grid, because the cross-validation curve is
+ flat there. The library reports these boundary picks on the console and keeps them.
 
 ---
 
@@ -161,18 +163,18 @@ Both scenarios run in the same invocation and print one grid table per scenario,
    EN consumes the group information only through the dummy correlation structure, knowing the true groups
    neither helps nor hurts it here.
 - **For IEN the value of the prior is non-monotone in $\rho$.** Below the discoverability boundary the oracle
-   prior *costs* power. At $\rho = 0.35$, $\mathrm{SNR} = 5$, clustered IEN reaches TPR $0.28$ vs. $0.11$ for
-   oracle IEN (and $0.21$ vs. $0.08$ at $\rho = 0.2$). This is **not** HAC outperforming the truth — at these
+   prior *costs* power. At $\rho = 0.35$, $\mathrm{SNR} = 5$, clustered IEN reaches TPR $0.40$ vs. $0.11$ for
+   oracle IEN (and $0.23$ vs. $0.08$ at $\rho = 0.2$). This is **not** HAC outperforming the truth — at these
    $\rho$ the `corr_max` $= 0.5$ cut sits above the within-block correlation, so no merge survives it
    (purity $0$, $M \approx 500$) and clustered IEN degenerates to per-variable ridge rows. It is the oracle's
    genuine 5-member ties that hurt. The shared group-indicator rows couple each active with its group-aligned dummies,
    and with weak within-group correlation the data block barely separates them, so dummies enter the solver path almost
    as early as actives, the false discovery proportion (FDP) estimate stays high, and the T-loop terminates early
-   ($\overline T_{\mathrm{stop}} = 6.6$ vs. $12.4$ for clustered at $\rho = 0.35$, $\mathrm{SNR} = 5$, at the *same*
-   $\lambda_2$ chosen by cross-validation (CV)). Only around the boundary
-   ($\rho = 0.5$) does the oracle pay off mildly ($0.127$ vs. $0.094$), and from $\rho \ge 0.65$ both IEN
+   ($\overline T_{\mathrm{stop}} = 6.1$ vs. $12.6$ for clustered at $\rho = 0.35$, $\mathrm{SNR} = 5$, at the *same*
+   $\lambda_2$ chosen by cross-validation (CV)). Even around the boundary ($\rho = 0.5$, purity $0.57$) the
+   clustered variant keeps a small edge ($0.173$ vs. $0.126$ at $\mathrm{SNR} = 5$), and from $\rho \ge 0.65$ both IEN
    variants are numerically identical because HAC recovers exactly the true blocks.
-- **IEN is much more conservative than EN throughout** (TPR $\le 0.15$ for $\rho \ge 0.5$ vs. up to $0.90$ for
+- **IEN is much more conservative than EN throughout** (TPR $\le 0.17$ for $\rho \ge 0.5$ vs. up to $0.90$ for
    EN) — the same conservatism seen across Demos 01–07.
 
 TPR (top) and FDR (bottom) vs. $\rho$, one panel per SNR $\in \lbrace0.5, 2, 5\rbrace$, one line per method.
@@ -190,9 +192,10 @@ The dashed red line marks the $\mathrm{tFDR} = 0.1$ target.
 ### INDIVIDUAL truth — cautionary appendix
 
 - **Coordinate-level FDR control collapses by construction once siblings correlate strongly.** At $\rho = 0.9$
-   the EN methods realize FDR $\approx 0.78\text{–}0.80$ (target $0.1$) while selecting the active variable's whole
-   block. IEN sits at $0.39\text{–}0.44$. Oracle and clustered variants are identical here — no amount of correct
-   group knowledge identifies *which* exchangeable member is active.
+   the EN methods realize FDR $\approx 0.78\text{–}0.80$ from $\mathrm{SNR} = 2$ on (target $0.1$) while selecting the
+   active variable's whole block. IEN sits at $0.38\text{–}0.48$ from $\mathrm{SNR} = 1$ on. Oracle and clustered
+   variants are identical here — no amount of correct group knowledge identifies *which* exchangeable member is
+   active.
 - At the weaker $\rho = 0.35$ the violation is mild for EN (FDR up to $\approx 0.17$ at high SNR) and, notably,
    the oracle prior *does* rescue IEN's error control (FDR $\le 0.05$ vs. $\approx 0.10$ clustered) — the group
    ties concentrate the selection on one representative per block.

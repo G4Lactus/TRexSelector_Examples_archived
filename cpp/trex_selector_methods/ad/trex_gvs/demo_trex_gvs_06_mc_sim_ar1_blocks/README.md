@@ -104,14 +104,14 @@ produced by `./generate_plots.sh`.
 
 - The false discovery rate (FDR) stays under control everywhere (no cyan cells). **TENET** and **TENET_AUG** track
    each other and peak near $0.09$, just below the $\mathrm{tFDR} = 0.1$ target, while **TIENET_AUG** is markedly more
-   conservative (FDR $\le 0.04$).
+   conservative (FDR $\le 0.05$).
 - **The true positive rate (TPR) recovers much more slowly with SNR than in the equicorrelated Hastie/Mixed-Blocks
    demos.** AR(1) decay means only nearby columns within a block stay strongly correlated, weakening the group-level
    evidence aggregation that HAC clustering relies on — full recovery needs both high $\rho$ and high SNR, and even at
    $\mathrm{SNR} = 5$ the $\text{low-}\rho$ columns barely lift off zero.
-- **TIENET_AUG** sits between the near-zero TPR of the equicorrelated Gaussian demos and the TENET-based methods.
-   It shows real (though smaller) power gains as SNR increases rather than staying flat — except in the
-   $\rho = 0.99$ near-collinear column, where its TPR collapses.
+- **TIENET_AUG** again has less power than the TENET-based methods (TPR up to $0.86$ against $0.96$), as in the
+   other block demos. It gains power as SNR increases rather than staying flat — except in the
+   $\rho = 0.99$ near-collinear column, where its TPR collapses ($\approx 0.01$).
 - The $\rho$ axis is the most informative view of this demo. Watch how quickly recovery degrades as $\rho$
    decreases and the AR(1) decay becomes steeper (correlation vanishing faster with column distance).
 

@@ -104,12 +104,12 @@ produced by `./generate_plots.sh`.
 - The heavy tails cost the TENET variants a little power relative to the equivalent Gaussian case (Demo 03) at
    comparable SNR — occasional large outliers make exact group boundaries noisier to detect — but they do not
    compromise FDR control. The headline result is that heavy tails buy lower TPR, not FDR drift.
-- **TIENET_AUG** is the most conservative of the three within this demo (FDR $0.00\text{–}0.06$, peak TPR $0.83$ rather
-   than $0.95$), and its power collapses entirely in the extreme $\rho = 0.99$ column (TPR $\approx 0.008$, flat in
+- **TIENET_AUG** is the most conservative of the three within this demo (FDR $0.00\text{–}0.09$, peak TPR $0.85$ rather
+   than $0.95$), and its power collapses entirely in the extreme $\rho = 0.99$ column (TPR $0.01\text{–}0.02$, flat in
    SNR), where the within-block columns become nearly collinear.
-- Judged against *its own* behavior on the Gaussian equicorrelated designs (Demos 01–03), though, TIENET_AUG is far
-   more competitive here. Away from the $\rho = 0.99$ column its TPR reaches $\approx 0.83$ instead of the
-   near-zero power those demos show. Both comparisons are visible in the same heatmap.
+- This is the same pattern as on the Gaussian equicorrelated designs (Demos 01–03). There, too, TIENET_AUG trades
+   power for a lower FDR and collapses only at $\rho = 0.99$, while it reaches TPR $\approx 1$ in Demos 01–02 and
+   $\approx 0.87$ in Demo 03 elsewhere. The heavy tails therefore do not change its behavior.
 
 TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver.
 FDR cells above the $\mathrm{tFDR} = 0.1$ target would be outlined in cyan (none are here).
