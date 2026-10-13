@@ -104,9 +104,9 @@ solvers on one pair of panels, with the legend just right of the TPR panel:
 *Left:* even with the support indices redrawn every trial, FDR stays well below
 the target `tFDR = 0.1` (black dotted line) for every solver across the whole SNR
 grid — FDR control is robust to the location of the active set (the maximum over
-the entire table is $\approx 0.057$). *Right:* with `num_MC = 200` the fine grid
+the entire table is $\approx 0.058$). *Right:* with `num_MC = 200` the fine grid
 gives a smooth power curve — TLARS TPR climbs from near-zero at SNR 0.1
-($\approx 0.002$) to near-perfect recovery by SNR $\approx 2$ ($\approx 0.977$)
+($\approx 0.001$) to near-perfect recovery by SNR $\approx 2$ ($\approx 0.975$)
 and full recovery at SNR 5.0 ($1.000$).
 
 ### Grouped 2×2 view (de-cluttered)
@@ -155,4 +155,6 @@ the data and is used by every demo in this suite with the tidy
 python Python/trex_selector_methods/ad/trex_core/demo_trex_03_mc_sim_variable_support/demo_trex_03_mc_sim_variable_support.py
 ```
 
-The MC loop is parallelized with `ProcessPoolExecutor` using `_NUM_WORKERS = 6`.
+The MC loop is parallelized with `ProcessPoolExecutor`, with `TREX_NUM_WORKERS`
+worker processes (default 8, see `resolve_workers()` in
+[`../trex_sim_common.py`](../trex_sim_common.py)).

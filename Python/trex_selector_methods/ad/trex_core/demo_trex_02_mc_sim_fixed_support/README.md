@@ -105,11 +105,11 @@ FDR and TPR versus SNR (log-scaled x-axis), all solvers on one pair of panels:
 
 *Left:* FDR stays comfortably below the target `tFDR = 0.1` (black dotted line)
 across all SNR levels for every solver — the maximum over the whole run is only
-$\approx 0.046$. *Right:* TPR rises from near-zero at SNR 0.1 to full recovery
+$\approx 0.045$. *Right:* TPR rises from near-zero at SNR 0.1 to full recovery
 (TPR $= 1.0$) by SNR 5.0 for every solver. The greedy solvers
 (TSTEPWISE/TOMP/TGP/…) already hit $1.0$ at SNR 2.0, while the solvers on the
 least-angle regression (LARS) path (TLARS/TLASSO/TENET/TSTAGEWISE) reach
-$\approx 0.98$ there.
+$0.97\text{–}0.99$ there.
 
 ### Grouped 2×2 view (de-cluttered)
 
@@ -161,4 +161,6 @@ for `--plotly` (the repo `.venv` already ships `pandas`) — `pip install matplo
 python Python/trex_selector_methods/ad/trex_core/demo_trex_02_mc_sim_fixed_support/demo_trex_02_mc_sim_fixed_support.py
 ```
 
-The MC loop is parallelized with `ProcessPoolExecutor` using `_NUM_WORKERS = 6`.
+The MC loop is parallelized with `ProcessPoolExecutor`, with `TREX_NUM_WORKERS`
+worker processes (default 8, see `resolve_workers()` in
+[`../trex_sim_common.py`](../trex_sim_common.py)).

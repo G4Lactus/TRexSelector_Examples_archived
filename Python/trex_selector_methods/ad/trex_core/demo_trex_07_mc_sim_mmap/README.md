@@ -104,13 +104,13 @@ place of the "solver" row that the other demos sweep:
 ![FDR and TPR versus SNR for Part C and Part D, the two curves coinciding](simulation_results/plots/d03_trex_mmap_demo_c_vs_d.png)
 
 *Left:* FDR stays far below the target `tFDR = 0.1` across the whole SNR grid under
-**both** storage pipelines, peaking at only $0.0485$ (C) / $0.0486$ (D) at
+**both** storage pipelines, peaking at only $0.0417$ (C) / $0.0424$ (D) at
 $\mathrm{SNR}=1.0$. *Right:* the power curves are indistinguishable — TPR climbs
 from $\approx 0.002$ at $\mathrm{SNR}=0.1$ to full recovery ($1.0000$ in both) by
 $\mathrm{SNR}=5$.
 
-The two pipelines agree to within **0.0073 (FDR, at $\mathrm{SNR}=0.5$)** and
-**0.0085 (TPR, at $\mathrm{SNR}=0.5$)** at every grid point — the scale of Monte
+The two pipelines agree to within **0.0037 (FDR, at $\mathrm{SNR}=0.5$)** and
+**0.0015 (TPR, at $\mathrm{SNR}=1.0$)** at every grid point — the scale of Monte
 Carlo noise at $\text{num\_MC} = 200$, not a systematic effect. This is the result
 the demo exists to show. Memory-mapping $\mathbf{X}$ and $\mathbf{D}$ is
 transparent to the selector, so it buys its memory savings without moving the
@@ -160,4 +160,6 @@ whose `solver` column carries the scenario name — that column is
 python Python/trex_selector_methods/ad/trex_core/demo_trex_07_mc_sim_mmap/demo_trex_07_mc_sim_mmap.py
 ```
 
-The MC loop is parallelized with `ProcessPoolExecutor` using `_NUM_WORKERS = 6`.
+The MC loop is parallelized with `ProcessPoolExecutor`, with `TREX_NUM_WORKERS`
+worker processes (default 8, see `resolve_workers()` in
+[`../trex_sim_common.py`](../trex_sim_common.py)).

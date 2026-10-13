@@ -111,12 +111,12 @@ are directly comparable:
 
 The dummy distribution's **shape** barely moves the statistics. At SNR 1.0
 (`num_MC = 200`) the entire twelve-distribution mean-FDR spread is tiny within
-each solver family — TLARS spans only $\approx 0.048\text{–}0.057$ (min Rademacher
-$0.0484$, max Uniform $0.0574$), TOMP $\approx 0.022\text{–}0.026$ (min StudentT_df3
-$0.0215$, max Normal $0.0264$), and TAFS $\approx 0.032\text{–}0.037$ (min
-SparseRad_s0.1 $0.0323$, max Uniform $0.0370$) — all well under `tFDR = 0.1`. The
-TPR curves are equally indistinguishable at SNR 1.0 (TLARS $\approx 0.737\text{–}0.750$,
-TOMP $\approx 0.860\text{–}0.874$, TAFS $\approx 0.866\text{–}0.879$) and every distribution
+each solver family — TLARS spans only $\approx 0.044\text{–}0.054$ (min Logistic
+$0.0439$, max Normal $0.0540$), TOMP $\approx 0.019\text{–}0.027$ (min Normal
+$0.0187$, max Uniform $0.0268$), and TAFS $\approx 0.030\text{–}0.036$ (min
+Uniform $0.0297$, max SparseRad_s0.1 $0.0362$) — all well under `tFDR = 0.1`. The
+TPR curves are equally indistinguishable at SNR 1.0 (TLARS $\approx 0.708\text{–}0.744$,
+TOMP $\approx 0.859\text{–}0.875$, TAFS $\approx 0.854\text{–}0.875$) and every distribution
 reaches $1.0$ by SNR 5.0. The *level* is solver-dependent — TLARS shows the
 familiar FDR hump near SNR 0.5–1, while the greedy TOMP / TAFS stay flatter and
 lower — but even the dependent **UnifSphere_d5** rows show no systematic deviation.
@@ -165,4 +165,6 @@ open simulation_results/plots/demo_trex_05_dummy_distributions_results_n300_p100
 python Python/trex_selector_methods/ad/trex_core/demo_trex_05_mc_sim_dummy_distributions/demo_trex_05_mc_sim_dummy_distributions.py
 ```
 
-The MC loop is parallelized with `ProcessPoolExecutor` using `_NUM_WORKERS = 6`.
+The MC loop is parallelized with `ProcessPoolExecutor`, with `TREX_NUM_WORKERS`
+worker processes (default 8, see `resolve_workers()` in
+[`../trex_sim_common.py`](../trex_sim_common.py)).
