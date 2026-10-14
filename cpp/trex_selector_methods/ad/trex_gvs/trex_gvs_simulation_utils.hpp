@@ -47,17 +47,20 @@
 #include "trex_gvs_dgps.hpp"
 #include "../../cell_cache.hpp"   // resumable grid cells
 #include "../../mc_workers.hpp"   // thread budget (TREX_NUM_WORKERS)
+#include "../../solver_filter.hpp" // method selection (TREX_SOLVERS)
 
 // std includes
 #include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <numeric>
 #include <unordered_set>
 #include <sstream>
@@ -189,6 +192,45 @@ struct GVSGridPointResult {
     double sd_fdp   = 0.0;
     double sd_tpp   = 0.0;
 };
+
+
+// ==============================================================================
+// Method selection (TREX_SOLVERS)
+// ==============================================================================
+
+/**
+ * @brief True when the method of a run label is selected by TREX_SOLVERS.
+ *
+ * The method is the label part before '+' or ' ' ("TIENET_AUG+CV_1SE_CCD"
+ * -> "TIENET_AUG"). Without a selection every method runs.
+ */
+inline bool method_selected(const std::string& label) {
+    return trex_solver_filter::selected(label.substr(0, label.find_first_of("+ ")));
+}
+
+/**
+ * @brief Monte Carlo trials of a demo: TREX_NUM_MC when set, else @p value.
+ *
+ * For short smoke runs. TREX_NUM_MC enters the cell-cache fingerprint, so a
+ * smoke cache is never reused by a full run.
+ */
+inline std::size_t num_mc(std::size_t value) {
+    const char* env = std::getenv("TREX_NUM_MC");
+    if (env == nullptr || *env == '\0') return value;
+    const long n = std::strtol(env, nullptr, 10);
+    return n > 0 ? static_cast<std::size_t>(n) : value;
+}
+
+/** @brief Output file stem plus the selection suffix, e.g. "_tienet_aug". */
+inline std::string out_stem(const std::string& stem) {
+    return stem + trex_solver_filter::file_suffix();
+}
+
+/** @brief Grid point of a skipped (unselected) method: all metrics NaN. */
+inline GVSGridPointResult skipped_point() {
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    return {nan, nan, nan, nan};
+}
 
 
 // ==============================================================================
@@ -484,6 +526,7 @@ inline GVSGridPointResult run_gvs_mc_trials(
     const TRexControlParameter&    trex_ctrl,
     unsigned                       base_seed)
 {
+    if (!method_selected(progress_label)) return skipped_point();
     std::ostringstream lbl;
     lbl << progress_label << "|param=" << param;
     return cell_detail::from_cell(TREX_CELL_CACHED(
@@ -556,7 +599,8 @@ inline void print_mc_1d_method_table(
     const std::vector<GVSGridPointResult>& results,
     std::ofstream*                         fout = nullptr)
 {
-    constexpr int rw = 12;  // row-label width
+    int rw = 12;            // row-label width, widened for long labels
+    for (const auto& lbl : param_labels) rw = std::max(rw, static_cast<int>(lbl.size()) + 2);
     constexpr int cw = 10;  // value column width
     const int total_w = rw + 4 * cw;
 
@@ -620,7 +664,7 @@ inline void print_mc_snr_table(
     std::ofstream txt_file;
     if (!file_stem.empty()) {
         std::filesystem::create_directories(dir);
-        txt_file.open(dir + file_stem + ".txt");
+        txt_file.open(dir + out_stem(file_stem) + ".txt");
     }
     std::ofstream* fout = txt_file.is_open() ? &txt_file : nullptr;
 
@@ -653,10 +697,10 @@ inline void print_mc_snr_table(
     if (!file_stem.empty()) {
         if (txt_file.is_open()) {
             txt_file.close();
-            std::cout << "[Info] TXT saved to: " << dir + file_stem + ".txt\n";
+            std::cout << "[Info] TXT saved to: " << dir + out_stem(file_stem) + ".txt\n";
         }
         // CSV
-        std::ofstream csv(dir + file_stem + ".csv");
+        std::ofstream csv(dir + out_stem(file_stem) + ".csv");
         if (csv.is_open()) {
             csv << "method,metric,snr,mean,sd\n"
                 << std::fixed << std::setprecision(6);
@@ -669,7 +713,7 @@ inline void print_mc_snr_table(
                 csv << "TIENET_AUG,mean_FDP,"    << snr << "," << ien_results[i].mean_fdp    << "," << ien_results[i].sd_fdp    << "\n";
                 csv << "TIENET_AUG,mean_TPP,"    << snr << "," << ien_results[i].mean_tpp    << "," << ien_results[i].sd_tpp    << "\n";
             }
-            std::cout << "[Info] CSV saved to: " << dir + file_stem + ".csv\n\n";
+            std::cout << "[Info] CSV saved to: " << dir + out_stem(file_stem) + ".csv\n\n";
         }
     }
 }
@@ -758,7 +802,7 @@ inline void print_mc_rho_table(
     std::ofstream txt_file;
     if (!file_stem.empty()) {
         std::filesystem::create_directories(dir);
-        txt_file.open(dir + file_stem + ".txt");
+        txt_file.open(dir + out_stem(file_stem) + ".txt");
     }
     std::ofstream* fout = txt_file.is_open() ? &txt_file : nullptr;
 
@@ -792,10 +836,10 @@ inline void print_mc_rho_table(
     if (!file_stem.empty()) {
         if (txt_file.is_open()) {
             txt_file.close();
-            std::cout << "[Info] TXT saved to: " << dir + file_stem + ".txt\n";
+            std::cout << "[Info] TXT saved to: " << dir + out_stem(file_stem) + ".txt\n";
         }
         // CSV
-        std::ofstream csv(dir + file_stem + ".csv");
+        std::ofstream csv(dir + out_stem(file_stem) + ".csv");
         if (csv.is_open()) {
             csv << "method,metric,rho,mean,sd\n"
                 << std::fixed << std::setprecision(6);
@@ -814,7 +858,7 @@ inline void print_mc_rho_table(
                 csv << "TIENET_AUG,mean_TPP,"    << rho << "," << ien_results[i].mean_tpp    << ","
                     << ien_results[i].sd_tpp    << "\n";
             }
-            std::cout << "[Info] CSV saved to: " << dir + file_stem + ".csv\n\n";
+            std::cout << "[Info] CSV saved to: " << dir + out_stem(file_stem) + ".csv\n\n";
         }
     }
 }
@@ -861,6 +905,12 @@ inline std::vector<std::vector<GVSGridPointResult>> run_gvs_2d_sweep(
 
     std::vector<std::vector<GVSGridPointResult>> results(
         n_snr, std::vector<GVSGridPointResult>(n_rho));
+
+    if (!method_selected(label)) {
+        std::cout << "\n  Method: " << label << "  (skipped, not in TREX_SOLVERS)\n\n";
+        for (auto& row : results) std::fill(row.begin(), row.end(), skipped_point());
+        return results;
+    }
 
     std::cout << "\n  Method: " << label << "\n\n";
 
@@ -1109,7 +1159,7 @@ inline void print_mc_param_sweep_table(
     std::ofstream txt_file;
     if (!file_stem.empty()) {
         std::filesystem::create_directories(dir);
-        txt_file.open(dir + file_stem + ".txt");
+        txt_file.open(dir + out_stem(file_stem) + ".txt");
     }
     std::ofstream* fout = txt_file.is_open() ? &txt_file : nullptr;
 
@@ -1143,10 +1193,10 @@ inline void print_mc_param_sweep_table(
     if (!file_stem.empty()) {
         if (txt_file.is_open()) {
             txt_file.close();
-            std::cout << "[Info] TXT saved to: " << dir + file_stem + ".txt\n";
+            std::cout << "[Info] TXT saved to: " << dir + out_stem(file_stem) + ".txt\n";
         }
         // CSV
-        std::ofstream csv(dir + file_stem + ".csv");
+        std::ofstream csv(dir + out_stem(file_stem) + ".csv");
         if (csv.is_open()) {
             csv << "method,metric," << param_name << ",mean,sd\n"
                 << std::fixed << std::setprecision(6);
@@ -1159,7 +1209,7 @@ inline void print_mc_param_sweep_table(
                 csv << "TIENET_AUG,mean_FDP,"    << pv << "," << ien_results[i].mean_fdp    << "," << ien_results[i].sd_fdp    << "\n";
                 csv << "TIENET_AUG,mean_TPP,"    << pv << "," << ien_results[i].mean_tpp    << "," << ien_results[i].sd_tpp    << "\n";
             }
-            std::cout << "[Info] CSV saved to: " << dir + file_stem + ".csv\n\n";
+            std::cout << "[Info] CSV saved to: " << dir + out_stem(file_stem) + ".csv\n\n";
         }
     }
 }
@@ -1201,7 +1251,7 @@ inline void save_mc_2d_tables(
 
     // TXT: write all four matrices
     {
-        std::ofstream txt(dir + file_stem + ".txt");
+        std::ofstream txt(dir + out_stem(file_stem) + ".txt");
         if (txt.is_open()) {
             txt << "\n" << std::string(78, '=') << "\n"
                 << "  T-Rex+GVS MC 2D Grid: " << scenario_tag
@@ -1223,13 +1273,13 @@ inline void save_mc_2d_tables(
             write_matrix("mean_TPP [TIENET_AUG]",    ien_2d,    true);
             write_matrix("mean_FDP [TIENET_AUG]",    ien_2d,    false);
 
-            std::cout << "[Info] TXT saved to: " << dir + file_stem + ".txt\n";
+            std::cout << "[Info] TXT saved to: " << dir + out_stem(file_stem) + ".txt\n";
         }
     }
 
     // CSV: tidy long format — method, metric, row_label, col_label, mean, sd
     {
-        std::ofstream csv(dir + file_stem + ".csv");
+        std::ofstream csv(dir + out_stem(file_stem) + ".csv");
         if (csv.is_open()) {
             csv << "method,metric,row_label,col_label,mean,sd\n"
                 << std::fixed << std::setprecision(6);
@@ -1249,7 +1299,7 @@ inline void save_mc_2d_tables(
                         << "," << ien_2d[i][j].mean_tpp    << "," << ien_2d[i][j].sd_tpp    << "\n";
                 }
             }
-            std::cout << "[Info] CSV saved to: " << dir + file_stem + ".csv\n\n";
+            std::cout << "[Info] CSV saved to: " << dir + out_stem(file_stem) + ".csv\n\n";
         }
     }
 }
@@ -1648,6 +1698,17 @@ inline BlockMethodResult run_block_method(
 }
 
 
+/** @brief Result of a skipped (unselected) method: all metrics NaN. */
+inline BlockMethodResult skipped_block_method() {
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    BlockMethodResult r;
+    r.coord_fdp = r.coord_tpr = r.exact_support = nan;
+    r.block_hit_rate = r.block_fdp = r.full_block_rate = r.null_block_activation = nan;
+    r.block_purity_rate = r.lambda2_used = r.elapsed_sec = nan;
+    return r;
+}
+
+
 // ==============================================================================
 // Single-trial runner (all 4 methods)
 // ==============================================================================
@@ -1694,7 +1755,9 @@ inline BlockTrialResult run_block_single(
 
     TRexGVSControlParameter gvs_ien;
     gvs_ien.gvs_type       = GVSType::IEN;
-    gvs_ien.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
+    // IEN-geometry tuner: the true support (10 blocks of 5) lies below its
+    // lambda1 support cap (0.8 * n_train), unlike the s = 150 designs of 01-07.
+    gvs_ien.lambda2_method = LambdaSelectionMethod::CV_1SE_IEN_CCD;
     gvs_ien.corr_max       = corr_max;
     gvs_ien.hc_linkage     = hac::LinkageMethod::Single;
 
@@ -1704,15 +1767,21 @@ inline BlockTrialResult run_block_single(
     gvs_en_oracle.prior_groups  = dat.prior_groups;
     gvs_ien_oracle.prior_groups = dat.prior_groups;
 
+    // TREX_SOLVERS: EN methods by their EN solver, IEN methods as TIENET_AUG.
+    const bool run_en  = trex_solver_filter::selected(
+        en_solver == ENSolverType::TENET_AUG ? "TENET_AUG" : "TENET");
+    const bool run_ien = trex_solver_filter::selected("TIENET_AUG");
+    const auto run = [&](bool on, const TRexGVSControlParameter& ctrl) {
+        return on ? run_block_method(X_map, y_map, dat, G, block_size, tFDR,
+                                     ctrl, trex_ctrl, seed)
+                  : skipped_block_method();
+    };
+
     BlockTrialResult out;
-    out.M1 = run_block_method(X_map, y_map, dat, G, block_size, tFDR,
-                               gvs_en,        trex_ctrl, seed);
-    out.M2 = run_block_method(X_map, y_map, dat, G, block_size, tFDR,
-                               gvs_en_oracle,  trex_ctrl, seed);
-    out.M3 = run_block_method(X_map, y_map, dat, G, block_size, tFDR,
-                               gvs_ien,       trex_ctrl, seed);
-    out.M4 = run_block_method(X_map, y_map, dat, G, block_size, tFDR,
-                               gvs_ien_oracle, trex_ctrl, seed);
+    out.M1 = run(run_en,  gvs_en);
+    out.M2 = run(run_en,  gvs_en_oracle);
+    out.M3 = run(run_ien, gvs_ien);
+    out.M4 = run(run_ien, gvs_ien_oracle);
     return out;
 }
 
@@ -1972,7 +2041,8 @@ inline BlockGridResult run_block_mc(
 {
     std::ostringstream key;
     key << "block|" << label << "|seed=" << cfg.base_seed << "|mc=" << cfg.num_MC
-        << "|tfdr=" << cfg.tFDR << "|corr=" << cfg.corr_max;
+        << "|tfdr=" << cfg.tFDR << "|corr=" << cfg.corr_max
+        << "|sel=" << trex_solver_filter::file_suffix();   // no reuse across selections
     return cell_detail::block_from_cell(TREX_CELL_CACHED(key.str(), [&] {
         return cell_detail::to_cell(run_block_mc_impl(dgp_fn, cfg, trex_ctrl, label));
     }));
@@ -2159,16 +2229,16 @@ inline void print_block_grid_table(
     std::filesystem::create_directories(dir);
 
     {
-        std::ofstream txt(dir + file_stem + ".txt");
+        std::ofstream txt(dir + out_stem(file_stem) + ".txt");
         if (txt.is_open()) {
             txt << table;
-            std::cout << "[Info] TXT saved to: " << dir + file_stem + ".txt\n";
+            std::cout << "[Info] TXT saved to: " << dir + out_stem(file_stem) + ".txt\n";
         }
     }
 
     // CSV: tidy long format with all aggregates (mean + sd where available)
     {
-        std::ofstream csv(dir + file_stem + ".csv");
+        std::ofstream csv(dir + out_stem(file_stem) + ".csv");
         if (csv.is_open()) {
             csv << "scenario,rho,snr,method,"
                    "mean_coord_tpr,sd_coord_tpr,mean_coord_fdp,sd_coord_fdp,"
@@ -2198,7 +2268,7 @@ inline void print_block_grid_table(
                     }
                 }
             }
-            std::cout << "[Info] CSV saved to: " << dir + file_stem + ".csv\n\n";
+            std::cout << "[Info] CSV saved to: " << dir + out_stem(file_stem) + ".csv\n\n";
         }
     }
 }

@@ -124,7 +124,7 @@ static BlockBenchConfig make_block_bench_cfg(
     cfg.n_active_blocks = preset.n_active_blocks;
     cfg.tFDR = preset.tFDR;
     cfg.K = preset.K;
-    cfg.num_MC = preset.num_MC;
+    cfg.num_MC = num_mc(preset.num_MC);
     cfg.base_seed = preset.base_seed + static_cast<int>(
         (i_rho * preset.snr_grid.size() + i_snr) * preset.num_MC);
     cfg.corr_max = preset.corr_max;
@@ -142,7 +142,7 @@ static BlockBenchConfig make_print_cfg(const BlockBenchPreset& preset)
     cfg.n_active_blocks = preset.n_active_blocks;
     cfg.tFDR = preset.tFDR;
     cfg.K = preset.K;
-    cfg.num_MC = preset.num_MC;
+    cfg.num_MC = num_mc(preset.num_MC);
     cfg.base_seed = preset.base_seed;
     cfg.corr_max = preset.corr_max;
     cfg.b = preset.b;

@@ -224,9 +224,8 @@ part_4_m_sweep <- function() {
 # Part 5: MC tFDR sweep
 # Fixed: n=150, M=5, Q=5 (p=25, s=5), rho=0.8, SNR=2, nu=3.0.
 # Swept: tFDR in {0.05, 0.10, ..., 0.50}.
-# (tFDR is a selector parameter — run_mc_trials called per solver x grid point.
-#  The cpp section sets solver_type / rho_afs / stagnation but not
-#  exch_tie_alpha; mirrored here via exch_tie_alpha=0.)
+# (tFDR is a selector parameter — run_mc_trials called per solver x grid point,
+#  each solver with its own exch_tie_alpha as in the cpp section.)
 # ==============================================================================
 
 part_5_tfdr_sweep <- function() {
@@ -249,7 +248,6 @@ part_5_tfdr_sweep <- function() {
       avg_T <- zero
 
       for (sv in solvers) {
-        sv_run <- modifyList(sv, list(exch_tie_alpha = 0.0))  # cpp omission
         nm <- sv$name
         for (gi in seq_along(tfdr_grid)) {
           tfdr <- tfdr_grid[gi]
@@ -257,7 +255,7 @@ part_5_tfdr_sweep <- function() {
             NUM_MC, sprintf("tFDR = %s", fmt_num(tfdr)), N, BASE_P,
             "dgp_block_toeplitz_hvt_snr",
             .kwargs(M, RHO, SNR, h_noise),
-            SUPPORT_BASE, M, tfdr, sv_run, K, da_spec,
+            SUPPORT_BASE, M, tfdr, sv, K, da_spec,
             BASE_SEED + (gi - 1L) * 10000L
           )
           fdr[[nm]][gi] <- res$avg_fdr
@@ -286,7 +284,7 @@ part_5_tfdr_sweep <- function() {
 # Part 6: Linkage sweep
 # Fixed: n=150, M=5, Q=5 (p=25, s=5), rho=0.8, SNR=2, nu=3.0, tFDR=0.2.
 # Swept: linkage encoded as {1.0=Single, 2.0=Complete, 3.0=Average}.
-# (cpp omits exch_tie_alpha in this hand-rolled section; mirrored.)
+# (Each solver runs with its own exch_tie_alpha, as in the cpp section.)
 # ==============================================================================
 
 part_6_linkage_sweep <- function() {
@@ -307,7 +305,6 @@ part_6_linkage_sweep <- function() {
     avg_T <- zero
 
     for (sv in solvers) {
-      sv_run <- modifyList(sv, list(exch_tie_alpha = 0.0))   # cpp omission
       nm <- sv$name
       for (gi in seq_along(LINKAGES)) {
         lnk <- LINKAGES[gi]
@@ -315,7 +312,7 @@ part_6_linkage_sweep <- function() {
           NUM_MC, sprintf("Linkage = %s", lnk), N, BASE_P,
           "dgp_block_toeplitz_hvt_snr",
           .kwargs(M, RHO, SNR, h_noise),
-          SUPPORT_BASE, M, TFDR, sv_run, K,
+          SUPPORT_BASE, M, TFDR, sv, K,
           list(method = "BT", hc_linkage = lnk),
           BASE_SEED + (gi - 1L) * 10000L
         )

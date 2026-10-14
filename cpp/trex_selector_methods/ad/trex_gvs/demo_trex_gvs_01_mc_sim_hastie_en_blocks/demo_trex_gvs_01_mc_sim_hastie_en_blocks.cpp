@@ -13,12 +13,12 @@
  * @details
  *  Three parts, each in its own function:
  *    sim_hastie_part_1() — 2-D SNR × rho grid
- *    sim_hastie_part_2() — lambda2_method comparison: CV_1SE_SVD / CV_1SE_CCD
+ *    sim_hastie_part_2() — lambda2_method comparison: SVD / CCD (EN), CCD / IEN_CCD (IEN)
  *    sim_hastie_part_3() — hc_linkage comparison: Single / Complete / Average / WPGMA
  *
  * DGP: three equicorrelated groups of 50 variables each, all active (s = 150),
  *      plus 350 null white-noise variables; p = 500 and n = 200.
- *  Selector: K=20, tFDR=0.1, corr_max=0.98, lambda2=CV_1SE_CCD.
+ *  Selector: K=20, tFDR=0.1, corr_max=0.98, lambda2=CV_1SE_CCD (Part 2 adds CV_1SE_IEN_CCD for IEN).
  *  Methods compared in Parts 1–3: TENET, TENET_AUG, TIENET_AUG.
  *  MC: 200 trials per grid point.
  */
@@ -137,8 +137,10 @@ static void sim_hastie_part_1(const GVSSimConfig& cfg, const std::string& tag)
 /**
  * @brief Compare lambda2 selection methods at a fixed Hastie operating point.
  *
- * Runs TENET and TIENET_AUG at SNR = 2.0 and rho = 0.7, comparing CV_1SE_SVD against
- * CV_1SE_CCD while holding the rest of the selector settings fixed.
+ * Runs TENET and TIENET_AUG at SNR = 2.0 and rho = 0.7 with two lambda2 rules per track:
+ * CV_1SE_SVD vs CV_1SE_CCD for TENET, CV_1SE_CCD vs the IEN-geometry CV_1SE_IEN_CCD
+ * for TIENET_AUG (the EN track rejects the IEN tuner). The IEN tuner caps its lambda1 path
+ * at 0.8 * n_train = 144 variables, below this design's s = 150, so Parts 1 and 3 keep CCD.
  */
 
 static void sim_hastie_part_2(const GVSSimConfig& cfg, const std::string& tag)
@@ -155,11 +157,17 @@ static void sim_hastie_part_2(const GVSSimConfig& cfg, const std::string& tag)
 
     auto trex_ctrl = make_gvs_trex_control(cfg.K);
 
-    const std::vector<LambdaSelectionMethod> methods = {
+    // Rules per track: the IEN-geometry tuner is valid on the IEN track only.
+    const std::vector<LambdaSelectionMethod> en_methods = {
         LambdaSelectionMethod::CV_1SE_SVD,
         LambdaSelectionMethod::CV_1SE_CCD
     };
-    const std::vector<std::string> method_labels = {"CV_1SE_SVD", "CV_1SE_CCD"};
+    const std::vector<std::string> en_labels = {"CV_1SE_SVD", "CV_1SE_CCD"};
+    const std::vector<LambdaSelectionMethod> ien_methods = {
+        LambdaSelectionMethod::CV_1SE_CCD,
+        LambdaSelectionMethod::CV_1SE_IEN_CCD
+    };
+    const std::vector<std::string> ien_labels = {"CV_1SE_CCD", "CV_1SE_IEN_CCD"};
 
     cdiag::print_section_header("Part 2/3: lambda2_method Comparison  |  " + tag);
     std::cout << "  n=" << cfg.n << "  p=" << cfg.p << "  s=150"
@@ -167,36 +175,36 @@ static void sim_hastie_part_2(const GVSSimConfig& cfg, const std::string& tag)
               << "  K=" << cfg.K << "\n"
               << "  fixed operating point: SNR=" << fmt_num(fixed_snr)
               << "  rho=" << fmt_num(fixed_rho) << "\n"
-              << "  lambda2 methods: CV_1SE_SVD / CV_1SE_CCD"
-              << "  |  selectors: TENET, TIENET_AUG  (4 runs)\n\n";
+              << "  lambda2 methods: TENET CV_1SE_SVD / CV_1SE_CCD,"
+              << " TIENET_AUG CV_1SE_CCD / CV_1SE_IEN_CCD  (4 runs)\n\n";
 
     std::vector<GVSGridPointResult> en_results, ien_results;
-    en_results.reserve(methods.size());
-    ien_results.reserve(methods.size());
+    en_results.reserve(en_methods.size());
+    ien_results.reserve(ien_methods.size());
 
-    for (std::size_t i = 0; i < methods.size(); ++i) {
+    for (std::size_t i = 0; i < en_methods.size(); ++i) {
         TRexGVSControlParameter gvs_ctrl_en;
         gvs_ctrl_en.gvs_type       = GVSType::EN;
-        gvs_ctrl_en.lambda2_method = methods[i];
+        gvs_ctrl_en.lambda2_method = en_methods[i];
         gvs_ctrl_en.corr_max       = cfg.corr_max;
         gvs_ctrl_en.hc_linkage     = hac::LinkageMethod::Single;
         gvs_ctrl_en.en_solver      = ENSolverType::TENET;
 
         en_results.push_back(
             run_gvs_mc_trials(dgp_fn, 0.0, cfg.num_MC,
-                              "TENET+" + method_labels[i],
+                              "TENET+" + en_labels[i],
                               cfg.tFDR, gvs_ctrl_en, trex_ctrl,
                               static_cast<unsigned>(cfg.base_seed)));
 
         TRexGVSControlParameter gvs_ctrl_ien;
         gvs_ctrl_ien.gvs_type       = GVSType::IEN;
-        gvs_ctrl_ien.lambda2_method = methods[i];
+        gvs_ctrl_ien.lambda2_method = ien_methods[i];
         gvs_ctrl_ien.corr_max       = cfg.corr_max;
         gvs_ctrl_ien.hc_linkage     = hac::LinkageMethod::Single;
 
         ien_results.push_back(
             run_gvs_mc_trials(dgp_fn, 0.0, cfg.num_MC,
-                              "TIENET_AUG+" + method_labels[i],
+                              "TIENET_AUG+" + ien_labels[i],
                               cfg.tFDR,
                               gvs_ctrl_ien, trex_ctrl,
                               static_cast<unsigned>(cfg.base_seed)));
@@ -206,7 +214,7 @@ static void sim_hastie_part_2(const GVSSimConfig& cfg, const std::string& tag)
         const std::string dir(DEMO_OUTPUT_DIR);
         const std::string stem = "gvs_" + tag + "_lambda2_method";
         std::filesystem::create_directories(dir);
-        std::ofstream txt_file(dir + stem + ".txt");
+        std::ofstream txt_file(dir + out_stem(stem) + ".txt");
         std::ofstream* fout = txt_file.is_open() ? &txt_file : nullptr;
 
         auto write = [&](const std::string& s) {
@@ -224,27 +232,30 @@ static void sim_hastie_part_2(const GVSSimConfig& cfg, const std::string& tag)
             write(hdr.str());
         }
 
-        print_mc_1d_method_table("TENET",  method_labels, en_results,  fout);
-        print_mc_1d_method_table("TIENET_AUG", method_labels, ien_results, fout);
+        print_mc_1d_method_table("TENET",      en_labels,  en_results,  fout);
+        print_mc_1d_method_table("TIENET_AUG", ien_labels, ien_results, fout);
 
         write(std::string(78, '=') + "\n\n");
 
         if (txt_file.is_open()) {
             txt_file.close();
-            std::cout << "[Info] TXT saved to: " << dir + stem + ".txt\n";
+            std::cout << "[Info] TXT saved to: " << dir + out_stem(stem) + ".txt\n";
         }
-        std::ofstream csv(dir + stem + ".csv");
+        std::ofstream csv(dir + out_stem(stem) + ".csv");
         if (csv.is_open()) {
             csv << "method,metric,lambda2_method,mean,sd\n"
                 << std::fixed << std::setprecision(6);
-            for (std::size_t i = 0; i < method_labels.size(); ++i) {
-                const std::string& lbl = method_labels[i];
+            for (std::size_t i = 0; i < en_labels.size(); ++i) {
+                const std::string& lbl = en_labels[i];
                 csv << "TENET,mean_FDP,"  << lbl << "," << en_results[i].mean_fdp  << "," << en_results[i].sd_fdp  << "\n";
                 csv << "TENET,mean_TPP,"  << lbl << "," << en_results[i].mean_tpp  << "," << en_results[i].sd_tpp  << "\n";
+            }
+            for (std::size_t i = 0; i < ien_labels.size(); ++i) {
+                const std::string& lbl = ien_labels[i];
                 csv << "TIENET_AUG,mean_FDP," << lbl << "," << ien_results[i].mean_fdp << "," << ien_results[i].sd_fdp << "\n";
                 csv << "TIENET_AUG,mean_TPP," << lbl << "," << ien_results[i].mean_tpp << "," << ien_results[i].sd_tpp << "\n";
             }
-            std::cout << "[Info] CSV saved to: " << dir + stem + ".csv\n\n";
+            std::cout << "[Info] CSV saved to: " << dir + out_stem(stem) + ".csv\n\n";
         }
     }
 }
@@ -328,7 +339,7 @@ static void sim_hastie_part_3(const GVSSimConfig& cfg, const std::string& tag)
         const std::string dir(DEMO_OUTPUT_DIR);
         const std::string stem = "gvs_" + tag + "_hc_linkage";
         std::filesystem::create_directories(dir);
-        std::ofstream txt_file(dir + stem + ".txt");
+        std::ofstream txt_file(dir + out_stem(stem) + ".txt");
         std::ofstream* fout = txt_file.is_open() ? &txt_file : nullptr;
 
         auto write = [&](const std::string& s) {
@@ -353,9 +364,9 @@ static void sim_hastie_part_3(const GVSSimConfig& cfg, const std::string& tag)
 
         if (txt_file.is_open()) {
             txt_file.close();
-            std::cout << "[Info] TXT saved to: " << dir + stem + ".txt\n";
+            std::cout << "[Info] TXT saved to: " << dir + out_stem(stem) + ".txt\n";
         }
-        std::ofstream csv(dir + stem + ".csv");
+        std::ofstream csv(dir + out_stem(stem) + ".csv");
         if (csv.is_open()) {
             csv << "method,metric,hc_linkage,mean,sd\n"
                 << std::fixed << std::setprecision(6);
@@ -366,7 +377,7 @@ static void sim_hastie_part_3(const GVSSimConfig& cfg, const std::string& tag)
                 csv << "TIENET_AUG,mean_FDP," << lbl << "," << ien_results[i].mean_fdp << "," << ien_results[i].sd_fdp << "\n";
                 csv << "TIENET_AUG,mean_TPP," << lbl << "," << ien_results[i].mean_tpp << "," << ien_results[i].sd_tpp << "\n";
             }
-            std::cout << "[Info] CSV saved to: " << dir + stem + ".csv\n\n";
+            std::cout << "[Info] CSV saved to: " << dir + out_stem(stem) + ".csv\n\n";
         }
     }
 }
@@ -393,7 +404,7 @@ int main()
     cfg.sd_x      = 0.1;    // sqrt(0.01) => rho ≈ 0.99
     cfg.tFDR      = 0.1;
     cfg.K         = 20;
-    cfg.num_MC    = 200;
+    cfg.num_MC    = num_mc(200);
     cfg.base_seed = 2026;
     cfg.corr_max  = 0.98;
     cfg.snr       = 2.0;    // unused here; Parts 2-3 fix SNR = 2.0 locally

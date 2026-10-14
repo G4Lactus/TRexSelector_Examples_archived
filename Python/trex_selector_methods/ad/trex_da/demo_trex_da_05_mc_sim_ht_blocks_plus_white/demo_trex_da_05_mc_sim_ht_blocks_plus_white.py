@@ -197,9 +197,8 @@ def part_4_m_sweep():
 # Fixed: n=150, p_total=500, M=5, Q=5 (p_ar=25, p_white=475, s=5), rho=0.8,
 # SNR=2, nu=3.0.
 # Swept: tFDR in {0.05, 0.10, ..., 0.50}.
-# (tFDR is a selector parameter — run_mc_trials called per solver x grid point.
-#  The cpp section sets solver_type / rho_afs / stagnation but not
-#  exch_tie_alpha; mirrored here via exch_tie_alpha=0.)
+# (tFDR is a selector parameter — run_mc_trials called per solver x grid point,
+#  each solver with its own exch_tie_alpha as in the cpp section.)
 # ==============================================================================
 
 def part_5_tfdr_sweep():
@@ -215,13 +214,12 @@ def part_5_tfdr_sweep():
                 for _ in range(6))
 
             for sv in solvers:
-                sv_run = dict(sv, exch_tie_alpha=0.0)   # cpp omission mirrored
                 for gi, tfdr in enumerate(tfdr_grid):
                     res = run_mc_trials(
                         NUM_MC, f"tFDR = {fmt_num(tfdr)}", N, P_TOTAL,
                         "dgp_ht_block_white_snr",
                         _kwargs(P_AR_BASE, P_WHITE_BASE, M, RHO, SNR, h_noise),
-                        SUPPORT_BASE, M, tfdr, sv_run, K, da_spec,
+                        SUPPORT_BASE, M, tfdr, sv, K, da_spec,
                         BASE_SEED + gi * 10000)
                     nm = sv["name"]
                     fdr[nm][gi] = res["avg_fdr"]

@@ -289,8 +289,10 @@ def plot_method_bars(df: pd.DataFrame, param_col: str, title: str,
         ax = axes[ai]
         for si, solver in enumerate(solvers):
             sub = df[(df["method"] == solver) & (df["metric"] == metric)]
-            means = [float(sub[sub[param_col] == lv]["mean"].iloc[0]) for lv in levels]
-            sds = [float(sub[sub[param_col] == lv]["sd"].iloc[0]) for lv in levels]
+            # A level the method was not run at (e.g. an IEN-only lambda2 rule) gets no bar.
+            rows = [sub[sub[param_col] == lv] for lv in levels]
+            means = [float(r["mean"].iloc[0]) if len(r) else np.nan for r in rows]
+            sds = [float(r["sd"].iloc[0]) if len(r) else np.nan for r in rows]
             bars = ax.bar(x + (si - (len(solvers) - 1) / 2) * width, means, width,
                           yerr=sds, capsize=3, label=solver, color=colors[si],
                           error_kw={"elinewidth": 0.8, "alpha": 0.6})

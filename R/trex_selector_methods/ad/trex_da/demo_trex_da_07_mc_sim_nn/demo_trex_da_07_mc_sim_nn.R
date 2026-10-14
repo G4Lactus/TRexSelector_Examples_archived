@@ -121,9 +121,8 @@ part_1_snr_sweep <- function() {
 # ==============================================================================
 # Generic 2D two-support sweep driver (Parts 2 and 3)
 #
-# The cpp loops set solver_type / rho_afs / stagnation per solver but not
-# exch_tie_alpha; mirrored here via exch_tie_alpha=0. The seed offset stays
-# constant across cells (mirrors cpp base_offset = base_seed).
+# Each solver runs with its own exch_tie_alpha, as in the cpp loops. The seed
+# offset stays constant across cells (mirrors cpp base_offset = base_seed).
 # ==============================================================================
 
 .run_2d_two_support <- function(scenario_tag, row_label, col_label, row_grid,
@@ -149,7 +148,6 @@ part_1_snr_sweep <- function() {
   total_cells <- n_row * n_col
 
   for (sv in solvers) {
-    sv_run <- modifyList(sv, list(exch_tie_alpha = 0.0))   # cpp omission
     nm <- sv$name
     cat(sprintf("\n  Solver: %s\n\n", nm))
 
@@ -162,7 +160,7 @@ part_1_snr_sweep <- function() {
         lbl <- sprintf("[%d/%d] %s  %s", cell_idx, total_cells, nm,
                        label_fn(row_grid[ir], col_grid[ic]))
         res <- run_mc_trials(NUM_MC, lbl, N, P, cell$dgp, cell$kwargs,
-                             support_cs, S, TFDR, sv_run, K, DA_SPEC,
+                             support_cs, S, TFDR, sv, K, DA_SPEC,
                              BASE_SEED)
         tpp_cs[[nm]][ir, ic] <- res$avg_tpr
         fdp_cs[[nm]][ir, ic] <- res$avg_fdr
@@ -180,7 +178,7 @@ part_1_snr_sweep <- function() {
         lbl <- sprintf("[%d/%d] %s  %s  Random", cell_idx, total_cells, nm,
                        label_fn(row_grid[ir], col_grid[ic]))
         res <- run_mc_trials(NUM_MC, lbl, N, P, cell$dgp, cell$kwargs,
-                             NULL, S, TFDR, sv_run, K, DA_SPEC, BASE_SEED)
+                             NULL, S, TFDR, sv, K, DA_SPEC, BASE_SEED)
         tpp_rand[[nm]][ir, ic] <- res$avg_tpr
         fdp_rand[[nm]][ir, ic] <- res$avg_fdr
         sd_tpp_rand[[nm]][ir, ic] <- res$sd_tpr

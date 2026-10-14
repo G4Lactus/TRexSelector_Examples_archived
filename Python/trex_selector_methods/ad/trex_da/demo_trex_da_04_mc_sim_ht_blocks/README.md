@@ -17,9 +17,7 @@ numbers below are this Python run's own results, and they agree with the C++ ref
 noise (independent random number generator (RNG) streams).
 
 The greedy solvers use *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for TAFS/TOMP, `0` for
-TLARS) in Parts 1–4. The C++ target FDR (tFDR) and linkage sections set solver type / `rho_afs` / stagnation but
-not `exch_tie_alpha`, and Parts 5–6 mirror that (the greedy solvers run there with
-`exch_tie_alpha = 0`). TAFS runs with its adaptive forward-selection (AFS) correlation parameter `rho_afs = 0.3`
+TLARS and TLARS_STAG) in every part, as in C++. TAFS runs with its adaptive forward-selection (AFS) correlation parameter `rho_afs = 0.3`
 throughout (`0` for TLARS/TOMP), which is why the figures label it `TAFS (rho = 0.3)`.
 
 ---

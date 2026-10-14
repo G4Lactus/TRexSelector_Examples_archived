@@ -11,12 +11,14 @@
 #
 # Three parts, each in its own function:
 #   sim_hastie_part_1() — 2-D SNR x rho grid
-#   sim_hastie_part_2() — lambda2_method comparison: CV_1SE_SVD / CV_1SE_CCD
+#   sim_hastie_part_2() — lambda2_method comparison: SVD / CCD (EN),
+#                         CCD / IEN_CCD (IEN)
 #   sim_hastie_part_3() — hc_linkage comparison: Single / Complete / Average / WPGMA
 #
 # DGP: three equicorrelated groups of 50 variables each, all active (s = 150),
 #      plus 350 null white-noise variables; p = 500 and n = 200.
-# Selector: K=20, tFDR=0.1, corr_max=0.98, lambda2=CV_1SE_CCD.
+# Selector: K=20, tFDR=0.1, corr_max=0.98, lambda2=CV_1SE_CCD (Part 2 adds
+#   CV_1SE_IEN_CCD for IEN).
 # Methods compared: TENET, TENET_AUG, TIENET_AUG.
 # MC: 200 trials per grid point (the full run takes hours — reduce num_MC and
 #     the grids for a quick smoke test). Optional first CLI argument sets the
@@ -115,39 +117,45 @@ def sim_hastie_part_1(cfg, tag):
 # ==============================================================================
 
 def sim_hastie_part_2(cfg, tag):
-    """Compare lambda2 selection methods (CV_1SE_SVD vs CV_1SE_CCD) for TENET
-    and TIENET_AUG at the fixed operating point SNR = 2.0, rho = 0.7."""
+    """Compare lambda2 selection methods at the fixed operating point
+    SNR = 2.0, rho = 0.7: CV_1SE_SVD vs CV_1SE_CCD for TENET, CV_1SE_CCD vs
+    the IEN-geometry CV_1SE_IEN_CCD for TIENET_AUG (the EN track rejects the
+    IEN tuner). The IEN tuner caps its lambda1 path at 0.8 * n_train = 144
+    variables, below this design's s = 150, so Parts 1 and 3 keep CCD."""
     fixed_snr, fixed_rho = 2.0, 0.7
     fixed_sdx = math.sqrt((1.0 - fixed_rho) / fixed_rho)
     dgp_kwargs = dict(n=cfg["n"], p=cfg["p"], snr=fixed_snr, sd_x=fixed_sdx)
 
-    methods = ["CV_1SE_SVD", "CV_1SE_CCD"]
+    en_methods = ["CV_1SE_SVD", "CV_1SE_CCD"]
+    ien_methods = ["CV_1SE_CCD", "CV_1SE_IEN_CCD"]
 
     print_section_header(f"Part 2/3: lambda2_method Comparison  |  {tag}")
     print(f"  n={cfg['n']}  p={cfg['p']}  s=150  MC={cfg['num_MC']}"
           f"  tFDR={fmt_num(cfg['tFDR'])}  K={cfg['K']}\n"
           f"  fixed operating point: SNR={fmt_num(fixed_snr)}"
           f"  rho={fmt_num(fixed_rho)}\n"
-          "  lambda2 methods: CV_1SE_SVD / CV_1SE_CCD"
-          "  |  selectors: TENET, TIENET_AUG  (4 runs)\n")
+          "  lambda2 methods: TENET CV_1SE_SVD / CV_1SE_CCD,"
+          " TIENET_AUG CV_1SE_CCD / CV_1SE_IEN_CCD  (4 runs)\n")
 
     en_results, ien_results = [], []
-    for lm in methods:
+    for lm_en, lm_ien in zip(en_methods, ien_methods):
         en_results.append(run_gvs_mc_trials(
-            "dgp_hastie_snr", dgp_kwargs, cfg["num_MC"], f"TENET+{lm}",
+            "dgp_hastie_snr", dgp_kwargs, cfg["num_MC"], f"TENET+{lm_en}",
             cfg["tFDR"], cfg["K"], "EN", cfg["corr_max"],
-            hc_linkage="Single", en_solver="TENET", lambda2_method=lm,
+            hc_linkage="Single", en_solver="TENET", lambda2_method=lm_en,
             base_seed=cfg["base_seed"], max_workers=N_WORKERS))
         ien_results.append(run_gvs_mc_trials(
-            "dgp_hastie_snr", dgp_kwargs, cfg["num_MC"], f"TIENET_AUG+{lm}",
+            "dgp_hastie_snr", dgp_kwargs, cfg["num_MC"],
+            f"TIENET_AUG+{lm_ien}",
             cfg["tFDR"], cfg["K"], "IEN", cfg["corr_max"],
-            hc_linkage="Single", en_solver=None, lambda2_method=lm,
+            hc_linkage="Single", en_solver=None, lambda2_method=lm_ien,
             base_seed=cfg["base_seed"], max_workers=N_WORKERS))
 
     save_mc_1d_method_tables(
-        tag, "lambda2_method", "lambda2_method", methods, en_results,
+        tag, "lambda2_method", "lambda2_method", en_methods, en_results,
         ien_results, f"SNR={fmt_num(fixed_snr)}, rho={fmt_num(fixed_rho)}",
-        cfg, OUT_DIR, f"gvs_{tag}_lambda2_method")
+        cfg, OUT_DIR, f"gvs_{tag}_lambda2_method",
+        ien_param_labels=ien_methods)
 
 
 # ==============================================================================

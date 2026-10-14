@@ -216,10 +216,18 @@ cap_hc <- function(hc_dist) {
   # library would silently route the IEN path to the native TIENET instead.
   base_solver <- if (identical(GVS_type, "IEN")) "TIENET_AUG" else "TLARS"
 
+  # Every field of the cpp make_gvs_trex_control() is set explicitly, so no
+  # R default (AUTO stagnation off for TLARS) can diverge from the reference.
+  ctrl <- TRexSelectorNeo::trex_control(
+    solver = base_solver, K = K, max_dummy_multiplier = 10,
+    use_max_T_stop = TRUE, lloop_strategy = "HCONCAT",
+    tloop_stagnation_stop = TRUE, tloop_max_stagnant_steps = 5,
+    use_memory_mapping = FALSE
+  )
   sel <- TRexSelectorNeo::TRexGVSSelector$new(
     X, y, tFDR = tFDR, seed = as.integer(seed), verbose = FALSE,
     gvs_control = do.call(TRexSelectorNeo::trex_gvs_control, gvs_args),
-    control     = TRexSelectorNeo::trex_control(solver = base_solver, K = K)
+    control     = ctrl
   )
   sel$select()
   sel

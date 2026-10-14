@@ -98,9 +98,8 @@ def part_1_snr_sweep():
 # ==============================================================================
 # Generic 2D two-support sweep driver (Parts 2 and 3)
 #
-# The cpp loops set solver_type / rho_afs / stagnation per solver but not
-# exch_tie_alpha; mirrored here via exch_tie_alpha=0. The seed offset stays
-# constant across cells (mirrors cpp base_offset = base_seed).
+# Each solver runs with its own exch_tie_alpha, as in the cpp loops. The seed
+# offset stays constant across cells (mirrors cpp base_offset = base_seed).
 # ==============================================================================
 
 def _run_2d_two_support(scenario_tag, row_label, col_label, row_grid, col_grid,
@@ -122,7 +121,6 @@ def _run_2d_two_support(scenario_tag, row_label, col_label, row_grid, col_grid,
     total_cells = n_row * n_col
 
     for sv in solvers:
-        sv_run = dict(sv, exch_tie_alpha=0.0)   # cpp omission mirrored
         nm = sv["name"]
         print(f"\n  Solver: {nm}\n")
 
@@ -134,7 +132,7 @@ def _run_2d_two_support(scenario_tag, row_label, col_label, row_grid, col_grid,
                 dgp, kwargs = make_cell(rv, cv)
                 lbl = f"[{cell_idx}/{total_cells}] {nm}  {label_fns(rv, cv)}"
                 res = run_mc_trials(NUM_MC, lbl, N, P, dgp, kwargs, support_cs,
-                                    S, TFDR, sv_run, K, DA_SPEC, BASE_SEED)
+                                    S, TFDR, sv, K, DA_SPEC, BASE_SEED)
                 tpp_cs[nm][ir, ic] = res["avg_tpr"]
                 fdp_cs[nm][ir, ic] = res["avg_fdr"]
                 sd_tpp_cs[nm][ir, ic] = res["sd_tpr"]
@@ -149,7 +147,7 @@ def _run_2d_two_support(scenario_tag, row_label, col_label, row_grid, col_grid,
                 lbl = (f"[{cell_idx}/{total_cells}] {nm}  {label_fns(rv, cv)}"
                        "  Random")
                 res = run_mc_trials(NUM_MC, lbl, N, P, dgp, kwargs, None,
-                                    S, TFDR, sv_run, K, DA_SPEC, BASE_SEED)
+                                    S, TFDR, sv, K, DA_SPEC, BASE_SEED)
                 tpp_rand[nm][ir, ic] = res["avg_tpr"]
                 fdp_rand[nm][ir, ic] = res["avg_fdr"]
                 sd_tpp_rand[nm][ir, ic] = res["sd_tpr"]

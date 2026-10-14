@@ -210,7 +210,7 @@ int main() {
   cfg.p = 500;
   cfg.tFDR = 0.1;
   cfg.K = 20;
-  cfg.num_MC = 200;
+  cfg.num_MC = num_mc(200);
   cfg.base_seed = 2026;
   cfg.corr_max = 0.98;
 

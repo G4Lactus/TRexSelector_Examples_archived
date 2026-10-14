@@ -235,7 +235,8 @@ run_sweep <- function(cfg, points, sweep_col, sweep_header, sweep_precision,
       X + 0, y + 0, tFDR = tfdr, seed = -1L, verbose = FALSE,
       gvs_control = trex_gvs_control(gvs_type = "EN", en_solver = "TENET",
                                      lambda_2 = -1, lambda2_method = "CV_1SE_CCD"),
-      control = trex_control(solver = "TENET", scaling_mode = "L2")
+      control = trex_control(solver = "TENET", scaling_mode = "L2",
+                             lloop_strategy = "STANDARD")
     )
     sel$select()
     sel_idx <- sel$selected_indices

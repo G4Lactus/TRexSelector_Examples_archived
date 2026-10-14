@@ -11,12 +11,13 @@
 #
 # Parts:
 #   Part 1: 2-D SNR x rho grid.
-#   Part 2: lambda2_method comparison — CV_1SE_SVD vs CV_1SE_CCD.
+#   Part 2: lambda2_method comparison — SVD vs CCD (EN), CCD vs IEN_CCD (IEN).
 #   Part 3: hc_linkage comparison     — Single / Complete / Average / WPGMA.
 #
 # DGP: three equicorrelated groups of 50 variables each, all active (s = 150),
 #      plus 350 null white-noise variables; p = 500 and n = 200.
-# Selector: K=20, tFDR=0.1, corr_max=0.98, lambda2=CV_1SE_CCD.
+# Selector: K=20, tFDR=0.1, corr_max=0.98, lambda2=CV_1SE_CCD (Part 2 adds
+#   CV_1SE_IEN_CCD for IEN).
 # Methods compared: TENET, TENET_AUG, TIENET_AUG.
 # MC: 200 trials per grid point (the full run takes hours — reduce num_MC and
 #     the grids for a quick smoke test). Optional first CLI argument sets the
@@ -177,14 +178,18 @@ sim_hastie_part_1 <- function(cfg, tag) {
 # ==============================================================================
 # Part 2: lambda2_method comparison
 # ==============================================================================
-# Compare lambda2 selection methods (CV_1SE_SVD vs CV_1SE_CCD) for TENET and
-# TIENET_AUG at the fixed operating point SNR = 2.0, rho = 0.7.
+# Compare lambda2 selection methods at the fixed operating point SNR = 2.0,
+# rho = 0.7: CV_1SE_SVD vs CV_1SE_CCD for TENET, CV_1SE_CCD vs the
+# IEN-geometry CV_1SE_IEN_CCD for TIENET_AUG (EN rejects the IEN tuner). The
+# IEN tuner caps its lambda1 path at 0.8 * n_train = 144 variables, below this
+# design's s = 150, so Parts 1 and 3 keep CCD.
 
 sim_hastie_part_2 <- function(cfg, tag) {
   fixed_snr <- 2.0
   fixed_rho <- 0.7
   fixed_sdx <- sqrt((1 - fixed_rho) / fixed_rho)
-  methods   <- c("CV_1SE_SVD", "CV_1SE_CCD")
+  en_methods  <- c("CV_1SE_SVD", "CV_1SE_CCD")
+  ien_methods <- c("CV_1SE_CCD", "CV_1SE_IEN_CCD")
 
   print_section_header(sprintf("Part 2/3: lambda2_method Comparison  |  %s",
                                tag))
@@ -192,26 +197,28 @@ sim_hastie_part_2 <- function(cfg, tag) {
               cfg$n, cfg$p, cfg$num_MC, fmt_num(cfg$tFDR), cfg$K))
   cat(sprintf("  fixed operating point: SNR=%s  rho=%s\n",
               fmt_num(fixed_snr), fmt_num(fixed_rho)))
-  cat("  lambda2 methods: CV_1SE_SVD / CV_1SE_CCD",
-      "  |  selectors: TENET, TIENET_AUG  (4 runs)\n\n", sep = "")
+  cat("  lambda2 methods: TENET CV_1SE_SVD / CV_1SE_CCD,",
+      " TIENET_AUG CV_1SE_CCD / CV_1SE_IEN_CCD  (4 runs)\n\n", sep = "")
 
   en_results  <- list()
   ien_results <- list()
-  for (lm in methods) {
-    en_results[[length(en_results) + 1L]] <- .comparison_point(
-      sprintf("TENET+%s", lm), "EN", "TENET", fixed_snr, fixed_sdx,
-      lambda2_method = lm
+  for (k in seq_along(en_methods)) {
+    en_results[[k]] <- .comparison_point(
+      sprintf("TENET+%s", en_methods[k]), "EN", "TENET", fixed_snr,
+      fixed_sdx, lambda2_method = en_methods[k]
     )
-    ien_results[[length(ien_results) + 1L]] <- .comparison_point(
-      sprintf("TIENET_AUG+%s", lm), "IEN", NULL, fixed_snr, fixed_sdx,
-      lambda2_method = lm
+    ien_results[[k]] <- .comparison_point(
+      sprintf("TIENET_AUG+%s", ien_methods[k]), "IEN", NULL, fixed_snr,
+      fixed_sdx, lambda2_method = ien_methods[k]
     )
   }
 
   save_mc_1d_method_tables(
-    tag, "lambda2_method", "lambda2_method", methods, en_results, ien_results,
+    tag, "lambda2_method", "lambda2_method", en_methods, en_results,
+    ien_results,
     sprintf("SNR=%s, rho=%s", fmt_num(fixed_snr), fmt_num(fixed_rho)),
-    cfg, OUT_DIR, sprintf("gvs_%s_lambda2_method", tag)
+    cfg, OUT_DIR, sprintf("gvs_%s_lambda2_method", tag),
+    ien_param_labels = ien_methods
   )
 }
 

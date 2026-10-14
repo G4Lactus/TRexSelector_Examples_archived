@@ -189,7 +189,7 @@ CFG <- list(
     gvs_type       = gvs_type,
     corr_max       = cfg$corr_max,
     hc_linkage     = "Single",
-    lambda2_method = "CV_1SE_CCD"
+    lambda2_method = if (gvs_type == "IEN") "CV_1SE_IEN_CCD" else "CV_1SE_CCD"
   )
   # en_solver applies to EN only (TENET / TENET_AUG). For IEN the en_solver
   # field is not applicable and is left at its library default, mirroring the
@@ -199,10 +199,18 @@ CFG <- list(
   if (oracle)           gvs_args$groups    <- dat$prior_groups
 
   solver <- if (gvs_type == "IEN") "TIENET_AUG" else "TLARS"
+  # All fields of the cpp make_gvs_trex_control() explicit (the R AUTO
+  # stagnation default would switch the stop off for the EN rows).
+  ctrl <- TRexSelectorNeo::trex_control(
+    solver = solver, K = cfg$K, max_dummy_multiplier = 10,
+    use_max_T_stop = TRUE, lloop_strategy = "HCONCAT",
+    tloop_stagnation_stop = TRUE, tloop_max_stagnant_steps = 5,
+    use_memory_mapping = FALSE
+  )
   sel <- TRexSelectorNeo::TRexGVSSelector$new(
     dat$X, dat$y, tFDR = cfg$tFDR, seed = seed, verbose = FALSE,
     gvs_control = do.call(TRexSelectorNeo::trex_gvs_control, gvs_args),
-    control     = TRexSelectorNeo::trex_control(solver = solver, K = cfg$K)
+    control     = ctrl
   )
   sel$select()
 

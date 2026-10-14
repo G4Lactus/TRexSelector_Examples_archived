@@ -111,7 +111,7 @@ run_gvs_2d_sweep <- function(point_fun, snr_grid, col_grid, label, num_MC) {
 #' Render the table for one method variant: rows = parameter labels, columns =
 #' mean_FDP, sd_FDP, mean_TPP, sd_TPP. Returns the table as a string.
 render_mc_1d_method_table <- function(method_label, param_labels, results) {
-  rw <- 12L
+  rw <- max(12L, nchar(param_labels) + 2L)  # widened for long labels
   cw <- 10L
   total_w <- rw + 4L * cw
 
@@ -123,7 +123,7 @@ render_mc_1d_method_table <- function(method_label, param_labels, results) {
              paste0("  ", strrep("-", total_w)))
   for (k in seq_along(param_labels)) {
     r <- results[[k]]
-    lines <- c(lines, sprintf("  %-12s%10.4f%10.4f%10.4f%10.4f",
+    lines <- c(lines, sprintf("  %-*s%10.4f%10.4f%10.4f%10.4f", rw,
                               param_labels[k], r$mean_FDP, r$sd_FDP,
                               r$mean_TPP, r$sd_TPP))
   }
@@ -256,10 +256,14 @@ save_mc_2d_tables <- function(scenario_tag, row_labels, col_labels, en_2d,
 #' Console + .txt + .csv writer for a fixed-operating-point method comparison
 #' (TENET vs TIENET_AUG over lambda2_method / hc_linkage levels).
 #' CSV schema mirrors cpp/Python: method,metric,<param_col>,mean,sd.
+#' `ien_param_labels` gives the IEN track its own levels (lambda2 rules); the
+#' CSV then lists the EN rows before the IEN rows, as the cpp Part 2 does.
 save_mc_1d_method_tables <- function(scenario_tag, comparison, param_col,
                                      param_labels, en_results, ien_results,
                                      fixed_point_note, cfg, out_dir,
-                                     file_stem) {
+                                     file_stem, ien_param_labels = NULL) {
+  ien_labels <- if (is.null(ien_param_labels)) param_labels else
+    ien_param_labels
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
   txt_path <- file.path(out_dir, paste0(file_stem, ".txt"))
 
@@ -269,26 +273,31 @@ save_mc_1d_method_tables <- function(scenario_tag, comparison, param_col,
                         cfg$num_MC, fmt_num(cfg$tFDR)),
                 strrep("=", 78), "\n",
                 render_mc_1d_method_table("TENET", param_labels, en_results),
-                render_mc_1d_method_table("TIENET_AUG", param_labels,
+                render_mc_1d_method_table("TIENET_AUG", ien_labels,
                                           ien_results),
                 strrep("=", 78), "\n\n")
   cat(txt)
   writeLines(txt, txt_path, sep = "")
   cat(sprintf("[Info] TXT saved to: %s\n", txt_path))
 
+  rows_of <- function(method, lbl, r) {
+    c(sprintf("%s,mean_FDP,%s,%.6f,%.6f", method, lbl, r$mean_FDP, r$sd_FDP),
+      sprintf("%s,mean_TPP,%s,%.6f,%.6f", method, lbl, r$mean_TPP, r$sd_TPP))
+  }
   csv_lines <- sprintf("method,metric,%s,mean,sd", param_col)
-  for (k in seq_along(param_labels)) {
-    en_r  <- en_results[[k]]
-    ien_r <- ien_results[[k]]
-    csv_lines <- c(csv_lines,
-                   sprintf("TENET,mean_FDP,%s,%.6f,%.6f", param_labels[k],
-                           en_r$mean_FDP, en_r$sd_FDP),
-                   sprintf("TENET,mean_TPP,%s,%.6f,%.6f", param_labels[k],
-                           en_r$mean_TPP, en_r$sd_TPP),
-                   sprintf("TIENET_AUG,mean_FDP,%s,%.6f,%.6f", param_labels[k],
-                           ien_r$mean_FDP, ien_r$sd_FDP),
-                   sprintf("TIENET_AUG,mean_TPP,%s,%.6f,%.6f", param_labels[k],
-                           ien_r$mean_TPP, ien_r$sd_TPP))
+  if (is.null(ien_param_labels)) {
+    for (k in seq_along(param_labels)) {
+      csv_lines <- c(csv_lines,
+                     rows_of("TENET", param_labels[k], en_results[[k]]),
+                     rows_of("TIENET_AUG", param_labels[k], ien_results[[k]]))
+    }
+  } else {
+    for (k in seq_along(param_labels))
+      csv_lines <- c(csv_lines,
+                     rows_of("TENET", param_labels[k], en_results[[k]]))
+    for (k in seq_along(ien_labels))
+      csv_lines <- c(csv_lines,
+                     rows_of("TIENET_AUG", ien_labels[k], ien_results[[k]]))
   }
   csv_path <- file.path(out_dir, paste0(file_stem, ".csv"))
   writeLines(csv_lines, csv_path)

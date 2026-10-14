@@ -235,7 +235,11 @@ def _get_enum_maps():
         _LAMBDA2_MAP = {"CV_1SE_CCD": trex.LambdaSelectionMethod.CV_1SE_CCD,
                         "CV_1SE_SVD": trex.LambdaSelectionMethod.CV_1SE_SVD,
                         "CV_MIN_CCD": trex.LambdaSelectionMethod.CV_MIN_CCD,
-                        "CV_MIN_SVD": trex.LambdaSelectionMethod.CV_MIN_SVD}
+                        "CV_MIN_SVD": trex.LambdaSelectionMethod.CV_MIN_SVD,
+                        "CV_1SE_IEN_CCD":
+                            trex.LambdaSelectionMethod.CV_1SE_IEN_CCD,
+                        "CV_MIN_IEN_CCD":
+                            trex.LambdaSelectionMethod.CV_MIN_IEN_CCD}
         _LINKAGE_MAP = {"Single": LinkageMethod.Single,
                         "Complete": LinkageMethod.Complete,
                         "Average": LinkageMethod.Average,
@@ -248,9 +252,8 @@ def _get_enum_maps():
 
 def make_gvs_trex_control(K=20):
     """TRexControlParameter with the shared GVS defaults (mirrors cpp
-    make_gvs_trex_control). solver_type is left at its default — the
-    TRexGVSSelector wrapper derives the required solver from gvs_type /
-    en_solver (EN -> TENET/TENET_AUG, IEN -> TIENET_AUG)."""
+    make_gvs_trex_control). build_gvs_selector sets solver_type for IEN
+    (TIENET_AUG); for EN the binding derives it from en_solver."""
     import trex_selector_neo as trex
     tc = trex.TRexControlParameter()
     tc.K = int(K)
@@ -271,15 +274,20 @@ def build_gvs_selector(X, y, tFDR, K, gvs_type, corr_max, hc_linkage="Single",
 
     All method knobs are plain strings (picklable across process boundaries):
     gvs_type in {"EN", "IEN"}, en_solver in {"TENET", "TENET_AUG"} for EN or
-    None for IEN (whose solver is always TIENET_AUG),
+    None for IEN (whose solver is set to TIENET_AUG, as in the cpp demos),
     hc_linkage in {"Single", "Complete", "Average", "WPGMA", ...},
-    lambda2_method in {"CV_1SE_CCD", "CV_1SE_SVD", ...}.
+    lambda2_method in {"CV_1SE_CCD", "CV_1SE_SVD", "CV_1SE_IEN_CCD", ...}.
 
     `prior_groups` supplies oracle group labels (length-p int vector of
     contiguous 0-based cluster IDs); None discovers groups from the data via
     HAC at `corr_max`. `cv_seed` fixes the CV fold permutation (None keeps the
     default -1 = derive from the selector seed). The trex_control is passed as
-    the wrapper's separate argument (it overrides the nested trex_ctrl).
+    the binding's separate argument (it overrides the nested trex_ctrl).
+
+    The raw binding is called directly: the TRexGVSSelector wrapper replaces
+    CV_1SE_CCD by CV_1SE_IEN_CCD on the IEN track, while the cpp demos run
+    exactly the rule they set. The returned run object exposes
+    selected_indices like the wrapper.
     """
     import trex_selector_neo as trex
     gvs_map, en_map, l2_map, hc_map = _get_enum_maps()
@@ -288,11 +296,8 @@ def build_gvs_selector(X, y, tFDR, K, gvs_type, corr_max, hc_linkage="Single",
     gc.gvs_type = gvs_map[gvs_type]
     gc.corr_max = float(corr_max)
     gc.hc_linkage = hc_map[hc_linkage]
-    # en_solver applies to EN only (TENET / TENET_AUG). For IEN the solver is
-    # always TIENET_AUG (the only IEN solver; no plain TIENET exists), derived
-    # from gvs_type by the selector — so IEN callers pass en_solver=None and the
-    # field is left untouched, mirroring the cpp demos (which never set en_solver
-    # on their IEN control).
+    # en_solver applies to EN only (TENET / TENET_AUG). IEN callers pass
+    # en_solver=None, and the IEN solver is set on the trex control below.
     if en_solver is not None:
         gc.en_solver = en_map[en_solver]
     gc.lambda2_method = l2_map[lambda2_method]
@@ -302,12 +307,35 @@ def build_gvs_selector(X, y, tFDR, K, gvs_type, corr_max, hc_linkage="Single",
         gc.prior_groups = [int(g) for g in np.asarray(prior_groups)]
 
     tc = make_gvs_trex_control(K)
+    if gvs_type == "IEN":
+        # Explicit, as in cpp: the binding would map a non-IEN solver_type
+        # to the native TIENET.
+        tc.solver_type = trex.SolverTypeForTRex.TIENET_AUG
 
-    sel = trex.TRexGVSSelector(np.asfortranarray(X), y, tFDR=tFDR,
-                              gvs_control=gc, trex_control=tc,
-                              seed=int(seed), verbose=False)
-    res = sel.select()
-    return sel, res
+    run = _GVSRun(X, y)
+    run.selector = _raw_gvs_selector()(run.X, run.y, float(tFDR), gc, tc,
+                                       int(seed), False)
+    run.selector.select()
+    return run, run.selector.getGVSResult()
+
+
+def _raw_gvs_selector():
+    """The pybind TRexGVSSelector class (no Python-side lambda2 remap)."""
+    from trex_selector_neo.trex_selector_methods.ad import TRexGVSSelector
+    return TRexGVSSelector
+
+
+class _GVSRun:
+    """Keeps X / y alive for the zero-copy binding and exposes the selection."""
+
+    def __init__(self, X, y):
+        self.X = np.asfortranarray(X, dtype=np.float64)
+        self.y = np.asfortranarray(y, dtype=np.float64)
+        self.selector = None
+
+    @property
+    def selected_indices(self):
+        return self.selector.getSelectedIndices()
 
 
 # ==============================================================================
@@ -414,7 +442,8 @@ def run_gvs_2d_sweep(dgp_name, cell_kwargs_fn, snr_grid, rho_grid, cfg,
 def print_mc_1d_method_table(method_label, param_labels, results, fout=None):
     """Table for one method variant: rows = parameter labels, columns =
     mean_FDP, sd_FDP, mean_TPP, sd_TPP."""
-    rw, cw = 12, 10
+    rw = max([12] + [len(lbl) + 2 for lbl in param_labels])  # widened for long labels
+    cw = 10
     total_w = rw + 4 * cw
 
     lines = [f"\n  {method_label}",
@@ -534,10 +563,12 @@ def save_mc_2d_tables(scenario_tag, row_labels, col_labels, en_2d, en_aug_2d,
 
 def save_mc_1d_method_tables(scenario_tag, comparison, param_col, param_labels,
                              en_results, ien_results, fixed_point_note, cfg,
-                             out_dir, file_stem):
+                             out_dir, file_stem, ien_param_labels=None):
     """Console + .txt + .csv writer for a fixed-operating-point method
     comparison (TENET vs TIENET_AUG over lambda2_method / hc_linkage levels).
-    CSV schema mirrors cpp: method,metric,<param_col>,mean,sd."""
+    CSV schema mirrors cpp: method,metric,<param_col>,mean,sd.
+    ien_param_labels gives the IEN track its own levels (lambda2 rules); the
+    CSV then lists the EN rows before the IEN rows, as the cpp Part 2 does."""
     os.makedirs(out_dir, exist_ok=True)
     txt_path = os.path.join(out_dir, file_stem + ".txt")
 
@@ -551,29 +582,27 @@ def save_mc_1d_method_tables(scenario_tag, comparison, param_col, param_labels,
               f"  ({fixed_point_note}, MC={cfg['num_MC']},"
               f" tFDR={fmt_num(cfg['tFDR'])})\n" + "=" * 78 + "\n")
         print_mc_1d_method_table("TENET", param_labels, en_results, fout=txt)
-        print_mc_1d_method_table("TIENET_AUG", param_labels, ien_results,
-                                 fout=txt)
+        print_mc_1d_method_table("TIENET_AUG",
+                                 ien_param_labels or param_labels,
+                                 ien_results, fout=txt)
         write("=" * 78 + "\n\n")
     print(f"[Info] TXT saved to: {txt_path}")
 
+    def _rows(method, lbl, r):
+        return [dict(method=method, metric="mean_FDP", **{param_col: lbl},
+                     mean=round(r["mean_fdp"], 6), sd=round(r["sd_fdp"], 6)),
+                dict(method=method, metric="mean_TPP", **{param_col: lbl},
+                     mean=round(r["mean_tpp"], 6), sd=round(r["sd_tpp"], 6))]
+
     rows = []
-    for lbl, en_r, ien_r in zip(param_labels, en_results, ien_results):
-        rows.append(dict(method="TENET", metric="mean_FDP",
-                         **{param_col: lbl},
-                         mean=round(en_r["mean_fdp"], 6),
-                         sd=round(en_r["sd_fdp"], 6)))
-        rows.append(dict(method="TENET", metric="mean_TPP",
-                         **{param_col: lbl},
-                         mean=round(en_r["mean_tpp"], 6),
-                         sd=round(en_r["sd_tpp"], 6)))
-        rows.append(dict(method="TIENET_AUG", metric="mean_FDP",
-                         **{param_col: lbl},
-                         mean=round(ien_r["mean_fdp"], 6),
-                         sd=round(ien_r["sd_fdp"], 6)))
-        rows.append(dict(method="TIENET_AUG", metric="mean_TPP",
-                         **{param_col: lbl},
-                         mean=round(ien_r["mean_tpp"], 6),
-                         sd=round(ien_r["sd_tpp"], 6)))
+    if ien_param_labels is None:
+        for lbl, en_r, ien_r in zip(param_labels, en_results, ien_results):
+            rows += _rows("TENET", lbl, en_r) + _rows("TIENET_AUG", lbl, ien_r)
+    else:
+        for lbl, en_r in zip(param_labels, en_results):
+            rows += _rows("TENET", lbl, en_r)
+        for lbl, ien_r in zip(ien_param_labels, ien_results):
+            rows += _rows("TIENET_AUG", lbl, ien_r)
     csv_path = os.path.join(out_dir, file_stem + ".csv")
     pd.DataFrame(rows)[["method", "metric", param_col, "mean", "sd"]].to_csv(
         csv_path, index=False, float_format="%.6f")
@@ -667,14 +696,16 @@ def _run_block_method(dat, gvs_type, oracle, cfg, seed):
     from trex_selector_neo.utils import compute_fdp, compute_tpp
 
     t0 = time.perf_counter()
-    # EN uses the configured solver (TENET / TENET_AUG); IEN's solver is always
-    # TIENET_AUG (derived from gvs_type), so en_solver is not applicable -> None.
+    # EN uses the configured solver (TENET / TENET_AUG); IEN runs TIENET_AUG
+    # with the IEN-geometry lambda2 rule (the true support lies below its
+    # lambda1 support cap here), so en_solver is not applicable.
     en_solver = cfg["en_solver"] if gvs_type == "EN" else None
+    lambda2_method = "CV_1SE_CCD" if gvs_type == "EN" else "CV_1SE_IEN_CCD"
     prior_groups = dat["prior_groups"] if oracle else None
     sel, res = build_gvs_selector(
         dat["X"], dat["y"], cfg["tFDR"], cfg["K"], gvs_type, cfg["corr_max"],
         hc_linkage="Single", en_solver=en_solver,
-        lambda2_method="CV_1SE_CCD", prior_groups=prior_groups, seed=seed)
+        lambda2_method=lambda2_method, prior_groups=prior_groups, seed=seed)
     elapsed = time.perf_counter() - t0
 
     si = list(sel.selected_indices)
