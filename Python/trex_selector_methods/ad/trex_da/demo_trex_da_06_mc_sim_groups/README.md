@@ -7,8 +7,9 @@ agglomerative clustering (HAC) discover the structure from scratch.
 The data-generating process (DGP) is a three-level nested latent-factor model with a non-exchangeable
 Toeplitz leaf layer.
 Common setup: $n=300$, $p=1{,}000$, $s=10$, `Random` support, amplitude $3.0$, target false discovery rate (FDR)
-$\mathrm{tFDR}=0.2$, $K=20$ random experiments, $\mathrm{MC}=200$ per grid point, solvers TLARS / TAFS / TOMP, and
-a signal-to-noise ratio (SNR) sweep $\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 1, 2, 5\rbrace$.
+$\mathrm{tFDR}=0.2$, $K=20$ random experiments, $\mathrm{MC}=200$ per grid point, solvers TLARS / TAFS / TOMP plus
+TLARS_STAG (TLARS with the T-loop stagnation stop on, window 7), and a signal-to-noise ratio (SNR) sweep
+$\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 1, 2, 5\rbrace$.
 
 Python port of the C++ demo
 [cpp/trex_selector_methods/ad/trex_da/demo_trex_da_06_mc_sim_groups](../../../../../cpp/trex_selector_methods/ad/trex_da/demo_trex_da_06_mc_sim_groups/README.md)
@@ -102,7 +103,8 @@ python Python/trex_selector_methods/ad/trex_da/demo_trex_da_06_mc_sim_groups/dem
 Reduce `NUM_MC` to preview. The file inserts both its own folder and the parent suite directory onto
 `sys.path` so `dgp_generators` / `da_sim_common` resolve in the demo *and* in the spawned workers —
 run it as a file, not piped via `python -`. Monte-Carlo trials run in parallel through
-`concurrent.futures.ProcessPoolExecutor` (up to `min(6, os.cpu_count())` workers).
+`concurrent.futures.ProcessPoolExecutor` with `TREX_NUM_WORKERS` worker processes (default 8, and `0` uses every
+usable core, see `resolve_workers()` in [`../da_sim_common.py`](../da_sim_common.py)).
 
 Afterwards, regenerate the figure from the comma-separated values (CSV) file with
 [`generate_plots.sh`](generate_plots.sh), which drives the suite plotting module
@@ -125,16 +127,19 @@ The figure (Portable Network Graphics (PNG) and Portable Document Format (PDF), 
 ## Results — SNR sweep
 
 - **The greedy solvers win on power and are controlled wherever the signal is resolvable**. TOMP
-  reaches true positive rate (TPR) $0.983$ with FDR down to $\approx 0.05\text{–}0.06$ at high SNR, and TAFS
-  reaches TPR $0.961$ with FDR $\approx 0.09\text{–}0.11$ from $\mathrm{SNR}=1$ on.
+  reaches true positive rate (TPR) $0.945$ with FDR down to $\approx 0.05$ at high SNR, and TAFS
+  reaches TPR $0.939$ with FDR $\approx 0.08\text{–}0.13$ from $\mathrm{SNR}=1$ on.
 - Both greedy solvers have a **high-variance excursion in the low-SNR transition region**. At
-  $\mathrm{SNR}=0.5$ TAFS realizes $0.230$ (above the $\mathrm{tFDR}=0.2$ target, standard deviation (sd) $0.217$)
-  and TOMP $0.180$, with TPR still only $0.26\text{–}0.35$ there. With so few selections per trial the false
+  $\mathrm{SNR}=0.5$ TAFS realizes $0.219$ (above the $\mathrm{tFDR}=0.2$ target, standard deviation (sd) $0.207$)
+  and TOMP $0.167$, with TPR still only $0.25\text{–}0.35$ there. With so few selections per trial the false
   discovery proportion (FDP) is near-binary, so these cells carry a large Monte-Carlo error (the C++ reference run
-  lands at $0.181$ / $0.128$ in the same cells).
-- **TLARS remains the outlier of the suite**: FDR $\approx 0.37\text{–}0.43$ from $\mathrm{SNR}=0.5$ on
+  lands at $0.185$ / $0.135$ in the same cells).
+- **TLARS remains the outlier of the suite**: FDR $\approx 0.36\text{–}0.39$ from $\mathrm{SNR}=0.5$ on
   (vs. the $\mathrm{tFDR}=0.2$ target) and **flat in SNR**, with TPR $\approx 0.84$ at
   $\mathrm{SNR}=5$.
+- **TLARS_STAG shows the same violation** ($0.36\text{–}0.38$ from $\mathrm{SNR}=0.5$ on) with the same power,
+  although its T-loop stops after $4\text{–}5$ steps instead of TLARS' $6\text{–}10$. The leak therefore does not
+  come from a long T-loop, which supports the structural explanation below.
 
 ![SNR sweep on multi-level prior-groups data](simulation_results/plots/da_trex_mc_da_groups_toeplitz_leaf_fdr_tpr.png)
 

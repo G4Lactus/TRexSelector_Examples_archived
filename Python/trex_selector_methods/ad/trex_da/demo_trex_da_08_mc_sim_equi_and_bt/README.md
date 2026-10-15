@@ -7,8 +7,9 @@ $\lbrace0.5, 1, 2, 5\rbrace$, it runs a full $\rho$ sweep over $\lbrace0, 0.025,
 dense near $0$ to locate the DA suppression cliff. Common configuration: $n=300$, $p=1{,}000$, $s=10$, amplitude
 $3.0$, target false discovery rate (FDR) $\mathrm{tFDR}=0.2$, $K=20$ random experiments, $\mathrm{MC}=200$ per grid
 point, `Random` support with a full redraw per trial, and solvers TLARS / TAFS / TOMP with *exchangeable
-tie-breaking* (`exch_tie_alpha = 0.25` for the greedy solvers TAFS/TOMP, `0` for the path solver TLARS), each with
-its base (no-DA) T-Rex comparison row — 6 method rows per grid point. TAFS additionally runs with its adaptive
+tie-breaking* (`exch_tie_alpha = 0.25` for the greedy solvers TAFS/TOMP, `0` for the path solver TLARS), plus
+TLARS_STAG (TLARS with the T-loop stagnation stop on, window 7), each with its base (no-DA) T-Rex comparison row —
+8 method rows per grid point. TAFS additionally runs with its adaptive
 forward-selection (AFS) correlation parameter `rho_afs = 0.3` (`0` for TLARS/TOMP), which is why the figures label
 it `TAFS (rho = 0.3)`.
 
@@ -138,7 +139,8 @@ python Python/trex_selector_methods/ad/trex_da/demo_trex_da_08_mc_sim_equi_and_b
 Reduce `NUM_MC` to preview. The file inserts both its own folder and the parent suite directory onto
 `sys.path` so `dgp_generators` / `da_sim_common` resolve in the demo *and* in the spawned workers —
 run it as a file, not piped via `python -`. Monte-Carlo trials run in parallel through
-`concurrent.futures.ProcessPoolExecutor` (up to `min(6, os.cpu_count())` workers).
+`concurrent.futures.ProcessPoolExecutor` with `TREX_NUM_WORKERS` worker processes (default 8, and `0` uses every
+usable core, see `resolve_workers()` in [`../da_sim_common.py`](../da_sim_common.py)).
 
 Afterwards, regenerate the figures from the comma-separated values (CSV) files with
 [`generate_plots.sh`](generate_plots.sh), which drives the suite plotting module
@@ -172,33 +174,38 @@ The single figure goes to `simulation_results/plots/`:
 ![Equi 2D sweep: rho by SNR](simulation_results/plots/da_trex_mc_da_equi_rho_snr_grid.png)
 
 - **The DA suppression cliff sits at the first nonzero grid point, $\rho = 0.025$, in every SNR
-  column.** At $\rho = 0$ all three DA solvers are controlled (FDR $0.047\text{–}0.152$) with the power
-  the SNR allows (TPR $\approx 0.35\text{–}0.41$ at SNR $0.5$, $0.86\text{–}0.95$ at SNR $1$, $1.0$ at
-  SNR $2/5$). At $\rho = 0.025$ they are already dead (TPR $\leq 0.024$, FDR $\leq 0.010$), and
-  from $\rho = 0.05$ on the zeros are exact. **Signal strength never moves the cliff** — it only
+  column.** At $\rho = 0$ all four DA solvers are controlled (FDR $0.05\text{–}0.15$) with the power
+  the SNR allows (TPR $\approx 0.35\text{–}0.40$ at SNR $0.5$, $0.85\text{–}0.95$ at SNR $1$, at least $0.998$ at
+  SNR $2/5$). At $\rho = 0.025$ they are already dead (TPR $\leq 0.024$, FDR $\leq 0.010$, DA-TLARS almost always
+  runs into the cap of $T = 150$ dummies), and from $\rho = 0.05$ on DA-TLARS, DA-TAFS and DA-TLARS_STAG select nothing,
+  while DA-TOMP keeps its TPR at or below $0.0025$. **Signal strength never moves the cliff** — it only
   changes how much power is lost at it. DA-EQUI works only where no correction is needed.
-- **Base T-Rex TLARS fails unsafe from the same grid point**: FDR $0.35\text{–}0.38$ at
+- **Base T-Rex TLARS fails unsafe from the same grid point**: FDR $0.36\text{–}0.38$ at
   $\rho = 0.025$, climbing monotonically to $0.92\text{–}0.98$ at $\rho = 0.9$ in every column — at
   SNR $5$, $\rho = 0.4$ it finds essentially all actives (TPR $0.99$) buried in garbage
   (FDR $0.83$).
 - **High-SNR nuance on the greedy base side**: at SNR $= 5$, base TOMP is FDR-controlled at
-  *every* $\rho$ (FDR $\leq 0.12$) with full power through $\rho = 0.2$ (TPR $1.0$, and $0.63$ at
+  *every* $\rho$ (FDR $\leq 0.12$) with full power through $\rho = 0.2$ (TPR $\geq 0.995$, and $0.62$ at
   $\rho = 0.4$), and base TAFS is at/near the limit up to $\rho \approx 0.4$
-  (FDR $0.16\text{–}0.21$). At SNR $\leq 1$ both violate from $\rho = 0.05\text{–}0.1$ on. So for
-  moderate equicorrelation and strong signal, plain greedy T-Rex (TOMP) is the only usable
-  selector — the DA-EQUI correction never is.
-- **DA-TOMP lone-survivor false positives (FPs) at high $\rho$** (here $0.18/0.27$ at SNR $0.5$, $\rho = 0.7/0.9$,
-  and $0.18$ / $0.15$ / $0.05$ at $\rho = 0.9$ for SNR $1/2/5$, all with TPR $\approx 0$ and
-  binary per-trial FDP): investigated on the C++ side (2026-07-16) with a one-off probe
-  (MC $=1{,}000$, fresh seeds). **Mechanism confirmed, not a bug**: every such selection is a
-  singleton, and $628$ of $629$ selected variables were exactly the rank-1 column of the marginal
-  $|\mathrm{corr}(x_j, y)|$ ordering — the extreme order statistic of $1{,}000$ factor-loaded real
-  columns beating the i.i.d. dummies through the DA deflation, then certified by TOMP's greedy
-  winner-take-all (the equi analogue of the AR(1) shadow-FP mechanism, which TLARS/TAFS spread or
-  threshold away). The mechanism hovers *at* the target FDR (tFDR) boundary in the zero-power regime, where
-  FDR $\approx$ P(select anything at all), so individual cells vary widely between runs.
+  (FDR $0.16\text{–}0.21$). At lower SNR both violate early. At SNR $0.5$ base TAFS exceeds the target from
+  $\rho = 0.05$ on and base TOMP from $\rho = 0.1$ on, and at SNR $1$ base TAFS does from $\rho = 0.1$ on and base
+  TOMP at $\rho = 0.2\text{–}0.4$. So for moderate equicorrelation and strong signal, plain greedy T-Rex (TOMP) is
+  the only usable selector — the DA-EQUI correction never is.
+- **TLARS_STAG matches TLARS in both rows.** With the stagnation stop, FDR and TPR differ from TLARS by at most
+  $0.02$ and $0.025$, while the T-loop of the DA row stops after about $8$ steps instead of running into the cap of
+  $150$, and the base row's median $T$ drops from $108$ to $10$.
+- **DA-TOMP raises false alarms at high $\rho$ and low SNR.** At SNR $0.5$ its FDR is $0.175$ at $\rho = 0.7$ and
+  $0.27$ at $\rho = 0.9$, while it finds essentially no true variable there (TPR $\leq 0.0025$). At $\rho = 0.9$
+  the rate falls with the SNR to $0.18$, $0.145$ and $0.045$ at SNR $1$, $2$ and $5$. In all these cells the
+  per-run FDP is either $0$ or $1$, so `sd_FDR` matches $\sqrt{\mathrm{FDR}\,(1 - \mathrm{FDR})}$. The C++ README
+  explains this
+  [false-alarm plateau of DA-TOMP](../../../../../cpp/trex_selector_methods/ad/trex_da/demo_trex_da_08_mc_sim_equi_and_bt/README.md#the-false-alarm-plateau-of-da-tomp)
+  (a lone winner passes the EQUI correction, and exchangeable tie-breaking holds its rate near the target), and its
+  [check with 1,000 runs per cell](../../../../../cpp/trex_selector_methods/ad/trex_da/demo_trex_da_08_mc_sim_equi_and_bt/README.md#check-with-1000-runs-per-cell)
+  puts the plateau at about $0.21$. The $0.27$ here lies about two standard errors ($0.03$ at 200 runs) above that
+  level, so it is most likely a high Monte Carlo draw.
 
 **Bottom line**: equicorrelation defeats individual variable selection for the DA framework —
-DA-EQUI fails *safe* (selects nothing for any $\rho \geq 0.025$, regardless of SNR), base T-Rex
-TLARS fails *unsafe* (FDR up to $0.98$). The demo's value is documenting this boundary of the
-method precisely.
+DA-EQUI fails *safe* (selects nothing for any $\rho \geq 0.025$, regardless of SNR, apart from the false-alarm
+plateau of DA-TOMP above), base T-Rex TLARS fails *unsafe* (FDR up to $0.98$). The demo's value is documenting this
+boundary of the method precisely.

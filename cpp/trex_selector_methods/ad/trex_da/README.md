@@ -104,9 +104,10 @@ $\mathrm{SNR} = \mathrm{Var}(\boldsymbol{X}\boldsymbol{\beta})/\mathrm{Var}(\bol
   because its monotone path needs none, and in correlated designs its T-loop then often runs far, up to the cap of
   $T = 150$. The fourth pool entry TLARS_STAG is the same TLARS with the stop on (window 7), on the same data and seeds.
   In every demo it matches TLARS within Monte Carlo noise (mean TPR change at most $0.004$, mean FDR change at most
-  $+0.004$, never more target violations), while its T-loop stops after at most $8$ steps in the DA rows. The figures
-  draw it dashed in TLARS' colour. Its numbers were computed in a separate run with `TREX_SOLVERS=TLARS_STAG` and
-  merged into the tables by [merge_result_files.py](merge_result_files.py).
+  $+0.004$). It breaks the target about as often, e.g. in demo 04 in $26$ against $24$ DA cells above the target and
+  in $8$ against $11$ cells more than two standard errors above it. Its T-loop stops after at most $8$ steps in the DA
+  rows. The figures draw it dashed in TLARS' colour. Its numbers were computed in a separate run with
+  `TREX_SOLVERS=TLARS_STAG` and merged into the tables by [merge_result_files.py](merge_result_files.py).
 
 ---
 

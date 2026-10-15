@@ -159,8 +159,9 @@ Figures go to `simulation_results/plots/`: one overview of the FDR and the true 
   for $M \gtrsim 20$** ($\approx 0.14\text{–}0.22$ at $M=20$, $\leq 0.06$ at $M=30$, where $p = n$),
   while FDR stays below target throughout (max $0.159$) — the selector fails *safe*.
 - The $M=1$ corner is degenerate ($p=5$, one active variable), so all solvers are weak
-  (TPR $\leq 0.32$) and TAFS selects nothing at all — with a single signal there is no occurrence
-  spread for the DA deflation to work with.
+  (TPR $\leq 0.32$) and TAFS never finds the active variable (TPR $0$). In $4\text{–}5.5\,\%$ of the runs it selects
+  a null variable instead (FDR $0.040\text{–}0.055$) — with a single signal there is no occurrence spread for the
+  DA deflation to work with.
 - The sweet spot sits at $M \approx 5\text{–}10$, where TOMP holds $0.84\text{–}0.97$ TPR with FDR
   $\le 0.06$.
 

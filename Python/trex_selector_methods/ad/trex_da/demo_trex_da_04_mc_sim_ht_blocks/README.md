@@ -8,7 +8,8 @@ ratio (SNR), $\rho$, block size $Q$, number of blocks $M$, target false discover
 sweep are each run under both noise scenarios and the three hierarchical agglomerative clustering (HAC) linkage
 methods (Single / Complete / Average).
 Common setup: $n=150$, amplitude $1.0$, $\rho=0.8$, $\nu=3$, $\mathrm{tFDR}=0.2$, $K=20$ random
-experiments, $\mathrm{MC}=200$ per grid point, and solvers TLARS / TAFS / TOMP.
+experiments, $\mathrm{MC}=200$ per grid point, and solvers TLARS / TAFS / TOMP, plus TLARS_STAG (TLARS with the
+T-loop stagnation stop on, window 7, see the [suite README](../README.md)).
 
 Python port of the C++ demo
 [cpp/trex_selector_methods/ad/trex_da/demo_trex_da_04_mc_sim_ht_blocks](../../../../../cpp/trex_selector_methods/ad/trex_da/demo_trex_da_04_mc_sim_ht_blocks/README.md)
@@ -17,8 +18,9 @@ numbers below are this Python run's own results, and they agree with the C++ ref
 noise (independent random number generator (RNG) streams).
 
 The greedy solvers use *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for TAFS/TOMP, `0` for
-TLARS and TLARS_STAG) in every part, as in C++. TAFS runs with its adaptive forward-selection (AFS) correlation parameter `rho_afs = 0.3`
-throughout (`0` for TLARS/TOMP), which is why the figures label it `TAFS (rho = 0.3)`.
+TLARS and TLARS_STAG) in every part, as in C++. TAFS runs with its adaptive forward-selection (AFS) correlation
+parameter `rho_afs = 0.3` throughout (`0` for TLARS, TLARS_STAG and TOMP), which is why the figures label it
+`TAFS (rho = 0.3)`.
 
 ---
 
@@ -125,8 +127,9 @@ cpp `if (true)` toggles), and every non-linkage part loops scenario × linkage. 
 The file inserts both its own folder and the parent suite directory onto `sys.path` so
 `dgp_generators` / `da_sim_common` resolve in the demo *and* in the spawned workers — run it as a
 file, not piped via `python -`. Monte-Carlo trials run in parallel through
-`concurrent.futures.ProcessPoolExecutor` (up to `min(6, os.cpu_count())` workers). This is the
-longest-running demo of the suite (30 sweeps × 2 scenarios × 3 linkages).
+`concurrent.futures.ProcessPoolExecutor` with `TREX_NUM_WORKERS` worker processes (default 8, and `0` uses every
+usable core, see `resolve_workers()` in [`../da_sim_common.py`](../da_sim_common.py)). A full run (5 sweeps × 2
+scenarios × 3 linkages, plus the linkage sweep) takes about 40 minutes on 8 workers.
 
 Afterwards, regenerate the figures from the comma-separated values (CSV) files with
 [`generate_plots.sh`](generate_plots.sh), which drives the suite plotting module
@@ -150,19 +153,20 @@ Graphics (PNG) and Portable Document Format (PDF), plus interactive Plotly `.htm
 linkage-comparison grid per (sweep × scenario), and — embedded below — one **Gaussian-vs-heavy scenario grid** per
 sweep (at Average linkage).
 The scenario grid is the figure for this demo's core question, namely how much heavy tails cost in FDR control and
-power.
+power. The numbers quoted in Parts 1 to 5 are read at Average linkage unless stated otherwise.
 
 ---
 
 ## Part 1 — SNR sweep ($\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 0.6, 1, 2, 5\rbrace$)
 
-- **TOMP is the clear winner**. FDR falls to $\approx 0.01\text{–}0.04$ at high SNR while TPR climbs to
-  $0.90\text{–}0.97$. TAFS peaks around $\mathrm{SNR}=2$ (TPR $\approx 0.75\text{–}0.79$, FDR $\leq 0.14$) then
-  *declines* toward $\mathrm{SNR}=5$ ($\approx 0.66\text{–}0.69$) — the same non-monotonicity seen in the
+- **TOMP is the clear winner**. FDR falls to $\approx 0.02\text{–}0.04$ at high SNR while TPR climbs to
+  $0.91\text{–}0.97$. TAFS peaks at $\mathrm{SNR}=2$ (TPR $\approx 0.74\text{–}0.79$, FDR $\leq 0.13$) then
+  *declines* toward $\mathrm{SNR}=5$ ($\approx 0.68\text{–}0.69$) — the same non-monotonicity seen in the
   Gaussian block demos.
-- **TLARS carries the highest FDR of the three and grazes the $\mathrm{tFDR}=0.2$ target around
-  $\mathrm{SNR}=0.6$** ($0.215$ Gaussian noise / $0.205$ heavy noise), settling at $\approx 0.16$ for
-  higher SNR — with the lowest power throughout ($\approx 0.62\text{–}0.71$).
+- **TLARS carries the highest FDR from $\mathrm{SNR}=0.5$ on and comes closest to the $\mathrm{tFDR}=0.2$ target
+  at $\mathrm{SNR}=0.6$** ($0.192$ Gaussian noise / $0.185$ heavy noise, TLARS_STAG $0.199$ / $0.186$) without
+  crossing it, settling at $\approx 0.13\text{–}0.16$ for higher SNR. Its power is the lowest from $\mathrm{SNR}=0.5$
+  to $2$, and at $\mathrm{SNR}=5$ TAFS falls to the same level (both $\approx 0.66\text{–}0.70$).
 - **Gaussian vs. heavy-tailed noise is nearly indistinguishable** — the two columns almost overlay,
   because the predictors are heavy-tailed in both cases and dominate the added noise.
 
@@ -172,12 +176,13 @@ power.
 
 ## Part 2 — $\rho$ sweep ($\rho \in \lbrace0.0, 0.1, \ldots, 0.9\rbrace$)
 
-- **FDR rises with $\rho$ and TLARS breaks the target at $\rho = 0.9$** ($0.267$ under Gaussian noise,
-  $0.247$ under heavy noise), while TAFS stays controlled ($\approx 0.14$) and **TOMP comfortably so**
-  ($0.06\text{–}0.08$). Strong within-block correlation makes the block shadows progressively harder to
-  deflate — the block counterpart of the $\text{high-}\rho$ corner in Demos 01 and 07.
-- TPR peaks mid-to-high $\rho$ and falls at $\rho=0.9$: TOMP $0.77\text{–}0.97$ (best), TAFS
-  $\approx 0.68\text{–}0.88$, TLARS $0.63\text{–}0.85$ (lowest).
+- **FDR rises with $\rho$ and TLARS breaks the target at $\rho = 0.9$** ($0.235$ under Gaussian noise,
+  $0.230$ under heavy noise, TLARS_STAG $0.249$ / $0.229$), while TAFS stays controlled ($\approx 0.14$) and
+  **TOMP comfortably so** ($\approx 0.07$). Strong within-block correlation makes the block shadows progressively
+  harder to deflate — the block counterpart of the $\text{high-}\rho$ corner in Demos 01 and 07.
+- TPR peaks mid-to-high $\rho$ and falls at $\rho=0.9$: TOMP $0.76\text{–}0.96$ (best), TAFS
+  $\approx 0.66\text{–}0.87$, TLARS $0.62\text{–}0.85$ (lowest from $\rho = 0.6$ on). At $\rho \le 0.2$ Single
+  linkage costs power (TPR $\approx 0.53\text{–}0.64$ against $\approx 0.79\text{–}0.89$), as in Demo 03.
 - Again the two noise scenarios track each other closely.
 
 ![rho sweep, Gaussian vs heavy-tailed noise](simulation_results/plots/da_trex_mc_da_ht_blocks_rho_scenario_grid.png)
@@ -187,11 +192,11 @@ power.
 ## Part 3 — Block-size $Q$ sweep ($Q \in \lbrace5, 10, \ldots, 50\rbrace$, $p = 5Q$ grows to $250 > n$)
 
 - Performance is **remarkably flat across the whole sweep**, even as the design crosses well into the
-  high-dimensional regime ($p = 250 > n = 150$ at $Q=50$). TOMP holds TPR $\approx 0.85\text{–}0.92$ with
-  FDR $\leq 0.058$, and TAFS reaches $\approx 0.76\text{–}0.84$ TPR at FDR $\approx 0.06\text{–}0.09$.
-- **TLARS is the FDR-loosest solver at every $Q$** ($\approx 0.13\text{–}0.19$, still under the $0.2$
-  target) with TPR $\approx 0.69\text{–}0.78$ — visibly looser than the fully-Gaussian Demo 03, whose
-  $Q$-sweep TLARS FDR stayed at $\approx 0.06\text{–}0.12$. Heavy-tailed predictors, not dimension growth,
+  high-dimensional regime ($p = 250 > n = 150$ at $Q=50$). TOMP holds TPR $\approx 0.83\text{–}0.92$ with
+  FDR $\leq 0.058$, and TAFS reaches $\approx 0.73\text{–}0.81$ TPR at FDR $\approx 0.06\text{–}0.09$.
+- **TLARS and TLARS_STAG are the FDR-loosest solvers at every $Q$** ($\approx 0.12\text{–}0.18$, still under the
+  $0.2$ target) with TPR $\approx 0.65\text{–}0.76$ — visibly looser than the fully-Gaussian Demo 03, whose
+  $Q$-sweep TLARS FDR stayed at $\approx 0.08\text{–}0.11$. Heavy-tailed predictors, not dimension growth,
   are what loosen TLARS's FDR control here.
 
 ![Q sweep, Gaussian vs heavy-tailed noise](simulation_results/plots/da_trex_mc_da_ht_blocks_Q_scenario_grid.png)
@@ -201,13 +206,14 @@ power.
 ## Part 4 — Number-of-blocks $M$ sweep ($M \in \lbrace1, 3, 5, 10, 15, 20, 30\rbrace$, $s = M$, $p = 5M$)
 
 - This is the stress dimension. Here $s = M$ grows while $n=150$ and the amplitude stay fixed. **TPR collapses
-  for $M \gtrsim 15\text{–}20$** ($\approx 0.15\text{–}0.24$ at $M=20$, $\leq 0.08$ at $M=30$, where $p = n$),
-  while FDR climbs to $\approx 0.19\text{–}0.27$ at $M=20$ — TLARS breaches the target there
-  ($0.246$ / $0.274$) and at $M=15$ ($0.266$, Gaussian noise), with TAFS/TOMP grazing it.
-- The $M=1$ corner is degenerate ($p=5$, a single active variable), and TAFS selects nothing at all
+  for $M \gtrsim 15\text{–}20$** ($\approx 0.14\text{–}0.21$ at $M=20$, $\leq 0.07$ at $M=30$, where $p = n$),
+  while FDR climbs to $\approx 0.17\text{–}0.25$ at $M=20$. TLARS exceeds the target there
+  ($0.221$ / $0.246$) and at $M=15$ ($0.247$ / $0.216$), TLARS_STAG alike, while TAFS and TOMP stay just below
+  it ($0.17\text{–}0.19$).
+- The $M=1$ corner is degenerate ($p=5$, a single active variable), and TAFS almost never selects anything
   (TPR $0.00$) — with one signal there is no occurrence spread for the DA deflation to exploit.
-- The sweet spot sits at $M \approx 5\text{–}10$, where TOMP holds $\approx 0.75\text{–}0.92$ TPR at FDR
-  $\approx 0.03\text{–}0.10$.
+- The sweet spot sits at $M \approx 5\text{–}10$, where TOMP holds $\approx 0.72\text{–}0.92$ TPR at FDR
+  $\approx 0.03\text{–}0.09$.
 
 ![M sweep, Gaussian vs heavy-tailed noise](simulation_results/plots/da_trex_mc_da_ht_blocks_M_scenario_grid.png)
 
@@ -217,13 +223,15 @@ power.
 
 Unique to Demos 04–05, this part sweeps the *target* FDR to check calibration of the realized FDR.
 
-- **Realized FDR increases monotonically with the target**, as it should, but every solver runs
-  *below* the identity line here. **TLARS is the least conservative** ($\approx 0.18$ at
-  $\mathrm{tFDR}=0.2$, $\approx 0.31$ at $\mathrm{tFDR}=0.5$), **TAFS** sits in between
-  ($\approx 0.11\text{–}0.12$ at $\mathrm{tFDR}=0.2$, $\approx 0.24\text{–}0.25$ at $0.5$), and **TOMP is
-  markedly conservative** ($\approx 0.05\text{–}0.06$ at $\mathrm{tFDR}=0.2$, still only $\approx 0.14$ at
+- **Realized FDR increases with the target**, as it should, and from $\mathrm{tFDR}=0.15$ on every solver runs
+  *below* the identity line. Only TLARS and TLARS_STAG overshoot the strictest target ($0.073\text{–}0.088$ at
+  $\mathrm{tFDR}=0.05$) and sit at the target for $\mathrm{tFDR}=0.1$ ($0.093\text{–}0.103$), so they cannot deliver
+  very low FDR.
+  **TLARS is the least conservative** ($\approx 0.13\text{–}0.15$ at $\mathrm{tFDR}=0.2$, $\approx 0.24\text{–}0.27$
+  at $\mathrm{tFDR}=0.5$), **TAFS** sits in between ($\approx 0.10$ at $\mathrm{tFDR}=0.2$, $\approx 0.16$ at $0.5$),
+  and **TOMP is markedly conservative** ($\approx 0.04$ at $\mathrm{tFDR}=0.2$, still only $\approx 0.09$ at
   $\mathrm{tFDR}=0.5$).
-- Power rises with the target as expected, and TOMP stays high throughout ($\approx 0.85\text{–}0.97$).
+- Power rises with the target as expected, and TOMP stays high throughout ($\approx 0.80\text{–}0.95$).
 
 ![tFDR sweep, Gaussian vs heavy-tailed noise](simulation_results/plots/da_trex_mc_da_ht_blocks_tFDR_scenario_grid.png)
 
@@ -232,13 +240,25 @@ Unique to Demos 04–05, this part sweeps the *target* FDR to check calibration 
 ## Part 6 — HAC linkage sweep (Single / Complete / Average, base parameters)
 
 At the well-correlated base point ($\rho=0.8$) **linkage choice barely matters**: TOMP FDR
-$\approx 0.03\text{–}0.05$ / TPR $\approx 0.94\text{–}0.96$, TAFS FDR $\approx 0.08\text{–}0.11$ / TPR
-$\approx 0.77\text{–}0.83$, TLARS FDR $\approx 0.12\text{–}0.18$ / TPR $\approx 0.67\text{–}0.74$ — Single, Complete
-and Average land within a few points of one another under both noise scenarios. As Demo 03 shows,
+$\approx 0.02\text{–}0.03$ / TPR $\approx 0.89\text{–}0.93$, TAFS FDR $\approx 0.05\text{–}0.08$ / TPR
+$\approx 0.77\text{–}0.80$, TLARS FDR $\approx 0.10\text{–}0.16$ / TPR $\approx 0.65\text{–}0.73$, TLARS_STAG FDR
+$\approx 0.11\text{–}0.16$ / TPR $\approx 0.67\text{–}0.73$ — Single, Complete and Average land within a few points
+of one another under both noise scenarios. As Demo 03 shows,
 linkage differences open up mainly at *low* $\rho$ and *large* $Q$, where the correlation signal HAC
 relies on is weak.
 
 ![linkage sweep, heavy-tailed noise](simulation_results/plots/da_trex_mc_da_ht_blocks_linkage_s2_Heavy_fdr_tpr.png)
+
+---
+
+## TLARS_STAG
+
+TLARS_STAG (TLARS with the T-loop stagnation stop) matches TLARS in every sweep. Averaged over a sweep's cells, TPR
+changes by at most $0.006$ and FDR by at most $0.008$, and no single cell loses more than $0.030$ TPR. The one
+systematic shift sits at the loosest targets of the target FDR (tFDR) sweep, where TLARS_STAG realizes up to $0.038$
+less FDR at no cost in TPR. Its mean T-loop length is at most $7.2$ steps, while TLARS runs to a median of $32$ and up
+to $46$ steps. It exceeds the target by more than two standard errors in $14$ cells, against $13$ for TLARS, all in
+the same regions ($\rho = 0.9$, $M = 15\text{–}20$ and $\mathrm{tFDR} = 0.05$).
 
 ---
 
@@ -247,12 +267,13 @@ relies on is weak.
 - **Heavy-tailed *predictors* are the dominant stressor, not the noise.** Across every sweep the
   s1_Gauss and s2_Heavy columns are nearly identical. Since $X$ is $t(3)$ in both scenarios, adding a
   variance-matched $t(3)$ *noise* on top changes little. The real cost of heavy tails is visible only
-  against the fully-Gaussian Demo 03 — most clearly in TLARS's FDR, which runs $\approx 0.13\text{–}0.19$
-  on the $Q$ sweep where Demo 03 stayed at $\approx 0.06\text{–}0.12$.
+  against the fully-Gaussian Demo 03 — most clearly in TLARS's FDR, which runs $\approx 0.12\text{–}0.18$
+  on the $Q$ sweep where Demo 03 stayed at $\approx 0.08\text{–}0.11$.
 - **Solver ranking is consistent** with the other block demos. **TOMP is the most robust** (highest
-  TPR *and* lowest FDR in nearly every cell), TAFS sits in between with its high-SNR power decline,
-  and **TLARS is the most FDR-fragile** — it breaches the target at $\rho = 0.9$ and in the $M$
-  collapse region, and is the least conservative on the tFDR sweep.
+  TPR *and* lowest FDR in most cells, except at low SNR and in the $M$ collapse), TAFS sits in between with its
+  high-SNR power decline, and **TLARS is the most FDR-fragile** — it breaches the target at $\rho = 0.9$, in the $M$
+  collapse region and at $\mathrm{tFDR} = 0.05$, and is the least conservative on the tFDR sweep. TLARS_STAG
+  behaves like TLARS throughout.
 - The failure modes are *safe*. Where the problem becomes too hard ($M \to 30$, $p \to n$), power
   collapses toward zero rather than FDR exploding.
 - **Linkage** is a minor knob at this correlation level, while Complete or Average remain the safe defaults

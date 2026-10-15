@@ -10,8 +10,9 @@ Validated C++:  SDK installed from 44cf1ab (OpenMP 5.1, BLAS/LAPACK); the Exampl
                 TLARS_STAG rows, are rerun on 44cf1ab with their figures and READMEs.
 Validated Py:   TRexSelectorNeo 1.0.0 reinstalled from 44cf1ab; the Part 5 path data of the 12 T-solver
                 demos reproduce their committed files byte for byte; getMemoryBytes() available. The results
-                committed on b95b984 stand. The Monte Carlo suite trex_core (02-05, 07), with the TLARS_STAG
-                row, is rerun on 44cf1ab with its figures and READMEs and matches C++ within Monte Carlo noise.
+                committed on b95b984 stand. The Monte Carlo suites trex_core (02-05, 07) and trex_da (01-08),
+                with the TLARS_STAG rows, are rerun on 44cf1ab with their figures and READMEs and match C++
+                within Monte Carlo noise.
 Validated R:    TRexSelectorNeo 2.0.0 reinstalled from 44cf1ab (links R's own libomp only); the Part 5 path
                 data of the 12 T-solver demos reproduce the b95b984 run byte for byte; get_memory_bytes()
                 available. The ml_methods and memory_mapping results committed on b95b984 stand.
@@ -19,7 +20,7 @@ Validated perf: demo_ts_perf_03 rerun on 44cf1ab in C++, Python and R on the mem
                 no failed solver runs); the R tsolvers demos and P1, P2, P4 (R runs of 2026-09-27/28; their
                 Part 5 path data reproduce on 44cf1ab byte for byte) and their results committed.
 Pending:        the trex_selector_methods Monte Carlo demos. The C++ results of trex_core 08, the Python
-                results apart from trex_core 02-05 and 07, and all R results come from the July 2026
+                results apart from trex_core 02-05, 07 and trex_da, and all R results come from the July 2026
                 library (R trex_da, trex_gvs, trex_screening and trex_spca have no results yet). The
                 single runs demo_trex_01 and demo_trex_06 are validated in all three languages.
 Previous pins:  b95b984 (2026-09-27), 8ad3376 (2026-09-26), f390bfc (2026-09-25), d404033 (2026-09-25); what

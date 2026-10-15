@@ -6,7 +6,9 @@ autoregressive (AR(1)) design diluted by a large block of independent and identi
 columns, sweeping the signal-to-noise ratio (SNR), $\rho$, block size $Q$, and number of blocks $M$, each across the
 three hierarchical agglomerative clustering (HAC) linkage methods (Single / Complete / Average).
 Common setup: $n=300$, $p_{\text{total}}=1{,}000$, amplitude $1.0$, target false discovery rate (FDR)
-$\mathrm{tFDR}=0.1$, $K=20$ random experiments, $\mathrm{MC}=200$ per grid point, and solvers TLARS / TAFS / TOMP.
+$\mathrm{tFDR}=0.1$, $K=20$ random experiments, $\mathrm{MC}=200$ per grid point, and solvers TLARS / TAFS / TOMP,
+plus TLARS_STAG (TLARS with the T-loop stagnation stop on, window 7, see the
+[C++ suite README](../../../../../cpp/trex_selector_methods/ad/trex_da/README.md)).
 
 Python port of the C++ demo
 [cpp/trex_selector_methods/ad/trex_da/demo_trex_da_02_mc_sim_ar1_blocks_plus_white](../../../../../cpp/trex_selector_methods/ad/trex_da/demo_trex_da_02_mc_sim_ar1_blocks_plus_white/README.md)
@@ -15,7 +17,7 @@ numbers below are this Python run's own results, and they agree with the C++ ref
 (independent random number generator (RNG) streams).
 
 The greedy solvers use *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for TAFS/TOMP, `0` for
-TLARS). See `Exchangeable_Tie_Breaking_DA_TRex.md` in the TRex_Research documentation.
+TLARS/TLARS_STAG). See `Exchangeable_Tie_Breaking_DA_TRex.md` in the TRex_Research documentation.
 TAFS additionally runs with its adaptive forward-selection (AFS) correlation parameter `rho_afs = 0.3`
 (`0` for TLARS/TOMP), which is why the figures label it `TAFS (rho = 0.3)`.
 
@@ -118,7 +120,8 @@ The four parts are toggled by the `RUN_PART_*` flags at the top of the file (all
 cpp `if (true)` toggles). Reduce `NUM_MC` to preview. The file inserts both its own folder and the
 parent suite directory onto `sys.path` so `dgp_generators` / `da_sim_common` resolve in the demo *and*
 in the spawned workers — run it as a file, not piped via `python -`. Monte-Carlo trials run in
-parallel through `concurrent.futures.ProcessPoolExecutor` (up to `min(6, os.cpu_count())` workers).
+parallel through `concurrent.futures.ProcessPoolExecutor` on `TREX_NUM_WORKERS` worker processes (default 8, and `0`
+uses every usable core, see `resolve_workers()` in [`../da_sim_common.py`](../da_sim_common.py)).
 
 Afterwards, regenerate the figures from the comma-separated values (CSV) files with
 [`generate_plots.sh`](generate_plots.sh), which drives the suite plotting module
@@ -145,11 +148,11 @@ linkage-comparison grid (Single/Complete/Average columns) per sweep — the four
 
 ## Part 1 — SNR sweep ($\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 0.6, 1, 2, 5\rbrace$)
 
-- **FDR is very tightly controlled**: at most $0.032$ across every linkage × solver × SNR cell —
+- **FDR is very tightly controlled**: at most $0.034$ across every linkage × solver × SNR cell —
   far below the (already stricter) $\mathrm{tFDR}=0.1$ target. With $975$ uncorrelated null columns
   diluting the design, there is little correlated structure for false discoveries to latch onto.
-- TPR: TOMP is essentially perfect from $\mathrm{SNR}=1$ on ($0.99\text{–}1.0$), while TLARS plateaus around
-  $0.92$. TAFS peaks at $\mathrm{SNR}=1$ ($0.94$) and then *declines* to $\approx 0.74$ at
+- TPR: TOMP is essentially perfect from $\mathrm{SNR}=1$ on ($0.99\text{–}1.0$), while TLARS and TLARS_STAG plateau
+  around $0.91\text{–}0.93$. TAFS peaks at $\mathrm{SNR}=1$ ($0.94$) and then *declines* to $0.74\text{–}0.75$ at
   $\mathrm{SNR}=5$ — a notable non-monotonicity unique to TAFS in this design.
 - The choice of linkage barely matters at the base point ($M=5$, $Q=5$, $\rho=0.7$).
 
@@ -164,11 +167,11 @@ linkage-comparison grid (Single/Complete/Average columns) per sweep — the four
   $\approx 0.96\text{–}0.99$. With weak within-block correlation there is no clean chain for
   single-linkage to follow, so the dendrogram cut mis-groups the blocks, while compact-cluster linkages are
   robust. From $\rho \geq 0.3$ all three linkages coincide.
-- FDR stays controlled over the whole grid (max $0.036$, TAFS at $\rho=0.9$ under Complete linkage).
+- FDR stays controlled over the whole grid (max $0.039$, TAFS at $\rho=0.9$ under Complete linkage).
   The mild uptick at $\rho=0.9$ is shared by TAFS/TOMP across linkages but stays far under target.
-- At high correlation TPR declines moderately ($\rho=0.9$: TLARS $0.72$, TAFS $0.73$,
-  TOMP $\approx 0.94$) — the within-block shadows become harder to separate, and the DA deflation
-  spends power to keep FDR down.
+- At high correlation TPR declines moderately ($\rho=0.9$: TLARS $0.72$, TLARS_STAG $0.71\text{–}0.72$,
+  TAFS $0.72\text{–}0.73$, TOMP $\approx 0.94$) — the within-block shadows become harder to separate, and the DA
+  deflation spends power to keep FDR down.
 
 ![rho sweep across HAC linkage](simulation_results/plots/da_trex_mc_da_ar1_blocks_plus_white_rho_linkage_grid.png)
 
@@ -176,12 +179,12 @@ linkage-comparison grid (Single/Complete/Average columns) per sweep — the four
 
 ## Part 3 — Block-size $Q$ sweep ($Q \in \lbrace5, 10, \ldots, 50\rbrace$, $p_{\text{ar}} = 5Q$, $p_{\text{white}} = 1{,}000 - 5Q$)
 
-- FDR is controlled everywhere (max $0.042$, TAFS with Average linkage at $Q = 25$).
+- FDR is controlled everywhere (max $0.039$, TAFS with Complete linkage at $Q = 25$).
 - **Single linkage costs power as blocks grow**. From $Q \geq 20$ it dips to a trough around
-  $Q = 30\text{–}40$ (TAFS $\approx 0.64\text{–}0.67$, TLARS $\approx 0.71\text{–}0.75$,
-  TOMP $\approx 0.82\text{–}0.83$), while Complete/Average stay flat across the whole grid (TOMP $\approx 1.0$,
-  TLARS $0.90\text{–}0.93$, TAFS $0.83\text{–}0.86$). Larger in-block chains give single-linkage more opportunities
-  to merge blocks with the white pool.
+  $Q = 30\text{–}40$ (TAFS $\approx 0.65\text{–}0.69$, TLARS/TLARS_STAG $\approx 0.73\text{–}0.76$,
+  TOMP $\approx 0.83$), while Complete/Average stay flat across the whole grid (TOMP $\approx 1.0$,
+  TLARS/TLARS_STAG $0.90\text{–}0.93$, TAFS $0.83\text{–}0.86$). Larger in-block chains give single-linkage more
+  opportunities to merge blocks with the white pool.
 
 ![Q sweep across HAC linkage](simulation_results/plots/da_trex_mc_da_ar1_blocks_plus_white_Q_linkage_grid.png)
 
@@ -190,16 +193,28 @@ linkage-comparison grid (Single/Complete/Average columns) per sweep — the four
 ## Part 4 — Number-of-blocks $M$ sweep ($M \in \lbrace1, 3, 5, 10, 15, 20, 30\rbrace$, $s = M$)
 
 - This is the stress dimension. Here $s = M$ grows while $n = 300$ and the amplitude ($1.0$) stay fixed,
-  so the per-signal SNR shrinks. **TPR collapses once $M \gtrsim 20$** ($\approx 0.35\text{–}0.47$ at
-  $M=20$, $\approx 0.05\text{–}0.12$ at $M=30$) for every solver and linkage.
-- At $M=15$ the greedy solvers clearly outlast TLARS (TAFS/TOMP $\approx 0.85\text{–}0.87$ vs. TLARS
-  $\approx 0.59\text{–}0.63$).
+  so the per-signal SNR shrinks. **TPR collapses once $M \gtrsim 20$** ($\approx 0.33\text{–}0.48$ at
+  $M=20$, $\approx 0.05\text{–}0.11$ at $M=30$) for every solver and linkage.
+- At $M=15$ the greedy solvers clearly outlast TLARS (TAFS/TOMP $\approx 0.82\text{–}0.87$ vs. TLARS/TLARS_STAG
+  $\approx 0.56\text{–}0.62$).
 - FDR stays at or below target throughout the collapse — the selector fails *safe* (selects little
-  rather than selecting wrongly). The largest cell is TLARS at $0.089$ ($M=30$, Average linkage).
+  rather than selecting wrongly). The largest cell is TLARS_STAG at $0.088$ ($M=20$, Complete linkage), where
+  TLARS reaches $0.082$.
 - The $M=1$ column reproduces the C++ reference's TAFS quirk (TPR $=0$ with a single active
-  variable, where TLARS reaches $\approx 0.87$ and TOMP $1.0$).
+  variable, where TLARS and TLARS_STAG reach $0.85\text{–}0.88$ and TOMP $1.0$). TAFS still trails at $M=3$
+  ($0.60\text{–}0.61$ vs. at least $0.91$ for the other solvers).
 
 ![M sweep across HAC linkage](simulation_results/plots/da_trex_mc_da_ar1_blocks_plus_white_M_linkage_grid.png)
+
+---
+
+## TLARS_STAG
+
+TLARS_STAG (TLARS with the T-loop stagnation stop) matches TLARS in every sweep. Over all $102$ cells its mean FDR
+and TPR changes stay below $0.001$, and a single cell loses at most $0.010$ TPR. Its largest FDR increase, $0.021$
+at $M = 30$ under Average linkage, keeps the FDR below target. Its mean T-loop length stays at or below $7.3$ steps
+in every cell, where TLARS runs to a median of $8\text{–}20$ steps per sweep and up to $66$ in the $M$ sweep. The
+figures draw TLARS_STAG dashed in the TLARS colour.
 
 ---
 

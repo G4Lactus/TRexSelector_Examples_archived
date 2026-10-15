@@ -126,7 +126,7 @@ by construction.
 
 - **Heatmaps (top row)** show the **mean over the four DA solvers** per (gap, $\rho$) cell, and the dashed
   $\kappa$-boundary is the DA correction-window threshold gap $= \lceil \log 0.02 / \log \rho \rceil$
-  ($\varepsilon = 0.02$ = `rho_thr_DA`) — a property of the correction itself, identical for all three solvers.
+  ($\varepsilon = 0.02$ = `rho_thr_DA`) — a property of the correction itself, identical for all four solvers.
 - **Random-support baseline (bottom row)** shows one line per method.
 - **TPR heatmap** — the sharp $\kappa$-boundary cliff (gap $< \kappa \Rightarrow$ TPR $\approx 0$) is a structural
   property of the AR1 correction window, not a solver artifact.

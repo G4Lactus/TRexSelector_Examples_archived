@@ -59,10 +59,19 @@ dendrogram-based hierarchical block detection via hierarchical agglomerative clu
 - **Exchangeable tie-breaking for greedy solvers** (`exch_tie_alpha`, since 2026-07-15): `default_solvers()` sets
   `exch_tie_alpha = 0.25` for TAFS/TOMP so that statistically indistinguishable top candidates within highly correlated
   clusters are picked uniformly at random per random experiment — restoring the occurrence spread the DA deflation's
-  false discovery rate (FDR) control relies on. TLARS keeps `0` (path solvers spread naturally). See HISTORY.md
-  (2026-07-15) in the TRexSelector repository.
+  false discovery rate (FDR) control relies on. TLARS and TLARS_STAG keep `0` (path solvers spread naturally). See
+  HISTORY.md (2026-07-15) in the TRexSelector repository.
 - **TAFS' adaptive forward-selection (AFS) correlation parameter**: `default_solvers()` runs TAFS with
-  `rho_afs = 0.3`, while TLARS and TOMP take `0` (unused).
+  `rho_afs = 0.3`, while TLARS, TLARS_STAG and TOMP take `0` (unused).
+- **TLARS_STAG, TLARS with the stagnation stop**: `default_solvers()` runs TLARS without the T-loop stagnation stop,
+  because its monotone path needs none, and in correlated designs its T-loop then often runs far, up to the cap of
+  $T = 150$ (Demo 08). The fourth pool entry TLARS_STAG is the same TLARS with the stop on (window 7), on the same
+  data. In every demo it matches TLARS within Monte Carlo noise (averaged over a demo's cells, the true positive rate
+  (TPR) changes by at most $0.004$ and the FDR by at most $+0.003$). It breaks the target in about as many cells as
+  TLARS (56 against 58 DA cells over all demos), and the cells where only one of the two crosses the target lie within
+  $0.02$ of it. Below the correction-window boundary of Demo 01 it raises fewer false alarms than TLARS. Its T-loop
+  stops after at most $8.4$ steps on average in the DA rows. The `TREX: TLARS_STAG` base rows of Demos 01, 07 and 08
+  match `TREX: TLARS` in the same way. The figures draw TLARS_STAG dashed in TLARS' colour.
 
 ---
 
@@ -116,9 +125,10 @@ Shared infrastructure:
   and mirroring `cpp/.../dgp_generators.hpp` one generator per cpp DGP. They cover AR(1), equicorrelated, NN or
   moving-average (MA(kappa)), AR(1) blocks with and without a white block, heavy-tailed blocks with and without a
   heavy-tailed white block, and prior groups with Toeplitz leaves.
-- [da_sim_common.py](da_sim_common.py) — support generators, the default solver set (TLARS/TAFS/TOMP with per-solver
-  `exch_tie_alpha` / `rho_afs` / stagnation), parallel Monte-Carlo (MC) runners for DA-TRex and base T-Rex, generic
-  parameter sweeps, and the console / `.txt` / `.csv` writers, mirroring `cpp/.../trex_da_sim_common.hpp`.
+- [da_sim_common.py](da_sim_common.py) — support generators, the default solver set (TLARS/TAFS/TOMP/TLARS_STAG with
+  per-solver `exch_tie_alpha` / `rho_afs` / stagnation), parallel Monte-Carlo (MC) runners for DA-TRex and base
+  T-Rex, generic parameter sweeps, and the console / `.txt` / `.csv` writers, mirroring
+  `cpp/.../trex_da_sim_common.hpp`.
 - [trex_da_plt_utils.py](trex_da_plt_utils.py) — the shared results plotter (identical to
   `cpp/.../trex_da_plt_utils.py`), driven by each demo's `generate_plots.sh`.
 - [generate_corr_plots.sh](generate_corr_plots.sh) — renders one design-correlation heatmap per DGP into
@@ -139,7 +149,8 @@ toggles), and each runs `NUM_MC = 200` Monte Carlo trials per grid point. Reduce
 both its own directory and its parent suite directory onto `sys.path`, so the shared `dgp_generators` /
 `da_sim_common` modules resolve from the nested location and are importable by the spawned workers. The demos must
 therefore be run as files, not piped via `python -`. Monte Carlo trials run in parallel via
-`concurrent.futures.ProcessPoolExecutor` (one persistent pool per demo run, up to `min(6, os.cpu_count())` workers).
+`concurrent.futures.ProcessPoolExecutor` (one persistent pool per demo run with `TREX_NUM_WORKERS` worker processes,
+8 by default and every available core for `0`).
 
 Seed spaces mirror the cpp suite: DGP seed = base + grid offset + trial,
 random support seed = trial seed + 500000, selector seed = -1 (hardware
@@ -172,8 +183,8 @@ All the tidy demos share the CSV schema `solver,metric,<SWEEP>,value`, where
 `Linkage` index) — the plotter auto-detects the sweep column and picks the
 matching x-axis. It offers four figure patterns:
 
-- **per-CSV FDR and true positive rate (TPR) overview** — side-by-side FDR | TPR vs the swept quantity,
-  one line per method (`TREX-DA:` TLARS/TAFS/TOMP, and the classical `TREX:`
+- **per-CSV FDR and TPR overview** — side-by-side FDR | TPR vs the swept quantity,
+  one line per method (`TREX-DA:` TLARS/TAFS/TOMP/TLARS_STAG with TLARS_STAG dashed, and the classical `TREX:`
   baseline in Demos 01, 07 and 08), with the `tFDR` target drawn as a reference
   (a horizontal line, or the identity line for a `tFDR` sweep),
 - **comparison grid** (`grid` mode) — a 2×N grid sharing FDR/TPR scales across
@@ -195,14 +206,16 @@ matching x-axis. It offers four figure patterns:
 Every demo ships with real committed data and figures, and the pattern matches the C++ reference throughout
 (independent random number generator (RNG) streams, so cells agree up to Monte-Carlo noise). DA-TRex's FDR stays far
 closer to controlled than the classical (no-DA) T-Rex selector on the same correlated data — in Demo 01 at
-$\mathrm{SNR}=2$, DA-TRex realizes $\mathrm{FDR}\approx 0.05\text{–}0.08$ against base T-Rex TLARS's $\approx 0.27$ — at
+$\mathrm{SNR}=2$, DA-TRex realizes $\mathrm{FDR}\approx 0.04\text{–}0.08$ against base T-Rex TLARS's $\approx 0.27$ — at
 some cost in TPR, mostly at low SNR and under `Random` support. The greedy DA solvers (TAFS/TOMP) are FDR-controlled
 across the full $\rho$ grid and both support placements thanks to the exchangeable-tie fix, and generally outperform
-DA-TLARS on block designs. The demo READMEs document the known rough edges. TLARS breaks the target at $\rho = 0.9$ on
-block designs (Demos 03/04) and on the multi-level prior-groups DGP (Demo 06, flat in SNR — a structural property of
-the symmetric nearest-partner deflation under least-angle regression (LARS) type occurrence profiles), heavy tails
-cost FDR rather than power (Demos 04/05), the NN correction breaks down when applied to AR(1) data at
-$\rho \geq 0.8$ (Demo 07), and equicorrelation suppresses the DA selector entirely from $\rho = 0.025$ on (Demo 08).
+DA-TLARS on block designs. TLARS_STAG tracks DA-TLARS in FDR and TPR in every demo while cutting its long T-loops
+short. The demo READMEs document the known rough edges. TLARS, and TLARS_STAG with it, breaks the target at
+$\rho = 0.9$ on block designs (Demos 03/04) and on the multi-level prior-groups DGP (Demo 06, flat in SNR — a
+structural property of the symmetric nearest-partner deflation under least-angle regression (LARS) type occurrence
+profiles), heavy tails cost FDR rather than power (Demos 04/05), the NN correction breaks down when applied to AR(1)
+data at $\rho \geq 0.8$ (Demo 07), and equicorrelation suppresses the DA selector entirely from $\rho = 0.025$ on
+(Demo 08).
 
 ---
 
