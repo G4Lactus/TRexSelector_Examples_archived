@@ -51,7 +51,7 @@ K = 20                       # Random experiments per T-loop iteration
 tFDR = 0.1                   # Target FDR
 corr_max = 0.98              # HAC auto-clustering correlation threshold
 hc_linkage = Single          # Single-linkage HAC
-lambda2_method = CV_1SE_CCD  # Elastic-net penalty selection
+lambda2_method = CV_1SE_CCD  # Elastic-net penalty selection (Part 2 adds CV_1SE_IEN_CCD for IEN)
 MC = 200                     # Monte Carlo repetitions per grid point
 ```
 
@@ -76,8 +76,9 @@ Three T-Rex+GVS solver variants:
    $\mathrm{SNR} \in \lbrace0.2, 0.5, 1, 2, 5\rbrace$ and
    $\rho \in \lbrace0.30, 0.50, 0.70, 0.90, 0.95, 0.99\rbrace$ (derived via
    $\sigma_x = \sqrt{(1-\rho)/\rho}$), 200 Monte Carlo (MC) trials per cell.
-2. $\lambda_2$**-method comparison** — `CV_1SE_SVD` vs. `CV_1SE_CCD` penalty selection at the
-   fixed operating point $\mathrm{SNR}=2$, $\rho=0.7$ (TENET and TIENET_AUG).
+2. $\lambda_2$**-method comparison** — `CV_1SE_SVD` vs. `CV_1SE_CCD` for TENET, and `CV_1SE_CCD` vs. the rule
+   `CV_1SE_IEN_CCD` built for the informed elastic net (IEN) geometry for TIENET_AUG, at the fixed operating point
+   $\mathrm{SNR}=2$, $\rho=0.7$.
 3. **Hierarchical agglomerative clustering (HAC) linkage comparison** — Single / Complete / Average / weighted pair
    group method with arithmetic mean (WPGMA) linkage at the same fixed
    operating point (TENET and TIENET_AUG).
@@ -132,8 +133,14 @@ $\mathrm{tFDR} = 0.1$ target would be outlined in cyan.
 
 ### Part 2 — $\lambda_2$ selection method
 
-- `CV_1SE_SVD` and `CV_1SE_CCD` give essentially the same FDR/TPR, confirming the pipeline is
-  insensitive to the penalty-selection backend.
+- For TENET, `CV_1SE_SVD` and `CV_1SE_CCD` give essentially the same FDR/TPR ($0.068$ / $1.000$), confirming the
+  pipeline is insensitive to the ridge-shaped penalty-selection backend.
+- For TIENET_AUG, the IEN-geometry rule `CV_1SE_IEN_CCD` does clearly worse than `CV_1SE_CCD` here (FDR $0.040$ and
+  TPR $0.830$ against $0.001$ and $0.998$), and all $200$ of its picks are boundary picks. The rule cross-validates
+  $\lambda_2$ jointly with $\lambda_1$, and its $\lambda_1$ path stops at $0.8\, n_{\mathrm{train}} = 144$ selected
+  variables, below the $s = 150$ true variables of this design. The IEN rows of Demos 01–07 ($s = 150$) therefore keep
+  `CV_1SE_CCD`, while Demo 08 ($s \le 50$) uses the IEN rule
+  (see [Demo 08](../demo_trex_gvs_08_mc_sim_block_bench/README.md)).
 
 Grouped bar charts at the fixed operating point $\mathrm{SNR} = 2$, $\rho = 0.7$. Error bars show
 $\pm 1$ Monte Carlo standard deviation.
@@ -146,8 +153,8 @@ $\pm 1$ Monte Carlo standard deviation.
 
 - Single / Complete / Average / WPGMA linkage are interchangeable here — the strongly
   equicorrelated groups are recovered identically regardless of the linkage rule.
-- Taken together, Parts 2 and 3 confirm that the Part 1 conclusions are not sensitive to the
-  $\lambda_2$-selection backend or the linkage rule for this data scenario.
+- Taken together, Parts 2 and 3 confirm that the Part 1 conclusions are not sensitive to the ridge-shaped
+  $\lambda_2$-selection backend (`CV_1SE_SVD` or `CV_1SE_CCD`) or the linkage rule for this data scenario.
 
 Grouped bar charts at the same fixed operating point as Part 2. Error bars show $\pm 1$ Monte
 Carlo standard deviation.

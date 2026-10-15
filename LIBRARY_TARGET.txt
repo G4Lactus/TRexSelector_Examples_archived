@@ -7,7 +7,9 @@ Validated C++:  SDK installed from 44cf1ab (OpenMP 5.1, BLAS/LAPACK); the Exampl
                 data of the 12 T-solver demos reproduce their committed files byte for byte; the ml_methods
                 and memory_mapping short demos pass. The Monte Carlo suites trex_screening (01-06),
                 trex_spca (01-02), trex_core (02-05, 07), trex_da (01-08) and trex_gvs (01-08), with the
-                TLARS_STAG rows, are rerun on 44cf1ab with their figures and READMEs.
+                TLARS_STAG rows, are rerun on 44cf1ab with their figures and READMEs. The trex_gvs IEN rows of
+                demo 08 and of demo 01 Part 2 use the IEN-geometry lambda2 rule CV_1SE_IEN_CCD (those rows
+                rerun, the other IEN rows of demo 01 reproduce the earlier run exactly).
 Validated Py:   TRexSelectorNeo 1.0.0 reinstalled from 44cf1ab; the Part 5 path data of the 12 T-solver
                 demos reproduce their committed files byte for byte; getMemoryBytes() available. The results
                 committed on b95b984 stand. The Monte Carlo suites trex_core (02-05, 07) and trex_da (01-08),
