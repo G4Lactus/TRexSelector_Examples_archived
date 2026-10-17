@@ -138,9 +138,9 @@ $\mathrm{tFDR} = 0.1$ target would be outlined in cyan.
 - For TIENET_AUG, the IEN-geometry rule `CV_1SE_IEN_CCD` does clearly worse than `CV_1SE_CCD` here (FDR $0.040$ and
   TPR $0.830$ against $0.001$ and $0.998$), and all $200$ of its picks are boundary picks. The rule cross-validates
   $\lambda_2$ jointly with $\lambda_1$, and its $\lambda_1$ path stops at $0.8\, n_{\mathrm{train}} = 144$ selected
-  variables, below the $s = 150$ true variables of this design. The IEN rows of Demos 01–07 ($s = 150$) therefore keep
-  `CV_1SE_CCD`, while Demo 08 ($s \le 50$) uses the IEN rule
-  (see [Demo 08](../demo_trex_gvs_08_mc_sim_block_bench/README.md)).
+  variables, below the $s = 150$ true variables of this design. The IEN rows of Demos 01–07 therefore keep
+  `CV_1SE_CCD` (all have $s = 150$ except Demo 04 with $s = 100$, where the rule also picked a boundary in every check
+  run), while Demo 08 ($s \le 50$) uses the IEN rule (see [Demo 08](../demo_trex_gvs_08_mc_sim_block_bench/README.md)).
 
 Grouped bar charts at the fixed operating point $\mathrm{SNR} = 2$, $\rho = 0.7$. Error bars show
 $\pm 1$ Monte Carlo standard deviation.

@@ -92,13 +92,15 @@ import trex_selector_neo as trex  # noqa: E402
 from trex_selector_neo.ml_methods import PCA  # noqa: E402
 
 from trex_spca_sim_utils import (N_CORES, center_columns,  # noqa: E402
+                                 resolve_workers,
                                  generate_sparse_factor_model, get_executor,
                                  run_mc_trials_oracle_pca, run_mc_trials_pca,
                                  run_mc_trials_trex_spca,
                                  save_and_print_spca_sweep_results)
 import cell_cache  # family folder, put on sys.path by trex_spca_sim_utils
 
-N_WORKERS = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else N_CORES
+# Optional CLI worker count, resolved like TREX_NUM_WORKERS (0 = all usable cores).
+N_WORKERS = resolve_workers(sys.argv[1]) if len(sys.argv) > 1 else N_CORES
 
 # Ordered method names, shared by every part of this demo.
 METHOD_NAMES = ["OrdPCA", "OraclePCA",

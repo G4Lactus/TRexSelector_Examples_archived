@@ -112,14 +112,15 @@ produced by `./generate_plots.sh`.
 ## Running the Demo
 
 ```bash
-python demo_trex_gvs_04_mc_sim_neg_traps.py       # full run (hours)
+python demo_trex_gvs_04_mc_sim_neg_traps.py       # full run (about 2.1 h on 8 workers)
 python demo_trex_gvs_04_mc_sim_neg_traps.py 8     # with 8 worker processes
 ./generate_plots.sh                               # render the figure below from the saved CSV
 ```
 
 Monte Carlo trials are parallelized with `ProcessPoolExecutor`, and the optional first command-line interface (CLI)
-argument sets the number of worker processes (default `min(6, cpu_count)`). For a quick smoke test, temporarily
-reduce `num_MC` and the sweep grids at the top of the script.
+argument sets the number of worker processes. Without it the demo uses `TREX_NUM_WORKERS` workers (default 8, and `0`
+uses every usable core). For a quick smoke test, temporarily reduce `num_MC` and the sweep grids at the top of the
+script.
 
 ---
 
@@ -140,9 +141,10 @@ up to Monte-Carlo noise — the two ports draw from independent random number ge
    systematic loss of control.
 - The mechanism behind the recovery is that HAC clusters on **unsigned** correlation, so the sign-flipped active
    group is identified as a *single* group rather than split into its positive and negative halves.
-- **TIENET_AUG** is far more conservative (FDR $\le 0.030$ everywhere) and its TPR collapses to $0.03\text{–}0.08$ in
-   the extreme $\rho = 0.99$ column. Elsewhere it reaches TPR $\approx 1$ from $\mathrm{SNR} \ge 0.5$, so the
-   sign-flipped halves do not by themselves trigger different informed elastic net behavior.
+- **TIENET_AUG** is far more conservative (FDR $\le 0.039$ everywhere) and its TPR collapses to $0.03\text{–}0.08$ in
+   the extreme $\rho = 0.99$ column. Elsewhere it reaches TPR $\approx 1$ from $\mathrm{SNR} \ge 0.5$ (from
+   $\mathrm{SNR} = 1$ at $\rho = 0.3$), so the sign-flipped halves do not by themselves trigger different informed
+   elastic net behavior.
 - The two spatially separated traps are a stronger test of false-group exclusion than a single trap. FDR does not
    creep up with SNR outside the $\rho = 0.99$ column, so neither trap starts being selected as the signal
    strengthens.

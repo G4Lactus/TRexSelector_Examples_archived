@@ -114,9 +114,10 @@ python demo_trex_gvs_07_mc_sim_arma_blocks.py 8     # with 8 worker processes
 ./generate_plots.sh                                 # render the figure below from the saved CSV
 ```
 
-Monte Carlo trials are parallelized with `ProcessPoolExecutor`, and the optional first command-line interface (CLI)
-argument sets the number of worker processes (default `min(6, cpu_count)`). For a quick smoke test, temporarily
-reduce `num_MC` and the sweep grids at the top of the script.
+Monte Carlo trials are parallelized with `ProcessPoolExecutor` on `TREX_NUM_WORKERS` worker processes (default 8,
+and `0` uses every usable core, see `resolve_workers()` in [`../gvs_sim_common.py`](../gvs_sim_common.py)). The
+optional first command-line interface (CLI) argument overrides this count. A full run takes about 2.2 hours on
+8 workers. For a quick smoke test, temporarily reduce `num_MC` and the sweep grids at the top of the script.
 
 ---
 
@@ -136,9 +137,11 @@ up to Monte-Carlo noise — the two ports draw from independent random number ge
    $\mathrm{tFDR} = 0.1$ target in every cell (max $0.080$, no cyan outlines). The trap block (AR(1), same
    `ar_coef` as the active AR(1) block) is structurally similar to an active block and is the main test of
    false-group exclusion here — it does not inflate FDR.
-- **TIENET_AUG** is markedly more conservative (FDR $\le 0.035$), and its TPR collapses in the high-`ar_coef`
-   columns — $0.25$ at `ar_coef` $=0.8$ and $\approx 0.01$ from `ar_coef` $\ge 0.9$ — whereas TENET keeps
-   improving there.
+- **TIENET_AUG** is markedly more conservative (FDR $\le 0.041$), and its TPR collapses in the high-`ar_coef`
+   columns — below $0.01$ from `ar_coef` $\ge 0.9$, after up to $0.44$ at `ar_coef` $=0.8$ — whereas TENET keeps
+   improving there. All 2,638 `collinear; dropped` messages on the console of this run come from TIENET_AUG, 2,591
+   of them at `ar_coef` $= 0.95$ and the rest at $0.9$, where its inner terminating lasso meets nearly collinear
+   augmented columns.
 - Compared against Demo 06 (uniform AR(1) blocks), heterogeneity does cost power. TENET tops out near $0.61$ here
    versus $0.96$ there, because the MA(3) block's 3-lag correlation gives the grouping step almost nothing to
    aggregate.

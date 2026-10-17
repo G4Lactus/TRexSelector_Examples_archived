@@ -143,8 +143,9 @@ Grouped selection introduces a few additional control parameters and types beyon
    one-standard-error (1-SE) rule, via coordinate descent) or `CV_1SE_SVD` (via singular value decomposition (SVD)).
    The rule `CV_1SE_IEN_CCD`, built for the informed elastic net (IEN) geometry, cross-validates $\lambda_2$ jointly
    with $\lambda_1$ on the group structure and applies to `GVSType::IEN` only. Demo 08 uses it for its IEN rows.
-   Demos 01–07 keep `CV_1SE_CCD`, because their true support ($s = 150$) exceeds the rule's $\lambda_1$ support cap
-   of $0.8\, n_{\mathrm{train}} = 144$ (see the Demo 01 Part 2 comparison).
+   Demos 01–07 keep `CV_1SE_CCD`. Six of them have a true support of $s = 150$, above the rule's $\lambda_1$ support
+   cap of $0.8\, n_{\mathrm{train}} = 144$ (see the Demo 01 Part 2 comparison). Demo 04 has $s = 100$ plus trap
+   blocks, and a check with $20$ runs per cell there also gave a boundary pick in every run and no gain in power.
 - **`prior_groups`** — the 0-based per-column group-ID vector. When groups are known in advance (an "oracle" run),
    this vector is taken directly from the data-generating process. When groups must be discovered from the data,
    HAC clustering (with a `corr_max` correlation threshold and a chosen linkage method) is used to build

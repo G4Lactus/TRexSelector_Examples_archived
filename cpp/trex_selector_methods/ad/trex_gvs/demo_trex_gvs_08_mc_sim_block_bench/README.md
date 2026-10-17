@@ -79,8 +79,8 @@ The two tracks also choose $\lambda_2$ differently. The EN variants cross-valida
  the IEN-geometry rule `CV_1SE_IEN_CCD`, which cross-validates $\lambda_2$ jointly with $\lambda_1$ on the group
  structure the variant is given, so the clustered and oracle runs get different penalties (e.g. $0.40$ vs. $0.14$ at
  $\rho = 0.35$, $\mathrm{SNR} = 5$). Its $\lambda_1$ path stops at $0.8\, n_{\mathrm{train}} = 144$ selected
- variables, well above the $s \le 50$ true variables here. Demos 01–07 have $s = 150$, so they keep `CV_1SE_CCD` for
- their IEN rows (see [Demo 01](../demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md)). The IEN rule also returns
+ variables, well above the $s \le 50$ true variables here. Demos 01–07 keep `CV_1SE_CCD` for their IEN rows, because
+ there (mostly $s = 150$) the rule picks a boundary in every run (see [Demo 01](../demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md)). The IEN rule also returns
  boundary picks, in $8{,}326$ of the $19{,}200$ IEN selections ($43\,\%$). Of these, $85\,\%$ fall at
  $\mathrm{SNR} \le 0.5$, mostly on the last (largest) point of its $\lambda_2$ grid. The library reports such picks
  on the console and keeps them.

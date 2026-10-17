@@ -34,7 +34,7 @@
 #   rho_grid (INDIVIDUAL) = {0.35, 0.9}
 #   num_MC = 200 (the full run takes hours — reduce num_MC / the grids for a
 #   quick smoke test; the optional first CLI argument sets the number of
-#   parallel worker processes, default min(6, cpu_count))
+#   parallel worker processes, default TREX_NUM_WORKERS or 8)
 #
 # Seeds are staggered by grid-cell index so that each (rho, snr) cell uses a
 # distinct seed band:
@@ -55,10 +55,11 @@ for _p in (_THIS_DIR, _PARENT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from gvs_sim_common import (N_CORES, fmt_num, print_block_grid_table,  # noqa: E402
+from gvs_sim_common import (N_CORES, resolve_workers, fmt_num, print_block_grid_table,  # noqa: E402
                             print_section_header, run_block_mc)
 
-N_WORKERS = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else N_CORES
+# Optional CLI worker count, resolved like TREX_NUM_WORKERS (0 = all usable cores).
+N_WORKERS = resolve_workers(sys.argv[1]) if len(sys.argv) > 1 else N_CORES
 
 OUT_DIR = os.path.join(_THIS_DIR, "simulation_results", "data")
 

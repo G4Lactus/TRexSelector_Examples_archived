@@ -111,14 +111,15 @@ produced by `./generate_plots.sh`.
 ## Running the Demo
 
 ```bash
-python demo_trex_gvs_03_mc_sim_mixed_blocks.py       # full run (hours)
+python demo_trex_gvs_03_mc_sim_mixed_blocks.py       # full run (about 2.7 h on 8 workers)
 python demo_trex_gvs_03_mc_sim_mixed_blocks.py 8     # with 8 worker processes
 ./generate_plots.sh                                  # render the figure below from the saved CSV
 ```
 
 Monte Carlo trials are parallelized with `ProcessPoolExecutor`, and the optional first command-line interface (CLI)
-argument sets the number of worker processes (default `min(6, cpu_count)`). For a quick smoke test, temporarily
-reduce `num_MC` and the sweep grids at the top of the script.
+argument sets the number of worker processes. Without it the demo uses `TREX_NUM_WORKERS` workers (default 8, and `0`
+uses every usable core). For a quick smoke test, temporarily reduce `num_MC` and the sweep grids at the top of the
+script.
 
 ---
 
@@ -132,7 +133,7 @@ up to Monte-Carlo noise — the two ports draw from independent random number ge
    everywhere ($0.056\text{–}0.082$, no cyan violation outlines) — the inactive equicorrelated trap block does **not**
    inflate FDR, since its group is identified as null and excluded. The true positive rate (TPR) peaks at $0.96$
    (a ceiling below $1$, because the small 20-variable block is the hardest to recover).
-- **TIENET_AUG** is far more conservative (FDR $\le 0.023$, TPR $\le 0.87$), with a TPR collapse in the extreme
+- **TIENET_AUG** is far more conservative (FDR $\le 0.042$, TPR $\le 0.88$), with a TPR collapse in the extreme
    $\rho = 0.99$ column (TPR $\approx 0.01$) where the within-block columns become nearly collinear.
 - The random gaps and random block order mainly test that the grouping/clustering logic is invariant to block
    *placement*. TPR rises with SNR just as in the contiguous designs, so placement does not materially change

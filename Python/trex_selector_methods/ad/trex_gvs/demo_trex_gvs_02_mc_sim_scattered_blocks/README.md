@@ -108,14 +108,15 @@ produced by `./generate_plots.sh`.
 ## Running the Demo
 
 ```bash
-python demo_trex_gvs_02_mc_sim_scattered_blocks.py       # full run (hours)
+python demo_trex_gvs_02_mc_sim_scattered_blocks.py       # full run (about 2.5 h on 8 workers)
 python demo_trex_gvs_02_mc_sim_scattered_blocks.py 8     # with 8 worker processes
 ./generate_plots.sh                                      # render the figure below from the saved CSV
 ```
 
 Monte Carlo trials are parallelized with `ProcessPoolExecutor`, and the optional first command-line interface (CLI)
-argument sets the number of worker processes (default `min(6, cpu_count)`). For a quick smoke test, temporarily
-reduce `num_MC` and the sweep grids at the top of the script.
+argument sets the number of worker processes. Without it the demo uses `TREX_NUM_WORKERS` workers (default 8, and `0`
+uses every usable core). For a quick smoke test, temporarily reduce `num_MC` and the sweep grids at the top of the
+script.
 
 ---
 
@@ -129,8 +130,9 @@ up to Monte-Carlo noise — the two ports draw from independent random number ge
    $\mathrm{tFDR} = 0.1$ target in every cell ($0.042\text{–}0.088$, no cyan violation outlines), with true positive
    rate (TPR) $\approx 1$ from $\mathrm{SNR} \ge 1$ for $\rho \ge 0.5$ and $0.87 \to 0.96 \to 0.99$ over
    $\mathrm{SNR} \in \lbrace1, 2, 5\rbrace$ in the weakest column $\rho = 0.30$.
-- **TIENET_AUG** is markedly more conservative (FDR $\le 0.027$), and its power collapses in the extreme
-   $\rho = 0.99$ column (TPR $\approx 0.02$, flat in SNR) where the within-group columns become nearly collinear.
+- **TIENET_AUG** is markedly more conservative (FDR $\le 0.043$) and has less power at low SNR, but from
+   $\mathrm{SNR} = 1$ on it reaches TPR $\approx 1$ for $\rho = 0.7\text{–}0.95$. Its power collapses in the extreme
+   $\rho = 0.99$ column (TPR $\le 0.02$), where the within-group columns become nearly collinear.
 - Because HAC-based grouping clusters columns by **correlation**, not by column adjacency, scattering group members
    across the design leaves the FDR/TPR pattern very close to Demo 01's contiguous-block results — the clustering
    step is insensitive to column order by construction. Cell by cell the two demos differ by at most a few

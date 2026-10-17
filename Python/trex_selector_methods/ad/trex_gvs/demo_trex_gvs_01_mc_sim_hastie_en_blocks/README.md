@@ -65,7 +65,7 @@ K = 20                       # Random experiments per T-loop iteration
 tFDR = 0.1                   # Target FDR
 corr_max = 0.98              # HAC auto-clustering correlation threshold
 hc_linkage = Single          # Single-linkage HAC
-lambda2_method = CV_1SE_CCD  # Elastic-net penalty selection
+lambda2_method = CV_1SE_CCD  # Elastic-net penalty selection (Part 2 adds CV_1SE_IEN_CCD for IEN)
 MC = 200                     # Monte Carlo repetitions per grid point
 ```
 
@@ -90,8 +90,9 @@ Three T-Rex+GVS solver variants:
    $\mathrm{SNR} \in \lbrace0.2, 0.5, 1, 2, 5\rbrace$ and
    $\rho \in \lbrace0.30, 0.50, 0.70, 0.90, 0.95, 0.99\rbrace$ (derived via
    $\sigma_x = \sqrt{(1-\rho)/\rho}$), 200 Monte Carlo (MC) trials per cell.
-2. $\lambda_2$**-method comparison** — `CV_1SE_SVD` vs. `CV_1SE_CCD` penalty selection at the
-   fixed operating point $\mathrm{SNR}=2$, $\rho=0.7$ (TENET and TIENET_AUG).
+2. $\lambda_2$**-method comparison** — `CV_1SE_SVD` vs. `CV_1SE_CCD` for TENET, and `CV_1SE_CCD` vs. the rule
+   `CV_1SE_IEN_CCD` built for the informed elastic net (IEN) geometry for TIENET_AUG, at the fixed operating point
+   $\mathrm{SNR}=2$, $\rho=0.7$.
 3. **Hierarchical agglomerative clustering (HAC) linkage comparison** — Single / Complete / Average / weighted pair
    group method with arithmetic mean (WPGMA) linkage at the same fixed operating point (TENET and TIENET_AUG).
 
@@ -118,14 +119,15 @@ produced by `./generate_plots.sh`.
 ## Running the Demo
 
 ```bash
-python demo_trex_gvs_01_mc_sim_hastie_en_blocks.py       # full run (hours)
+python demo_trex_gvs_01_mc_sim_hastie_en_blocks.py       # full run (about 2.7 h on 8 workers)
 python demo_trex_gvs_01_mc_sim_hastie_en_blocks.py 8     # with 8 worker processes
 ./generate_plots.sh                                      # render the figures below from the saved CSVs
 ```
 
 Monte Carlo trials are parallelized with `ProcessPoolExecutor`, and the optional first command-line interface (CLI)
-argument sets the number of worker processes (default `min(6, cpu_count)`). For a quick smoke test, temporarily
-reduce `num_MC` and the sweep grids at the top of the script.
+argument sets the number of worker processes. Without it the demo uses `TREX_NUM_WORKERS` workers (default 8, and `0`
+uses every usable core). For a quick smoke test, temporarily reduce `num_MC` and the sweep grids at the top of the
+script.
 
 ---
 
@@ -138,17 +140,17 @@ C++ engine there).
 
 ### Part 1 — 2-D SNR $\times$ $\rho$ sweep
 
-- FDR stays at or below the $\mathrm{tFDR} = 0.1$ target in every cell (no cyan violation outlines):
+- FDR stays at or below the $\mathrm{tFDR} = 0.1$ target in every cell (no cyan violation outlines).
   **TENET** and **TENET_AUG** — numerically identical throughout this demo — realize $0.043\text{–}0.091$, and
-  **TIENET_AUG** never exceeds $0.030$.
+  **TIENET_AUG** never exceeds $0.041$.
 - **TENET / TENET_AUG** reach a true positive rate (TPR) of $\approx 1$ once $\mathrm{SNR} \gtrsim 1$ for
   $\rho \ge 0.5$. The weakest column, $\rho = 0.30$, still climbs $0.88 \to 0.96 \to 0.99$ over
   $\mathrm{SNR} \in \lbrace1, 2, 5\rbrace$.
-- **TIENET_AUG** is more conservative (very low FDR, TPR that grows more slowly with SNR — e.g. $0.58$ at
-  $\mathrm{SNR}=1$, $\rho = 0.3$ vs. $0.88$ for TENET) and its power **collapses in the extreme $\rho = 0.99$
-  column** (TPR $\approx 0.02$, flat in SNR), where the within-group columns become nearly collinear. This
-  conservatism is not specific to this design — the same pattern recurs across the other block demos in this
-  folder.
+- **TIENET_AUG** is more conservative (very low FDR, TPR that grows more slowly with SNR — e.g. $0.68$ at
+  $\mathrm{SNR}=1$, $\rho = 0.3$ vs. $0.88$ for TENET), but from $\mathrm{SNR} = 1$ on it reaches TPR $\approx 1$ for
+  $\rho = 0.7\text{–}0.95$. Its power **collapses in the extreme $\rho = 0.99$ column** (TPR $\le 0.02$), where the
+  within-group columns become nearly collinear. This conservatism is not specific to this design — the same pattern
+  recurs across the other block demos in this folder.
 - Along the $\rho$ axis, performance is otherwise stable across correlation levels, since all three methods use
   HAC-based grouping to aggregate evidence across strongly correlated columns. Only $\rho = 0.99$ stresses
   TIENET_AUG.
@@ -162,12 +164,14 @@ $\mathrm{tFDR} = 0.1$ target would be outlined in cyan.
 
 ### Part 2 — $\lambda_2$ selection method
 
-- At the fixed operating point both backends behave the same where it matters. TENET realizes
-  FDR $0.071$ (`CV_1SE_SVD`) vs. $0.070$ (`CV_1SE_CCD`) at TPR $1.000$, and TIENET_AUG reaches TPR
-  $1.000$ vs. $0.996$.
-- The only visible difference is TIENET_AUG's FDR ($0.004$ via singular value decomposition (SVD) vs. $0.017$ via
-  cyclic coordinate descent (CCD)) — both far below the $0.1$ target, so the pipeline is insensitive to the
-  penalty-selection backend.
+- For TENET, `CV_1SE_SVD` and `CV_1SE_CCD` give essentially the same result (FDR $0.071$ vs. $0.070$ at TPR
+  $1.000$), so the pipeline is insensitive to the ridge-shaped penalty-selection backend.
+- For TIENET_AUG, the IEN-geometry rule `CV_1SE_IEN_CCD` does clearly worse than `CV_1SE_CCD` here (FDR $0.039$ and
+  TPR $0.833$ against $0.001$ and $0.999$), and $199$ of its $200$ picks are boundary picks. The rule cross-validates
+  $\lambda_2$ jointly with $\lambda_1$, and its $\lambda_1$ path stops at $0.8\, n_{\mathrm{train}} = 144$ selected
+  variables, below the $s = 150$ true variables of this design. The IEN rows of Demos 01–07 therefore keep
+  `CV_1SE_CCD` (all have $s = 150$ except Demo 04 with $s = 100$, where the rule also picked a boundary in every check
+  run), while Demo 08 ($s \le 50$) uses the IEN rule (see [Demo 08](../demo_trex_gvs_08_mc_sim_block_bench/README.md)).
 
 Grouped bar charts at the fixed operating point $\mathrm{SNR} = 2$, $\rho = 0.7$. Error bars show
 $\pm 1$ Monte Carlo standard deviation.
@@ -179,10 +183,10 @@ $\pm 1$ Monte Carlo standard deviation.
 ### Part 3 — HAC linkage
 
 - Single / Complete / Average / WPGMA linkage produce **numerically identical** results here (FDR $0.070$ and
-  TPR $1.000$ for TENET, FDR $0.017$ and TPR $0.996$ for TIENET_AUG) — with groups this strongly
+  TPR $1.000$ for TENET, FDR $0.001$ and TPR $0.999$ for TIENET_AUG) — with groups this strongly
   equicorrelated, every linkage rule cuts the dendrogram the same way.
-- Taken together, Parts 2 and 3 confirm that the Part 1 conclusions are not sensitive to the
-  $\lambda_2$-selection backend or the linkage rule for this data scenario.
+- Taken together, Parts 2 and 3 confirm that the Part 1 conclusions are not sensitive to the ridge-shaped
+  $\lambda_2$-selection backend (`CV_1SE_SVD` or `CV_1SE_CCD`) or the linkage rule for this data scenario.
 
 Grouped bar charts at the same fixed operating point as Part 2. Error bars show $\pm 1$ Monte
 Carlo standard deviation.

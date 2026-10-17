@@ -89,9 +89,18 @@ The group information enters the two solvers differently. The EN variants use it
  group-correlated dummy (random-experiment) columns, while IEN additionally ties the group members together
  through its group-indicator row augmentation — and those indicator rows are tiled across the dummy layers as
  well, so every variable's group-aligned dummies share its group geometry. The oracle prior can therefore
- matter more — in either direction — for IEN than for EN. Note also that $\lambda_2$ is cross-validated on the
- original $(\boldsymbol{X}, \boldsymbol{y})$ only, so the chosen penalty is identical for the clustered and
- oracle variants and never adapts to the supplied group structure.
+ matter more — in either direction — for IEN than for EN.
+
+The two tracks also choose $\lambda_2$ differently. The EN variants cross-validate it on the original
+ $(\boldsymbol{X}, \boldsymbol{y})$ with the ridge-shaped rule `CV_1SE_CCD`, so their penalty is identical for the
+ clustered and oracle groups. The IEN variants use the IEN-geometry rule `CV_1SE_IEN_CCD`, which cross-validates
+ $\lambda_2$ jointly with $\lambda_1$ on the group structure the variant is given, so the clustered and oracle runs
+ get different penalties (e.g. $0.39$ vs. $0.13$ at $\rho = 0.35$, $\mathrm{SNR} = 5$). Its $\lambda_1$ path stops at
+ $0.8\, n_{\mathrm{train}} = 144$ selected variables, well above the $s \le 50$ true variables here. Demos 01–07 keep
+ `CV_1SE_CCD` for their IEN rows, because there (mostly $s = 150$) the rule picks a boundary in every run (see
+ [Demo 01](../demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md)). Here the IEN rule returns a boundary pick in
+ about $8{,}300$ of the $19{,}200$ IEN selections ($43\,\%$, as in C++). The library reports such picks on the
+ console and keeps them.
 
 ---
 
@@ -102,6 +111,7 @@ K = 20                # Random experiments per T-loop iteration
 tFDR = 0.1            # Target FDR
 corr_max = 0.5        # HAC discoverability boundary (cut height 1 - corr_max)
 hc_linkage = Single   # Single-linkage HAC
+lambda2_method        # CV_1SE_CCD (EN rows M1/M2), CV_1SE_IEN_CCD (IEN rows M3/M4)
 b = 3.0               # Nonzero coefficient magnitude (random sign per block)
 MC = 200              # Monte Carlo repetitions per grid cell
 ```
@@ -170,14 +180,15 @@ produced by `./generate_plots.sh`.
 ## Running the Demo
 
 ```bash
-python demo_trex_gvs_08_mc_sim_block_bench.py       # full run (hours)
+python demo_trex_gvs_08_mc_sim_block_bench.py       # full run (about 7 h on 8 workers)
 python demo_trex_gvs_08_mc_sim_block_bench.py 8     # with 8 worker processes
 ./generate_plots.sh                                 # render the figures below from the saved CSVs
 ```
 
 Both scenarios run in the same invocation and print one grid table per scenario, per $\rho$ value.
-Monte Carlo trials are parallelized with `ProcessPoolExecutor`, and the optional first command-line interface (CLI)
-argument sets the number of worker processes (default `min(6, cpu_count)`). For a quick smoke test, temporarily
+Monte Carlo trials are parallelized with `ProcessPoolExecutor`, with `TREX_NUM_WORKERS` worker processes (default 8,
+and `0` uses every usable core, see `resolve_workers()` in `../gvs_sim_common.py`). The optional first
+command-line interface (CLI) argument overrides that count in the same way. For a quick smoke test, temporarily
 reduce `num_MC` and the grids at the top of the script.
 
 ---
@@ -195,21 +206,20 @@ up to Monte-Carlo noise — the two ports draw from independent random number ge
 - **For the EN variants the prior is inert**. M1 and M2 differ by at most $0.004$ TPR at every grid point. Since
    EN consumes the group information only through the dummy correlation structure, knowing the true groups
    neither helps nor hurts it here.
-- **For IEN the value of the prior is non-monotone in $\rho$.** Below the discoverability boundary the oracle
-   prior *costs* power. At $\rho = 0.35$, $\mathrm{SNR} = 5$, clustered IEN reaches TPR $0.30$ vs. $0.11$ for
-   oracle IEN (and $0.21$ vs. $0.08$ at $\rho = 0.2$). This is **not** HAC outperforming the truth — at these
-   $\rho$ the `corr_max` $= 0.5$ cut sits above the within-block correlation, so no merge survives it
-   (purity $0$, $M \approx 500$) and clustered IEN degenerates to per-variable ridge rows. It is the oracle's
-   genuine 5-member ties that hurt. The shared group-indicator rows couple each active with its group-aligned
-   dummies, and with weak within-group correlation the data block barely separates them, so dummies enter the
-   solver path almost as early as actives, the false discovery proportion (FDP) estimate stays high, and the
-   T-loop terminates early ($\overline T_{\mathrm{stop}} = 6.3$ vs. $13.1$ for clustered at $\rho = 0.35$,
-   $\mathrm{SNR} = 5$, at the *same* $\lambda_2$ chosen by cross-validation (CV)). Only around the boundary
-   ($\rho = 0.5$, purity $0.58$, $M \approx 179$) does the oracle pay off mildly ($0.127$ vs. $0.100$), and from
-   $\rho \ge 0.65$ both IEN variants are numerically identical because HAC recovers exactly the true blocks
-   (purity $1.0$, $M = 100$).
-- **IEN is much more conservative than EN throughout** (TPR $\le 0.15$ for $\rho \ge 0.5$ vs. up to $0.90$ for
-   EN) — the same conservatism seen across Demos 01–07.
+- **For IEN the oracle prior is now close to neutral.** Below the discoverability boundary the `corr_max` $= 0.5$
+   cut sits above the within-block correlation, so no merge survives it (purity $0$, $M \approx 500$) and clustered
+   IEN works with per-variable rows, while the oracle variant gets the true 5-member groups. At $\rho = 0.35$,
+   $\mathrm{SNR} = 5$ clustered IEN reaches TPR $0.50$ vs. $0.44$ for oracle IEN, at $\rho = 0.2$ $0.26$ vs. $0.24$,
+   and at the boundary ($\rho = 0.5$, purity $0.58$, $M \approx 179$) $0.54$ vs. $0.53$. From $\rho \ge 0.65$ both
+   IEN variants are numerically identical because HAC recovers exactly the true blocks (purity $1.0$, $M = 100$).
+- **The IEN-geometry $\lambda_2$ rule removes the oracle penalty of the earlier setup.** With the ridge-shaped
+   `CV_1SE_CCD`, which gave both IEN variants the same $\lambda_2$, the oracle's 5-member ties coupled each active with
+   its group-aligned dummies. The false discovery proportion (FDP) estimate then stayed high and the T-loop
+   terminated early, so oracle IEN lost most of its power (TPR $0.11$ vs. $0.30$ clustered at $\rho = 0.35$,
+   $\mathrm{SNR} = 5$, with $\overline T_{\mathrm{stop}} = 6.3$ vs. $13.1$, July run). The IEN rule picks a smaller
+   $\lambda_2$ for the oracle groups ($0.13$ vs. $0.39$), and both T-loops now run to about $14$ steps.
+- **IEN gains a lot but stays more conservative than EN** (TPR at most $0.56$ for $\rho \ge 0.5$, up from $0.15$ with
+   `CV_1SE_CCD`, vs. up to $0.90$ for EN), at FDR at most $0.059$.
 
 TPR (top) and FDR (bottom) vs. $\rho$, one panel per SNR $\in \lbrace0.5, 2, 5\rbrace$, one line per method.
 The dashed red line marks the $\mathrm{tFDR} = 0.1$ target.
@@ -227,13 +237,15 @@ The dashed red line marks the $\mathrm{tFDR} = 0.1$ target.
 
 - **Coordinate-level FDR control collapses by construction once siblings correlate strongly.** At $\rho = 0.9$
    the EN methods realize FDR $\approx 0.77\text{–}0.80$ (target $0.1$) while selecting the active variable's whole
-   block. IEN sits at $0.39\text{–}0.49$. Oracle and clustered variants are identical here — no amount of correct
-   group knowledge identifies *which* exchangeable member is active.
-- At the weaker $\rho = 0.35$ the violation is mild for EN (FDR up to $\approx 0.16$ at high SNR) and, notably,
-   the oracle prior *does* rescue IEN's error control (FDR $\le 0.05$ vs. $\approx 0.11$ clustered) — the group
-   ties concentrate the selection on one representative per block.
+   block. IEN sits at $0.40\text{–}0.50$ from $\mathrm{SNR} = 1$ on, with TPR rising to $0.93$ at $\mathrm{SNR} = 5$.
+   Oracle and clustered variants are identical here — no amount of correct group knowledge identifies *which*
+   exchangeable member is active.
+- At the weaker $\rho = 0.35$ the violation is mild for EN (FDR up to $\approx 0.17$ at high SNR), while both IEN
+   variants keep FDR below the target (at most $0.074$ clustered and $0.072$ oracle from $\mathrm{SNR} = 1$ on) and
+   reach TPR $0.97\text{–}0.98$ at $\mathrm{SNR} = 5$, against $0.77$ for EN. The group ties concentrate the selection
+   on one representative per block.
 - The block-level diagnostics in the saved tables stay near the target ($\mathrm{block\_FDR} \le 0.13$ at
-   $\rho = 0.9$ for EN, $\le 0.02$ for IEN), which is exactly the point. The method still finds the right
+   $\rho = 0.9$ for EN, $\le 0.05$ for IEN), which is exactly the point. The method still finds the right
    *blocks*, but no guarantee attaches to that number.
 
 TPR (top) and FDR (bottom) vs. SNR, one panel per $\rho \in \lbrace0.35, 0.9\rbrace$. Note the different FDR
