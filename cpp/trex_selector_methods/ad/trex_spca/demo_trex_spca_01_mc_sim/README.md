@@ -299,10 +299,12 @@ with the dashed reference in the right panel showing OrdPCA's own Signal + Mixed
    `Thresholded` is consistently the better of the two modes ($88.1$\% vs. $74.4$\% at $+10$ dB) because
    re-solving on the selected support recovers more variance than the active-set ridge coefficients do.
    Reading alone, this panel says sparsity is a pure cost.
-- **Under Definition 1 (right panel) the picture reverses. Ordinary PCA's lead is mostly Null EV.** All
-   curves now *rise* with SNR, exactly as in the reference paper's Fig. 3(b), because the denominator is the
-   variance the true active variables carry, and at low SNR most of that is noise no 3-component method can
-   capture. Ordinary PCA hugs the $100\%$ line ($96.5\text{–}99.6\%$) — but the dashed reference curve shows how.
+- **Under Definition 1 (right panel) the picture reverses. Ordinary PCA's lead is mostly Null EV.** The
+   oracle and `Thresholded` curves now *rise* with SNR, as in the reference paper's Fig. 3(b), because the
+   denominator is the variance the true active variables carry, and at low SNR most of that is noise no
+   3-component method can capture. The `ActiveSet` pair peaks at $85.4\text{–}85.6\%$ at $+3$ dB and eases to
+   $80.6\text{–}80.8\%$ at $+10$ dB. Ordinary PCA hugs the $100\%$ line ($96.5\text{–}99.6\%$) — but the dashed
+   reference curve shows how.
    At $-10$ dB only $66.4\%$ of its $98.3\%$ points are Signal + Mixed EV, and the rest is variance harvested from
    null variables. The sparse methods carry almost no Null EV (their solid and Sig + Mix readings nearly
    coincide), with `Thresholded` reaching $95.7\%$ and OraclePCA $96.9\%$ at $+10$ dB. (With only $M = 3$

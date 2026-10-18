@@ -157,7 +157,7 @@ trial, so Part 1 alone costs several times what the other parts cost together.
    $66.1\%$ at one PC past the $100\%$ line at about five PCs to $165.2\%$ at 49. By the time it has
    extracted 49 components it is reporting two thirds more variance than the true active variables carry.
    Its dashed Sig + Mix decomposition saturates at $107.8\%$ — everything between the solid and dashed
-   curves is Null EV. OraclePCA reaches $117.4\%$ and even overtakes the dashed reference (crossover
+   curves is Null EV. OraclePCA reaches $117.3\%$ and even overtakes the dashed reference (crossover
    between 10 and 20 PCs). It is an oracle only about the support *size* $p_1$, so on the noise directions
    beyond PC3 its $\text{top-}p_1$ thresholding selects mostly null variables ($\approx 26$ of $100$ are active)
    and the renormalization hands them full weight — the $\approx 10$-point gap above the dashed curve is

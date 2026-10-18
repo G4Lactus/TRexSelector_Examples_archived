@@ -191,8 +191,7 @@ An **SNR sweep in decibels** over
  $\mathrm{SNR} \in \lbrace-10, -7, -5, -3, 0, 3, 5, 7, 10\rbrace$ dB, 200 Monte Carlo (MC) trials per point —
  `snr_values` in `main()` mirrors the cpp reference exactly.
  The axis is plotted and tabulated in dB throughout, and it is never converted back to a linear ratio.
- Each grid point takes several minutes per method in Python, so the full sweep is an overnight run.
- The committed numbers below took $\approx 10$ min on 6 workers for both sections together, and
+ The committed numbers below took $\approx 7$ min on 8 workers for both sections together, and
  `TREX_SPCA_NUM_MC` and `TREX_SPCA_PARTS` remain available for quick pilot runs.
 
 Section 2 reruns the same grid for the **union-support FDR per PC** (`ActiveSet`/`TENET` only) — see the
@@ -226,8 +225,8 @@ Figures in Portable Network Graphics (PNG) and Portable Document Format (PDF) go
 
 ```bash
 cd Python/trex_selector_methods/ad/trex_spca/demo_trex_spca_01_mc_sim
-python demo_trex_spca_01_mc_sim.py                # default min(6, cores) workers
-python demo_trex_spca_01_mc_sim.py 8              # 8 worker cores
+python demo_trex_spca_01_mc_sim.py                # full run (about 7 min on 8 workers)
+python demo_trex_spca_01_mc_sim.py 12             # 12 workers (0 = all usable cores)
 ./generate_plots.sh                               # render the figures from the saved CSVs
 ```
 
@@ -238,21 +237,23 @@ sweep) — the same environment switches as the cpp executable.
 Run the demo inside an environment that carries `trex_selector_neo` (e.g. the `trex-dev` conda environment
 or the repo `.venv`). The Monte Carlo trials run in parallel via `concurrent.futures.ProcessPoolExecutor`
 (spawn), so the demo must be run **as a real `.py` file** (workers re-import the module) — not via
-`python -` / piped stdin. The optional first command-line interface (CLI) argument sets the number of worker
-cores.
+`python -` / piped stdin. It uses `TREX_NUM_WORKERS` worker processes (default 8, and `0` uses every usable core,
+see `resolve_workers()` in [`../trex_spca_sim_utils.py`](../trex_spca_sim_utils.py)). The optional first
+command-line interface (CLI) argument overrides that count and goes through the same `resolve_workers()`.
 
 ---
 
 ## Simulation Results
 
-Full grid, 200 MC trials per point, run 2026-07-27 (6 workers, $\approx 10$ min for both sections).
+Full grid, 200 MC trials per point, run 2026-10-17 (8 workers, $\approx 7$ min for both sections).
 
 - **All four T-Rex SPCA variants hold the FDR at the $\mathrm{tFDR} = 0.10$ target across the whole sweep**,
-   with realized values between $0.050$ and $0.111$ — highest at the hardest point ($-10$ dB) and settling
-   around $0.05\text{–}0.08$ from $-7$ dB upward. The four readings fractionally above target (all at $-10$ dB,
-   $0.1032\text{–}0.1107$) are inside Monte Carlo noise. The standard error of a 200-trial mean FDR is
-   $\approx \pm 0.009$, so they are not evidence of a breach. TPR is $1.000$ everywhere except at $-10$ dB
-   ($0.995\text{–}0.998$) and two $0.999$ readings at $-3$ dB.
+   with realized values between $0.051$ and $0.114$ — highest at the hardest point ($-10$ dB) and settling
+   around $0.05\text{–}0.08$ from $-7$ dB upward. The four readings slightly above target (all at $-10$ dB,
+   $0.1036\text{–}0.1140$) are inside Monte Carlo noise. The standard error of a 200-trial mean FDR is
+   $\approx \pm 0.009$, so even the highest lies only about $1.5$ standard errors above the target and is not
+   evidence of a breach. TPR is $1.000$ everywhere except at $-10$ dB ($0.994\text{–}0.997$) and one $0.999$
+   reading at $-3$ dB.
 - **OrdPCA's FDR of $0.95$ is not a defeat, it is arithmetic.** Retaining all $p = 100$ loadings against a
    true support of $p_1 = 5$ makes 95 of every 100 selections false by construction. It is a non-sparse
    reference line, not a competitor.
@@ -264,7 +265,7 @@ Full grid, 200 MC trials per point, run 2026-07-27 (6 workers, $\approx 10$ min 
    The $\approx \pm 0.009$ standard error is an order of magnitude larger than the row-to-row differences —
    and the sign of those differences flips between modes and SNR points, which is what noise looks like.
 - **The numbers agree with the cpp reference throughout.** Method for method and grid point for grid point,
-   the two ports differ by at most $0.025$ in FDR and $0.009$ in any of the three PEV readings — within the
+   the two ports differ by at most $0.022$ in FDR and $0.011$ in any of the three PEV readings — within the
    MC noise floor of independent dummy draws. Exact per-trial agreement is impossible by construction
    (numpy PCG64 vs. C++ `std::mt19937`). See the
    [cpp demo-01 README](../../../../../cpp/trex_selector_methods/ad/trex_spca/demo_trex_spca_01_mc_sim/README.md)
@@ -306,17 +307,18 @@ again as a Monte Carlo mean, while the right panel of the figure reports the com
  ($\mathcal S_1 \subseteq \mathcal S_{\cup}$), which is why PC1's union-FDR sits
  slightly below its per-factor FDR.
 
-- **PC1 is controlled everywhere** (union-FDR $0.014\text{–}0.073$, the union is a more lenient truth than
+- **PC1 is controlled everywhere** (union-FDR $0.016\text{–}0.073$, the union is a more lenient truth than
    factor 1's own support).
 - **PC2 and PC3 are controlled exactly where their factors are alive, and break where they drown.** The
    factors have amplitudes $\sigma = (5, 3, 1)$, so relative to factor 1 the second factor sits
    $\approx 4$ dB and the third $\approx 14$ dB lower in effective SNR. That offset is precisely what the
-   curves show. PC2 holds the target from $-5$ dB up ($\leq 0.086$) and breaks below it ($0.12$ at $-7$ dB,
-   $0.43$ at $-10$ dB), while PC3 holds only from $+3$ dB up ($\leq 0.095$) and collapses below ($0.39$ at
-   $0$ dB, $0.73\text{–}0.83$ at $\leq -3$ dB). Once a factor is buried, its plug-in PC is essentially a noise
-   direction, and the selector — asked to explain a noise response — dutifully selects noise variables.
-   The support-size panel corroborates this. PC3's selection is inflated ($6.6\text{–}7.5$ variables) exactly
-   in its broken regime and drops to $\approx 3.5\text{–}4.0$ once the factor emerges.
+   curves show. PC2 holds the target from $-5$ dB up ($\leq 0.077$) and breaks below it ($0.13$ at $-7$ dB,
+   $0.43$ at $-10$ dB), while PC3 holds only from $+5$ dB up ($\leq 0.068$), is borderline at $+3$ dB ($0.11$)
+   and collapses below ($0.41$ at $0$ dB, $0.73\text{–}0.84$ at $\leq -3$ dB). Once a factor is buried, its
+   plug-in PC is essentially a noise direction, and the selector — asked to explain a noise response —
+   dutifully selects noise variables. The support-size panel corroborates this. PC3's selection is inflated
+   ($5.7\text{–}7.3$ variables) exactly in its broken regime and drops to $\approx 3.5\text{–}4.1$ once the factor
+   emerges.
 
 **Consequences**: the FDR guarantee is **conditional on the plug-in PC being a faithful proxy for its
 factor**. Where a factor is buried, the selector still controls the FDR of the noise regression it was
@@ -349,10 +351,11 @@ with the dashed reference in the right panel showing OrdPCA's own Signal + Mixed
    `Thresholded` is consistently the better of the two modes ($88.2\%$ vs. $75.1\%$ at $+10$ dB) because
    re-solving on the selected support recovers more variance than the active-set ridge coefficients do.
    Reading alone, this panel says sparsity is a pure cost.
-- **Under Definition 1 (right panel) the picture reverses. Ordinary PCA's lead is mostly Null EV.** All
-   curves now *rise* with SNR, exactly as in the reference paper's Fig. 3(b), because the denominator is the
+- **Under Definition 1 (right panel) the picture reverses. Ordinary PCA's lead is mostly Null EV.** The
+   sparse curves now *rise* with SNR, as in the reference paper's Fig. 3(b), because the denominator is the
    variance the true active variables carry, and at low SNR most of that is noise no 3-component method can
-   capture. Ordinary PCA hugs the $100\%$ line ($96.3\text{–}99.7\%$) — but the dashed reference curve shows
+   capture (the `ActiveSet` pair peaks at $85.2\text{–}85.3\%$ at $+3$ dB and eases to $81.4\text{–}81.6\%$ at
+   $+10$ dB). Ordinary PCA hugs the $100\%$ line ($96.3\text{–}99.6\%$) — but the dashed reference curve shows
    how. At $-10$ dB only $65.9\%$ of its $99.1\%$ points are Signal + Mixed EV, and the rest is variance harvested
    from null variables. The sparse methods carry almost no Null EV (their solid and Sig + Mix readings nearly
    coincide), with `Thresholded` reaching $95.9\%$ and OraclePCA $97.1\%$ at $+10$ dB. (With only $M = 3$

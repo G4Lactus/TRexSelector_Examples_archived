@@ -135,14 +135,14 @@ files, produced by `./generate_plots.sh`.
 ## Running the Demo
 
 ```bash
-python demo_trex_scr_05_mc_sim_biobank_mmap.py   # full run (~42 min with 6 workers)
+python demo_trex_scr_05_mc_sim_biobank_mmap.py   # full run (~23 min with 8 workers)
 ./generate_plots.sh                              # render the figures below from the saved CSVs
 ```
 
-Monte Carlo trials are parallelized with `ProcessPoolExecutor`. The worker count defaults to
-`min(6, usable CPUs)` and is overridden with `SCR_NUM_WORKERS` (or the suite-wide `TREX_NUM_WORKERS`).
-This is the **heaviest** demo of the suite — up to three selectors per routed phenotype, all of them
-driving memory-mapped dummy files — and the suite runner
+Monte Carlo trials are parallelized with `ProcessPoolExecutor` over `TREX_NUM_WORKERS` worker processes
+(default 8, capped at the usable cores, and `0` uses all of them). The suite's older `SCR_NUM_WORKERS` still
+works and takes precedence. This is the **heaviest** demo of the suite — up to three selectors per routed
+phenotype, all of them driving memory-mapped dummy files — and the suite runner
 [`../run_overnight.sh`](../run_overnight.sh) skips it under `SKIP_HEAVY=1`.
 
 ---
@@ -158,22 +158,22 @@ there).
 ### Part 1 — Single Phenotype ($s = 10$)
 
 - **Routing behaves exactly as in the in-memory run.** At $\mathrm{SNR} = 0.1$ all phenotypes ($100.0\%$)
-   go to the classical T-Rex fallback, both screening estimates being far above the window ($0.471$
-   Ordinary, $0.358$ Bootstrap-CI). At $\mathrm{SNR} = 1$ the split is $51.5\%$ Ordinary / $42.5\%$
-   Bootstrap-CI / $6.0\%$ fallback, and at $\mathrm{SNR} = 5$ Bootstrap-CI handles $87.0\%$ of all
+   go to the classical T-Rex fallback, both screening estimates being far above the window ($0.502$
+   Ordinary, $0.390$ Bootstrap-CI). At $\mathrm{SNR} = 1$ the split is $50.5\%$ Ordinary / $44.0\%$
+   Bootstrap-CI / $5.5\%$ fallback, and at $\mathrm{SNR} = 5$ Bootstrap-CI handles $89.0\%$ of all
    screenings with the fallback never invoked.
 - **Conditional error control on the screening routes is good once signal is present.** For
-   $\mathrm{SNR} \ge 1$ the realized FDR is $0.063 \to 0.085$ for Ordinary and $0.073 \to 0.051$ for
+   $\mathrm{SNR} \ge 1$ the realized FDR is $0.051\text{–}0.081$ for Ordinary and $0.059 \to 0.051$ for
    Bootstrap-CI, with TPR reaching $1.000$ for both at $\mathrm{SNR} = 5$. As in Demo 04,
-   $\mathrm{SNR} = 0.5$ is the weak point, where the accepted screenings realize an FDR of $0.143$ (Ordinary)
-   and $0.187$ (Bootstrap-CI).
+   $\mathrm{SNR} = 0.5$ is the weak point, where the accepted screenings realize an FDR of $0.111$ (Ordinary)
+   and $0.186$ (Bootstrap-CI).
 - **The fallback's TPR of $0.000$ at $\mathrm{SNR} = 2$ and $5$ is not a failure.** Its usage is $0.0\%$ at
    those points — nothing is routed to it, so the conditional average is over an empty set and prints as
-   zero. Where it is used it is the conservative option. At $\mathrm{SNR} = 1$ its realized FDR is $0.031$
-   against a target of $0.10$, with a TPR of $0.467$.
-- **The estimates err on the safe side.** Ordinary's estimate settles at $0.094\text{–}0.117$ against a realized
-   $0.063\text{–}0.085$ for $\mathrm{SNR} \ge 1$, and Bootstrap-CI's at $0.053\text{–}0.083$ against a realized
-   $0.051\text{–}0.073$.
+   zero. Where it is used it is the conservative option. At $\mathrm{SNR} = 1$ its realized FDR is $0.033$
+   against a target of $0.10$, with a TPR of $0.409$.
+- **The estimates mostly err on the safe side.** Ordinary's estimate settles at $0.095\text{–}0.116$ against a
+   realized $0.051\text{–}0.081$ for $\mathrm{SNR} \ge 1$, and Bootstrap-CI's at $0.052\text{–}0.084$ against a
+   realized $0.051\text{–}0.059$, below the realized value only at $\mathrm{SNR} = 1$.
 
 TPR (conditional on routing), FDR (solid = realized, dashed = the procedure's own estimate, with the
 $\lbrack 0.05, 0.15\rbrack$ routing window shaded), and per-method Usage % vs. SNR.
@@ -183,22 +183,23 @@ $\lbrack 0.05, 0.15\rbrack$ routing window shaded), and per-method Usage % vs. S
 ### Part 2 — Five Phenotypes Sharing One Design ($q = 5$, $s = 5$)
 
 - **The fallback dominates, and more signal does not change that.** The classical T-Rex selector handles
-   $83.2\%\text{–}100.0\%$ of all screenings ($100.0\%$ at $\mathrm{SNR} = 0.1$, $84.3\%$ at
-   $\mathrm{SNR} = 5$), with Ordinary at $2.2\%\text{–}3.2\%$ and Bootstrap-CI at $8.0\%\text{–}13.5\%$ for
+   $83.9\%\text{–}100.0\%$ of all screenings ($100.0\%$ at $\mathrm{SNR} = 0.1$, $84.4\%$ at
+   $\mathrm{SNR} = 5$), with Ordinary at $2.2\%\text{–}3.2\%$ and Bootstrap-CI at $8.5\%\text{–}13.9\%$ for
    $\mathrm{SNR} \ge 0.5$.
 - **The rarely-used screening routes are poorly calibrated.** For $\mathrm{SNR} \ge 0.5$ the realized FDR of
-   the accepted screening results is $0.290\text{–}0.330$ (Ordinary) and $0.308\text{–}0.327$ (Bootstrap-CI), roughly
-   twice the upper edge of the routing window, against estimates of only $0.180\text{–}0.196$ and
-   $0.148\text{–}0.159$. With just $s = 5$ active variables per phenotype a single false selection moves the
+   the accepted screening results is $0.302\text{–}0.342$ (Ordinary) and $0.308\text{–}0.320$ (Bootstrap-CI), roughly
+   twice the upper edge of the routing window, against estimates of only $0.178\text{–}0.194$ and
+   $0.149\text{–}0.159$. With just $s = 5$ active variables per phenotype a single false selection moves the
    false discovery proportion (FDP) a long way, and the estimate does not track it — even though TPR is
    $1.000$ for both rules from $\mathrm{SNR} = 1$ onward.
-- **The fallback remains reliable on the bulk of the traffic.** Its realized FDR is $0.009\text{–}0.015$ against
+- **The fallback remains reliable on the bulk of the traffic.** Its realized FDR is $0.010\text{–}0.014$ against
    a target of $0.10$, with TPR rising $0.019 \to 1.000$ across the sweep.
 - **Memory mapping changes the footprint, not the statistics.** The Part 2 Ordinary route here reads
-   Usage $0.0/3.2/2.2/2.4/2.6\%$, FDR $0.000/0.330/0.290/0.318/0.313$ and estimate
-   $0.485/0.196/0.180/0.179/0.178$, against Demo 04's $0.0/2.9/3.0/2.6/4.0\%$,
-   $0.000/0.340/0.309/0.323/0.312$ and $0.478/0.196/0.180/0.179/0.178$ — agreement within Monte Carlo
-   noise, with the estimate columns matching to three decimals. Exact equality is not expected, because the
+   Usage $0.0/2.9/2.2/2.2/3.2\%$, FDR $0.000/0.342/0.302/0.302/0.318$ and estimate
+   $0.491/0.194/0.180/0.179/0.178$, against Demo 04's $0.0/3.5/2.2/2.9/3.2\%$,
+   $0.000/0.328/0.314/0.318/0.316$ and $0.505/0.195/0.180/0.179/0.178$ — agreement within Monte Carlo
+   noise, with the estimate columns matching to three decimals from $\mathrm{SNR} = 1$ on. Exact equality is
+   not expected, because the
    selector is constructed with `seed = -1`, which the library resolves from hardware entropy, so the two
    runs use different random experiments.
 

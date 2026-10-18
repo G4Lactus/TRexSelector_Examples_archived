@@ -201,10 +201,10 @@ The layout mirrors the C++ suite one-to-one.
  [trex_spca_sim_utils.py](trex_spca_sim_utils.py) is the suite-level shared module:
  `generate_sparse_factor_model()` (numpy `default_rng`), `center_columns()`, `evaluate_spca()` (PC1 TPR/FDR
  plus the three PEV readings `PEV`/`PEVsig`/`PEVsigmix`), the parallel Monte Carlo (MC) loops `run_mc_trials_pca()` /
- `run_mc_trials_oracle_pca()` / `run_mc_trials_trex_spca()` (`ProcessPoolExecutor`, default `min(6, cores)`
- workers), and `save_and_print_spca_sweep_results()` (console + `.txt` table with per-sweep-column axis
- precision, plus a tidy pandas comma-separated values (CSV) file `method,metric,<sweep_col>,value`) with the SNR
- convenience wrapper `save_and_print_spca_mc_results()`.
+ `run_mc_trials_oracle_pca()` / `run_mc_trials_trex_spca()` (`ProcessPoolExecutor`, worker count from
+ `resolve_workers()`, default 8), and `save_and_print_spca_sweep_results()` (console + `.txt` table with
+ per-sweep-column axis precision, plus a tidy pandas comma-separated values (CSV) file
+ `method,metric,<sweep_col>,value`) with the SNR convenience wrapper `save_and_print_spca_mc_results()`.
  [generate_corr_plots.sh](generate_corr_plots.sh) renders the design-correlation heatmap of the factor DGP
  into [dgp_corr_plots/](dgp_corr_plots/) via the category-level plotter
  [../../corr_plt_utils.py](../../corr_plt_utils.py). The heatmap is embedded in the demo-01 README alongside the
@@ -234,16 +234,17 @@ Correctness probes for the individual pipeline stages — TENET vs. TENET_AUG eq
 
 ```bash
 cd Python/trex_selector_methods/ad/trex_spca/demo_trex_spca_01_mc_sim
-python demo_trex_spca_01_mc_sim.py                # default min(6, cores) workers
-python demo_trex_spca_01_mc_sim.py 8              # 8 worker cores
+python demo_trex_spca_01_mc_sim.py                # TREX_NUM_WORKERS workers (default 8)
+python demo_trex_spca_01_mc_sim.py 12             # 12 workers (0 = all usable cores)
 ```
 
 Run inside an environment that carries `trex_selector_neo` (e.g. the `trex-dev` conda environment or the
 repo `.venv`). Each demo inserts both its own directory and the parent suite directory onto `sys.path`, so
 the shared `trex_spca_sim_utils` module resolves from the nested location and is re-importable by the
 spawn-launched Monte Carlo workers — run demos **as files** (not via `python -` / piped stdin), matching the
-other Python suites. The optional first command-line interface (CLI) argument sets the number of parallel
-worker cores.
+other Python suites. The demos use `TREX_NUM_WORKERS` worker processes (default 8, and `0` uses every usable
+core, see `resolve_workers()` in [trex_spca_sim_utils.py](trex_spca_sim_utils.py)). The optional first
+command-line interface (CLI) argument overrides that count and goes through the same `resolve_workers()`.
 
 Both demos honour the same environment switches as their cpp counterparts: `TREX_SPCA_NUM_MC=<k>` overrides
 the Monte Carlo count for quick pilot runs, and `TREX_SPCA_PARTS` selects the sections/parts to run.

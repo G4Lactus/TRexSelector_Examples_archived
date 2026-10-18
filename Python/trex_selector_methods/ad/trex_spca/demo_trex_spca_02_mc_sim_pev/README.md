@@ -149,8 +149,8 @@ Figures in Portable Network Graphics (PNG) and Portable Document Format (PDF) go
 
 ```bash
 cd Python/trex_selector_methods/ad/trex_spca/demo_trex_spca_02_mc_sim_pev
-python demo_trex_spca_02_mc_sim_pev.py            # default min(6, cores) workers
-python demo_trex_spca_02_mc_sim_pev.py 8          # 8 worker cores
+python demo_trex_spca_02_mc_sim_pev.py            # full run (about 66 min on 8 workers)
+python demo_trex_spca_02_mc_sim_pev.py 12         # 12 workers (0 = all usable cores)
 ./generate_plots.sh                               # render the figures from the saved CSVs
 ```
 
@@ -160,20 +160,21 @@ reruns only the FDR/TPR heatmap sweep) — the same environment switches as the 
 
 Run the demo inside an environment that carries `trex_selector_neo` (e.g. the `trex-dev` conda environment
 or the repo `.venv`). It parallelizes trials via `concurrent.futures.ProcessPoolExecutor` (spawn), so run it
-**as a real `.py` file**, not via `python -` / piped stdin. The optional first command-line interface (CLI)
-argument sets the number of worker cores.
+**as a real `.py` file**, not via `python -` / piped stdin. It uses `TREX_NUM_WORKERS` worker processes (default 8,
+and `0` uses every usable core, see `resolve_workers()` in [`../trex_spca_sim_utils.py`](../trex_spca_sim_utils.py)).
+The optional first command-line interface (CLI) argument overrides that count and goes through the same
+`resolve_workers()`.
 
 The PC-count sweep dominates the runtime, because extracting 49 components means 49 independent T-Rex selections
 per trial, so Part 1 alone costs several times what the other parts cost together. The committed run
-(all five parts, 200 Monte Carlo (MC) trials) took $\approx 88$ min on 6 workers — substantially longer than in
-C++ (Python drives the same C++ core, but per-trial process dispatch and the per-PC cross-validation (CV) add
-overhead).
+(all five parts, 200 Monte Carlo (MC) trials) took $\approx 66$ min on 8 workers. Per core that is on par with the
+C++ run ($\approx 92$ min on 6 threads), because Python drives the same C++ core.
 
 ---
 
 ## Simulation Results
 
-All five parts, 200 MC trials per grid point, run 2026-07-27 (6 workers, $\approx 88$ min).
+All five parts, 200 MC trials per grid point, run 2026-10-17 (8 workers, $\approx 66$ min).
 
 ### Cumulative PEV under Definition 1
 
@@ -188,10 +189,10 @@ All five parts, 200 MC trials per grid point, run 2026-07-27 (6 workers, $\appro
    full weight — the $\approx 10$-point gap above the dashed curve is its accumulated Null EV. Knowing the
    cardinality does not protect against thresholding noise. Only the FDR-controlled selection, which may
    return (near-)empty supports on noise components, stays flat. The four T-Rex variants flatten out by
-   three-to-five PCs and stay there ($79.6\text{–}79.7\%$ `ActiveSet`, $85.6\text{–}85.7\%$ `Thresholded` at 49),
+   three-to-five PCs and stay there ($79.8\text{–}79.9\%$ `ActiveSet`, $85.6\text{–}85.7\%$ `Thresholded` at 49),
    declining to claim variance that is not theirs even when handed 46 components they do not need.
 - **Panel (b) rises with SNR, as in the published Fig. 3(b).** At $-10$ dB the true active columns are
-   dominated by noise that no 3-component method can capture, so everything sits low: $40.5\text{–}45.0\%$ for
+   dominated by noise that no 3-component method can capture, so everything sits low: $40.2\text{–}45.3\%$ for
    the T-Rex variants, $48.1\%$ for OraclePCA, $72.0\%$ for ordinary PCA — whose head start is exactly its
    Null EV, as the dashed Sig + Mix curve at $52.0\%$ shows. With rising SNR the `Thresholded` variants and
    OraclePCA converge toward the line ($93.0\%$ and $94.3\%$ at $+10$ dB), the `ActiveSet` variants level
@@ -199,15 +200,15 @@ All five parts, 200 MC trials per grid point, run 2026-07-27 (6 workers, $\appro
    curves merge at $98.8\%$ — at high SNR there is hardly any null variance left to harvest.
 - **Panel (c) is non-monotone, and both ends are easy for the wrong reason.** All methods start near
    $100\%$ at $p_1 = 1$ (ordinary PCA at $106.8\%$, again split by its dashed curve at $103.6\%$), sag to a
-   minimum around $p_1 = 15\text{–}25$ ($74.4\%$ `ActiveSet`, $78.4\%$ `Thresholded`, $80.0\%$ OraclePCA,
+   minimum around $p_1 = 15\text{–}25$ ($74.3\%$ `ActiveSet`, $78.4\%$ `Thresholded`, $80.0\%$ OraclePCA,
    $85.7\%$ ordinary), and recover toward $p_1 = 30$, where the true support fills the entire overlap pool
    and there are few null variables left to miss. The middle of the range is where support selection
    actually matters.
 - **Panel (d) reproduces the paper's headline reading that T-Rex is insensitive to the target above
    $\approx 5\%$.** The two ordinary-PCA references are `tFDR`-blind and sit flat ($90.8\%$ solid,
-   $88.7\%$ dashed). The T-Rex variants pay visibly only at the strictest target ($59.3\%$ `ActiveSet` /
-   $63.8\%$ `Thresholded` at $\mathrm{tFDR} = 0.01$, where the selector keeps too few variables), then climb
-   onto a gentle plateau ($75.1 \to 81.4\%$ and $80.8 \to 88.7\%$ from $\mathrm{tFDR} = 0.10$ to $0.50$).
+   $88.7\%$ dashed). The T-Rex variants pay visibly only at the strictest target ($59.3\text{–}59.4\%$
+   `ActiveSet` / $63.8\%$ `Thresholded` at $\mathrm{tFDR} = 0.01$, where the selector keeps too few variables),
+   then climb onto a gentle plateau ($75.0 \to 81.4\%$ and $80.9 \to 88.7\%$ from $\mathrm{tFDR} = 0.10$ to $0.50$).
    Loosening the target buys captured variance slowly — and pays for it in realized FDR (see the caveat
    below).
 
@@ -232,10 +233,12 @@ variance":
 
 Panel for panel and grid point for grid point, the Python numbers reproduce the cpp reference to within the
  Monte Carlo noise of independent dummy draws. Across all four sweep tables no PEV reading differs by more
- than $0.015$ and no realized FDR by more than $0.033$, and the part-5 heatmaps agree to $\leq 0.025$ per cell.
- The 49-PC Definition-1 endpoints land within half a percentage point for every method ($165.1$ vs.
- $165.2\%$ ordinary PCA, $117.8$ vs. $117.4\%$ oracle, $79.6$ vs. $79.6\text{–}80.0\%$ `ActiveSet`, $85.6\text{–}85.7$
- vs. $85.5\text{–}85.7\%$ `Thresholded`), and the total-variance panel closes on $100.0\%$ in both. Exact
+ than $0.016$ and no realized FDR by more than $0.033$. The part-5 heatmaps agree to $\leq 0.028$ per FDR cell
+ and $\leq 0.009$ per TPR cell, except in the low-TPR corner ($\mathrm{tFDR} = 0.01$ at $-10$ dB, $0.58$ vs.
+ $0.62$ plug-in and $0.42$ vs. $0.48$ oracle), where the Monte Carlo spread is largest. The 49-PC
+ Definition-1 endpoints land within half a percentage point for every method ($165.1$ vs. $165.2\%$ ordinary
+ PCA, $117.8$ vs. $117.3\%$ oracle, $79.8\text{–}79.9$ vs. $79.7\text{–}79.9\%$ `ActiveSet`, $85.6\text{–}85.7$ vs.
+ $85.5\text{–}85.6\%$ `Thresholded`), and the total-variance panel closes on $100.0\%$ in both. Exact
  per-trial agreement is impossible by construction (numpy PCG64 vs. C++ `std::mt19937`). See the
  [cpp demo-02 README](../../../../../cpp/trex_selector_methods/ad/trex_spca/demo_trex_spca_02_mc_sim_pev/README.md)
  for the reference tables.
@@ -269,27 +272,27 @@ Part 5 maps the realized FDR and TPR of PC1's support over the **full** (target 
 What the grid shows:
 
 - **Plug-in response: control holds up to the targets this suite actually uses, then breaks everywhere.**
-   At $\mathrm{tFDR} = 0.05$ the realized FDR is $0.043\text{–}0.100$, and at $0.10$ it hovers at or mildly above
-   target ($0.078\text{–}0.156$, the excursions concentrated at the high-SNR end). From
-   $\mathrm{tFDR} = 0.15$ the exceedance is systematic at every SNR — $+0.03$ to $+0.09$ at $0.15$, growing
-   to $+0.12$ to $+0.18$ at $0.50$ (realized $0.615\text{–}0.684$). The pattern is nearly SNR-independent, so
+   At $\mathrm{tFDR} = 0.05$ the realized FDR is $0.042\text{–}0.104$, and at $0.10$ it hovers at or mildly above
+   target ($0.084\text{–}0.154$, the excursions concentrated at the high-SNR end). From
+   $\mathrm{tFDR} = 0.15$ the exceedance is systematic at every SNR — $+0.02$ to $+0.09$ at $0.15$, growing
+   to $+0.11$ to $+0.19$ at $0.50$ (realized $0.615\text{–}0.687$). The pattern is nearly SNR-independent, so
    this is not a noise effect. The standard error (SE) is $\approx 0.02\text{–}0.03$ per cell.
 - **Oracle response: the overshoot largely vanishes — the mechanism is confirmed.** With the true factor
    as response, the realized FDR stays **at or below target through $\mathrm{tFDR} \approx 0.30$ at every
-   SNR** (e.g. $0.070\text{–}0.092$ against $0.15$, $0.146\text{–}0.177$ against $0.20$), and even at the loosest
-   targets the residual exceedance is only $+0.03\text{–}0.04$ ($0.525\text{–}0.544$ against $0.50$). The bulk of the
+   SNR** (e.g. $0.072\text{–}0.094$ against $0.15$, $0.144\text{–}0.173$ against $0.20$), and even at the loosest
+   targets the residual exceedance is only $+0.02\text{–}0.04$ ($0.524\text{–}0.543$ against $0.50$). The bulk of the
    plug-in overshoot is therefore a property of the **evaluation mismatch** — a dense-truth regression
    scored against a sparse truth — not of the selector. A small selector-level residual remains at very
    loose targets.
-- **TPR is a non-issue except in the strict-target / low-SNR corner.** It is $\geq 0.96$ everywhere outside
+- **TPR is a non-issue except in the strict-target / low-SNR corner.** It is $\geq 0.958$ everywhere outside
    the $\mathrm{tFDR} = 0.01$ column, and inside it dips only at low SNR, where the selector keeps too few
-   variables ($0.94$ oracle at $-7$ dB, and $0.57$ plug-in / $0.42$ oracle at $-10$ dB) — the same corner that
+   variables ($0.948$ oracle at $-7$ dB, and $0.578$ plug-in / $0.421$ oracle at $-10$ dB) — the same corner that
    produces the PEV dip in panel (d).
 
 **Consequences**: At this suite's default $\mathrm{tFDR} = 0.10$ the pipeline is safe across the whole
    SNR range. Loosening the target is a poor trade under factor-model scoring, because from $0.10$ to $0.50$ it
    buys about six PEV points (panel (d), `ActiveSet`) while the realized factor-model FDR climbs roughly
-   linearly to $\approx 0.62\text{–}0.68$.
+   linearly to $\approx 0.61\text{–}0.69$.
 The general lesson is the conditional nature of the guarantee.
  **T-Rex SPCA controls the FDR of the regression it is handed, and that transfers to the factor model
  only insofar as the plug-in PC is a faithful proxy for the factor** (see also demo 01's union-FDR

@@ -147,8 +147,9 @@ is the realized FDR and the dashed line the procedure's own estimated FDR.
    the bootstrap TPR spans $0.341$ (TLARS), $0.635$ (TAFS-0.3), and $0.912$ (TOMP) — more than half the
    achievable power — against a spread of roughly $0.12$ for the same three backends under the Ordinary
    rule.
-- **TLARS is by far the most conservative backend.** Its bootstrap FDR stays at or below $0.055$ from
-   $\mathrm{SNR} = 0.5$ onwards, but its TPR reaches only $0.855$ at $\mathrm{SNR} = 5$. TOMP under
+- **TLARS and TAFS-0.3 are the conservative backends.** Under Bootstrap-CI both keep FDR at or below $0.055$ from
+   $\mathrm{SNR} = 0.5$ onwards. TLARS gives up the most power around $\mathrm{SNR} = 1$ (TPR $0.34$ vs. $0.63$ for
+   TAFS-0.3) but recovers at high SNR, where its TPR reaches $0.855$ at $\mathrm{SNR} = 5$. TOMP under
    Bootstrap-CI, in contrast, behaves almost like Ordinary screening. At $\mathrm{SNR} = 1$ its TPR is
    $0.912$ vs. $0.950$ ordinary, at FDR $0.063$ and $0.060$.
 - **Bootstrap-CI stops short of full power.** TAFS-0.3 levels off at TPR $0.68\text{–}0.70$ from

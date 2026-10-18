@@ -9,7 +9,7 @@ that running the classical T-Rex selector directly is impractical (genome- or
 biobank-scale designs). It first thresholds a dummy-based voting statistic
 `Phi_j` to screen down to a small candidate set, using either the **Ordinary**
 majority-vote rule (`Phi_j > 0.5`) or a **Bootstrap-CI** rule, plus
-**dependency-aware (DA)** variants that recover power under correlated designs.
+**dependency-aware (DA)** variants meant for correlated designs.
 Unlike the classical T-Rex selector, screening has **no target parameter for the
 false discovery rate (FDR)**. It reports its own *estimated FDR* alongside the
 selection, and whether that self-estimate can be trusted depends sharply on the
@@ -154,8 +154,12 @@ As elsewhere in this project,
    thresholds at $\Phi_j > 0.5$, while the **Bootstrap-CI** rule builds a bootstrap confidence band
    (`R_boot = 1000` replicates, grid granularity `ci_grid_step = 0.001`) around the estimated FDR curve and
    picks its threshold from that band.
-- **Dependency-aware (DA) screening** (`rho_thr_DA`, `n_blocks`) — pre-groups strongly correlated variables
-   before voting, so redundant correlated variables do not split the evidence.
+- **Dependency-aware (DA) screening** (`rho_thr_DA`, `n_blocks`) — deflates each voting proportion by its
+   distance to the nearest one among its correlated neighbours (the AR(1) window, all variables, or the
+   variables of the same block), so redundant correlated variables cannot pass the vote together. Screen-TRex
+   runs a single step, so the proportions are coarse, and under (block-)equicorrelation many of them tie. A
+   tied proportion is halved onto the threshold and rejected, which makes DA-EQUI select nothing and
+   DA-BLOCK-EQUI select very little in Demo 03, exactly as the reference R package does.
 - **Biobank / "Algorithm 1"** (`BiobankScreenTRexControl`, Demos 04–05) — screens **multiple phenotypes
    against one shared design matrix**. Per phenotype it tries Screen-TRex Ordinary. If the estimated FDR
    falls outside `[lower_bound_FDR, upper_bound_FDR]` it tries Bootstrap-CI, and failing that it falls back to
@@ -334,12 +338,12 @@ To regenerate the whole suite as an unattended job, use
 `_overnight_logs/`, stray-worker reaping) and then renders the DGP correlation
 heatmaps. `SKIP_HEAVY=1` skips the two biobank demos.
 
-Approximate wall-clock times for the committed results, at the default six
+Approximate wall-clock times for the committed results, at the default eight
 workers:
 
 | Demo | 01 | 02 | 03 | 04 | 05 | 06 | total |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Runtime | ~2 min | ~2.5 min | ~26 min | ~33 min | ~42 min | ~12 min | ~2 h |
+| Runtime | ~1.7 min | ~2 min | ~20 min | ~20 min | ~23 min | ~7 min | ~1.2 h |
 
 Each demo writes into its own `simulation_results/` subfolder:
 

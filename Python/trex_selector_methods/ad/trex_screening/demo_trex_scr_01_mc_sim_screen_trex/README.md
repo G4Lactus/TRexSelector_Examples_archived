@@ -119,13 +119,13 @@ files, produced by `./generate_plots.sh`.
 ## Running the Demo
 
 ```bash
-python demo_trex_scr_01_mc_sim_screen_trex.py    # full run (~2 min with 6 workers)
+python demo_trex_scr_01_mc_sim_screen_trex.py    # full run (~1.7 min with 8 workers)
 ./generate_plots.sh                              # render the figure below from the saved CSV
 ```
 
-Monte Carlo trials are parallelized with `ProcessPoolExecutor`. The worker count defaults to
-`min(6, usable CPUs)` and is overridden with `SCR_NUM_WORKERS` (or the suite-wide
-`TREX_NUM_WORKERS`), e.g. `SCR_NUM_WORKERS=12`. Each worker pins its inner Open Multi-Processing (OpenMP)
+Monte Carlo trials are parallelized with `ProcessPoolExecutor` over `TREX_NUM_WORKERS` worker processes
+(default 8, capped at the usable cores, and `0` uses all of them). The suite's older `SCR_NUM_WORKERS` still
+works and takes precedence, e.g. `SCR_NUM_WORKERS=12`. Each worker pins its inner Open Multi-Processing (OpenMP)
 pool to one thread, so the demo never exceeds the worker count in total cores. For a quick smoke test,
 temporarily reduce `_NUM_MC` and `SNR_GRID` at the top of the script.
 
@@ -140,19 +140,20 @@ up to Monte-Carlo noise — the two ports draw from independent RNG streams (Num
 there).
 
 - **Screening is not FDR-controlling at low SNR.** At $\mathrm{SNR} \le 0.2$ the realized FDR runs between
-   $0.17$ and $0.49$ for both rules. With almost no recoverable signal (TPR $\le 0.12$), nearly every
+   $0.17$ and $0.45$ for both rules. With almost no recoverable signal (TPR $\le 0.12$), nearly every
    selection is a false one — a property of thresholding a voting statistic without a target level, not a
    defect of the implementation.
 - **Both rules become reliable once signal is present.** From $\mathrm{SNR} \ge 0.5$ the Ordinary rule's
    FDR drops to $0.12$ and settles around $0.05\text{–}0.06$, while its TPR climbs $0.43 \to 1.00$. All ten
    active variables are recovered at $\mathrm{SNR} = 5$.
-- **Bootstrap-CI is the conservative rule: lower FDR, clearly less power.** Its FDR stays at or below
-   $0.07$ for $\mathrm{SNR} \ge 0.5$ (roughly half the Ordinary rule's), paid for with TPR $0.91$ vs.
-   $1.00$ at $\mathrm{SNR} = 5$, and a much wider gap mid-sweep ($0.41$ vs. $0.84$ at $\mathrm{SNR} = 1$).
+- **Bootstrap-CI is the conservative rule, with lower FDR and clearly less power.** Its FDR stays below
+   $0.06$ for $\mathrm{SNR} \ge 0.5$ (roughly half the Ordinary rule's up to $\mathrm{SNR} = 1$), paid for with
+   TPR $0.91$ vs. $1.00$ at $\mathrm{SNR} = 5$, and a much wider gap mid-sweep ($0.41$ vs. $0.84$ at
+   $\mathrm{SNR} = 1$).
    Choose it when false discoveries are costlier than missed ones. It is also the slower rule, at
    `R_boot = 1000` bootstrap replicates per trial.
 - **The internal FDR estimate is conservative here.** For $\mathrm{SNR} \ge 0.5$ it sits *above* the
-   realized FDR for both rules (e.g. $0.114$ vs. $0.061$ for Ordinary at $\mathrm{SNR} = 1$) — it
+   realized FDR for both rules (e.g. $0.115$ vs. $0.060$ for Ordinary at $\mathrm{SNR} = 1$) — it
    over-states the error rate rather than hiding it. At the lowest SNR points it becomes unreliable in both
    directions. Demo 03 shows this same estimate failing far more dramatically under correlation.
 
