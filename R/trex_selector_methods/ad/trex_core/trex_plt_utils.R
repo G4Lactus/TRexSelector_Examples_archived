@@ -42,8 +42,9 @@
 #     Rscript trex_plt_utils.R grid --labels TLARS TOMP TAFS \
 #         --csvs a_tlars.csv a_tomp.csv a_tafs.csv \
 #         --legend-title "L-strategy" --stem my_grid --outdir <plots>
-#     # demo-08 scalability dashboard from the wide CSV
-#     Rscript trex_plt_utils.R scalability <wide_csv> --stem my_dash --outdir <plots>
+#     # demo-08 scalability dashboard from one or more wide CSVs (concatenated)
+#     Rscript trex_plt_utils.R scalability <wide_csv> [<wide_csv> ...] \
+#         --stem my_dash --outdir <plots>
 #
 # Flags: --title T, --legend-title T, --tfdr F, --xscale {linear,sqrt,log},
 #        --outdir DIR, --stem S, --formats png,pdf, --groups N, --no-grouped,
@@ -485,9 +486,11 @@ plot_comparison_grid <- function(frames, title,
 # ------------------------------------------------------------------------------
 # Demo 08 — scalability dashboard (wider CSV schema than the rest)
 # ------------------------------------------------------------------------------
-# Demo 08's CSV is the wide n x p benchmark schema
+# Demo 08's CSVs (base block plus large-p block, one CSV each) use the wide
+# n x p benchmark schema
 #     n,p,is_barrier,solver,num_mc,snr,metric,value
-# read via read_scalability() and rendered by plot_scalability_dashboard().
+# read (and concatenated) via read_scalability() and rendered by
+# plot_scalability_dashboard().
 
 # Base solvers, in a fixed display order with stable colours / markers, as the
 # demo writes them into the 'solver' column.
@@ -511,7 +514,8 @@ M_SELMIN <- "SelMin_s"
 M_SELMAX <- "SelMax_s"
 M_PEAKRSS <- "PeakRSS_MiB"
 M_XY <- "X+y_MiB"
-M_DESIGN <- "DesignGiB"
+M_VOL <- "VolGiB"             # per T-iteration volume X + K*L*X at mean L (GiB)
+M_VOL_LEGACY <- "DesignGiB"   # older CSVs: logical [X|D] at the dummy cap (GiB)
 M_FDR <- "FDR"
 
 #' Physical RAM in GiB (for the out-of-core reference line); NA on failure.
@@ -526,13 +530,19 @@ M_FDR <- "FDR"
   }, error = function(e) NA_real_)
 }
 
-#' Load the wide demo-08 CSV, normalising column and metric whitespace.
-read_scalability <- function(path) {
-  if (!file.exists(path))
-    stop("Input file not found:\n  ", path,
-         "\nPass the results CSV path as the first argument.", call. = FALSE)
-  df <- utils::read.csv(path, strip.white = TRUE, stringsAsFactors = FALSE)
-  names(df) <- tolower(trimws(names(df)))
+#' Load one or more wide demo-08 CSVs (concatenated), normalising column and
+#' metric whitespace.
+read_scalability <- function(paths) {
+  frames <- lapply(paths, function(path) {
+    if (!file.exists(path))
+      stop("Input file not found:\n  ", path,
+           "\nPass the results CSV path(s) as the first argument(s).",
+           call. = FALSE)
+    f <- utils::read.csv(path, strip.white = TRUE, stringsAsFactors = FALSE)
+    names(f) <- tolower(trimws(names(f)))
+    f
+  })
+  df <- do.call(rbind, frames)
 
   required <- c("n", "p", "solver", "metric", "value")
   missing <- setdiff(required, names(df))
@@ -579,12 +589,13 @@ scal_pivot <- function(df) {
 #' demo-08 scaling dashboard for the n x p memory-mapped benchmark.
 #' 2x2: runtime vs p (colour = n, linetype = solver, min-max band), memory vs p
 #' (peak RSS per n + X/y backing reference + RAM line), the out-of-core plot
-#' (resident peak vs total design volume with the RAM line; barrier points
-#' ringed), and FDR control at scale. Panels degrade gracefully (NA-filter)
-#' when a metric was not recorded on this platform.
+#' (resident peak vs per T-iteration volume with the RAM line; out-of-core
+#' points ringed), and FDR control at scale. Panels degrade gracefully
+#' (NA-filter) when a metric was not recorded on this platform.
 plot_scalability_dashboard <- function(df, title, tfdr = DEFAULT_TFDR,
                                        xscale = SCAL_XSCALE) {
   w <- scal_pivot(df)
+  m_vol <- if (M_VOL %in% names(w)) M_VOL else M_VOL_LEGACY
   solvers <- SCAL_SOLVERS[SCAL_SOLVERS %in% unique(w$solver)]
   n_values <- sort(unique(w$n))
   p_values <- sort(unique(w$p))
@@ -663,19 +674,19 @@ plot_scalability_dashboard <- function(df, title, tfdr = DEFAULT_TFDR,
     dash_theme + .legend_inside(0.03, 0.97) +
     guides(color = guide_legend(order = 1), linetype = guide_legend(order = 2))
 
-  # --- (1,0) Out-of-core money plot: resident peak vs design volume ---------
-  oc_df <- w[!is.na(w[[M_DESIGN]]) & !is.na(w[[M_PEAKRSS]]), ]
+  # --- (1,0) Out-of-core money plot: resident peak vs per-T-iteration volume
+  oc_df <- w[!is.na(w[[m_vol]]) & !is.na(w[[M_PEAKRSS]]), ]
   barrier <- oc_df[oc_df$is_barrier == 1, ]
   slv_shapes <- SCAL_SOLVER_SHAPES[solvers]
   names(slv_shapes) <- scal_solver_label(solvers)
-  p_oc <- ggplot(oc_df, aes(x = .data[[M_DESIGN]],
+  p_oc <- ggplot(oc_df, aes(x = .data[[m_vol]],
                             y = .data[[M_PEAKRSS]] / 1024.0,
                             color = n_f, shape = solver_lbl)) +
     geom_point(size = 2.2, stroke = 0.8, fill = NA)
   if (nrow(barrier) > 0)
     p_oc <- p_oc + geom_point(
       data = barrier,
-      aes(x = .data[[M_DESIGN]], y = .data[[M_PEAKRSS]] / 1024.0),
+      aes(x = .data[[m_vol]], y = .data[[M_PEAKRSS]] / 1024.0),
       shape = 21, size = 5.5, color = "#DC143C", fill = NA, stroke = 1.0,
       inherit.aes = FALSE, show.legend = FALSE
     )
@@ -697,10 +708,11 @@ plot_scalability_dashboard <- function(df, title, tfdr = DEFAULT_TFDR,
              scientific = FALSE,
              drop0trailing = TRUE)
     }) +
-    labs(title = "Out-of-core: design crosses RAM, resident stays bounded",
+    labs(title = "Out-of-core: volume crosses RAM, resident stays bounded",
          subtitle = if (nrow(barrier) > 0)
-           "ringed = out-of-core barrier point ([X|D] > RAM)" else NULL,
-         x = "Total design volume [X|D] [GiB]  (log)",
+           "ringed = out-of-core point (volume > RAM)" else NULL,
+         x = if (m_vol == M_VOL) "Volume per T-iteration X + K L X [GiB]  (log)"
+         else "Total design volume [X|D] [GiB]  (log)",
          y = "Process peak RSS [GiB]") +
     dash_theme + .legend_inside(0.03, 0.97) +
     theme(plot.subtitle = element_text(size = 8, hjust = 0.5,
@@ -993,12 +1005,12 @@ main_scalability <- function(argv) {
            })  # unknown flags meant for other modes are ignored
     i <- i + 1L
   }
-  if (length(args$csv) != 1L || is.null(args$stem) || is.null(args$outdir))
-    stop("Usage: trex_plt_utils.R scalability <wide_csv> --stem S ",
-         "--outdir DIR [--title T] [--tfdr F] [--formats png,pdf] ",
+  if (length(args$csv) == 0L || is.null(args$stem) || is.null(args$outdir))
+    stop("Usage: trex_plt_utils.R scalability <wide_csv> [<wide_csv> ...] ",
+         "--stem S --outdir DIR [--title T] [--tfdr F] [--formats png,pdf] ",
          "[--xscale linear|sqrt|log]", call. = FALSE)
 
-  df <- read_scalability(args$csv[[1L]])
+  df <- read_scalability(args$csv)
   fig <- plot_scalability_dashboard(df, args$title, tfdr = args$tfdr,
                                     xscale = args$xscale)
   save_figure(fig, args$outdir, args$stem, args$formats,

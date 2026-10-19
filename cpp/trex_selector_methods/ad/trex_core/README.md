@@ -173,7 +173,7 @@ each demo self-contained and easier to inspect independently.
 | **05** | MC: Dummy Distributions | Compares dummy distribution shapes across 3 base solvers (TLARS/TOMP/TAFS, STANDARD L-loop fixed) | Moderate dimension, random support | $n = 300$, $p = 1{,}000$, $s = 10$, SNR $\in \lbrace0.1, 0.2, 0.5, 0.6, 1, 2, 5\rbrace$, tFDR = 0.1, MC = 200, 12 distribution rows (Normal … UnifSphere_d5) × 3 solvers (one file pair each) |
 | **06** | Memory-Mapped Single Run | Demonstrates memory-mapped (mmap) workflows | Larger data and reduced RAM usage | Two scenarios ($n=5{,}000,p=1{,}000$ and $n=1{,}000,p=5{,}000$): in-memory X + D mmap, and full X+D mmap pipeline |
 | **07** | MC: Memory-Mapped | Studies FDR/TPR under memory-mapped execution (TLARS) | Moderate dimension, mmap pipeline | $n = 300$, $p = 1{,}000$, $s = 10$, SNR $\in \lbrace0.1,0.5,1,2,5\rbrace$, MC = 200 (Demo C and Demo D), mmap storage on disk |
-| **08** | MC: Scalability | Measures runtime and memory as $n$ and $p$ grow, up to designs larger than RAM (TLARS/TOMP/TAFS) | Fully memory-mapped pipeline, out-of-core | $n \in \lbrace1{,}000, \ldots, 5{,}000\rbrace$, $p \in \lbrace1{,}000, \ldots, 200{,}000\rbrace$, $s = 10$, SNR = 1, tFDR = 0.1, MC = 10 sequential trials per grid point |
+| **08** | MC: Scalability | Measures runtime and memory as $n$ and $p$ grow, up to designs larger than RAM (TLARS/TOMP/TAFS) | Fully memory-mapped pipeline, out-of-core | Base block $n \in \lbrace300, \ldots, 5{,}000\rbrace$, $p \in \lbrace1{,}000, \ldots, 200{,}000\rbrace$ (dummy cap 10) and large-p block $n \in \lbrace300, 500\rbrace$, $p \in \lbrace1{,}000{,}000, 5{,}000{,}000\rbrace$ (dummy cap 5), $s = 10$, SNR = 1, tFDR = 0.1, MC = 10 sequential trials per grid point |
 
 ---
 

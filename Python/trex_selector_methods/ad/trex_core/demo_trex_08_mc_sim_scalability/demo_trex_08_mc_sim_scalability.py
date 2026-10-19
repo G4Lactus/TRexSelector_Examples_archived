@@ -9,40 +9,51 @@
 #  cpp/trex_selector_methods/ad/trex_core/demo_trex_08_mc_sim_scalability.cpp.
 #
 # Two aims:
-#   (a) high-dimensionality  — sweep p up to 200,000;
-#   (b) volumes beyond RAM   — the largest p columns push the design [X|D] past
-#                              physical RAM, feasible only because the pipeline
-#                              is fully out-of-core (memory-mapped).
+#   (a) high-dimensionality  — sweep p up to 5,000,000;
+#   (b) volumes beyond RAM   — the data one T-iteration touches (X plus the K
+#                              memory-mapped dummy files) grows past physical
+#                              RAM, feasible only because the pipeline is fully
+#                              out-of-core (memory-mapped).
 #
-# Design of the study:
-#   * 2-D grid  n in {1000,1500,2000,5000} x p in {1k,5k,10k,20k,50k,100k,150k,200k}
-#   * the top-right corner is out-of-core: at n=5000, p=200k the logical
-#     [X|D] = 5000*11*200k*8 ~ 82 GiB > 64 GiB RAM (the real on-disk dummy
-#     footprint is far larger still), yet resident RSS stays a few GB.
+# Design of the study, two blocks with separate outputs and trial caches:
+#   * base block     n in {300,500,1000,1500,2000,5000}
+#                    x p in {1k,5k,10k,20k,50k,100k,150k,200k},
+#                    max_dummy_multiplier = 10
+#   * large-p block  n in {300,500} x p in {1,000,000; 5,000,000},
+#                    max_dummy_multiplier = 5 (bounds the worst-case dummy disk
+#                    at n=500, p=5e6 to 2 TB)
+#   * per T-iteration volume X + K*L*X: 168 GB at n=5000, p=200k and 420 GB
+#     at n=500, p=5e6 (L = 1), yet resident RSS stays bounded by RAM.
 #   * SNR = 1 fixed (SNR is not a scaling axis; sweeping it only burns time),
 #     demo-03 DGP (variable support s=10 redrawn per trial, unit coefficients,
 #     Normal predictors/noise).
 #   * num_MC = 10 SEQUENTIAL trials per (n, p, solver). Trials are NOT run in
 #     parallel: this is a timing/memory benchmark, and concurrent trials would
 #     (i) corrupt per-trial wall-clock, (ii) confound RSS, and (iii) multiply
-#     the on-disk dummy backing (one trial already peaks at ~150 GB of D because
-#     the K random experiments run concurrently via the solver's inner OpenMP).
-#     The parallelism that belongs here is that inner OpenMP, which is on.
+#     the on-disk dummy backing. The K random experiments inside select() also
+#     run one after another; OpenMP parallelizes the column loops inside each.
 #
 # Fully memory-mapped pipeline in every point: X is generated column-chunk by
 # column-chunk into an mmap backing file (never materialized in RAM), and
 # use_memory_mapping=True memory-maps the dummy matrices D and serializes solver
-# warm-start state between T-loop iterations. Resident RSS therefore stays a few
-# GB while the design volume runs to tens of GB — the out-of-core story.
+# warm-start state between T-loop iterations. Resident RSS therefore stays
+# bounded while the volume runs to hundreds of GB — the out-of-core story.
+#
+# Disk pre-flight: a point whose worst-case disk need (X, K dummy files at the
+# dummy cap, K checkpoints) does not fit the free temp-dir space is skipped
+# with a message. The library does not check free space, and a write into a
+# memory-mapped file on a full disk raises SIGBUS.
 #
 # Per grid point we record: timing (DGP, select() median/min/max, per-T-iter),
 # memory (post-select RSS, physical footprint, process peak RSS, X+y bytes,
-# theoretical design volume), and FDR / TPR / Avg L / Avg T.
+# per T-iteration data volume at the realized L), and FDR / TPR / Avg L / Avg T.
 #
 # Self-cleanup: the process sweeps its own memory-mapped orphans
-# (demo08_* backing files and trex_memmap_* dummy dirs in the temp dir) at
-# startup and on exit / SIGINT / SIGTERM, so a cancelled run does not strand
-# tens of GB. (SIGKILL cannot be trapped; the next startup sweep reclaims it.)
+# (demo08_scalability_* backing files, trex_memmap_* dummy dirs and
+# trex_warmstart_* checkpoint dirs in the temp dir) at startup and on exit /
+# SIGINT / SIGTERM, so a cancelled run does not strand hundreds of GB.
+# (SIGKILL and SIGBUS cannot be handled from Python; the next startup sweep
+# reclaims them.)
 #
 # Expandable by design. Every trial is appended to a raw per-trial cache
 # (<stem>_trials.csv, one row per (n, p, solver, mc) keyed by its seed). A run
@@ -56,11 +67,13 @@
 # so reuse and reproducibility survive reordering or extending the grid.
 #
 # Results go to simulation_results/data/ as an aligned table (.txt) and a tidy
-# summary CSV, both re-derived from the cache and re-saved after each (n, p) point.
+# summary CSV per block, both re-derived from the cache and re-saved after each
+# (n, p) point.
 #
 # Run:
-#   python demo_trex_08_mc_sim_scalability.py           # full benchmark, num_MC=10
-#   python demo_trex_08_mc_sim_scalability.py 2         # full benchmark, num_MC=2
+#   python demo_trex_08_mc_sim_scalability.py           # both blocks, num_MC=10
+#   python demo_trex_08_mc_sim_scalability.py base      # base block only
+#   python demo_trex_08_mc_sim_scalability.py large 2   # large-p block, num_MC=2
 #   python demo_trex_08_mc_sim_scalability.py smoke     # tiny end-to-end check
 #   python demo_trex_08_mc_sim_scalability.py smoke 3   # smoke grid, num_MC=3
 #
@@ -107,41 +120,49 @@ from support_generators import make_support_random  # noqa: E402
 
 _OUT_DIR = os.path.join(_THIS_DIR, "simulation_results", "data")
 
-_S_TRUE     = 10       # cardinality of the true support (redrawn per trial)
-_TFDR       = 0.1
-_SNR        = 1.0      # fixed; SNR is not a scaling axis
-_CHUNK_COLS = 1000     # column-chunk size for the out-of-core X generation
-_DUMMY_MULT = 10       # max_dummy_multiplier; drives the D volume (10 x p)
-_NUM_THREADS = resolve_workers()  # inner-OpenMP threads for select(), TREX_NUM_WORKERS
-                       # (default 8) as in the C++ demo. Left unset, the library defaults
-                       # to all logical cores, which multiplies the concurrent
-                       # dummy-matrix D footprint near the RAM limit and slows the
-                       # large-p points down — so we pin it for a fair, stable run.
+_S_TRUE      = 10      # cardinality of the true support (redrawn per trial)
+_TFDR        = 0.1
+_SNR         = 1.0     # fixed; SNR is not a scaling axis
+_CHUNK_COLS  = 1000    # column-chunk size for the out-of-core X generation
+_NUM_RND_EXP = 20      # K random experiments
+_DUMMY_MULT  = 10      # base block max_dummy_multiplier
+_LARGE_P_DUMMY_MULT = 5      # large-p block cap (bounds the dummy disk)
+_DISK_RESERVE_GIB   = 50.0   # free disk left untouched by the pre-flight
+_NUM_THREADS = resolve_workers()  # OpenMP threads for select(), TREX_NUM_WORKERS
+                       # (default 8) as in the C++ demo. Left unset, the library
+                       # defaults to all logical cores, which competes with the
+                       # page cache the out-of-core points live on — so it is
+                       # pinned for a fair, stable run.
 
-# 2-D scaling grid. The largest p columns (150k, 200k at n=5000) push the design
-# [X|D] past physical RAM — the out-of-core regime that only the memory-mapped
-# pipeline can reach.
-_N_VALUES   = [1_000, 1_500, 2_000, 5_000]
+# Base block: full n x p cross. Points whose volume X + K*L*X passes physical
+# RAM are the out-of-core regime that only the memory-mapped pipeline reaches.
+_N_VALUES   = [300, 500, 1_000, 1_500, 2_000, 5_000]
 _P_VALUES   = [1_000, 5_000, 10_000, 20_000, 50_000, 100_000, 150_000, 200_000]
+# Large-p block: few observations, millions of predictors.
+_LARGE_P_N_VALUES = [300, 500]
+_LARGE_P_P_VALUES = [1_000_000, 5_000_000]
 _NUM_MC     = 10
 
-# Tiny end-to-end smoke grid (pipeline verification only).
-_SMOKE_GRID = [(150, 500), (200, 1_000)]
+# Tiny end-to-end smoke grid (pipeline verification only); the second point
+# exercises the large-p dummy cap.
+_SMOKE_GRID = [(150, 500, _DUMMY_MULT), (200, 1_000, _LARGE_P_DUMMY_MULT)]
 _SMOKE_MC   = 2
 
 
 def _benchmark_grid(num_MC=_NUM_MC):
-    """(n, p, num_MC, is_out_of_core) points over the full n x p grid.
+    """(n, p, num_MC, dummy_mult) points of the base block (full n x p cross)."""
+    return [(n, p, num_MC, _DUMMY_MULT) for n in _N_VALUES for p in _P_VALUES]
 
-    is_out_of_core flags points whose logical design [X|D] exceeds this
-    machine's physical RAM (feasible only out-of-core).
-    """
-    return [(n, p, num_MC, _design_gib(n, p) > _RAM_GIB)
-            for n in _N_VALUES for p in _P_VALUES]
+
+def _large_p_grid(num_MC=_NUM_MC):
+    """(n, p, num_MC, dummy_mult) points of the large-p block, ordered by
+    volume (p-outer) so the cheapest points finish first."""
+    return [(n, p, num_MC, _LARGE_P_DUMMY_MULT)
+            for p in _LARGE_P_P_VALUES for n in _LARGE_P_N_VALUES]
 
 
 def _smoke_grid(num_MC=_SMOKE_MC):
-    return [(n, p, num_MC, False) for (n, p) in _SMOKE_GRID]
+    return [(n, p, num_MC, dm) for (n, p, dm) in _SMOKE_GRID]
 
 
 # Base solvers to compare (rho_afs only used by TAFS, which requires rho in
@@ -172,7 +193,7 @@ def _physical_ram_gib():
 _RAM_GIB = _physical_ram_gib()
 
 
-def _make_scalability_ctrl_dict(solver_desc):
+def _make_scalability_ctrl_dict(solver_desc, dummy_mult):
     """T-Rex control (base config of demos 02/03/07) for one grid point.
 
     EVERY control option is set explicitly and identically to the C++ demo's
@@ -185,26 +206,49 @@ def _make_scalability_ctrl_dict(solver_desc):
         solver_name              = solver_desc["solver_name"],
         lambda2                  = solver_desc["lambda2"],
         rho_afs                  = solver_desc["rho_afs"],
-        K                        = 20,
-        max_dummy_multiplier     = _DUMMY_MULT,
+        K                        = _NUM_RND_EXP,
+        max_dummy_multiplier     = dummy_mult,
         use_max_T_stop           = True,
         opt_threshold            = 0.75,
-        dummy_distribution       = "Normal",
+        dummy_distribution       = {"type": "Normal"},
         lloop_strategy           = "STANDARD",
         tloop_stagnation_stop    = True,
         tloop_max_stagnant_steps = 5,
         # Sequential random experiments (mirrors C++ + R use_openmp=FALSE): one
-        # experiment working set in RAM at a time (Eigen uses the inner threads),
-        # not K concurrent ones — essential for the out-of-core corner, and the
-        # setting the other trex demos use. Python's default here is True.
+        # experiment working set in RAM at a time (OpenMP threads parallelize
+        # the column loops inside it), not K concurrent ones — essential
+        # out-of-core, and the setting the other trex demos use. Python's
+        # default here is True.
         parallel_rnd_experiments = False,
         use_memory_mapping       = True,          # X mmap + D mmap + solver serialization
     )
 
 
-def _design_gib(n, p):
-    """Theoretical design volume [X|D] in GiB (X plus 10x-p dummies, float64)."""
-    return n * (1 + _DUMMY_MULT) * p * 8.0 / (1024.0 ** 3)
+_BYTES_PER_GIB = 1024.0 ** 3
+
+
+def _volume_gib(n, p, L):
+    """Data volume one T-iteration touches in GiB: X plus the K memory-mapped
+    dummy files of L * p columns each (float64)."""
+    return n * p * 8.0 * (1.0 + _NUM_RND_EXP * L) / _BYTES_PER_GIB
+
+
+def _worst_case_disk_gib(n, p, dummy_mult):
+    """Worst-case disk need of one trial in GiB: X, the K dummy files at
+    L = dummy_mult, and K solver checkpoints (at most 32 bytes per column of
+    [X|D])."""
+    x_bytes = n * p * 8.0
+    dummies = _NUM_RND_EXP * n * p * dummy_mult * 8.0
+    checkpoints = _NUM_RND_EXP * 32.0 * p * (1 + dummy_mult)
+    return (x_bytes + dummies + checkpoints) / _BYTES_PER_GIB
+
+
+def _free_temp_disk_gib():
+    """Free space of the temp dir in GiB (nan if unavailable)."""
+    try:
+        return shutil.disk_usage(tempfile.gettempdir()).free / _BYTES_PER_GIB
+    except OSError:
+        return float("nan")
 
 
 # ==============================================================================
@@ -229,8 +273,13 @@ _RAW_FIELDS = ["n", "p", "solver", "mc", "trial_seed", "dgp_s", "select_s",
                "fdp", "tpp", "L", "T"]
 
 
-def _raw_cache_path(file_stem):
-    return os.path.join(_OUT_DIR, f"{file_stem}_trials.csv")
+def _raw_cache_path(file_stem, persist_cache=True):
+    # A non-persistent cache lives in the temp dir and is swept with the
+    # orphans, so every smoke run computes fresh.
+    if persist_cache:
+        return os.path.join(_OUT_DIR, f"{file_stem}_trials.csv")
+    return os.path.join(tempfile.gettempdir(),
+                        f"demo08_scalability_{file_stem}_trials.csv")
 
 
 def _load_trial_cache(raw_path):
@@ -271,7 +320,7 @@ def _aggregate_cell(cell_cache, n, p):
     titer  = [s / max(t, 1.0) for s, t in zip(sel, T)]
     total  = [d + s for d, s in zip(dgp, sel)]
     return dict(
-        design_gib   = _design_gib(n, p),
+        vol_gib      = _volume_gib(n, p, max(float(np.mean(L)), 1.0)),
         sel_med_s    = float(np.median(sel)),
         sel_min_s    = float(np.min(sel)),
         sel_max_s    = float(np.max(sel)),
@@ -296,14 +345,15 @@ def _aggregate_cell(cell_cache, n, p):
 # ==============================================================================
 
 _TMPDIR = tempfile.gettempdir()
-_ORPHAN_GLOBS = ("demo08_scalability_*", "trex_memmap_*")
+_ORPHAN_GLOBS = ("demo08_scalability_*", "trex_memmap_*", "trex_warmstart_*")
 
 
 def sweep_mmap_orphans(reason=""):
     """Remove this demo's stray mmap backing in the temp dir (best-effort).
 
-    Targets `demo08_scalability_*` X backing files and `trex_memmap_*` dummy
-    dirs left behind by a killed/cancelled run. Assumes SOLO execution (this is
+    Targets `demo08_scalability_*` X backing files, `trex_memmap_*` dummy dirs
+    and `trex_warmstart_*` checkpoint dirs left behind by a killed/cancelled
+    run. Assumes SOLO execution (this is
     a sequential benchmark); it does not attempt to spare a concurrently running
     instance's files. Returns bytes freed.
     """
@@ -570,25 +620,24 @@ def run_scalability_trial(n, p, ctrl_dict, tFDR, snr, seed, support, coefs,
 # Grid-point loop (n, p, solver): sequential MC trials
 # ==============================================================================
 
-def run_scalability_grid_point(n, p, num_MC, is_barrier, solver_desc, tFDR, snr,
+def run_scalability_grid_point(n, p, num_MC, dummy_mult, solver_desc, tFDR, snr,
                                rnd_coef, cardinality_true_support,
-                               cell_cache, raw_path):
+                               cell_cache, raw_path, disk_ok=True):
     """Ensure >= num_MC trials exist for this (n, p, solver) cell, then aggregate.
 
     Only the missing trial indices [0, num_MC) are computed; each is appended to
     the raw store immediately (trial-level durability), so a crash keeps them.
+    With disk_ok=False nothing is computed and only cached trials count; the
+    return value is None when the cell has no trials at all.
     """
-    ctrl_dict = _make_scalability_ctrl_dict(solver_desc)
-    tag = "BARRIER" if is_barrier else f"n{n}_p{p}"
-    mmap_filestem = os.path.join(_TMPDIR, f"demo08_scalability_{tag}")
+    ctrl_dict = _make_scalability_ctrl_dict(solver_desc, dummy_mult)
+    mmap_filestem = os.path.join(_TMPDIR, f"demo08_scalability_n{n}_p{p}")
 
-    design = _design_gib(n, p)
-    over = "  (> RAM — out-of-core)" if design > _RAM_GIB else ""
     have = len(cell_cache)
-    todo = [mc for mc in range(num_MC) if mc not in cell_cache]
+    todo = ([mc for mc in range(num_MC) if mc not in cell_cache]
+            if disk_ok else [])
     reuse_note = f"  (reusing {have} cached)" if have else ""
-    print(f"  [{solver_desc['name']}] n={n}, p={p}  "
-          f"(design [X|D] = {design:.1f} GiB{over if is_barrier else ''}) — "
+    print(f"  [{solver_desc['name']}] n={n}, p={p}  (L cap {dummy_mult}) — "
           f"{len(todo)} new / {num_MC} MC trials (mmap){reuse_note} ...",
           flush=True)
 
@@ -625,6 +674,8 @@ def run_scalability_grid_point(n, p, num_MC, is_barrier, solver_desc, tFDR, snr,
               f"RSS={m['rss_mib']:.1f} MiB  FP={m['fp_mib']:.1f} MiB",
               flush=True)
 
+    if not cell_cache:
+        return None
     agg = _aggregate_cell(cell_cache, n, p)
     print(f"  [{solver_desc['name']}] n={n}, p={p} done "
           f"({agg['num_mc']} trials). "
@@ -642,7 +693,7 @@ def run_scalability_grid_point(n, p, num_MC, is_barrier, solver_desc, tFDR, snr,
 # Per-grid-point metric columns (table order and CSV metric set):
 # (label, decimals, aggregate key)
 _METRICS = [
-    ("DesignGiB",  1, "design_gib"),
+    ("VolGiB",     1, "vol_gib"),
     ("SelMed_s",   3, "sel_med_s"),
     ("SelMin_s",   3, "sel_min_s"),
     ("SelMax_s",   3, "sel_max_s"),
@@ -659,12 +710,13 @@ _METRICS = [
 ]
 
 
-def save_and_print_scalability_results(file_stem, tFDR, snr, grid, solvers,
-                                       results, num_MC_target):
+def save_and_print_scalability_results(file_stem, block_title, tFDR, snr, grid,
+                                       solvers, results, num_MC_target):
     """
     Print the scalability results as an aligned per-solver table (rows = (n, p)
     grid points, columns = metrics) to console + .txt, and write a tidy
     long-format CSV. `results` maps solver name -> {(n, p): agg dict}.
+    is_barrier = 1 where the volume at the realized L exceeds RAM.
     Mirrors the C++ function of the same name.
     """
     os.makedirs(_OUT_DIR, exist_ok=True)
@@ -677,10 +729,11 @@ def save_and_print_scalability_results(file_stem, tFDR, snr, grid, solvers,
         out(f"=== T-Rex Scalability Results (tFDR = {tFDR:.2f}, SNR = {snr:.1f}, "
             f"num_MC = {num_MC_target}) ===\n")
         out("=" * 70 + "\n\n")
+        out(block_title + "\n")
         out("Fully memory-mapped pipeline (X mmap + D mmap + solver "
             "serialization).\n")
-        out(f"Physical RAM: {_RAM_GIB:.0f} GiB. Grid: n x p; the barrier row "
-            f"(p*) is the out-of-core point.\n\n")
+        out(f"Physical RAM: {_RAM_GIB:.0f} GiB. VolGiB = X + K*L*X, the data one "
+            f"T-iteration touches (K = {_NUM_RND_EXP}, L = Avg_L).\n\n")
 
         n_w, p_w, met_w = 8, 9, 13
         for solver in solvers:
@@ -690,27 +743,28 @@ def save_and_print_scalability_results(file_stem, tFDR, snr, grid, solvers,
             for name, _, _ in _METRICS:
                 hdr += f"{name:>{met_w}}"
             out(hdr + "\n" + "-" * len(hdr) + "\n")
-            for (n, p, _num_mc, is_barrier) in grid:
+            for (n, p, _num_mc, _dummy_mult) in grid:
                 agg = grid_res.get((n, p))
                 if agg is None:
                     continue
-                lbl_p = f"{p}{'*' if is_barrier else ''}"
+                lbl_p = f"{p}{'*' if agg['vol_gib'] > _RAM_GIB else ''}"
                 row = f"{n:<{n_w}}{lbl_p:<{p_w}}"
                 for _name, prec, key in _METRICS:
                     row += f"{agg[key]:>{met_w}.{prec}f}"
                 out(row + "\n")
             out("\n")
-        out("(* = out-of-core barrier point, design [X|D] > physical RAM)\n\n")
+        out("(* = out-of-core point, VolGiB > physical RAM)\n\n")
 
     # Tidy long-format CSV: n, p, is_barrier, solver, num_mc, snr, metric, value
     # (num_mc is the actual cached trial count per cell, not the run target).
     rows = []
     for solver in solvers:
         grid_res = results[solver["name"]]
-        for (n, p, _num_mc, is_barrier) in grid:
+        for (n, p, _num_mc, _dummy_mult) in grid:
             agg = grid_res.get((n, p))
             if agg is None:
                 continue
+            is_barrier = agg["vol_gib"] > _RAM_GIB
             for name, _, key in _METRICS:
                 rows.append(dict(n=n, p=p, is_barrier=int(is_barrier),
                                  solver=solver["name"], num_mc=agg["num_mc"],
@@ -726,12 +780,13 @@ def save_and_print_scalability_results(file_stem, tFDR, snr, grid, solvers,
 # Scalability benchmark driver
 # ==============================================================================
 
-def demo_trex_scalability(grid, file_stem, num_MC_target, rnd_coef=False):
+def demo_trex_scalability(grid, file_stem, block_title, num_MC_target,
+                          rnd_coef=False, persist_cache=True):
     # Clear any orphans stranded by a previous cancelled run before we start.
     sweep_mmap_orphans("startup")
 
     os.makedirs(_OUT_DIR, exist_ok=True)
-    raw_path = _raw_cache_path(file_stem)
+    raw_path = _raw_cache_path(file_stem, persist_cache)
     cache = _load_trial_cache(raw_path)   # {(n, p, solver): {mc: row}}
     cached_trials = sum(len(v) for v in cache.values())
 
@@ -739,16 +794,16 @@ def demo_trex_scalability(grid, file_stem, num_MC_target, rnd_coef=False):
     print("Demo: T-Rex Selector Scalability Benchmark  |  TLARS / TOMP / TAFS")
     print("=" * 70 + "\n")
 
-    max_design = _design_gib(_N_VALUES[-1], _P_VALUES[-1])
-    n_over = sum(1 for n in _N_VALUES for p in _P_VALUES
-                 if _design_gib(n, p) > _RAM_GIB)
+    vols = [_volume_gib(n, p, 1.0) for (n, p, _mc, _dm) in grid]
+    max_disk = max(_worst_case_disk_gib(n, p, dm) for (n, p, _mc, dm) in grid)
+    n_over = sum(1 for v in vols if v > _RAM_GIB)
+    print(block_title)
     print("Fully memory-mapped pipeline (X mmap + D mmap + solver serialization)")
-    print(f"Physical RAM: {_RAM_GIB:.0f} GiB")
-    print(f"Grid: n in {_N_VALUES} x p in {_P_VALUES}  "
-          f"({len(_N_VALUES) * len(_P_VALUES)} points)")
-    print(f"Largest design [X|D] = {max_design:.1f} GiB "
-          f"(n={_N_VALUES[-1]}, p={_P_VALUES[-1]}); "
-          f"{n_over} point(s) exceed RAM (out-of-core)")
+    print(f"Physical RAM: {_RAM_GIB:.0f} GiB,  free temp disk: "
+          f"{_free_temp_disk_gib():.0f} GiB")
+    print(f"Grid: {len(grid)} points; largest volume X + K*X (L = 1) = "
+          f"{max(vols):.1f} GiB; {n_over} point(s) exceed RAM at L = 1 "
+          f"(out-of-core); largest worst-case disk need = {max_disk:.1f} GiB")
     print(f"SNR = {_SNR:.1f} (fixed),  s = {_S_TRUE},  tFDR = {_TFDR:.2f},  "
           f"num_MC = {num_MC_target} sequential per (n, p, solver)")
     print(f"Trial cache: {raw_path}  ({cached_trials} trial(s) already present "
@@ -760,22 +815,37 @@ def demo_trex_scalability(grid, file_stem, num_MC_target, rnd_coef=False):
     # (n, p)-outer loop; every solver finishes the current point before the
     # next (larger) one starts, and results are re-saved after each point so a
     # crash on a bigger point preserves the finished ones.
-    for gi, (n, p, num_MC, is_barrier) in enumerate(grid):
+    for gi, (n, p, num_MC, dummy_mult) in enumerate(grid):
+        vol1 = _volume_gib(n, p, 1.0)
         print("=" * 50)
         print(f"Grid point: n={n}, p={p}"
-              f"{'   [BARRIER — out-of-core]' if is_barrier else ''}")
-        print(f"  design [X|D] = {_design_gib(n, p):.1f} GiB  "
-              f"(X backing {n * p * 8.0 / 1024.0 ** 3:.2f} GiB + 10x-p dummies)")
-        print("=" * 50 + "\n", flush=True)
+              f"{'   [out-of-core]' if vol1 > _RAM_GIB else ''}")
+        print("=" * 50)
+
+        # Disk pre-flight: a full disk under a memory-mapped write is a SIGBUS.
+        need = _worst_case_disk_gib(n, p, dummy_mult)
+        avail = _free_temp_disk_gib()
+        disk_ok = np.isnan(avail) or need + _DISK_RESERVE_GIB <= avail
+        print(f"  volume X + K*X (L = 1) = {vol1:.1f} GiB  (X backing "
+              f"{n * p * 8.0 / _BYTES_PER_GIB:.2f} GiB, K = {_NUM_RND_EXP} "
+              f"dummy files)")
+        print(f"  worst-case disk need (L = {dummy_mult}) = {need:.1f} GiB,  "
+              f"free = {avail:.1f} GiB,  reserve = {_DISK_RESERVE_GIB:.1f} GiB")
+        if not disk_ok:
+            print("  [skip] not enough free disk — new trials are not computed "
+                  "for this point")
+        print("", flush=True)
 
         for solver_desc in _SOLVERS:
             cell_cache = cache.setdefault((n, p, solver_desc["name"]), {})
-            results[solver_desc["name"]][(n, p)] = run_scalability_grid_point(
-                n, p, num_MC, is_barrier, solver_desc, _TFDR, _SNR,
-                rnd_coef, _S_TRUE, cell_cache, raw_path)
+            agg = run_scalability_grid_point(
+                n, p, num_MC, dummy_mult, solver_desc, _TFDR, _SNR,
+                rnd_coef, _S_TRUE, cell_cache, raw_path, disk_ok)
+            if agg is not None:
+                results[solver_desc["name"]][(n, p)] = agg
 
         # Incremental save over completed points (derived from the trial cache).
-        save_and_print_scalability_results(file_stem, _TFDR, _SNR,
+        save_and_print_scalability_results(file_stem, block_title, _TFDR, _SNR,
                                            grid[:gi + 1], _SOLVERS, results,
                                            num_MC_target)
 
@@ -787,26 +857,38 @@ def demo_trex_scalability(grid, file_stem, num_MC_target, rnd_coef=False):
 if __name__ == "__main__":
     _install_cleanup_handlers()
 
-    # Pin the selector's inner OpenMP to a fixed thread count (mirrors the C++
-    # demo). Trials stay sequential; this bounds only the K-random-experiments
-    # parallelism inside select(), keeping the memory footprint comparable across
-    # grid points and languages.
+    # Pin the selector's OpenMP to a fixed thread count (mirrors the C++ demo).
+    # Experiments and trials run one after another; the threads parallelize
+    # the column loops inside each experiment, comparable across languages.
     set_num_threads(_NUM_THREADS)
     print(f"Running with {get_max_threads()} thread(s) "
           f"(pinned to match the C++ demo)\n")
 
-    # CLI:  [smoke] [num_MC]  (order-independent; num_MC is any integer token)
+    # CLI:  [smoke | base | large] [num_MC]  (order-independent; num_MC is any
+    # integer token; without a block token both blocks run, base first)
     _args = sys.argv[1:]
     _smoke = "smoke" in _args
+    _run_base = "large" not in _args
+    _run_large = "base" not in _args
     _num_MC = next((int(a) for a in _args if a.lstrip("+").isdigit()), None)
 
     if _smoke:
         mc = _num_MC if _num_MC is not None else _SMOKE_MC
         demo_trex_scalability(_smoke_grid(mc),
-                              "demo_trex_08_scalability_smoke", mc)
+                              "demo_trex_08_scalability_smoke",
+                              "Smoke grid (L cap 10 and 5)", mc,
+                              persist_cache=False)
     else:
         mc = _num_MC if _num_MC is not None else _NUM_MC
-        demo_trex_scalability(_benchmark_grid(mc),
-                              "demo_trex_08_scalability_results", mc)
+        if _run_base:
+            demo_trex_scalability(
+                _benchmark_grid(mc), "demo_trex_08_scalability_results",
+                f"Base block: n x p cross, max_dummy_multiplier = {_DUMMY_MULT}",
+                mc)
+        if _run_large:
+            demo_trex_scalability(
+                _large_p_grid(mc), "demo_trex_08_scalability_large_p",
+                "Large-p block: p in millions, max_dummy_multiplier = "
+                f"{_LARGE_P_DUMMY_MULT}", mc)
 
     print("\ndemo_trex_08_mc_sim_scalability.py complete.")

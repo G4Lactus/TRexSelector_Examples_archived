@@ -8,39 +8,48 @@
  *        as the problem scales, across three base solvers (TLARS, TOMP, TAFS).
  *
  * @details Two aims:
- *   (a) high-dimensionality — sweep p up to 200,000;
- *   (b) volumes beyond RAM  — the largest p columns push the design [X|D] past
- *       physical RAM, feasible only because the pipeline is fully out-of-core.
+ *   (a) high-dimensionality — sweep p up to 5,000,000;
+ *   (b) volumes beyond RAM  — the data one T-iteration touches (X plus the K
+ *       memory-mapped dummy files) grows past physical RAM, feasible only
+ *       because the pipeline is fully out-of-core.
  *
- *  Design of the study:
- *   - 2-D grid  n in {1000,1500,2000,5000} x p in {1k,5k,10k,20k,50k,100k,150k,200k}
- *   - the top-right corner is out-of-core: at n=5000, p=200k the logical
- *     [X|D] = 5000*11*200k*8 ~ 82 GiB > 64 GiB RAM (the real on-disk dummy
- *     footprint is far larger still), yet resident RSS stays a few GB.
+ *  Design of the study, two blocks with separate outputs and trial caches:
+ *   - base block    n in {300,500,1000,1500,2000,5000}
+ *                   x p in {1k,5k,10k,20k,50k,100k,150k,200k},
+ *                   max_dummy_multiplier = 10
+ *   - large-p block n in {300,500} x p in {1,000,000; 5,000,000},
+ *                   max_dummy_multiplier = 5 (bounds the worst-case dummy disk
+ *                   at n=500, p=5e6 to 2 TB)
+ *   - per T-iteration volume X + K*L*X: 168 GB at n=5000, p=200k and 420 GB
+ *     at n=500, p=5e6 (L = 1), yet resident RSS stays bounded by RAM.
  *   - SNR = 1 fixed (SNR is not a scaling axis; sweeping it only burns time),
  *     demo-03 DGP (variable support s=10 redrawn per trial, unit coefficients,
  *     Normal predictors/noise).
  *   - num_MC = 10 SEQUENTIAL trials per (n, p, solver). Trials are NOT run in
  *     parallel: this is a timing/memory benchmark and concurrent trials would
  *     corrupt per-trial wall-clock, confound RSS, and multiply the on-disk
- *     dummy backing (one trial already peaks at >100 GB of D, since the K
- *     random experiments run concurrently via inner OpenMP — which is the
- *     parallelism this benchmark relies on).
+ *     dummy backing. The K random experiments inside select() also run one
+ *     after another; OpenMP parallelizes the column loops inside each.
  *
  *  Fully memory-mapped pipeline in every point: X/y are generated into mmap
  *  backing files (SyntheticDataMapped, removed per trial by an RAII
  *  MmapFileGuard), and use_memory_mapping = true memory-maps the dummy matrices
  *  D and serializes solver warm-start state between T-loop iterations.
  *
+ *  Disk pre-flight: a point whose worst-case disk need (X, y, K dummy files at
+ *  the dummy cap, K checkpoints) does not fit the free temp-dir space is
+ *  skipped with a message. The library does not check free space, and a write
+ *  into a memory-mapped file on a full disk raises SIGBUS.
+ *
  *  Per grid point we record: timing (DGP, select() median/min/max, per-T-iter),
  *  memory (post-select RSS, physical footprint, process peak RSS, X+y bytes,
- *  theoretical design volume), and FDR / TPR / Avg L / Avg T.
+ *  per T-iteration data volume at the realized L), and FDR / TPR / Avg L / Avg T.
  *
  *  Self-cleanup: the process sweeps its own memory-mapped orphans
- *  (demo08_scalability_* backing files and trex_memmap_* dummy dirs in the temp
- *  dir) at startup and on exit / SIGINT / SIGTERM, so a cancelled run does not
- *  strand tens of GB. (SIGKILL cannot be trapped; the next startup sweep
- *  reclaims it.)
+ *  (demo08_scalability_* backing files, trex_memmap_* dummy dirs and
+ *  trex_warmstart_* checkpoint dirs in the temp dir) at startup and on exit /
+ *  SIGINT / SIGTERM / SIGBUS, so a cancelled run does not strand hundreds of GB.
+ *  (SIGKILL cannot be trapped; the next startup sweep reclaims it.)
  *
  *  Expandable by design. Every trial is appended to a raw per-trial cache
  *  (<stem>_trials.csv, one row per (n, p, solver, mc) keyed by its seed). A run
@@ -53,16 +62,20 @@
  *  reordering or extending the grid.
  *
  *  Results go to simulation_results/data/ as an aligned table (.txt) and a tidy
- *  summary CSV, both re-derived from the cache and re-saved after each (n, p) point.
+ *  summary CSV per block, both re-derived from the cache and re-saved after each
+ *  (n, p) point.
  *
- *  Run:  ./demo_trex_08_mc_sim_scalability            (full benchmark, num_MC=10)
- *        ./demo_trex_08_mc_sim_scalability 2          (full benchmark, num_MC=2)
+ *  Run:  ./demo_trex_08_mc_sim_scalability            (both blocks, num_MC=10)
+ *        ./demo_trex_08_mc_sim_scalability base       (base block only)
+ *        ./demo_trex_08_mc_sim_scalability large 2    (large-p block, num_MC=2)
+ *        ./demo_trex_08_mc_sim_scalability calib      (large-p block at p=1e6, num_MC=1)
  *        ./demo_trex_08_mc_sim_scalability smoke      (tiny end-to-end check)
  *        ./demo_trex_08_mc_sim_scalability smoke 3    (smoke grid, num_MC=3)
+ *        TREX_SOLVERS=TLARS limits the computed solvers (cached ones still count).
  *
- * @note This simulation takes a substantial amount of time (the largest points
- *       are minutes per trial); the top-right corner needs ~hundreds of GB of
- *       free disk for the memory-mapped dummy backing.
+ * @note This simulation takes a substantial amount of time (the large-p points
+ *       are tens of minutes per trial) and needs up to 2 TB of free disk for
+ *       the memory-mapped dummy backing.
  */
 // ==============================================================================
 
@@ -70,6 +83,7 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <cmath>
 #include <csignal>
 #include <cstdint>
 #include <cstdlib>
@@ -133,20 +147,53 @@ using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex
 // Study configuration
 // ==============================================================================
 
+// Base block: full n x p cross
 static const std::vector<Eigen::Index> N_VALUES =
-    {1'000, 1'500, 2'000, 5'000};
+    {300, 500, 1'000, 1'500, 2'000, 5'000};
 static const std::vector<Eigen::Index> P_VALUES =
     {1'000, 5'000, 10'000, 20'000, 50'000, 100'000, 150'000, 200'000};
-static constexpr std::size_t NUM_MC     = 10;      // sequential trials per point
-static constexpr double      SNR        = 1.0;     // fixed; not a scaling axis
-static constexpr double      TFDR       = 0.1;
-static constexpr std::size_t S_TRUE     = 10;      // true support cardinality
-static constexpr int         DUMMY_MULT = 10;      // max_dummy_multiplier (10 x p)
+// Large-p block: few observations, millions of predictors
+static const std::vector<Eigen::Index> LARGE_P_N_VALUES = {300, 500};
+static const std::vector<Eigen::Index> LARGE_P_P_VALUES = {1'000'000, 5'000'000};
 
-/** @brief Theoretical design volume [X|D] in GiB (X plus 10x-p dummies, f64). */
-static double design_gib(Eigen::Index n, Eigen::Index p) {
-    return static_cast<double>(n) * (1.0 + DUMMY_MULT) *
-           static_cast<double>(p) * 8.0 / (1024.0 * 1024.0 * 1024.0);
+static constexpr std::size_t NUM_MC      = 10;    // sequential trials per point
+static constexpr double      SNR         = 1.0;   // fixed; not a scaling axis
+static constexpr double      TFDR        = 0.1;
+static constexpr std::size_t S_TRUE      = 10;    // true support cardinality
+static constexpr std::size_t NUM_RND_EXP = 20;    // K random experiments
+static constexpr int         DUMMY_MULT  = 10;    // base block max_dummy_multiplier
+static constexpr int         LARGE_P_DUMMY_MULT = 5;     // large-p block cap
+static constexpr double      DISK_RESERVE_GIB   = 50.0;  // free disk left untouched
+
+static constexpr double BYTES_PER_GIB = 1024.0 * 1024.0 * 1024.0;
+
+/** @brief Data volume one T-iteration touches in GiB: X plus the K memory-mapped
+ *         dummy files of L * p columns each (8-byte doubles). */
+static double volume_gib(Eigen::Index n, Eigen::Index p, double L) {
+    return static_cast<double>(n) * static_cast<double>(p) * 8.0 *
+           (1.0 + static_cast<double>(NUM_RND_EXP) * L) / BYTES_PER_GIB;
+}
+
+/** @brief Worst-case disk need of one trial in GiB: X and y, the K dummy files
+ *         at L = dummy_mult, and K solver checkpoints (at most 32 bytes per
+ *         column of [X|D]). */
+static double worst_case_disk_gib(Eigen::Index n, Eigen::Index p, int dummy_mult) {
+    const double nd = static_cast<double>(n);
+    const double pd = static_cast<double>(p);
+    const double K  = static_cast<double>(NUM_RND_EXP);
+    const double x_y         = (nd * pd + nd) * 8.0;
+    const double dummies     = K * nd * pd * static_cast<double>(dummy_mult) * 8.0;
+    const double checkpoints = K * 32.0 * pd * (1.0 + dummy_mult);
+    return (x_y + dummies + checkpoints) / BYTES_PER_GIB;
+}
+
+/** @brief Free space of the temp dir in GiB (NaN if unavailable). */
+static double free_temp_disk_gib() {
+    std::error_code ec;
+    const auto info =
+        std::filesystem::space(std::filesystem::temp_directory_path(ec), ec);
+    if (ec) return std::numeric_limits<double>::quiet_NaN();
+    return static_cast<double>(info.available) / BYTES_PER_GIB;
 }
 
 /** @brief Deterministic, grid-position-independent, 32-bit-safe per-trial seed.
@@ -264,8 +311,9 @@ static std::uintmax_t path_size_bytes(const std::filesystem::path& p) {
     return fs::file_size(p, ec);
 }
 
-/** @brief Remove this demo's stray mmap backing (demo08_scalability_* and
- *         trex_memmap_*) from the temp dir and CWD. Assumes SOLO execution. */
+/** @brief Remove this demo's stray mmap backing (demo08_scalability_*,
+ *         trex_memmap_* and trex_warmstart_*) from the temp dir and CWD.
+ *         Assumes SOLO execution. */
 static void sweep_mmap_orphans(const char* reason) {
     namespace fs = std::filesystem;
     std::error_code ec;
@@ -276,7 +324,8 @@ static void sweep_mmap_orphans(const char* reason) {
              it.increment(ec)) {
             const std::string name = it->path().filename().string();
             if (name.rfind("demo08_scalability_", 0) == 0 ||
-                name.rfind("trex_memmap_", 0) == 0) {
+                name.rfind("trex_memmap_", 0) == 0 ||
+                name.rfind("trex_warmstart_", 0) == 0) {
                 freed += path_size_bytes(it->path());
                 std::error_code e2;
                 fs::remove_all(it->path(), e2);
@@ -300,6 +349,10 @@ static void install_cleanup_handlers() {
     std::atexit([]() { sweep_mmap_orphans("atexit"); });
     std::signal(SIGINT,  on_terminating_signal);
     std::signal(SIGTERM, on_terminating_signal);
+#ifdef SIGBUS
+    // Write into a memory-mapped file on a full disk; sweeping frees the disk
+    std::signal(SIGBUS,  on_terminating_signal);
+#endif
 }
 
 
@@ -309,10 +362,10 @@ static void install_cleanup_handlers() {
 
 /** @brief One (n, p) grid point on the fully memory-mapped pipeline. */
 struct ScalabilityPoint {
-    Eigen::Index n;             ///< Number of observations
+    Eigen::Index n;            ///< Number of observations
     Eigen::Index p;            ///< Number of predictors
     std::size_t  num_MC;       ///< Number of sequential MC trials
-    bool         out_of_core;  ///< design [X|D] exceeds physical RAM
+    int          dummy_mult;   ///< max_dummy_multiplier (cap on L)
     std::string label() const {
         return "n" + std::to_string(n) + "_p" + std::to_string(p);
     }
@@ -334,7 +387,7 @@ struct ScalabilityTrialResult {
 
 /** @brief Aggregate result for one grid point (n, p, solver). */
 struct ScalabilityGridPointResult {
-    double design_gib   = 0.0;   ///< Theoretical [X|D] volume [GiB]
+    double vol_gib      = 0.0;   ///< Per T-iteration volume X + K*L*X at mean L [GiB]
     double avg_fdr      = 0.0;   ///< Mean false discovery rate
     double avg_tpr      = 0.0;   ///< Mean true positive rate
     double avg_L        = 0.0;   ///< Mean calibrated dummy multiplier
@@ -356,21 +409,32 @@ struct ScalabilityGridPointResult {
 // Grid construction
 // ==============================================================================
 
-/** @brief Full n x p benchmark grid; out_of_core flags points whose logical
- *         design [X|D] exceeds this machine's physical RAM. */
-static std::vector<ScalabilityPoint> make_benchmark_grid(double ram_gib,
-                                                         std::size_t num_MC) {
+/** @brief Base block: full n x p cross with the default dummy cap. */
+static std::vector<ScalabilityPoint> make_benchmark_grid(std::size_t num_MC) {
     std::vector<ScalabilityPoint> grid;
     grid.reserve(N_VALUES.size() * P_VALUES.size());
     for (const auto n : N_VALUES)
         for (const auto p : P_VALUES)
-            grid.push_back({n, p, num_MC, design_gib(n, p) > ram_gib});
+            grid.push_back({n, p, num_MC, DUMMY_MULT});
     return grid;
 }
 
-/** @brief Tiny end-to-end smoke grid (pipeline verification only). */
+/** @brief Large-p block, ordered by volume (p-outer) so the cheapest points
+ *         finish first. */
+static std::vector<ScalabilityPoint> make_large_p_grid(std::size_t num_MC) {
+    std::vector<ScalabilityPoint> grid;
+    grid.reserve(LARGE_P_N_VALUES.size() * LARGE_P_P_VALUES.size());
+    for (const auto p : LARGE_P_P_VALUES)
+        for (const auto n : LARGE_P_N_VALUES)
+            grid.push_back({n, p, num_MC, LARGE_P_DUMMY_MULT});
+    return grid;
+}
+
+/** @brief Tiny end-to-end smoke grid (pipeline verification only); the second
+ *         point exercises the large-p dummy cap. */
 static std::vector<ScalabilityPoint> make_smoke_grid(std::size_t num_MC) {
-    return {{150, 500, num_MC, false}, {200, 1'000, num_MC, false}};
+    return {{150, 500, num_MC, DUMMY_MULT},
+            {200, 1'000, num_MC, LARGE_P_DUMMY_MULT}};
 }
 
 
@@ -379,7 +443,8 @@ static std::vector<ScalabilityPoint> make_smoke_grid(std::size_t num_MC) {
 // ==============================================================================
 
 /** @brief T-Rex control parameters (base config of demo 02/03) for one point. */
-static TRexControlParameter make_scalability_trex_ctrl(const DemoSolverInfo& solver)
+static TRexControlParameter make_scalability_trex_ctrl(const DemoSolverInfo& solver,
+                                                       int dummy_mult)
 {
     // Every control option is set explicitly and identically to the Python
     // demo's _make_scalability_ctrl_dict(), so the two demos are provably
@@ -387,8 +452,8 @@ static TRexControlParameter make_scalability_trex_ctrl(const DemoSolverInfo& sol
     // parallel_rnd_experiments in particular differ between the C++ struct and
     // the Python helper, which is what made the demos diverge).
     TRexControlParameter ctrl;
-    ctrl.K                        = 20;
-    ctrl.max_dummy_multiplier     = DUMMY_MULT;
+    ctrl.K                        = NUM_RND_EXP;
+    ctrl.max_dummy_multiplier     = dummy_mult;
     ctrl.use_max_T_stop           = true;
     ctrl.opt_threshold            = 0.75;
     ctrl.dummy_distribution       = dummygen::Distribution::Normal();
@@ -396,9 +461,9 @@ static TRexControlParameter make_scalability_trex_ctrl(const DemoSolverInfo& sol
     ctrl.tloop_stagnation_stop    = true;
     ctrl.tloop_max_stagnant_steps = 5;
     // Sequential random experiments (mirrors R use_openmp=FALSE, as in demos
-    // 02/03/07): one experiment working set in RAM at a time (Eigen uses the
-    // inner threads), not K concurrent ones — essential for the out-of-core
-    // corner. This is the C++ struct default, but pinned here so it is explicit.
+    // 02/03/07): one experiment working set in RAM at a time (OpenMP threads
+    // parallelize the column loops inside it), not K concurrent ones — essential
+    // out-of-core. This is the C++ struct default, pinned here to be explicit.
     ctrl.parallel_rnd_experiments = false;
     // Always on: memory-mapped dummy matrices D + solver warm-start state
     // serialized to disk between T-loop iterations. Together with the
@@ -601,7 +666,7 @@ static ScalabilityGridPointResult aggregate_cell(
     const std::map<std::size_t, TrialRow>& trials, Eigen::Index n, Eigen::Index p)
 {
     ScalabilityGridPointResult agg;
-    agg.design_gib = design_gib(n, p);
+    agg.vol_gib = volume_gib(n, p, 1.0);
     if (trials.empty()) return agg;
 
     std::vector<double> selects;
@@ -631,12 +696,15 @@ static ScalabilityGridPointResult aggregate_cell(
     agg.sel_min_s = *std::min_element(selects.begin(), selects.end());
     agg.sel_max_s = *std::max_element(selects.begin(), selects.end());
     agg.num_mc    = trials.size();
+    agg.vol_gib   = volume_gib(n, p, std::max(agg.avg_L, 1.0));
     return agg;
 }
 
 /** @brief Ensure >= num_MC trials exist for this (n, p, solver) cell, then
  *         aggregate. Only the missing trial indices are computed; each is
- *         appended to the raw store immediately (trial-level durability). */
+ *         appended to the raw store immediately (trial-level durability).
+ *         With disk_ok = false (no disk, or solver not in TREX_SOLVERS) nothing
+ *         is computed and only cached trials count. */
 static ScalabilityGridPointResult run_scalability_grid_point(
     const ScalabilityPoint&          point,
     const DemoSolverInfo&            solver,
@@ -645,10 +713,11 @@ static ScalabilityGridPointResult run_scalability_grid_point(
     bool                             rnd_coef,
     std::size_t                      cardinality_true_support,
     std::map<std::size_t, TrialRow>& cell_cache,
-    const std::string&               raw_path)
+    const std::string&               raw_path,
+    bool                             disk_ok)
 {
-    const TRexControlParameter trex_ctrl = make_scalability_trex_ctrl(solver);
-    const double design = design_gib(point.n, point.p);
+    const TRexControlParameter trex_ctrl =
+        make_scalability_trex_ctrl(solver, point.dummy_mult);
 
     const std::string mmap_filestem =
         (std::filesystem::temp_directory_path() /
@@ -656,15 +725,14 @@ static ScalabilityGridPointResult run_scalability_grid_point(
 
     const std::size_t have = cell_cache.size();
     std::vector<std::size_t> todo;
-    for (std::size_t mc = 0; mc < point.num_MC; ++mc)
-        if (cell_cache.find(mc) == cell_cache.end()) todo.push_back(mc);
+    if (disk_ok)
+        for (std::size_t mc = 0; mc < point.num_MC; ++mc)
+            if (cell_cache.find(mc) == cell_cache.end()) todo.push_back(mc);
 
     std::cout << "  [" << solver.solver_name << "] "
               << "n=" << point.n << ", p=" << point.p
-              << "  (design [X|D] = " << std::fixed << std::setprecision(1)
-              << design << " GiB"
-              << (point.out_of_core ? "  (> RAM — out-of-core)" : "")
-              << ") — " << todo.size() << " new / " << point.num_MC
+              << "  (L cap " << point.dummy_mult << ") — "
+              << todo.size() << " new / " << point.num_MC
               << " MC trials (mmap)"
               << (have ? "  (reusing " + std::to_string(have) + " cached)" : "")
               << " ...\n" << std::flush;
@@ -730,7 +798,7 @@ struct ScalabilityMetricSpec {
 /** @brief Per-grid-point metric columns (table order and CSV metric set). */
 static const std::vector<ScalabilityMetricSpec>& scalability_metrics() {
     static const std::vector<ScalabilityMetricSpec> specs = {
-        {"DesignGiB",   1, [](const ScalabilityGridPointResult& r) { return r.design_gib;   }},
+        {"VolGiB",      1, [](const ScalabilityGridPointResult& r) { return r.vol_gib;      }},
         {"SelMed_s",    3, [](const ScalabilityGridPointResult& r) { return r.sel_med_s;     }},
         {"SelMin_s",    3, [](const ScalabilityGridPointResult& r) { return r.sel_min_s;     }},
         {"SelMax_s",    3, [](const ScalabilityGridPointResult& r) { return r.sel_max_s;     }},
@@ -750,9 +818,11 @@ static const std::vector<ScalabilityMetricSpec>& scalability_metrics() {
 
 /** @brief Print the scalability results as an aligned per-solver table (rows =
  *         (n, p) grid points, columns = metrics) to console + .txt, and write a
- *         tidy long-format CSV: n,p,is_barrier,solver,num_mc,snr,metric,value. */
+ *         tidy long-format CSV: n,p,is_barrier,solver,num_mc,snr,metric,value.
+ *         is_barrier = 1 where the volume at the realized L exceeds RAM. */
 static void save_and_print_scalability_results(
     const std::string&                    file_stem,
+    const std::string&                    block_title,
     double                                tFDR,
     double                                snr,
     double                                ram_gib,
@@ -779,11 +849,12 @@ static void save_and_print_scalability_results(
            << std::setprecision(2) << tFDR << ", SNR = " << std::setprecision(1)
            << snr << ", num_MC = " << num_MC_target << ") ===\n"
            << "======================================================================\n\n"
+           << block_title << "\n"
            << "Fully memory-mapped pipeline (X/y mmap + D mmap + solver "
               "serialization).\n"
            << "Physical RAM: " << std::setprecision(0) << ram_gib
-           << " GiB. Grid: n x p; the barrier row (p*) is the out-of-core "
-              "point.\n\n";
+           << " GiB. VolGiB = X + K*L*X, the data one T-iteration touches "
+              "(K = " << NUM_RND_EXP << ", L = Avg_L).\n\n";
         print_dual(ss.str());
     }
 
@@ -805,7 +876,7 @@ static void save_and_print_scalability_results(
             const auto& agg = it->second;
             std::ostringstream row;
             const std::string lbl_p =
-                std::to_string(pt.p) + (pt.out_of_core ? "*" : "");
+                std::to_string(pt.p) + (agg.vol_gib > ram_gib ? "*" : "");
             row << std::left << std::setw(n_w) << pt.n << std::setw(p_w) << lbl_p;
             for (const auto& spec : scalability_metrics())
                 row << std::right << std::fixed << std::setprecision(spec.precision)
@@ -814,7 +885,7 @@ static void save_and_print_scalability_results(
         }
         print_dual("\n");
     }
-    print_dual("(* = out-of-core point, logical design [X|D] > physical RAM)\n\n");
+    print_dual("(* = out-of-core point, VolGiB > physical RAM)\n\n");
 
     // Tidy long-format CSV: n,p,is_barrier,solver,num_mc,snr,metric,value
     std::ofstream csv(folder + file_stem + ".csv");
@@ -829,7 +900,7 @@ static void save_and_print_scalability_results(
                 // num_mc = actual cached trial count for this cell.
                 for (const auto& spec : scalability_metrics()) {
                     csv << pt.n << "," << pt.p << ","
-                        << (pt.out_of_core ? 1 : 0) << ","
+                        << (it->second.vol_gib > ram_gib ? 1 : 0) << ","
                         << solver.solver_name << "," << it->second.num_mc << ","
                         << snr << "," << spec.name << ","
                         << spec.get(it->second) << "\n";
@@ -860,9 +931,11 @@ static void save_and_print_scalability_results(
 
 void demo_TRexSelector_scalability(const std::vector<ScalabilityPoint>& grid,
                                    const std::string& file_stem,
+                                   const std::string& block_title,
                                    double ram_gib,
                                    std::size_t num_MC_target,
-                                   bool rnd_coef) {
+                                   bool rnd_coef,
+                                   bool persist_cache = true) {
 
     std::cout.setf(std::ios::unitbuf);
 
@@ -870,9 +943,13 @@ void demo_TRexSelector_scalability(const std::vector<ScalabilityPoint>& grid,
     sweep_mmap_orphans("startup");
 
     // Load the raw per-trial cache; only missing trials will be computed.
+    // A non-persistent cache lives in the temp dir and is swept with the
+    // orphans, so every smoke run computes fresh.
     std::filesystem::create_directories(std::string(DEMO_OUTPUT_DIR));
-    const std::string raw_path =
-        std::string(DEMO_OUTPUT_DIR) + file_stem + "_trials.csv";
+    const std::string raw_path = persist_cache
+        ? std::string(DEMO_OUTPUT_DIR) + file_stem + "_trials.csv"
+        : (std::filesystem::temp_directory_path() /
+           ("demo08_scalability_" + file_stem + "_trials.csv")).string();
     TrialCache cache = load_trial_cache(raw_path);
     std::size_t cached_trials = 0;
     for (const auto& [key, cell] : cache) { (void)key; cached_trials += cell.size(); }
@@ -887,20 +964,25 @@ void demo_TRexSelector_scalability(const std::vector<ScalabilityPoint>& grid,
         {SolverTypeForTRex::TAFS,  "TAFS", 0.0, 0.3}
     };
 
-    const double max_design = design_gib(N_VALUES.back(), P_VALUES.back());
+    double max_vol = 0.0, max_disk = 0.0;
     std::size_t n_over = 0;
-    for (const auto n : N_VALUES)
-        for (const auto p : P_VALUES)
-            if (design_gib(n, p) > ram_gib) ++n_over;
+    for (const auto& pt : grid) {
+        const double vol = volume_gib(pt.n, pt.p, 1.0);
+        max_vol  = std::max(max_vol, vol);
+        max_disk = std::max(max_disk, worst_case_disk_gib(pt.n, pt.p, pt.dummy_mult));
+        if (vol > ram_gib) ++n_over;
+    }
 
-    std::cout << "Fully memory-mapped pipeline (X/y mmap + D mmap + solver "
+    std::cout << block_title << "\n"
+              << "Fully memory-mapped pipeline (X/y mmap + D mmap + solver "
                  "serialization)\n"
               << "Physical RAM: " << std::fixed << std::setprecision(0)
-              << ram_gib << " GiB\n"
-              << "Grid: " << N_VALUES.size() << " n x " << P_VALUES.size()
-              << " p = " << grid.size() << " points; largest design [X|D] = "
-              << std::setprecision(1) << max_design << " GiB; " << n_over
-              << " point(s) exceed RAM (out-of-core)\n"
+              << ram_gib << " GiB,  free temp disk: " << free_temp_disk_gib()
+              << " GiB\n"
+              << "Grid: " << grid.size() << " points; largest volume X + K*X "
+                 "(L = 1) = " << std::setprecision(1) << max_vol << " GiB; "
+              << n_over << " point(s) exceed RAM at L = 1 (out-of-core); "
+                 "largest worst-case disk need = " << max_disk << " GiB\n"
               << "SNR = " << std::setprecision(1) << SNR << " (fixed),  s = "
               << S_TRUE << ",  tFDR = " << std::setprecision(2) << TFDR
               << ",  num_MC = " << num_MC_target
@@ -920,34 +1002,51 @@ void demo_TRexSelector_scalability(const std::vector<ScalabilityPoint>& grid,
     for (std::size_t gi = 0; gi < grid.size(); ++gi) {
         const auto& pt = grid[gi];
 
+        const double vol1 = volume_gib(pt.n, pt.p, 1.0);
         cdianostics::print_section_header(
             "Grid point: n=" + std::to_string(pt.n) + ", p=" +
-            std::to_string(pt.p) + (pt.out_of_core ? "   [out-of-core]" : ""));
+            std::to_string(pt.p) + (vol1 > ram_gib ? "   [out-of-core]" : ""));
+
+        // Disk pre-flight: a full disk under a memory-mapped write is a SIGBUS
+        const double need = worst_case_disk_gib(pt.n, pt.p, pt.dummy_mult);
+        const double avail = free_temp_disk_gib();
+        const bool disk_ok = std::isnan(avail) || need + DISK_RESERVE_GIB <= avail;
 
         const double X_gib = static_cast<double>(pt.n) *
-                             static_cast<double>(pt.p) * 8.0 /
-                             (1024.0 * 1024.0 * 1024.0);
-        std::cout << "  design [X|D] = " << std::fixed << std::setprecision(1)
-                  << design_gib(pt.n, pt.p) << " GiB  (X backing "
-                  << std::setprecision(2) << X_gib << " GiB + 10x-p dummies)\n\n"
-                  << std::flush;
+                             static_cast<double>(pt.p) * 8.0 / BYTES_PER_GIB;
+        std::cout << "  volume X + K*X (L = 1) = " << std::fixed
+                  << std::setprecision(1) << vol1 << " GiB  (X backing "
+                  << std::setprecision(2) << X_gib << " GiB, K = " << NUM_RND_EXP
+                  << " dummy files)\n"
+                  << "  worst-case disk need (L = " << pt.dummy_mult << ") = "
+                  << std::setprecision(1) << need << " GiB,  free = " << avail
+                  << " GiB,  reserve = " << DISK_RESERVE_GIB << " GiB\n";
+        if (!disk_ok)
+            std::cout << "  [skip] not enough free disk — new trials are not "
+                         "computed for this point\n";
+        std::cout << "\n" << std::flush;
 
         // Per-(n, p) seeds are a stable function of (n, p, mc), shared across
         // solvers -> identical data, and independent of grid position.
+        // TREX_SOLVERS limits the computed solvers; the others keep their cache.
         for (const auto& solver : solvers) {
             auto& cell_cache = cache[{pt.n, pt.p, solver.solver_name}];
-            results[solver.solver_name][{pt.n, pt.p}] =
+            const bool compute =
+                disk_ok && trex_solver_filter::selected(solver.solver_name);
+            const ScalabilityGridPointResult agg =
                 run_scalability_grid_point(pt, solver, TFDR, SNR, rnd_coef,
-                                           S_TRUE, cell_cache, raw_path);
+                                           S_TRUE, cell_cache, raw_path, compute);
+            if (agg.num_mc > 0)
+                results[solver.solver_name][{pt.n, pt.p}] = agg;
         }
 
         // Incremental save over completed points (derived from the trial cache).
         const std::vector<ScalabilityPoint> completed(
             grid.begin(),
             grid.begin() + static_cast<std::ptrdiff_t>(gi) + 1);
-        save_and_print_scalability_results(file_stem, TFDR, SNR, ram_gib,
-                                           num_MC_target, completed, solvers,
-                                           results);
+        save_and_print_scalability_results(file_stem, block_title, TFDR, SNR,
+                                           ram_gib, num_MC_target, completed,
+                                           solvers, results);
     }
     std::cout << "\n\n";
 }
@@ -962,21 +1061,29 @@ int main(int argc, char** argv) {
     std::cout.setf(std::ios::unitbuf);
     install_cleanup_handlers();
 
-    // Inner OpenMP (the K random experiments per select()) runs with a fixed
-    // thread count (TREX_NUM_WORKERS, default 8); the outer MC loop stays
-    // sequential for undistorted timing.
+    // OpenMP threads (TREX_NUM_WORKERS, default 8) parallelize the column loops
+    // inside each random experiment; experiments and MC trials run one after
+    // another for undistorted timing.
     omp_set_num_threads(trex_mc_workers::count());
     std::cout << "Running with " << omp_get_max_threads() << " threads\n\n";
 
     const double ram_gib = physical_ram_gib();
 
-    // CLI:  [smoke] [num_MC]  (order-independent; num_MC is any integer token).
-    bool smoke = false;
+    // CLI:  [smoke | base | large | calib] [num_MC]  (order-independent; num_MC
+    // is any integer token; without a block token both blocks run, base first).
+    // calib runs the large-p block at its smallest p only (default num_MC = 1).
+    bool smoke = false, calib = false, run_base = true, run_large = true;
     std::size_t num_MC = 0;   // 0 => use the default for the chosen mode
     for (int i = 1; i < argc; ++i) {
         const std::string a = argv[i];
         if (a == "smoke") {
             smoke = true;
+        } else if (a == "calib") {
+            calib = true;
+        } else if (a == "base") {
+            run_large = false;
+        } else if (a == "large") {
+            run_base = false;
         } else if (!a.empty() &&
                    std::all_of(a.begin(), a.end(),
                                [](unsigned char c) { return std::isdigit(c); })) {
@@ -989,13 +1096,41 @@ int main(int argc, char** argv) {
         const std::size_t mc = num_MC ? num_MC : std::size_t{2};
         demo_TRexSelector_scalability(make_smoke_grid(mc),
                                       "demo_trex_08_scalability_smoke",
-                                      ram_gib, mc, /*rnd_coef=*/false);
-    } else {
-        const std::size_t mc = num_MC ? num_MC : NUM_MC;
-        demo_TRexSelector_scalability(make_benchmark_grid(ram_gib, mc),
-                                      "demo_trex_08_scalability_results",
-                                      ram_gib, mc, /*rnd_coef=*/false);
+                                      "Smoke grid (L cap 10 and 5)",
+                                      ram_gib, mc, /*rnd_coef=*/false,
+                                      /*persist_cache=*/false);
+        return 0;
     }
+
+    if (calib) {
+        // Measures L and T before the largest points; the trials stay valid
+        // trials of the large-p block and land in its cache.
+        const std::size_t mc = num_MC ? num_MC : std::size_t{1};
+        std::vector<ScalabilityPoint> grid;
+        for (const auto& pt : make_large_p_grid(mc))
+            if (pt.p == LARGE_P_P_VALUES.front()) grid.push_back(pt);
+        demo_TRexSelector_scalability(
+            grid, "demo_trex_08_scalability_large_p",
+            "Large-p block, calibration at p = " +
+                std::to_string(LARGE_P_P_VALUES.front()) +
+                ", max_dummy_multiplier = " + std::to_string(LARGE_P_DUMMY_MULT),
+            ram_gib, mc, /*rnd_coef=*/false);
+        return 0;
+    }
+
+    const std::size_t mc = num_MC ? num_MC : NUM_MC;
+    if (run_base)
+        demo_TRexSelector_scalability(
+            make_benchmark_grid(mc), "demo_trex_08_scalability_results",
+            "Base block: n x p cross, max_dummy_multiplier = " +
+                std::to_string(DUMMY_MULT),
+            ram_gib, mc, /*rnd_coef=*/false);
+    if (run_large)
+        demo_TRexSelector_scalability(
+            make_large_p_grid(mc), "demo_trex_08_scalability_large_p",
+            "Large-p block: p in millions, max_dummy_multiplier = " +
+                std::to_string(LARGE_P_DUMMY_MULT),
+            ram_gib, mc, /*rnd_coef=*/false);
 
     return 0;
 }

@@ -33,8 +33,9 @@ Three CLI modes (all typically driven from a demo's generate_plots.sh):
     python trex_plt_utils.py grid --labels TLARS TOMP TAFS \
         --csvs a_tlars.csv a_tomp.csv a_tafs.csv \
         --legend-title "L-strategy" --stem my_grid --outdir <plots>
-    # demo-08 scalability dashboard from the wide CSV
-    python trex_plt_utils.py scalability <wide_csv> --stem my_dash --outdir <plots>
+    # demo-08 scalability dashboard from one or more wide CSVs (concatenated)
+    python trex_plt_utils.py scalability <wide_csv> [<wide_csv> ...] \
+        --stem my_dash --outdir <plots>
 
 Output location: figures default to the simulation_results/plots/ sibling when
 the CSV lives in simulation_results/data/ (the suite convention); otherwise
@@ -771,11 +772,12 @@ def plot_comparison_grid(
 # ---------------------------------------------------------------------
 # Demo 08 — scalability dashboard (wider CSV schema than the rest)
 # ---------------------------------------------------------------------
-# Demo 08 is a 2-D sweep (scenario x solver over the SNR grid) on the fully
-# memory-mapped pipeline; its CSV uses a wider schema than the tidy suite one,
-#     scenario,solver,n,p,num_mc,snr,metric,value
-# so it is read via read_scalability() (not read_mc_results) and rendered by
-# plot_scalability_dashboard().
+# Demo 08 is an n x p sweep (base block plus large-p block, one CSV each) on the
+# fully memory-mapped pipeline; its CSVs use a wider schema than the tidy suite
+# one,
+#     n,p,is_barrier,solver,num_mc,snr,metric,value
+# so they are read (and concatenated) via read_scalability() (not
+# read_mc_results) and rendered by plot_scalability_dashboard().
 
 # Base solvers, in a fixed display order with stable colours / markers. These
 # keys are the raw names the demo binary writes into the CSV's 'solver' column.
@@ -808,7 +810,8 @@ M_SELMAX = "SelMax_s"    # max select() time across trials [s]
 M_RSS = "RSS_MiB"        # resident set size after select() (MiB) - tracks data
 M_PEAKRSS = "PeakRSS_MiB"  # process peak RSS (MiB) - inflated by cold-heap footprint
 M_XY = "X+y_MiB"         # on-disk X/y mmap backing size (MiB)
-M_DESIGN = "DesignGiB"   # theoretical design volume [X|D] (GiB)
+M_VOL = "VolGiB"         # per T-iteration volume X + K*L*X at mean L (GiB)
+M_VOL_LEGACY = "DesignGiB"  # older CSVs: logical [X|D] at the dummy cap (GiB)
 M_FDR = "FDR"
 M_TPR = "TPR"
 SCAL_REF_COLOR = "0.35"  # X/y backing-size reference line
@@ -831,14 +834,20 @@ def _scal_ram_gib():
     return float("nan")
 
 
-def read_scalability(path: Path) -> pd.DataFrame:
-    """Load the wide demo-08 CSV, normalising column and metric whitespace."""
-    if not path.exists():
-        raise FileNotFoundError(
-            f"Input file not found:\n  {path}\n"
-            "Pass the results CSV path as the first argument."
-        )
-    df = pd.read_csv(path)
+def read_scalability(paths) -> pd.DataFrame:
+    """Load one or more wide demo-08 CSVs (concatenated), normalising column
+    and metric whitespace."""
+    if isinstance(paths, (str, Path)):
+        paths = [paths]
+    frames = []
+    for path in map(Path, paths):
+        if not path.exists():
+            raise FileNotFoundError(
+                f"Input file not found:\n  {path}\n"
+                "Pass the results CSV path(s) as the first argument(s)."
+            )
+        frames.append(pd.read_csv(path))
+    df = pd.concat(frames, ignore_index=True)
     df.columns = df.columns.str.strip().str.lower()
 
     required = {"n", "p", "solver", "metric", "value"}
@@ -902,6 +911,7 @@ def plot_scalability_dashboard(
     from matplotlib.lines import Line2D
 
     w = scal_pivot(df)
+    m_vol = M_VOL if M_VOL in w.columns else M_VOL_LEGACY
     solvers = [s for s in SCAL_SOLVERS if s in set(w["solver"])]
     n_values = sorted(w["n"].unique())
     p_values = sorted(w["p"].unique())
@@ -950,27 +960,32 @@ def plot_scalability_dashboard(
     ax_mem.set_title("Memory scaling: peak RSS stays far below the design volume",
                      fontsize=12, fontweight="bold")
 
-    # --- (1,0) Out-of-core money plot: resident peak vs total design volume --
+    # --- (1,0) Out-of-core money plot: resident peak vs per-T-iteration volume
     for n in n_values:
         for solver in solvers:
             sub = w[(w["n"] == n) & (w["solver"] == solver)]
             if sub.empty:
                 continue
-            ax_oc.scatter(sub[M_DESIGN], sub[M_PEAKRSS] / 1024.0, color=n_col[n],
+            ax_oc.scatter(sub[m_vol], sub[M_PEAKRSS] / 1024.0, color=n_col[n],
                           marker=SCAL_SOLVER_MARKERS.get(solver, "o"), s=45,
                           edgecolors="white", linewidths=0.6, zorder=3)
     oc = w[w["is_barrier"] == 1]
     if not oc.empty:
-        ax_oc.scatter(oc[M_DESIGN], oc[M_PEAKRSS] / 1024.0, s=190,
+        ax_oc.scatter(oc[m_vol], oc[M_PEAKRSS] / 1024.0, s=190,
                       facecolors="none", edgecolors="crimson", linewidths=1.8,
-                      zorder=2, label="out-of-core ($[X\\,|\\,D] >$ RAM)")
+                      zorder=2, label="out-of-core (volume $>$ RAM)")
     if ram > 0:
         ax_oc.axvline(ram, color="crimson", linestyle="-.", linewidth=1.8,
                       label=f"physical RAM = {ram:.0f} GiB")
     ax_oc.set_xscale("log")
-    ax_oc.set_xlabel("Total design volume $[X\\,|\\,D]$ [GiB]  (log)", fontsize=11)
+    if m_vol == M_VOL:
+        ax_oc.set_xlabel("Volume per T-iteration $X + K L X$ [GiB]  (log)",
+                         fontsize=11)
+    else:
+        ax_oc.set_xlabel("Total design volume $[X\\,|\\,D]$ [GiB]  (log)",
+                         fontsize=11)
     ax_oc.set_ylabel("Process peak RSS [GiB]", fontsize=11)
-    ax_oc.set_title("Out-of-core: design crosses RAM, resident stays bounded",
+    ax_oc.set_title("Out-of-core: volume crosses RAM, resident stays bounded",
                     fontsize=12, fontweight="bold")
     ax_oc.grid(True, which="both", linestyle="--", linewidth=0.6, alpha=0.4)
 
@@ -1243,8 +1258,9 @@ def main_scalability(argv: list) -> None:
         description="Demo-08 scalability dashboard (wide CSV schema).",
     )
     parser.add_argument(
-        "csv_path", type=Path,
-        help="Wide demo-08 CSV (scenario,solver,n,p,num_mc,snr,metric,value).",
+        "csv_paths", type=Path, nargs="+",
+        help=("Wide demo-08 CSV(s) (n,p,is_barrier,solver,num_mc,snr,metric,"
+              "value); several are concatenated into one dashboard."),
     )
     parser.add_argument(
         "--title",
@@ -1261,7 +1277,7 @@ def main_scalability(argv: list) -> None:
     )
     args, _ignored = parser.parse_known_args(argv)
 
-    df = read_scalability(args.csv_path.resolve())
+    df = read_scalability([p.resolve() for p in args.csv_paths])
     fig = plot_scalability_dashboard(df, args.title, tfdr=args.tfdr,
                                      xscale=args.xscale)
     save_figure(fig, args.outdir.resolve(), args.stem, args.formats)

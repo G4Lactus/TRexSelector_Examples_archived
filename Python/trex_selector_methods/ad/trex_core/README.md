@@ -61,7 +61,7 @@ trex_core/
 | 05 | [demo_trex_05_mc_sim_dummy_distributions](demo_trex_05_mc_sim_dummy_distributions/) | Dummy distribution comparison across 3 base solvers (TLARS/TOMP/TAFS rho_afs=0.3) with the STANDARD L-loop strategy held fixed (num_MC=200 matching the C++ reference, SNR grid {0.1, 0.2, 0.5, 0.6, 1, 2, 5} mirroring the current C++ grid, one result file pair per solver). Sweeps 12 distribution rows (Normal, Uniform, Rademacher, StudentT df 3/5, Laplace, Gumbel, Triangle, Logistic, Mammen, sparse Rademacher s=0.1, UniformSphere dim=5) passed as picklable spec dicts and resolved to `trex.DummyDistribution` inside each worker. | [demo_trex_05_mc_sim_dummy_distributions](../../../../cpp/trex_selector_methods/ad/trex_core/demo_trex_05_mc_sim_dummy_distributions/) |
 | 06 | [demo_trex_06_mmap](demo_trex_06_mmap/) | Single-run memory-mapped (mmap) workflows (seed=58). Part A keeps X in memory with `use_memory_mapping=True` (D-mmap + solver LARS-path serialization). Part B runs the fully memory-mapped pipeline, where X is written to a temp binary file via `numpy_to_memmap()` and passed to `trex.TRexSelector` as the zero-copy `to_numpy()` view. Each part runs a low-dim (n=5,000, p=1,000) and a high-dim (n=1,000, p=5,000) case and writes a dual-output `.txt` (C++-style selection block) plus a per-variable selection file in comma-separated values (CSV) format. | [demo_trex_06_mmap](../../../../cpp/trex_selector_methods/ad/trex_core/demo_trex_06_mmap/) |
 | 07 | [demo_trex_07_mc_sim_mmap](demo_trex_07_mc_sim_mmap/) | MC study under memory mapping (TLARS only, num_MC=200 as in C++, fixed support seed 24, SNR in {0.1, 0.5, 1, 2, 5}). Part C runs in-memory X + `use_memory_mapping=True` via `run_mc_trex()`. Part D runs a fully mmapped X per trial via `run_mc_trex_full_mmap()` (each worker writes X to a unique temp file and deletes it afterwards). Both parts should produce statistically equivalent FDR/TPR — that equivalence is the verification goal. | [demo_trex_07_mc_sim_mmap](../../../../cpp/trex_selector_methods/ad/trex_core/demo_trex_07_mc_sim_mmap/) |
-| 08 | [demo_trex_08_mc_sim_scalability](demo_trex_08_mc_sim_scalability/) | Scalability benchmark on the fully memory-mapped pipeline with scenarios A (300 x 1k), B (1k x 10k) and C (5k x 100k), a 2D sweep over 3 base solvers (TLARS/TOMP/TAFS) x SNR {0.5, 1, 2}, and num_MC=10 sequential trials per grid point. X is generated chunk-wise into an mmap backing file. Twelve timing/memory/quality metric rows per solver, with an incremental save per completed scenario to `demo_trex_08_scalability_results.{txt,csv}`. | [demo_trex_08_mc_sim_scalability](../../../../cpp/trex_selector_methods/ad/trex_core/demo_trex_08_mc_sim_scalability/) |
+| 08 | [demo_trex_08_mc_sim_scalability](demo_trex_08_mc_sim_scalability/) | Scalability benchmark on the fully memory-mapped pipeline in two blocks. The base block crosses n in {300, 500, 1,000, 1,500, 2,000, 5,000} with p in {1,000, ..., 200,000} (dummy cap 10), and the large-p block runs n in {300, 500} with p in {1,000,000, 5,000,000} (dummy cap 5). It runs 3 base solvers (TLARS/TOMP/TAFS rho_afs=0.3) with num_MC=10 sequential trials per cell, a resumable per-trial cache and a disk pre-flight per point, and it records timing, memory, and FDR/TPR | [demo_trex_08_mc_sim_scalability](../../../../cpp/trex_selector_methods/ad/trex_core/demo_trex_08_mc_sim_scalability/) |
 
 ---
 
@@ -167,10 +167,10 @@ tables and `plots/` for figures:
   block) plus a per-variable selection CSV (via `save_selection_csv()`),
   e.g. `d02_trex_mmap_demo_a_n5000_p1000.{txt,csv}` and
   `d02_trex_mmap_demo_b_n1000_p5000.{txt,csv}`.
-- **Demo 08**: an aligned scenario x SNR metrics table
-  (`demo_trex_08_scalability_results.txt`) and a tidy CSV with columns
-  `scenario`, `solver`, `n`, `p`, `num_mc`, `snr`, `metric`, `value`,
-  re-saved after each completed scenario.
+- **Demo 08**: per block (base and large-p) an aligned per-solver $(n, p)$ metrics table
+  (`demo_trex_08_scalability_results.txt`, `demo_trex_08_scalability_large_p.txt`), a tidy CSV with columns
+  `n`, `p`, `is_barrier`, `solver`, `num_mc`, `snr`, `metric`, `value`, and the raw per-trial cache
+  `<stem>_trials.csv`, re-saved after each completed grid point.
 
 All CSVs are written with pandas and can be plotted with any tool of choice
 (matplotlib, ggplot2, ...).

@@ -11,29 +11,42 @@
 # Python/trex_selector_methods/ad/trex_core/demo_trex_08_mc_sim_scalability.py
 #
 # Two aims:
-#   (a) high-dimensionality  — sweep p up to 200,000;
-#   (b) volumes beyond RAM   — the largest p columns push the design [X|D] past
-#                              physical RAM, feasible only because the pipeline
-#                              is fully out-of-core (memory-mapped).
+#   (a) high-dimensionality  — sweep p up to 5,000,000;
+#   (b) volumes beyond RAM   — the data one T-iteration touches (X plus the K
+#                              memory-mapped dummy files) grows past physical
+#                              RAM, feasible only because the pipeline is fully
+#                              out-of-core (memory-mapped).
 #
-# Design of the study:
-#   * 2-D grid  n in {1000,1500,2000,5000} x p in {1k,5k,10k,20k,50k,100k,150k,200k}
+# Design of the study, two blocks with separate outputs and trial caches:
+#   * base block     n in {300,500,1000,1500,2000,5000}
+#                    x p in {1k,5k,10k,20k,50k,100k,150k,200k},
+#                    max_dummy_multiplier = 10
+#   * large-p block  n in {300,500} x p in {1,000,000; 5,000,000},
+#                    max_dummy_multiplier = 5 (bounds the worst-case dummy disk
+#                    at n=500, p=5e6 to 2 TB)
 #   * SNR = 1 fixed (SNR is not a scaling axis; sweeping it only burns time),
 #     demo-03 DGP (variable support s=10 redrawn per trial, unit coefficients,
 #     Normal predictors/noise).
 #   * num_MC = 10 SEQUENTIAL trials per (n, p, solver). Trials are NOT run in
 #     parallel: this is a timing/memory benchmark, and concurrent trials would
 #     (i) corrupt per-trial wall-clock, (ii) confound RSS, and (iii) multiply
-#     the on-disk dummy backing.
+#     the on-disk dummy backing. The K random experiments inside select() also
+#     run one after another; OpenMP threads (TREX_NUM_WORKERS, default 8)
+#     parallelize the column loops inside each.
 #
 # Fully memory-mapped pipeline in every point: X is generated column-chunk by
 # column-chunk into an mmap backing file via dgp_chunked_gauss_snr() (never
 # materialized in RAM), and use_memory_mapping = TRUE memory-maps the dummy
 # matrices D and serializes solver warm-start state between T-loop iterations.
 #
+# Disk pre-flight: a point whose worst-case disk need (X, K dummy files at the
+# dummy cap, K checkpoints) does not fit the free temp-dir space is skipped
+# with a message. The library does not check free space, and a write into a
+# memory-mapped file on a full disk raises SIGBUS.
+#
 # Per grid point we record: timing (DGP, select() median/min/max, per-T-iter),
 # memory (post-select RSS, physical footprint, process peak RSS, X+y bytes,
-# theoretical design volume), and FDR / TPR / Avg L / Avg T.
+# per T-iteration data volume at the realized L), and FDR / TPR / Avg L / Avg T.
 #
 # Memory metrics in R (see the profiling section):
 #   * rss_mib      — `ps -o rss= -p <pid>` (current resident set size).
@@ -46,9 +59,10 @@
 #                    NA rather than a fake number).
 #
 # Self-cleanup: the process sweeps its own memory-mapped orphans
-# (demo08_scalability_* backing files and trex_memmap_* dummy dirs in the temp
-# dir) at startup and on exit, so a cancelled run does not strand tens of GB.
-# (A SIGKILL cannot be trapped; the next startup sweep reclaims it.)
+# (demo08_scalability_* backing files, trex_memmap_* dummy dirs and
+# trex_warmstart_* checkpoint dirs in the temp dir) at startup and on exit, so
+# a cancelled run does not strand hundreds of GB. (SIGKILL and SIGBUS cannot be
+# handled from R; the next startup sweep reclaims them.)
 #
 # Expandable by design. Every trial is appended to a raw per-trial cache
 # (<stem>_trials.csv, one row per (n, p, solver, mc) keyed by its seed). A run
@@ -63,12 +77,13 @@
 # the grid.
 #
 # Results go to simulation_results/data/ as an aligned table (.txt) and a tidy
-# summary CSV, both re-derived from the cache and re-saved after each (n, p)
-# point.
+# summary CSV per block, both re-derived from the cache and re-saved after each
+# (n, p) point.
 #
 # Run:
-#   Rscript demo_trex_08_mc_sim_scalability.R           # full benchmark, num_MC=10
-#   Rscript demo_trex_08_mc_sim_scalability.R 2         # full benchmark, num_MC=2
+#   Rscript demo_trex_08_mc_sim_scalability.R           # both blocks, num_MC=10
+#   Rscript demo_trex_08_mc_sim_scalability.R base      # base block only
+#   Rscript demo_trex_08_mc_sim_scalability.R large 2   # large-p block, num_MC=2
 #   Rscript demo_trex_08_mc_sim_scalability.R smoke     # tiny end-to-end check
 #   Rscript demo_trex_08_mc_sim_scalability.R smoke 3   # smoke grid, num_MC=3
 #
@@ -97,25 +112,34 @@ source(file.path(this_dir_, "..", "trex_sim_utils.R"))
 OUT_DIR <- file.path(this_dir_, "simulation_results", "data")
 dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
 
-S_TRUE     <- 10L      # cardinality of the true support (redrawn per trial)
-TFDR       <- 0.1
-SNR        <- 1.0      # fixed; SNR is not a scaling axis
-CHUNK_COLS <- 1000L    # column-chunk size for the out-of-core X generation
-DUMMY_MULT <- 10L      # max_dummy_multiplier; drives the D volume (10 x p)
+S_TRUE      <- 10L     # cardinality of the true support (redrawn per trial)
+TFDR        <- 0.1
+SNR         <- 1.0     # fixed; SNR is not a scaling axis
+CHUNK_COLS  <- 1000L   # column-chunk size for the out-of-core X generation
+NUM_RND_EXP <- 20L     # K random experiments
+DUMMY_MULT  <- 10L     # base block max_dummy_multiplier
+LARGE_P_DUMMY_MULT <- 5L     # large-p block cap (bounds the dummy disk)
+DISK_RESERVE_GIB   <- 50.0   # free disk left untouched by the pre-flight
 
-# NOTE (thread pinning): the C++/Python demos pin the selector's inner OpenMP
-# pool to TREX_NUM_WORKERS threads (default 8). The R
-# package exports no equivalent, so the library's own defaults apply here —
-# a documented divergence, not a config difference in trex_control().
+# OpenMP threads for select(), pinned like the C++/Python demos:
+# TREX_NUM_WORKERS, else 8 (0 = all cores).
+NUM_THREADS <- local({
+  a <- suppressWarnings(as.integer(Sys.getenv("TREX_NUM_WORKERS", "8")))
+  if (is.na(a)) 8L else if (a < 1L) parallel::detectCores() else a
+})
 
-# 2-D scaling grid. The largest p columns push the design [X|D] past physical
-# RAM — the out-of-core regime that only the memory-mapped pipeline can reach.
-N_VALUES <- c(1000L, 1500L, 2000L, 5000L)
+# Base block: full n x p cross. Points whose volume X + K*L*X passes physical
+# RAM are the out-of-core regime that only the memory-mapped pipeline reaches.
+N_VALUES <- c(300L, 500L, 1000L, 1500L, 2000L, 5000L)
 P_VALUES <- c(1000L, 5000L, 10000L, 20000L, 50000L, 100000L, 150000L, 200000L)
+# Large-p block: few observations, millions of predictors.
+LARGE_P_N_VALUES <- c(300L, 500L)
+LARGE_P_P_VALUES <- c(1000000L, 5000000L)
 NUM_MC   <- 10L
 
-# Tiny end-to-end smoke grid (pipeline verification only).
-SMOKE_GRID <- list(c(150L, 500L), c(200L, 1000L))
+# Tiny end-to-end smoke grid (pipeline verification only); the second point
+# exercises the large-p dummy cap.
+SMOKE_GRID <- list(c(150L, 500L, DUMMY_MULT), c(200L, 1000L, LARGE_P_DUMMY_MULT))
 SMOKE_MC   <- 2L
 
 # Base solvers to compare (rho_afs only used by TAFS, which requires rho in
@@ -135,9 +159,33 @@ TMP_DIR <- {
 }
 
 
-.design_gib <- function(n, p) {
-  # Theoretical design volume [X|D] in GiB (X plus 10x-p dummies, float64).
-  n * (1 + DUMMY_MULT) * as.numeric(p) * 8.0 / 1024^3
+.volume_gib <- function(n, p, L) {
+  # Data volume one T-iteration touches in GiB: X plus the K memory-mapped
+  # dummy files of L * p columns each (float64).
+  as.numeric(n) * as.numeric(p) * 8.0 * (1 + NUM_RND_EXP * L) / 1024^3
+}
+
+
+.worst_case_disk_gib <- function(n, p, dummy_mult) {
+  # Worst-case disk need of one trial in GiB: X, the K dummy files at
+  # L = dummy_mult, and K solver checkpoints (at most 32 bytes per column of
+  # [X|D]).
+  np_ <- as.numeric(n) * as.numeric(p)
+  x_bytes     <- np_ * 8.0
+  dummies     <- NUM_RND_EXP * np_ * dummy_mult * 8.0
+  checkpoints <- NUM_RND_EXP * 32.0 * as.numeric(p) * (1 + dummy_mult)
+  (x_bytes + dummies + checkpoints) / 1024^3
+}
+
+
+.free_temp_disk_gib <- function() {
+  # Free space of the temp dir in GiB via POSIX `df -Pk` (NA if unavailable).
+  out <- tryCatch(suppressWarnings(system2("df", c("-Pk", TMP_DIR), stdout = TRUE)),
+                  error = function(e) character(0))
+  if (length(out) < 2L) return(NA_real_)
+  fields <- strsplit(trimws(out[[2L]]), "\\s+")[[1L]]
+  kib <- suppressWarnings(as.numeric(fields[4L]))
+  if (is.finite(kib)) kib / 1024^2 else NA_real_
 }
 
 
@@ -160,7 +208,7 @@ TMP_DIR <- {
 RAM_GIB <- .physical_ram_gib()
 
 
-.make_scalability_ctrl <- function(solver_entry) {
+.make_scalability_ctrl <- function(solver_entry, dummy_mult) {
   # T-Rex control (base config of demos 02/03/07) for one grid point.
   # EVERY control option is set explicitly and identically to the C++ demo's
   # make_scalability_trex_ctrl() — no reliance on trex_control() defaults.
@@ -168,8 +216,8 @@ RAM_GIB <- .physical_ram_gib()
     solver                   = solver_entry$solver,
     lambda2                  = solver_entry$lambda2,
     rho_afs                  = solver_entry$rho_afs,
-    K                        = 20L,
-    max_dummy_multiplier     = DUMMY_MULT,
+    K                        = NUM_RND_EXP,
+    max_dummy_multiplier     = dummy_mult,
     use_max_T_stop           = TRUE,
     opt_threshold            = 0.75,
     dummy_distribution       = trex_dummy_distribution("Normal"),
@@ -183,16 +231,26 @@ RAM_GIB <- .physical_ram_gib()
 
 
 .benchmark_grid <- function(num_MC = NUM_MC) {
-  # List of (n, p, num_MC, is_barrier) points over the full n x p grid.
-  # is_barrier flags points whose logical design [X|D] exceeds this machine's
-  # physical RAM (feasible only out-of-core).
+  # List of (n, p, num_MC, dummy_mult) points of the base block (n x p cross).
   grid <- list()
   for (n in N_VALUES) {
     for (p in P_VALUES) {
-      grid[[length(grid) + 1L]] <- list(
-        n = n, p = p, num_MC = num_MC,
-        is_barrier = isTRUE(.design_gib(n, p) > RAM_GIB)
-      )
+      grid[[length(grid) + 1L]] <- list(n = n, p = p, num_MC = num_MC,
+                                        dummy_mult = DUMMY_MULT)
+    }
+  }
+  grid
+}
+
+
+.large_p_grid <- function(num_MC = NUM_MC) {
+  # Points of the large-p block, ordered by volume (p-outer) so the cheapest
+  # points finish first.
+  grid <- list()
+  for (p in LARGE_P_P_VALUES) {
+    for (n in LARGE_P_N_VALUES) {
+      grid[[length(grid) + 1L]] <- list(n = n, p = p, num_MC = num_MC,
+                                        dummy_mult = LARGE_P_DUMMY_MULT)
     }
   }
   grid
@@ -201,7 +259,7 @@ RAM_GIB <- .physical_ram_gib()
 
 .smoke_grid <- function(num_MC = SMOKE_MC) {
   lapply(SMOKE_GRID, function(np) {
-    list(n = np[[1]], p = np[[2]], num_MC = num_MC, is_barrier = FALSE)
+    list(n = np[[1L]], p = np[[2L]], num_MC = num_MC, dummy_mult = np[[3L]])
   })
 }
 
@@ -227,8 +285,11 @@ RAW_FIELDS <- c("n", "p", "solver", "mc", "trial_seed", "dgp_s", "select_s",
                 "rss_mib", "fp_mib", "peak_rss_mib", "data_mib",
                 "fdp", "tpp", "L", "T")
 
-.raw_cache_path <- function(file_stem) {
-  file.path(OUT_DIR, paste0(file_stem, "_trials.csv"))
+.raw_cache_path <- function(file_stem, persist_cache = TRUE) {
+  # A non-persistent cache lives in the temp dir and is swept with the
+  # orphans, so every smoke run computes fresh.
+  if (persist_cache) return(file.path(OUT_DIR, paste0(file_stem, "_trials.csv")))
+  file.path(TMP_DIR, paste0("demo08_scalability_", file_stem, "_trials.csv"))
 }
 
 .cell_key <- function(n, p, solver_name) sprintf("%d|%d|%s", n, p, solver_name)
@@ -272,7 +333,7 @@ RAW_FIELDS <- c("n", "p", "solver", "mc", "trial_seed", "dgp_s", "select_s",
   total <- dgp + sel
 
   list(
-    design_gib   = .design_gib(n, p),
+    vol_gib      = .volume_gib(n, p, max(mean(L), 1.0)),
     sel_med_s    = stats::median(sel),
     sel_min_s    = min(sel),
     sel_max_s    = max(sel),
@@ -297,13 +358,14 @@ RAW_FIELDS <- c("n", "p", "solver", "mc", "trial_seed", "dgp_s", "select_s",
 # Self-cleanup of memory-mapped orphans
 # ==============================================================================
 
-ORPHAN_GLOBS <- c("demo08_scalability_*", "trex_memmap_*")
+ORPHAN_GLOBS <- c("demo08_scalability_*", "trex_memmap_*", "trex_warmstart_*")
 
 sweep_mmap_orphans <- function(reason = "") {
   # Remove this demo's stray mmap backing in the temp dir (best-effort).
-  # Targets `demo08_scalability_*` X backing files and `trex_memmap_*` dummy
-  # dirs left behind by a killed/cancelled run. Assumes SOLO execution (this is
-  # a sequential benchmark). Returns bytes freed, invisibly.
+  # Targets `demo08_scalability_*` X backing files, `trex_memmap_*` dummy dirs
+  # and `trex_warmstart_*` checkpoint dirs left behind by a killed/cancelled
+  # run. Assumes SOLO execution (this is a sequential benchmark). Returns bytes
+  # freed, invisibly.
   freed <- 0
   for (pattern in ORPHAN_GLOBS) {
     for (path in Sys.glob(file.path(TMP_DIR, pattern))) {
@@ -451,25 +513,24 @@ run_scalability_trial <- function(n, p, ctrl, tFDR, snr, seed, support, coefs,
 # Grid-point loop (n, p, solver): sequential MC trials
 # ==============================================================================
 
-run_scalability_grid_point <- function(n, p, num_MC, is_barrier, solver_entry,
+run_scalability_grid_point <- function(n, p, num_MC, dummy_mult, solver_entry,
                                        tFDR, snr, rnd_coef,
                                        cardinality_true_support,
-                                       cell_cache, raw_path) {
+                                       cell_cache, raw_path, disk_ok = TRUE) {
   # Ensure >= num_MC trials exist for this (n, p, solver) cell, then aggregate.
   # Only the missing trial indices [0, num_MC) are computed; each is appended
-  # to the raw store immediately (trial-level durability).
-  ctrl <- .make_scalability_ctrl(solver_entry)
-  tag  <- if (is_barrier) "BARRIER" else sprintf("n%d_p%d", n, p)
-  mmap_filestem <- file.path(TMP_DIR, paste0("demo08_scalability_", tag))
+  # to the raw store immediately (trial-level durability). With
+  # disk_ok = FALSE nothing is computed and only cached trials count; agg is
+  # NULL when the cell has no trials at all.
+  ctrl <- .make_scalability_ctrl(solver_entry, dummy_mult)
+  mmap_filestem <- file.path(TMP_DIR, sprintf("demo08_scalability_n%d_p%d", n, p))
 
-  design <- .design_gib(n, p)
-  over   <- if (is_barrier) "  (> RAM — out-of-core)" else ""
   have   <- length(cell_cache)
-  todo   <- setdiff(0L:(num_MC - 1L), as.integer(names(cell_cache)))
+  todo   <- if (disk_ok) setdiff(0L:(num_MC - 1L), as.integer(names(cell_cache))) else integer(0)
   reuse_note <- if (have > 0L) sprintf("  (reusing %d cached)", have) else ""
   cat(sprintf(
-    "  [%s] n=%d, p=%d  (design [X|D] = %.1f GiB%s) — %d new / %d MC trials (mmap)%s ...\n",
-    solver_entry$name, n, p, design, over, length(todo), num_MC, reuse_note
+    "  [%s] n=%d, p=%d  (L cap %d) — %d new / %d MC trials (mmap)%s ...\n",
+    solver_entry$name, n, p, dummy_mult, length(todo), num_MC, reuse_note
   ))
 
   for (mc in todo) {
@@ -509,6 +570,7 @@ run_scalability_grid_point <- function(n, p, num_MC, is_barrier, solver_entry,
     ))
   }
 
+  if (length(cell_cache) == 0L) return(list(agg = NULL, cell_cache = cell_cache))
   agg <- .aggregate_cell(cell_cache, n, p)
   cat(sprintf(
     "  [%s] n=%d, p=%d done (%d trials). select median=%.2fs [%.2f, %.2f]  peakRSS=%.0f MiB  FDR=%.3f  TPR=%.3f\n\n",
@@ -527,7 +589,7 @@ run_scalability_grid_point <- function(n, p, num_MC, is_barrier, solver_entry,
 # Per-grid-point metric columns (table order and CSV metric set):
 # label, decimals, aggregate key.
 METRICS <- list(
-  list("DesignGiB",   1L, "design_gib"),
+  list("VolGiB",      1L, "vol_gib"),
   list("SelMed_s",    3L, "sel_med_s"),
   list("SelMin_s",    3L, "sel_min_s"),
   list("SelMax_s",    3L, "sel_max_s"),
@@ -543,12 +605,14 @@ METRICS <- list(
   list("Avg_T",       2L, "avg_T")
 )
 
-save_and_print_scalability_results <- function(file_stem, tFDR, snr, grid,  # nolint: object_length_linter. C++ name
+save_and_print_scalability_results <- function(file_stem, block_title,  # nolint: object_length_linter. C++ name
+                                               tFDR, snr, grid,
                                                solvers, results,
                                                num_MC_target) {
   # Print the scalability results as an aligned per-solver table (rows = (n, p)
   # grid points, columns = metrics) to console + .txt, and write a tidy
   # long-format CSV. `results[[solver_name]][[key]]` holds the agg lists.
+  # is_barrier = 1 where the volume at the realized L exceeds RAM.
   # Mirrors the C++/Python function of the same name.
   txt_path <- file.path(OUT_DIR, paste0(file_stem, ".txt"))
   con      <- file(txt_path, open = "wt")
@@ -564,9 +628,11 @@ save_and_print_scalability_results <- function(file_stem, tFDR, snr, grid,  # no
   out(sprintf("=== T-Rex Scalability Results (tFDR = %.2f, SNR = %.1f, num_MC = %d) ===\n",
               tFDR, snr, num_MC_target))
   out(sprintf("%s\n\n", strrep("=", 70L)))
+  out(paste0(block_title, "\n"))
   out("Fully memory-mapped pipeline (X mmap + D mmap + solver serialization).\n")
-  out(sprintf("Physical RAM: %.0f GiB. Grid: n x p; the barrier row (p*) is the out-of-core point.\n\n",
-              RAM_GIB))
+  out(sprintf(paste0("Physical RAM: %.0f GiB. VolGiB = X + K*L*X, the data one ",
+                     "T-iteration touches (K = %d, L = Avg_L).\n\n"),
+              RAM_GIB, NUM_RND_EXP))
 
   n_w   <- 8L
   p_w   <- 9L
@@ -580,7 +646,7 @@ save_and_print_scalability_results <- function(file_stem, tFDR, snr, grid,  # no
     for (gp in grid) {
       agg <- grid_res[[.cell_key(gp$n, gp$p, solver_entry$name)]]
       if (is.null(agg)) next
-      lbl_p <- paste0(gp$p, if (gp$is_barrier) "*" else "")
+      lbl_p <- paste0(gp$p, if (isTRUE(agg$vol_gib > RAM_GIB)) "*" else "")
       row   <- sprintf("%-*d%-*s", n_w, gp$n, p_w, lbl_p)
       for (mspec in METRICS) {
         row <- paste0(row, fmt_val(agg[[mspec[[3L]]]], mspec[[2L]], met_w))
@@ -589,7 +655,7 @@ save_and_print_scalability_results <- function(file_stem, tFDR, snr, grid,  # no
     }
     out("\n")
   }
-  out("(* = out-of-core barrier point, design [X|D] > physical RAM)\n\n")
+  out("(* = out-of-core point, VolGiB > physical RAM)\n\n")
 
   close(con)
   on.exit(NULL)
@@ -604,7 +670,7 @@ save_and_print_scalability_results <- function(file_stem, tFDR, snr, grid,  # no
       if (is.null(agg)) next
       for (mspec in METRICS) {
         rows[[length(rows) + 1L]] <- data.frame(
-          n = gp$n, p = gp$p, is_barrier = as.integer(gp$is_barrier),
+          n = gp$n, p = gp$p, is_barrier = as.integer(isTRUE(agg$vol_gib > RAM_GIB)),
           solver = solver_entry$name, num_mc = agg$num_mc,
           snr = sprintf("%.6f", snr), metric = mspec[[1L]],
           value = round(agg[[mspec[[3L]]]], 6L),
@@ -625,12 +691,12 @@ save_and_print_scalability_results <- function(file_stem, tFDR, snr, grid,  # no
 # Scalability benchmark driver
 # ==============================================================================
 
-demo_trex_scalability <- function(grid, file_stem, num_MC_target,
-                                  rnd_coef = FALSE) {
+demo_trex_scalability <- function(grid, file_stem, block_title, num_MC_target,
+                                  rnd_coef = FALSE, persist_cache = TRUE) {
   # Clear any orphans stranded by a previous cancelled run before we start.
   sweep_mmap_orphans("startup")
 
-  raw_path <- .raw_cache_path(file_stem)
+  raw_path <- .raw_cache_path(file_stem, persist_cache)
   cache    <- .load_trial_cache(raw_path)   # cache[[key]][[mc]] = row
   cached_trials <- sum(vapply(cache, length, 0L))
 
@@ -638,27 +704,19 @@ demo_trex_scalability <- function(grid, file_stem, num_MC_target,
   cat("Demo: T-Rex Selector Scalability Benchmark  |  TLARS / TOMP / TAFS\n")
   cat(strrep("=", 70L), "\n\n", sep = "")
 
-  max_design <- .design_gib(N_VALUES[[length(N_VALUES)]],
-                            P_VALUES[[length(P_VALUES)]])
-  # Out-of-core count over the FULL n x p grid (header info; mirrors Python).
-  n_over <- sum(vapply(
-    N_VALUES,
-    function(n) {
-      sum(vapply(P_VALUES,
-                 function(p) isTRUE(.design_gib(n, p) > RAM_GIB),
-                 FALSE))
-    },
-    0L
-  ))
+  vols     <- vapply(grid, function(gp) .volume_gib(gp$n, gp$p, 1.0), 0.0)
+  max_disk <- max(vapply(grid, function(gp) {
+    .worst_case_disk_gib(gp$n, gp$p, gp$dummy_mult)
+  }, 0.0))
+  n_over   <- sum(vols > RAM_GIB, na.rm = TRUE)
+  cat(block_title, "\n", sep = "")
   cat("Fully memory-mapped pipeline (X mmap + D mmap + solver serialization)\n")
-  cat(sprintf("Physical RAM: %.0f GiB\n", RAM_GIB))
-  cat(sprintf("Grid: n in {%s} x p in {%s}  (%d points)\n",
-              paste(N_VALUES, collapse = ", "),
-              paste(P_VALUES, collapse = ", "),
-              length(N_VALUES) * length(P_VALUES)))
-  cat(sprintf("Largest design [X|D] = %.1f GiB (n=%d, p=%d); %d point(s) exceed RAM (out-of-core)\n",
-              max_design, N_VALUES[[length(N_VALUES)]],
-              P_VALUES[[length(P_VALUES)]], n_over))
+  cat(sprintf("Physical RAM: %.0f GiB,  free temp disk: %.0f GiB\n",
+              RAM_GIB, .free_temp_disk_gib()))
+  cat(sprintf(paste0("Grid: %d points; largest volume X + K*X (L = 1) = %.1f GiB; ",
+                     "%d point(s) exceed RAM at L = 1 (out-of-core); ",
+                     "largest worst-case disk need = %.1f GiB\n"),
+              length(grid), max(vols), n_over, max_disk))
   cat(sprintf("SNR = %.1f (fixed),  s = %d,  tFDR = %.2f,  num_MC = %d sequential per (n, p, solver)\n",
               SNR, S_TRUE, TFDR, num_MC_target))
   cat(sprintf("Trial cache: %s  (%d trial(s) already present — only missing trials are computed)\n\n",
@@ -673,28 +731,39 @@ demo_trex_scalability <- function(grid, file_stem, num_MC_target,
   # next (larger) one starts, and results are re-saved after each point so a
   # crash on a bigger point preserves the finished ones.
   for (gi in seq_along(grid)) {
-    gp <- grid[[gi]]
+    gp   <- grid[[gi]]
+    vol1 <- .volume_gib(gp$n, gp$p, 1.0)
     cat(strrep("=", 50L), "\n", sep = "")
     cat(sprintf("Grid point: n=%d, p=%d%s\n", gp$n, gp$p,
-                if (gp$is_barrier) "   [BARRIER — out-of-core]" else ""))
-    cat(sprintf("  design [X|D] = %.1f GiB  (X backing %.2f GiB + 10x-p dummies)\n",
-                .design_gib(gp$n, gp$p),
-                gp$n * as.numeric(gp$p) * 8.0 / 1024^3))
-    cat(strrep("=", 50L), "\n\n", sep = "")
+                if (isTRUE(vol1 > RAM_GIB)) "   [out-of-core]" else ""))
+    cat(strrep("=", 50L), "\n", sep = "")
+
+    # Disk pre-flight: a full disk under a memory-mapped write is a SIGBUS.
+    need    <- .worst_case_disk_gib(gp$n, gp$p, gp$dummy_mult)
+    avail   <- .free_temp_disk_gib()
+    disk_ok <- is.na(avail) || need + DISK_RESERVE_GIB <= avail
+    cat(sprintf("  volume X + K*X (L = 1) = %.1f GiB  (X backing %.2f GiB, K = %d dummy files)\n",
+                vol1, gp$n * as.numeric(gp$p) * 8.0 / 1024^3, NUM_RND_EXP))
+    cat(sprintf("  worst-case disk need (L = %d) = %.1f GiB,  free = %.1f GiB,  reserve = %.1f GiB\n",
+                gp$dummy_mult, need, avail, DISK_RESERVE_GIB))
+    if (!disk_ok) {
+      cat("  [skip] not enough free disk — new trials are not computed for this point\n")
+    }
+    cat("\n")
 
     for (solver_entry in SOLVERS) {
       key        <- .cell_key(gp$n, gp$p, solver_entry$name)
       cell_cache <- if (is.null(cache[[key]])) list() else cache[[key]]
       point <- run_scalability_grid_point(
-        gp$n, gp$p, gp$num_MC, gp$is_barrier, solver_entry, TFDR, SNR,
-        rnd_coef, S_TRUE, cell_cache, raw_path
+        gp$n, gp$p, gp$num_MC, gp$dummy_mult, solver_entry, TFDR, SNR,
+        rnd_coef, S_TRUE, cell_cache, raw_path, disk_ok
       )
       cache[[key]] <- point$cell_cache
-      results[[solver_entry$name]][[key]] <- point$agg
+      if (!is.null(point$agg)) results[[solver_entry$name]][[key]] <- point$agg
     }
 
     # Incremental save over completed points (derived from the trial cache).
-    save_and_print_scalability_results(file_stem, TFDR, SNR,
+    save_and_print_scalability_results(file_stem, block_title, TFDR, SNR,
                                        grid[seq_len(gi)], SOLVERS, results,
                                        num_MC_target)
   }
@@ -705,9 +774,18 @@ demo_trex_scalability <- function(grid, file_stem, num_MC_target,
 # Main
 # ==============================================================================
 
-# CLI:  [smoke] [num_MC]  (order-independent; num_MC is any integer token)
-cli_args_ <- commandArgs(trailingOnly = TRUE)
-smoke_    <- "smoke" %in% cli_args_
+# Pin the selector's OpenMP to a fixed thread count (mirrors the C++/Python
+# demos); experiments and trials run one after another.
+TRexSelectorNeo::trex_set_num_threads(NUM_THREADS)
+cat(sprintf("Running with %d thread(s) (pinned to match the C++ demo)\n\n",
+            TRexSelectorNeo::trex_get_max_threads()))
+
+# CLI:  [smoke | base | large] [num_MC]  (order-independent; num_MC is any
+# integer token; without a block token both blocks run, base first)
+cli_args_  <- commandArgs(trailingOnly = TRUE)
+smoke_     <- "smoke" %in% cli_args_
+run_base_  <- !("large" %in% cli_args_)
+run_large_ <- !("base" %in% cli_args_)
 mc_tokens_ <- suppressWarnings(
   as.integer(cli_args_[grepl("^\\+?[0-9]+$", cli_args_)])
 )
@@ -716,11 +794,26 @@ num_MC_cli_ <- if (length(mc_tokens_) > 0L) mc_tokens_[[1L]] else NA_integer_
 if (smoke_) {
   mc_ <- if (!is.na(num_MC_cli_)) num_MC_cli_ else SMOKE_MC
   demo_trex_scalability(.smoke_grid(mc_),
-                        "demo_trex_08_scalability_smoke", mc_)
+                        "demo_trex_08_scalability_smoke",
+                        "Smoke grid (L cap 10 and 5)", mc_,
+                        persist_cache = FALSE)
 } else {
   mc_ <- if (!is.na(num_MC_cli_)) num_MC_cli_ else NUM_MC
-  demo_trex_scalability(.benchmark_grid(mc_),
-                        "demo_trex_08_scalability_results", mc_)
+  if (run_base_) {
+    demo_trex_scalability(
+      .benchmark_grid(mc_), "demo_trex_08_scalability_results",
+      sprintf("Base block: n x p cross, max_dummy_multiplier = %d", DUMMY_MULT),
+      mc_
+    )
+  }
+  if (run_large_) {
+    demo_trex_scalability(
+      .large_p_grid(mc_), "demo_trex_08_scalability_large_p",
+      sprintf("Large-p block: p in millions, max_dummy_multiplier = %d",
+              LARGE_P_DUMMY_MULT),
+      mc_
+    )
+  }
 }
 
 sweep_mmap_orphans("shutdown")
