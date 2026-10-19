@@ -44,22 +44,22 @@ rows are plotted — the `AvgL` / `AvgT` rows stay in the `.txt` / `.csv` files.
 
 ### Overview (all 14 solvers)
 
-FDR and TPR versus SNR on a log-scaled x-axis over the fine 21-point grid, every
+FDR and TPR versus SNR on a linear x-axis over the fine 21-point grid, every
 solver on one pair of panels:
 
 ![FDR and TPR versus SNR for all 14 solvers](simulation_results/plots/demo_trex_03_mc_sim_variable_support_trex_results_n300_p1000_stagnation_window_5_fdr_tpr_vs_snr.png)
 
 *Left:* redrawing the support on every trial does not break FDR control — the
-maximum over the entire table is 0.0621 (TENET at SNR 0.7), well under the target
+maximum over the entire table is 0.0607 (TLASSO at SNR 0.7), well under the target
 `tFDR = 0.1` (black dotted line). The fine grid resolves a hump the coarse Demo 02
-grid only hints at. The four least-angle regression (LARS) path solvers rise to 0.058–0.062 at SNR 0.7 and
-then decay to 0.029–0.031 by SNR 5.0, while the greedy family stays flatter and
-lower throughout (per-solver maxima 0.029–0.036, most of them reached at the top
-of the fine grid at SNR 1.7–1.8 rather than at the hump). *Right:* with
-`num_MC = 200` the power curves are smooth — TLARS climbs from 0.004 at SNR 0.1 to
-0.984 at SNR 2.0 and 1.000 at SNR 5.0. The two families cross near SNR 0.8. The
-LARS path leads below it and the greedy solvers lead above it (at SNR 1.0, TSTEPWISE 0.884
-against TLARS 0.729).
+grid only hints at. The four least-angle regression (LARS) path solvers rise to 0.055–0.061 at SNR 0.7 and
+then decay to 0.023–0.025 by SNR 5.0, while the greedy family stays flatter and
+lower at every SNR from 0.4 to 2.0 (per-solver maxima 0.026–0.033, six of the ten reached at the top
+of the fine grid at SNR 1.7–1.8 rather than at the hump). At SNR 5.0 both families meet at 0.020–0.025.
+*Right:* with `num_MC = 200` the power curves are smooth — TLARS climbs from 0.0035 at SNR 0.1 to
+0.9745 at SNR 2.0 and 1.0000 at SNR 5.0. The two families cross between SNR 0.7 and 0.8. The
+LARS path leads below it and the greedy solvers lead above it (at SNR 1.0, TSTEPWISE 0.8735
+against TLARS 0.7340).
 
 ### Grouped 2x2 view (de-cluttered)
 

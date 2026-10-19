@@ -43,21 +43,21 @@ Portable Document Format (PDF) files. This port has no interactive `.html` outpu
 
 ### Overview (all 14 solvers)
 
-FDR and TPR versus SNR on a log-scaled x-axis, every solver on one pair of panels:
+FDR and TPR versus SNR on a linear x-axis, every solver on one pair of panels:
 
 ![FDR and TPR versus SNR for all 14 solvers](simulation_results/plots/demo_trex_02_mc_sim_fixed_support_trex_results_n300_p1000_stagnation_window_7_fdr_tpr_vs_snr.png)
 
 *Left:* FDR stays far below the target `tFDR = 0.1` (black dotted line) at every
-SNR level for every solver — the maximum over the whole table is only 0.0487
-(TLARS at SNR 1.0), and the least-angle regression (LARS) path solvers peak there while the greedy family
-never exceeds 0.04. *Right:* TPR climbs from essentially zero at SNR 0.1
-(0.0015 at best) to full recovery (1.0000) at SNR 5.0 for all 14 solvers. The
+SNR level for every solver — the maximum over the whole table is only 0.0479
+(TENET at SNR 1.0), and the least-angle regression (LARS) path solvers peak there while the greedy family
+never exceeds 0.032, with TAFS_rho_0.3 (0.0407 at SNR 1.0) the one exception. *Right:* TPR climbs from
+essentially zero at SNR 0.1 (0.0025 at best) to full recovery (1.0000) at SNR 5.0 for all 14 solvers. The
 split at intermediate SNR is the usual one. At SNR 0.5 the LARS-path solvers
-(TLARS/TLASSO/TENET/TSTAGEWISE, 0.254–0.263) lead the greedy family
-(0.187–0.196, with TAFS_rho_0.3 in between at 0.2305), and the ordering reverses
-by SNR 1.0, where the greedy solvers reach 0.840–0.866 against 0.728–0.746 for
+(TLARS/TLASSO/TENET/TSTAGEWISE, 0.230–0.245) lead the greedy family
+(0.1805–0.1990, with TAFS_rho_0.3 level with TENET at 0.2300), and the ordering reverses
+by SNR 1.0, where the greedy solvers reach 0.836–0.862 against 0.710–0.726 for
 the LARS path. At SNR 2.0 every greedy solver is already at 1.0000 while the
-LARS-path solvers sit at 0.976–0.983.
+LARS-path solvers sit at 0.974–0.982.
 
 ### Grouped 2x2 view (de-cluttered)
 

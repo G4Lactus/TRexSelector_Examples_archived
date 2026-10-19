@@ -89,28 +89,30 @@ share `[0, 1]`:
 
 Within each column the twelve curves are essentially one thick line. At SNR 1.0
 — at or next to the FDR peak for every solver — the entire twelve-distribution
-FDR spread is 0.0475 (Triangle) to 0.0575 (StudentT_df5) under TLARS, 0.0256
-(Rademacher) to 0.0325 (Gumbel) under TOMP, and 0.0311 (Gumbel) to 0.0429
-(Laplace) under TAFS. Every value is well under the target `tFDR = 0.1`, and the
-within-solver spread is of the same order as the gap between solvers. TPR at the same
-point is equally tight (TLARS 0.723–0.741, TOMP 0.859–0.875, TAFS 0.865–0.885),
+FDR spread is 0.0429 (Triangle) to 0.0560 (Mammen) under TLARS, 0.0257
+(StudentT_df3) to 0.0280 (StudentT_df5) under TOMP, and 0.0312 (Logistic) to 0.0381
+(Mammen) under TAFS. Every value is well under the target `tFDR = 0.1`, and the
+three solver ranges do not overlap, so the solver sets the level while the distribution adds a spread of at most
+0.013. TPR at the same
+point is equally tight (TLARS 0.7115–0.7270, TOMP 0.8550–0.8725, TAFS 0.8525–0.8710),
 and every distribution reaches 1.0000 by SNR 5.0 under all three solvers. The
 *level* is solver-dependent — TLARS carries the familiar FDR hump around SNR
 0.6–1.0 while the greedy TOMP / TAFS run flatter and lower — but the choice of
 dummy distribution moves nothing systematically, not even the deliberately
-dependent **UnifSphere_d5** row (TLARS 0.0510, TOMP 0.0277, TAFS 0.0351 at SNR
-1.0, all mid-pack). Given that dummies are centered and L2-normalized before
-entering the solver, the demo concludes that the dummy distribution is
+dependent **UnifSphere_d5** row (TLARS 0.0469, TOMP 0.0258, TAFS 0.0345 at SNR
+1.0, all inside the range of the eleven independent rows). Given that dummies are centered and L2-normalized
+before entering the solver, the demo concludes that the dummy distribution is
 effectively a free parameter and that the Normal default is justified.
 
 Note that the ranking of distributions is *not* stable across solvers — the
-TLARS minimum (Triangle) is not the TOMP minimum (Rademacher) or the TAFS
-minimum (Gumbel), and the TAFS maximum (Laplace) is mid-pack elsewhere. With
+TLARS minimum (Triangle) is not the TOMP minimum (StudentT_df3) or the TAFS
+minimum (Logistic), and the TOMP maximum (StudentT_df5) sits in the lower half under TLARS. Mammen tops both
+TLARS and TAFS at SNR 1.0 but is mid-pack under TOMP and in the lower half under TLARS at SNR 2.0. With
 `num_MC = 200` the residual spread is Monte Carlo noise, not an ordering.
 
 ### Per-solver figure sets
 
-The usual overview (all twelve distributions on one FDR | TPR pair, log-scaled
+The usual overview (all twelve distributions on one FDR | TPR pair, linear
 x-axis) plus a de-cluttered grouped 2x2 view that splits the distributions across
 two columns. In the comma-separated values (CSV) output the "solver" column holds the distribution name, so the
 distributions are the legend.

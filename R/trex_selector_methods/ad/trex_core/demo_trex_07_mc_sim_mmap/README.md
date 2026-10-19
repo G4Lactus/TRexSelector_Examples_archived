@@ -55,13 +55,13 @@ row the other demos sweep (the plotter's `--overlay` mode):
 ![FDR and TPR versus SNR for Part C and Part D, the two curves coinciding](simulation_results/plots/d03_trex_mmap_demo_c_vs_d.png)
 
 *Left:* FDR stays far below the target `tFDR = 0.1` under both pipelines across
-the whole grid, peaking at only 0.0474 (Part C) / 0.0486 (Part D) at SNR 1.0 and
-falling back to 0.0311 / 0.0321 at SNR 5.0. *Right:* the power curves are
-indistinguishable — TPR climbs from 0.0020 (C) / 0.0010 (D) at SNR 0.1 to
-1.0000 in both at SNR 5.0, passing through 0.7490 / 0.7500 at SNR 1.0.
+the whole grid, peaking at only 0.0403 (Part C) / 0.0440 (Part D) at SNR 1.0 and
+falling back to 0.0266 / 0.0273 at SNR 5.0. *Right:* the power curves are
+indistinguishable — TPR climbs from 0.0015 in both at SNR 0.1 to
+1.0000 in both at SNR 5.0, passing through 0.7380 / 0.7330 at SNR 1.0.
 
-Across the five SNR levels the two pipelines never differ by more than 0.0062 in
-FDR (at SNR 0.5) or 0.0020 in TPR (at SNR 0.5 and 2.0) — Monte Carlo noise at
+Across the five SNR levels the two pipelines never differ by more than 0.0044 in
+FDR (at SNR 2.0) or 0.0050 in TPR (at SNR 1.0) — Monte Carlo noise at
 `num_MC = 200`, not a systematic effect. This is the result the demo exists to
 show. Memory-mapping `X` and `D` buys its memory savings without moving the
 statistics. The curves are *not* expected to coincide exactly — the two scenarios
