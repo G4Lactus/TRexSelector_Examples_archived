@@ -174,7 +174,7 @@ The single figure goes to `simulation_results/plots/`:
   $\rho = 0.4$), and base TAFS is at/near the limit up to $\rho = 0.4$ (FDR $0.17\text{–}0.22$). At lower
   SNR both violate early. At SNR $0.5$ they exceed the target from $\rho = 0.05$ on, and at SNR $1$ base TAFS
   does from $\rho = 0.1$ and base TOMP from $\rho = 0.2$. So for moderate equicorrelation and strong signal,
-  plain greedy T-Rex (TOMP) is the only usable selector — the DA-EQUI correction never is.
+  plain greedy T-Rex (TOMP) is the most reliable selector, while the DA-EQUI correction selects almost nothing there.
 - **TLARS_STAG matches TLARS in both rows.** With the stagnation stop, FDR and TPR differ from TLARS by at most
   $0.02$ and $0.03$, while the T-loop of the DA row stops after at most $8$ steps instead of running into the cap
   of $150$, and the base row's median $T$ drops from $105$ to $10$.

@@ -180,8 +180,10 @@ $12$ and up to $41$ steps.
 
 - Read as the "combined effects" check against **Demo 03** (Gaussian, no white noise), **Demo 02**
   (Gaussian, with white noise), and **Demo 04** (heavy-tailed, no white noise). The white-noise
-  padding again *helps* FDR control (this demo sits well below Demo 04's levels in the Gaussian
-  scenario), while heavy-tailed *response* noise is what pushes cells to the target — the two
+  padding again *helps* FDR control (in the Gaussian scenario the mean FDR over the DA cells is $0.078$ here against
+  $0.097$ in Demo 04, mostly through TLARS with $0.086$ against $0.132$, while TOMP runs slightly higher here), although
+  Demo 04 also has far fewer variables ($p = 25$ against $500$), so the gap is not due to the padding alone.
+  Heavy-tailed *response* noise is what pushes cells to the target (mean $0.123$ against $0.078$) — the two
   effects partially offset.
 - Heavy tails cost almost no power. Their price is paid in FDR, which moves toward the target in the `s2_Heavy`
   scenario. Violations occur only during the $M$-collapse and, as a touch of the target, at $Q = 50$.

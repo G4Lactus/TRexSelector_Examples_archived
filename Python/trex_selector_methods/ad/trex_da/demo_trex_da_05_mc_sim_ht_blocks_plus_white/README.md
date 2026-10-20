@@ -211,8 +211,9 @@ target by more than two standard errors in any cell.
 
 - Read as the "combined effects" check against **Demo 03** (Gaussian, no white noise), **Demo 02**
   (Gaussian, with white noise), and **Demo 04** (heavy-tailed, no white noise). The white-noise
-  padding again *helps* FDR control (this demo's Gaussian scenario sits below Demo 04's levels),
-  while heavy-tailed *response* noise adds a roughly constant FDR offset on top — the two effects
+  padding again *helps* FDR control (mean over the Gaussian-scenario cells $0.076$ here against $0.098$ in Demo 04,
+  and TLARS $0.050$ against $0.149$ at $\mathrm{SNR}=2$, although Demo 04 also has far fewer variables, $p = 25$
+  against $500$), while heavy-tailed *response* noise adds a roughly constant FDR offset on top — the two effects
   partially offset, and every base-parameter cell stays under target.
 - Heavy tails cost almost no power. Their price is paid in FDR (the `s2_Heavy` offset, plus the
   high-variance cells in the $M$-collapse).

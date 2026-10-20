@@ -83,7 +83,8 @@ $\kappa \gg 1$ the correlation at distance $d$ approaches $\rho^d$.)
 
 Empirical Pearson correlation of an exemplary design drawn from `dgp_nn_snr` ($\kappa=3$, $\rho=0.7$,
 seed 2026), in **natural variable order — no hierarchical clustering**, cropped to the leading block so the
-band stays legible. It shows a narrow red band of width $\kappa$ around the diagonal and *exactly zero* beyond it.
+band stays legible. It shows a narrow red band of width $\kappa$ around the diagonal and only sampling noise beyond
+it.
 Regenerate the per-DGP figures with [`../generate_corr_plots.sh`](../generate_corr_plots.sh) (shared plotter
 [`../../../corr_plt_utils.py`](../../../corr_plt_utils.py)).
 
@@ -152,12 +153,16 @@ DA-TRex+NN vs. base T-Rex over $\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 1, 2, 5\r
   $\approx 0.22\text{–}0.27$) and with Random support already at $\mathrm{SNR}=0.5$ ($0.207$). Base TLARS_STAG
   behaves the same ($0.21\text{–}0.27$ from $\mathrm{SNR}=0.5$ on), and base TAFS grazes the target at
   $\mathrm{SNR}=5$ ($0.19\text{–}0.20$).
-- The DA cost in true positive rate (TPR) is modest and concentrates in DA-TLARS (e.g. $0.88$ vs. base $1.00$ at
-  $\mathrm{SNR}=2$, CappedSpread), while DA-TAFS/TOMP reach $\approx 0.92\text{–}1.00$ from $\mathrm{SNR}=2$ on.
+- From $\mathrm{SNR}=2$ on, the DA cost in true positive rate (TPR) is modest and concentrates in DA-TLARS (e.g.
+  $0.88$ vs. base $1.00$ at $\mathrm{SNR}=2$, CappedSpread), while DA-TAFS/TOMP reach $\approx 0.92\text{–}1.00$ from
+  $\mathrm{SNR}=2$ on. Below that the cost is large, for every solver at $\mathrm{SNR}=0.5$ (DA $0.08\text{–}0.12$
+  against base $0.29\text{–}0.42$) and for DA-TLARS at $\mathrm{SNR}=1$ ($0.58\text{–}0.62$ against
+  $0.86\text{–}0.87$).
 - DA-TLARS runs its T-loop almost to the cap ($T \approx 130\text{–}144$ of $150$), while TLARS_STAG stops after
   about $8$ steps with the same FDR and TPR.
-- The two support placements behave nearly identically — with a hard correlation cutoff at $\kappa=3$ and a
-  minimum spacing of 20, even the deterministic support keeps all actives far outside each other's bands.
+- The two support placements behave nearly identically. The CappedSpread actives (spacing 20) sit far outside each
+  other's bands of width $\kappa=3$, and Random placements give only about $5\,\%$ of the actives a second active
+  within that distance.
 
 ![SNR sweep by support placement](simulation_results/plots/da_trex_mc_da_nn_snr_support_grid.png)
 
@@ -197,7 +202,8 @@ $\rho \in \lbrace0.1, \ldots, 0.9\rbrace$:
   the nearby shadows.
 - **At $\rho = 0.8\text{–}0.9$ control breaks down sharply** (up to $0.61$ for TLARS at $\mathrm{SNR}=0.5$,
   $\rho=0.9$, CappedSpread, with TAFS $0.45$ and TOMP $0.40$ in the same cell). AR(1) correlation beyond the effective
-  NN window leaks through as false discoveries, exactly the failure mode the finite-range group design cannot see.
+  NN window leaks through as false discoveries, exactly the failure mode the finite-range group design cannot see (a
+  plausible reading the data do not test directly).
   TOMP recovers fastest as SNR grows (at most $0.20$ from $\mathrm{SNR}=2$ on and $0.11$ at $\mathrm{SNR}=5$,
   $\rho=0.9$) while TLARS stays at $0.38\text{–}0.47$ there. TLARS_STAG violates in the same $15$ cells as TLARS.
 - Read this against **Demo 01** (same AR(1) data, correctly-specified `AR1` correction, FDR-controlled over the

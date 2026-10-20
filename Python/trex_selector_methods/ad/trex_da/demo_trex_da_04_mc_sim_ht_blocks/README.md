@@ -196,8 +196,8 @@ power. The numbers quoted in Parts 1 to 5 are read at Average linkage unless sta
   FDR $\leq 0.058$, and TAFS reaches $\approx 0.73\text{–}0.81$ TPR at FDR $\approx 0.06\text{–}0.09$.
 - **TLARS and TLARS_STAG are the FDR-loosest solvers at every $Q$** ($\approx 0.12\text{–}0.18$, still under the
   $0.2$ target) with TPR $\approx 0.65\text{–}0.76$ — visibly looser than the fully-Gaussian Demo 03, whose
-  $Q$-sweep TLARS FDR stayed at $\approx 0.08\text{–}0.11$. Heavy-tailed predictors, not dimension growth,
-  are what loosen TLARS's FDR control here.
+  $Q$-sweep TLARS FDR stayed at $\approx 0.08\text{–}0.11$, but Demo 03 runs at $\rho = 0.7$ against $\rho = 0.8$
+  here (see the Interpretation).
 
 ![Q sweep, Gaussian vs heavy-tailed noise](simulation_results/plots/da_trex_mc_da_ht_blocks_Q_scenario_grid.png)
 
@@ -264,11 +264,21 @@ the same regions ($\rho = 0.9$, $M = 15\text{–}20$ and $\mathrm{tFDR} = 0.05$)
 
 ## Interpretation
 
-- **Heavy-tailed *predictors* are the dominant stressor, not the noise.** Across every sweep the
+- **The noise law matters little.** Across every sweep the
   s1_Gauss and s2_Heavy columns are nearly identical. Since $X$ is $t(3)$ in both scenarios, adding a
-  variance-matched $t(3)$ *noise* on top changes little. The real cost of heavy tails is visible only
-  against the fully-Gaussian Demo 03 — most clearly in TLARS's FDR, which runs $\approx 0.12\text{–}0.18$
-  on the $Q$ sweep where Demo 03 stayed at $\approx 0.08\text{–}0.11$.
+  variance-matched $t(3)$ *noise* on top changes little.
+- **Heavy-tailed predictors cost power more than FDR control.** The $\rho$ sweeps of Demo 03 and of this demo share
+  $n$, $p$, $M$, $Q$, $s$, SNR, tFDR, the support placement, the seeds and the solver pool, and differ only in the
+  $t(3)$ mixing of $X$ (plus the $t(3)$ noise of the heavy-noise scenario). From $\rho = 0.4$ on the TPR here is
+  $0.013\text{–}0.096$ lower than in Demo 03 (Average linkage, every solver and both noise laws), while at
+  $\rho \le 0.2$ it is up to $0.158$ higher. TLARS's FDR is not systematically looser at the same $\rho$. It is
+  nominally looser at $\rho = 0.8$ ($0.149$ with Gaussian and $0.140$ with heavy noise against $0.126$, at most
+  $1.4$ standard errors apart), but tighter at $\rho = 0.7$ ($0.078$ / $0.090$ against $0.134$) and $\rho = 0.9$
+  ($0.235$ / $0.230$ against $0.257$), and lower on average over the grid ($0.076$ / $0.081$ against $0.083$). The
+  looser TLARS FDR on this demo's $Q$ sweep ($\approx 0.12\text{–}0.18$ against $\approx 0.08\text{–}0.11$ in
+  Demo 03) is consistent with the higher base correlation, $\rho = 0.8$ against $0.7$ (Demo 03 gives $0.126$ at
+  $\rho = 0.8$, at the lower end of this range). Its mild further rise toward large $Q$ (mean $0.143$ / $0.145$ at
+  $Q \le 25$ against $0.158$ / $0.157$ at $Q \ge 30$) has no counterpart in the flat $Q$ sweep of Demo 03.
 - **Solver ranking is consistent** with the other block demos. **TOMP is the most robust** (highest
   TPR *and* lowest FDR in most cells, except at low SNR and in the $M$ collapse), TAFS sits in between with its
   high-SNR power decline, and **TLARS is the most FDR-fragile** — it breaches the target at $\rho = 0.9$, in the $M$

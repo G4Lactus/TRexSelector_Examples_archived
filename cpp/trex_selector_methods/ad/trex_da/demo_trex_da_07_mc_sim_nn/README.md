@@ -126,13 +126,16 @@ DA-TRex+NN vs. base T-Rex over $\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 1, 2, 5\r
 - All four DA solvers stay below $\mathrm{tFDR}=0.2$ at every SNR (worst cell $\approx 0.12$), while base T-Rex TLARS
   violates from $\mathrm{SNR}=0.5$ on (FDR $\approx 0.23\text{–}0.27$), and base TAFS grazes the target at
   $\mathrm{SNR}=5$.
-- The DA cost in true positive rate (TPR) is modest and concentrates in DA-TLARS (e.g. $0.85\text{–}0.87$ vs. base
-  $1.00$ at $\mathrm{SNR}=2$), while DA-TAFS/TOMP reach $\approx 0.95\text{–}0.99$.
+- From $\mathrm{SNR}=2$ on, the DA cost in true positive rate (TPR) is modest and concentrates in DA-TLARS (e.g.
+  $0.85\text{–}0.87$ vs. base $1.00$ at $\mathrm{SNR}=2$), while DA-TAFS/TOMP reach $\approx 0.95\text{–}0.99$. Below
+  that the cost is larger (at $\mathrm{SNR}=1$ DA-TLARS $0.60\text{–}0.62$ vs. base $0.85\text{–}0.87$, and at
+  $\mathrm{SNR}=0.5$ all DA rows stay at $0.09\text{–}0.13$ vs. base $0.30\text{–}0.43$).
 - DA-TLARS runs its T-loop almost to the cap ($T \approx 138$ of $150$), and TLARS' path then selects so many columns
   that some of them become linearly dependent, which the console reports as `collinear; dropped`. TLARS_STAG stops
   after $8$ steps with the same FDR and TPR.
-- The two support placements behave nearly identically — with a hard correlation cutoff at $\kappa=3$ and a
-  minimum spacing of 20, even the deterministic support keeps all actives far outside each other's bands.
+- The two support placements behave nearly identically — with a hard correlation cutoff at $\kappa=3$, the
+  CappedSpread actives (spacing 20) sit far outside each other's bands, and Random placements put a pair of actives
+  within $\kappa$ of each other in only about a quarter of the trials.
 
 ![SNR sweep by support placement](simulation_results/plots/da_trex_mc_da_nn_snr_support_grid.png)
 
@@ -169,7 +172,8 @@ $\rho \in \lbrace0.1, \ldots, 0.9\rbrace$:
   the NN groups capture enough of the (rapidly decaying) AR(1) neighborhood to deflate the nearby shadows.
 - **At $\rho = 0.8\text{–}0.9$ control breaks down sharply** (up to $0.65$ for TLARS at $\mathrm{SNR}=0.5$,
   $\rho=0.9$). AR(1) correlation beyond the effective NN window leaks through as false discoveries, exactly the
-  failure mode the finite-range group design cannot see. TOMP is again the most robust but still violates at
+  failure mode the finite-range group design cannot see (a plausible reading the data do not test directly). TOMP
+  is again the most robust but still violates at
   $\rho \geq 0.8$, and TLARS_STAG shows the same violations as TLARS.
 - Read this against **Demo 01** (same AR(1) data, correctly-specified `AR1` correction, FDR-controlled over the
   full $\rho$ grid). The gap between the two quantifies the price of the wrong dependency model — negligible at

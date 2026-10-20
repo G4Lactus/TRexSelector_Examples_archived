@@ -125,10 +125,12 @@ support:
 
 All four DA solvers stay below $\mathrm{tFDR}=0.2$ at every SNR (worst cell $0.113$, DA-TAFS at
 $\mathrm{SNR}=0.5$), while base T-Rex TLARS violates from $\mathrm{SNR}=0.5$ on (FDR $\approx 0.26$ CappedSpread /
-$0.28$ Random, rising to $\approx 0.30$). The DA cost in true positive rate (TPR) concentrates at high SNR (e.g. TLARS
-$0.81$ vs. $1.00$ at $\mathrm{SNR}=2$, CappedSpread), and is larger under Random support ($0.63$ vs. $0.99$), where
-the active variables are not kept apart by construction. TLARS_STAG gives the same FDR and TPR as TLARS within Monte
-Carlo noise, in the DA rows and in the base rows.
+$0.28$ Random, rising to $\approx 0.30$). The DA cost in true positive rate (TPR) appears from $\mathrm{SNR}=0.5$ on
+and is largest for TLARS, peaking at $\mathrm{SNR}=1$ (DA $0.58$ vs. base $0.86$ CappedSpread, $0.45$ vs. $0.87$
+Random). At $\mathrm{SNR}=2$ it is still $0.81$ vs. $1.00$ (CappedSpread) and $0.63$ vs. $0.99$ under Random support,
+where the active variables are not kept apart by construction. The greedy solvers pay less (TOMP $0.96$ vs. $0.98$
+CappedSpread and $0.78$ vs. $0.96$ Random at $\mathrm{SNR}=2$). TLARS_STAG gives the same FDR and TPR as TLARS within
+Monte Carlo noise, in the DA rows and in the base rows.
 
 ---
 
@@ -170,9 +172,9 @@ by construction.
   property of the AR1 correction window, not a solver artifact. At $\rho = 0.9$ the mean true positive proportion
   (TPP) drops from $\approx 0.55$ (gap $= 50/100$, above the boundary) to below $0.001$ at gap $= 20$.
 - **FDR heatmap** — with the exchangeable-tie fix, the wide-gap / $\text{high-}\rho$ corner
-  (gap $= 100/50$, $\rho = 0.9$) stays controlled for TAFS ($0.16/0.19$) and TOMP ($0.15/0.17$). Without it these
-  cells are driven above the target by collinear shadows (distance-1 neighbors of true actives) that greedy
-  winner-take-all selection lets through the DA deflation.
+  (gap $= 100/50$, $\rho = 0.9$) stays controlled for TAFS ($0.16/0.19$) and TOMP ($0.15/0.17$). The C++ README
+  documents that these cells sat at $0.21\text{–}0.27$ there before the fix, driven by collinear shadows (distance-1
+  neighbors of true actives) that greedy winner-take-all selection let through the DA deflation.
 - **TLARS_STAG below the boundary** — where the support gap is smaller than $\kappa$ and no true variable survives
   (gap $\le 20$ at $\rho = 0.9$), DA-TLARS still raises false alarms in $8.5\text{–}13\,\%$ of the runs, while
   TLARS_STAG stays at or below $2.5\,\%$. The long T-loop of DA-TLARS most likely gives null variables more chances

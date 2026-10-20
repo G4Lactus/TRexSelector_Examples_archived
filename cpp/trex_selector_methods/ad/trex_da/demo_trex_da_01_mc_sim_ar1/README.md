@@ -91,8 +91,11 @@ support:
 ![SNR sweep by support placement](simulation_results/plots/da_trex_mc_da_ar1_snr_support_grid.png)
 
 All four DA solvers stay below $\mathrm{tFDR}=0.2$ at every SNR (at most $0.16$), while base T-Rex TLARS violates from
-$\mathrm{SNR}=0.5$ on (FDR $0.27\text{–}0.32$). The DA cost in true positive rate (TPR) concentrates at high SNR
-(e.g. TLARS $0.82$ vs. $1.00$ at $\mathrm{SNR}=2$). TLARS_STAG gives the same FDR and TPR as TLARS within Monte Carlo
+$\mathrm{SNR}=0.5$ on (FDR $0.27\text{–}0.32$). The DA cost in true positive rate (TPR) appears from $\mathrm{SNR}=0.5$
+on and is largest for TLARS, peaking at $\mathrm{SNR}=1$ (DA $0.56$ vs. base $0.84$ CappedSpread, $0.46$ vs. $0.86$
+Random). At $\mathrm{SNR}=2$ it is still $0.82$ vs. $1.00$ (CappedSpread) and $0.65$ vs. $1.00$ under Random support,
+where the active variables are not kept apart by construction. The greedy solvers pay less (TOMP $0.97$ vs. $0.98$
+CappedSpread and $0.79$ vs. $0.97$ Random). TLARS_STAG gives the same FDR and TPR as TLARS within Monte Carlo
 noise.
 
 ---

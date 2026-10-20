@@ -49,14 +49,15 @@ Negative group labels are rejected by the Python binding.
 fails by design, because the nearest-partner penalty
 $\Psi_j = 1/(2 - \min_{j' \in \mathrm{Gr}(j)} |\Phi_j - \Phi_{j'}|)$ presumes tight, near-exchangeable
 neighbourhoods. Inside a 10/50/250-member group nearly every variable has *some*
-member with an almost identical occurrence, so $\delta \to 2$ uniformly and the shadow/active
-ranking is left invariant. The full analysis, including the archived results of the old behaviour,
+member with an almost identical occurrence, so the denominator of $\Psi_j$ tends to $2$ uniformly and the
+shadow/active ranking is left invariant. The full analysis, including the archived results of the old behaviour,
 is in `TRex_Research/documentation/Prior_Groups_Deflation_Mismatch_DA_TRex.md` (§1–§8 the
 mismatch, §9 this resolution).
 
 **Relation to BT.** The method is now exactly "BT, tightened by prior knowledge". It uses the same
 machinery, but the tree can never merge across known group boundaries, so actives are never deflated against
-unrelated variables — the constraints buy power, not a different failure mode. The figures label the
+unrelated variables. The BT reference run in the C++ README shows that the constraints buy power, not a different
+failure mode. The figures label the
 method `TREX-DA+AKG: <solver>` (applied at plot time via the plotter's `--relabel` flag, so the CSVs
 keep the raw `TREX-DA:` labels the demo writes).
 
@@ -75,11 +76,13 @@ level ($x = 0$) uses a **Toeplitz-correlated leaf block** — within each finest
 variables $u_r$ satisfy $\mathrm{Cov}(u_r, u_s) = \phi^{|r-s|}$ with $\phi_{\text{leaf}} = 0.5$ —
 so even the members of a finest-level group are *not* exchangeable.
 
-- **Three nested grouping levels** over $p = 1{,}000$: level 1 = groups of $10$ ($100$ groups),
-  level 2 = groups of $50$ ($20$ groups), level 3 = groups of $250$ ($4$ groups).
-- **Cumulative correlation masses** (fine → coarse): $\rho = \lbrace0.55, 0.25, 0.10\rbrace$ — a variable
-  shares $55\%$ of its variance with its group of 10, $25\%$ with its group of 50, $10\%$ with its
-  group of 250.
+- **Three nested grouping levels** over $p = 1{,}000$, with groups of $10$ on the finest level $x = 0$
+  ($100$ groups), groups of $50$ on level $x = 1$ ($20$ groups) and groups of $250$ on level $x = 2$ ($4$ groups).
+- **Cumulative correlation masses** (fine → coarse): $(\rho_0, \rho_1, \rho_2) = (0.55, 0.25, 0.10)$. The group of
+  250 contributes $0.10$ of each variable's variance, the group of 50 another $0.15$ and the Toeplitz leaf of the
+  group of 10 another $0.30$, while $0.45$ is idiosyncratic. Two members of the same group of 10 therefore correlate
+  at $0.25 + 0.30 \cdot 0.5^{|r-s|}$, that is $0.25\text{–}0.40$, members of the same group of 50 at $0.25$ and
+  members of the same group of 250 at $0.10$.
 - Support: $s = 10$ active variables drawn by the `Random` policy per trial (0-based indices),
   amplitude $3.0$, and $y = X\beta + \varepsilon$ with
   $\sigma^2 = \widehat{\mathrm{Var}}(X\beta)/\mathrm{SNR}$.
@@ -126,14 +129,19 @@ The figure (Portable Network Graphics (PNG) and Portable Document Format (PDF), 
 
 ## Results — SNR sweep
 
-- **The greedy solvers win on power and are controlled wherever the signal is resolvable**. TOMP
-  reaches true positive rate (TPR) $0.945$ with FDR down to $\approx 0.05$ at high SNR, and TAFS
-  reaches TPR $0.939$ with FDR $\approx 0.08\text{–}0.13$ from $\mathrm{SNR}=1$ on.
+- **The greedy solvers win on power once the signal is clear and are controlled wherever the signal is
+  resolvable**. TOMP reaches true positive rate (TPR) $0.945$ with FDR down to $\approx 0.05$ at high SNR, and TAFS
+  reaches TPR $0.939$ with FDR $\approx 0.08\text{–}0.13$ from $\mathrm{SNR}=1$ on. TAFS overtakes TLARS in TPR at
+  $\mathrm{SNR}=1$ ($0.722$ against $0.698$) and TOMP at $\mathrm{SNR}=2$ ($0.936$ against $0.824$). Below that TLARS
+  has the higher TPR ($0.407$ against $0.345$ for TAFS and $0.249$ for TOMP at $\mathrm{SNR}=0.5$), bought with an
+  FDR of $0.386$.
 - Both greedy solvers have a **high-variance excursion in the low-SNR transition region**. At
   $\mathrm{SNR}=0.5$ TAFS realizes $0.219$ (above the $\mathrm{tFDR}=0.2$ target, standard deviation (sd) $0.207$)
   and TOMP $0.167$, with TPR still only $0.25\text{–}0.35$ there. With so few selections per trial the false
-  discovery proportion (FDP) is near-binary, so these cells carry a large Monte-Carlo error (the C++ reference run
-  lands at $0.185$ / $0.135$ in the same cells).
+  discovery proportion (FDP) takes coarse values, although it is not near-binary (sd $0.207$ / $0.244$ against
+  $0.41$ / $0.37$ for a 0/1 FDP with the same mean). These cells carry a Monte-Carlo standard error of
+  $0.015\text{–}0.017$, several times that at $\mathrm{SNR} \geq 2$ (the C++ reference run lands at $0.185$ /
+  $0.135$ in the same cells).
 - **TLARS remains the outlier of the suite**: FDR $\approx 0.36\text{–}0.39$ from $\mathrm{SNR}=0.5$ on
   (vs. the $\mathrm{tFDR}=0.2$ target) and **flat in SNR**, with TPR $\approx 0.84$ at
   $\mathrm{SNR}=5$.
@@ -159,25 +167,26 @@ shadow and its nearest neighbour (typically the true active) by the same factor,
 *ranking* invariant. Whether the ranking is decided correctly is therefore up to the solver's
 occurrence profile:
 
-- **Greedy solvers thrive** at moderate within-group correlation ($\rho_1 = 0.55$, far from
-  Demo 01's near-collinear $0.9$). Winner-take-all in-group competition reliably crowns the *true*
-  active once the signal is clear. Shadows finish with $\Phi \approx 0$ and never reach the voting
-  threshold.
+- **Greedy solvers thrive** at moderate within-group correlation ($0.25\text{–}0.40$ inside a group of 10, far
+  from Demo 01's near-collinear $0.9$). Winner-take-all in-group competition reliably crowns the *true*
+  active once the signal is clear. Their low FDR is consistent with shadows that finish near $\Phi = 0$ and never
+  reach the voting threshold.
 - **The least-angle regression (LARS) path distributes credit**. After an active enters, its group siblings still carry
   residual correlation with $y$ and collect *intermediate* occurrences — distinct from both the
   active's high $\Phi$ and the bulk at $\approx 0$, exactly the profile a symmetric pairwise
   penalty cannot separate. The dummy-calibrated $\widehat{\mathrm{FDP}}$ cannot see them either
   (dummies are uncorrelated with $X$), so they are selected. The FDR plateau, *flat in SNR*,
-  confirms the leak is structural. Shadows inherit signal through the shared group factors and rise
+  is consistent with a structural leak. Shadows inherit signal through the shared group factors and rise
   together with the actives.
 - Together with Demo 01 this brackets the design space. *Mutual deflation* handles the
   near-collinear regime (where LARS naturally produces ties — and the greedy solvers needed the
   `exch_tie_alpha` fix), while *winner-take-all* handles the moderate-correlation regime (where
   LARS's graded credit-sharing defeats the deflation). TLARS on moderate multi-level correlation
-  falls into the gap between the two mechanisms — with or without prior knowledge.
+  falls into the gap between the two mechanisms — with or without prior knowledge (the run without prior groups
+  is the BT reference run in the C++ README, since the Python port has none).
 
 **Follow-ups worth running**: (a) an *asymmetric* penalty (gap-to-leader instead of
 nearest-partner) — the one §7 candidate the constrained sub-clustering does not subsume,
-(b) sweep $\rho_1$ toward $0.9$ — TLARS should *recover* as the fine groups approach
+(b) sweep the finest mass $\rho_0$ toward $0.9$ — TLARS should *recover* as the fine groups approach
 exchangeability and mutual deflation kicks in, and (c) log per-trial occurrence histograms per solver
 to verify the "intermediate shadow occurrence" picture directly.

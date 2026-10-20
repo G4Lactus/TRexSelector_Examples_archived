@@ -111,7 +111,8 @@ Figures go to `simulation_results/plots/`: one overview of the FDR and the true 
 
 - **FDR stays under the $\mathrm{tFDR}=0.2$ target at every SNR** (worst cell $0.132$, TLARS at
   $\mathrm{SNR}=0.5$ under Average linkage) — but visibly higher than the white-noise-diluted Demo 02
-  ($\leq 0.032$ at the same base point), because in an all-block design every false discovery candidate is a
+  ($\leq 0.032$ over its SNR sweep, at its stricter target of $0.1$ and twice the sample size, so the gap reflects the
+  target and $n$ as well as the null structure). In an all-block design every false discovery candidate is a
   correlated shadow.
 - TPR: TOMP is the strongest throughout ($0.96\text{–}0.99$ from $\mathrm{SNR}=2$), while TLARS reaches
   $0.78\text{–}0.86$. TAFS peaks at $\mathrm{SNR}=1\text{–}2$ ($0.86\text{–}0.91$) and then *declines* to
@@ -131,8 +132,8 @@ Figures go to `simulation_results/plots/`: one overview of the FDR and the true 
   progressively harder to deflate — the block-design counterpart of the $\text{high-}\rho$ corner seen in
   Demos 01 and 07.
 - **Single linkage again loses power at low $\rho$**: TPR $0.41\text{–}0.44$ at $\rho \leq 0.1$ vs.
-  $0.71\text{–}0.79$ for Complete/Average — without a clear chain to follow, single-linkage mis-groups
-  the weakly-correlated blocks. All linkages coincide from $\rho \approx 0.4$.
+  $0.71\text{–}0.79$ for Complete/Average — with weak within-block correlation the Single-linkage cut
+  groups variables by noise. All linkages coincide from $\rho \approx 0.4$.
 - TPR peaks $\text{mid-}\rho$ and falls toward $\rho=0.9$ (TOMP $0.74\text{–}0.77$, TAFS $0.63\text{–}0.71$,
   TLARS $0.58\text{–}0.72$).
 
@@ -146,8 +147,8 @@ Figures go to `simulation_results/plots/`: one overview of the FDR and the true 
   into the high-dimensional regime ($p = 250 > n = 150$ at $Q=50$).
 - Complete/Average linkage handle growing blocks gracefully (TOMP $0.96\text{–}0.99$, TAFS $0.87\text{–}0.94$
   throughout), while **Single linkage bleeds power as $Q$ grows** (TOMP down to $0.84$, TLARS $0.70\text{–}0.72$ at
-  $Q \ge 45$) — the same fragility as in Demo 02's $Q$ sweep, though milder without the white pool to
-  merge into.
+  $Q \ge 45$) — the same fragility as in Demo 02's $Q$ sweep, though milder (Single trails Complete/Average by up to
+  $0.15$ TPR here against $0.20$ there), plausibly because there is no white pool to merge into.
 
 ![Q sweep across HAC linkage](simulation_results/plots/da_trex_mc_da_ar1_blocks_Q_linkage_grid.png)
 
@@ -181,9 +182,10 @@ come from the long T-loop.
 ## Interpretation
 
 - Read this demo against **Demo 02** (same block AR(1) core plus $975$ white-noise columns,
-  $n=300$). The pure block design at half the sample size shows uniformly higher realized FDR —
-  culminating in TLARS's $\rho=0.9$ violation — and lower TPR. Diluting the design with null columns
-  *helps* the selector, while concentrating it into correlated blocks is the harder problem.
+  $n=300$, and the stricter target $\mathrm{tFDR}=0.1$). The pure block design at half the sample size shows higher
+  realized FDR in $397$ of the $408$ shared cells — culminating in TLARS's $\rho=0.9$ violation — and lower TPR in
+  $338$. It is the harder problem, although the two demos differ in $n$ and the target as well as in the white
+  padding.
 - The linkage story is consistent across both demos. Linkage is irrelevant at the well-correlated base point,
   but **Single linkage is the fragile choice** at low $\rho$ and large $Q$, so Complete or Average are
   the safer defaults.

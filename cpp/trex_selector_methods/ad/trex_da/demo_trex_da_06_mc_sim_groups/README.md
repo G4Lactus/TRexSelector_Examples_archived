@@ -38,7 +38,7 @@ neighbourhoods:
 fails by design, because the nearest-partner penalty
 $\Psi_j = 1/(2 - \min_{j' \in \mathrm{Gr}(j)} |\Phi_j - \Phi_{j'}|)$ presumes tight, near-exchangeable
 neighbourhoods. Inside a 10/50/250-member group nearly every variable has *some*
-member with an almost identical occurrence, so $\delta \to 2$ uniformly and the shadow/active
+member with an almost identical occurrence, so the denominator of $\Psi_j$ tends to $2$ uniformly and the shadow/active
 ranking is left invariant. The full analysis, including the archived results of the old behaviour,
 is in `TRex_Research/documentation/Prior_Groups_Deflation_Mismatch_DA_TRex.md` (§1–§8 the
 mismatch, §9 this resolution).
@@ -64,11 +64,13 @@ level ($x = 0$) uses a **Toeplitz-correlated leaf block** — within each finest
 variables $u_r$ satisfy $\mathrm{Cov}(u_r, u_s) = \phi^{|r-s|}$ with $\phi_{\text{leaf}} = 0.5$ —
 so even the members of a finest-level group are *not* exchangeable.
 
-- **Three nested grouping levels** over $p = 1{,}000$: level 1 = groups of $10$ ($100$ groups),
-  level 2 = groups of $50$ ($20$ groups), level 3 = groups of $250$ ($4$ groups).
-- **Cumulative correlation masses** (fine → coarse): $\rho = \lbrace0.55, 0.25, 0.10\rbrace$ — a variable
-  shares $55\%$ of its variance with its group of 10, $25\%$ with its group of 50, $10\%$ with its
-  group of 250.
+- **Three nested grouping levels** over $p = 1{,}000$, with groups of $10$ on the finest level $x = 0$
+  ($100$ groups), groups of $50$ on level $x = 1$ ($20$ groups) and groups of $250$ on level $x = 2$ ($4$ groups).
+- **Cumulative correlation masses** (fine → coarse): $\rho = \lbrace0.55, 0.25, 0.10\rbrace$. The group of 250
+  contributes $0.10$ of each variable's variance, the group of 50 another $0.15$ and the Toeplitz leaf of the group
+  of 10 another $0.30$, while $0.45$ is idiosyncratic. Two members of the same group of 10 therefore correlate at
+  $0.25 + 0.30 \cdot 0.5^{|r-s|}$, that is $0.25\text{–}0.40$, members of the same group of 50 but different groups of
+  10 at $0.25$ and members of the same group of 250 but different groups of 50 at $0.10$.
 - Support: $s = 10$ active variables drawn by the `Random` policy per trial, amplitude from the
   shared `SimConfig` defaults, and $y = X\beta + \varepsilon$ with
   $\sigma^2 = \widehat{\mathrm{Var}}(X\beta)/\mathrm{SNR}$.
@@ -99,10 +101,12 @@ The figure (`.png` and `.pdf`, plus an interactive Plotly `.html` page with `--p
 
 ## Results — SNR sweep
 
-- **The greedy solvers are controlled everywhere and win on power**. TOMP's maximum FDR is $0.135$
-  (dropping to $\approx 0.04\text{–}0.05$ at high SNR) with TPR up to $0.954$, while TAFS — which violated at
+- **The greedy solvers are controlled everywhere and win on power once the signal is clear**. TOMP's maximum FDR is
+  $0.135$ (dropping to $\approx 0.04\text{–}0.05$ at high SNR) with TPR up to $0.954$, while TAFS — which violated at
   $\mathrm{SNR}=0.5$ under the old raw-group deflation ($0.211$) — is now controlled at every grid
-  point (max $0.185$) with TPR up to $0.949$.
+  point (max $0.185$) with TPR up to $0.949$. TAFS overtakes TLARS in TPR from $\mathrm{SNR}=1$ on and TOMP from
+  $\mathrm{SNR}=2$ on. Below that, TLARS has the higher TPR ($0.375$ against $0.321$ for TAFS and $0.240$ for TOMP at
+  $\mathrm{SNR}=0.5$), bought with an FDR of $0.334$.
 - **TLARS remains the outlier of the suite**: FDR $\approx 0.33\text{–}0.38$ from $\mathrm{SNR}=0.5$ on
   (vs. the $\mathrm{tFDR}=0.2$ target), with TPR $\approx 0.84\text{–}0.85$. Its power is higher than under the old
   raw-group deflation (TPR capped at $0.80$ there) while its FDR stays in the same range ($0.33\text{–}0.35$ there),
@@ -133,17 +137,17 @@ shadow and its nearest neighbour (typically the true active) by the same factor,
 *ranking* invariant. Whether the ranking is decided correctly is therefore up to the solver's
 occurrence profile:
 
-- **Greedy solvers thrive** at moderate within-group correlation ($\rho_1 = 0.55$, far from
+- **Greedy solvers thrive** at moderate within-group correlation ($0.25\text{–}0.40$ inside a group of 10, far from
   Demo 01's near-collinear $0.9$). Winner-take-all in-group competition reliably crowns the *true*
-  active once the signal is clear. Shadows finish with $\Phi \approx 0$ and never reach the voting
-  threshold.
+  active once the signal is clear. Their low FDR is consistent with shadows that finish near $\Phi = 0$ and never
+  reach the voting threshold.
 - **The LARS path distributes credit**. After an active enters, its group siblings still carry
   residual correlation with $y$ and collect *intermediate* occurrences — distinct from both the
   active's high $\Phi$ and the bulk at $\approx 0$, exactly the profile a symmetric pairwise
   penalty cannot separate. The dummy-calibrated false discovery proportion (FDP) estimate $\widehat{\mathrm{FDP}}$
   cannot see them either (dummies are uncorrelated with $X$), so they are selected. The FDR plateau, *flat in SNR*,
-  confirms the leak is structural. Shadows inherit signal through the shared group factors and rise together with the
-  actives.
+  is consistent with a structural leak. Shadows inherit signal through the shared group factors and rise together
+  with the actives.
 - Together with Demo 01 this brackets the design space. *Mutual deflation* handles the
   near-collinear regime (where LARS naturally produces ties — and the greedy solvers needed the
   `exch_tie_alpha` fix), while *winner-take-all* handles the moderate-correlation regime (where
@@ -152,6 +156,6 @@ occurrence profile:
 
 **Follow-ups worth running**: (a) an *asymmetric* penalty (gap-to-leader instead of
 nearest-partner) — the one §7 candidate the constrained sub-clustering does not subsume,
-(b) sweep $\rho_1$ toward $0.9$ — TLARS should *recover* as the fine groups approach
+(b) sweep the finest mass $\rho_0$ toward $0.9$ — TLARS should *recover* as the fine groups approach
 exchangeability and mutual deflation kicks in, and (c) log per-trial occurrence histograms per solver
 to verify the "intermediate shadow occurrence" picture directly.

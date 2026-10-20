@@ -177,8 +177,8 @@ DA-TRex+NN vs. base T-Rex over $\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 1, 2, 5\r
 - DA-TLARS runs its T-loop almost to the cap ($T \approx 131\text{–}143$ of $150$), while TLARS_STAG stops after
   about $8$ steps with nearly the same FDR and TPR (within $0.009$ and $0.014$).
 - The two support placements behave nearly identically, and no FDR or TPR value differs between them by more than
-  $0.05$. The CappedSpread actives (spacing 20) sit far outside each other's bands of width $\kappa=3$, and Random
-  placements rarely put two actives that close together.
+  $0.05$. The CappedSpread actives (spacing 20) sit far outside each other's bands of width $\kappa=3$, while Random
+  placements put two actives within $\kappa$ of each other in about a quarter of the trials, without a visible cost.
 
 ![SNR sweep by support placement](simulation_results/plots/da_trex_mc_da_nn_snr_support_grid.png)
 

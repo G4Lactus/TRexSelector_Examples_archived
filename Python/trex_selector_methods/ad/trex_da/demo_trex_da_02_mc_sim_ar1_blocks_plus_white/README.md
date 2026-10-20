@@ -164,14 +164,12 @@ linkage-comparison grid (Single/Complete/Average columns) per sweep — the four
 
 - **This is where linkage matters most — at *low* $\rho$**. With Single linkage, TPR drops to
   $\approx 0.61\text{–}0.66$ for all solvers at $\rho \leq 0.1$, while Complete/Average hold
-  $\approx 0.96\text{–}0.99$. With weak within-block correlation there is no clean chain for
-  single-linkage to follow, so the dendrogram cut mis-groups the blocks, while compact-cluster linkages are
-  robust. From $\rho \geq 0.3$ all three linkages coincide.
+  $\approx 0.96\text{–}0.99$. With weak within-block correlation the Single-linkage cut groups variables by
+  noise, while compact-cluster linkages are robust. From $\rho \geq 0.3$ all three linkages coincide.
 - FDR stays controlled over the whole grid (max $0.039$, TAFS at $\rho=0.9$ under Complete linkage).
   The mild uptick at $\rho=0.9$ is shared by TAFS/TOMP across linkages but stays far under target.
 - At high correlation TPR declines moderately ($\rho=0.9$: TLARS $0.72$, TLARS_STAG $0.71\text{–}0.72$,
-  TAFS $0.72\text{–}0.73$, TOMP $\approx 0.94$) — the within-block shadows become harder to separate, and the DA
-  deflation spends power to keep FDR down.
+  TAFS $0.72\text{–}0.73$, TOMP $\approx 0.94$) — the within-block shadows become harder to separate.
 
 ![rho sweep across HAC linkage](simulation_results/plots/da_trex_mc_da_ar1_blocks_plus_white_rho_linkage_grid.png)
 
@@ -183,8 +181,9 @@ linkage-comparison grid (Single/Complete/Average columns) per sweep — the four
 - **Single linkage costs power as blocks grow**. From $Q \geq 20$ it dips to a trough around
   $Q = 30\text{–}40$ (TAFS $\approx 0.65\text{–}0.69$, TLARS/TLARS_STAG $\approx 0.73\text{–}0.76$,
   TOMP $\approx 0.83$), while Complete/Average stay flat across the whole grid (TOMP $\approx 1.0$,
-  TLARS/TLARS_STAG $0.90\text{–}0.93$, TAFS $0.83\text{–}0.86$). Larger in-block chains give single-linkage more
-  opportunities to merge blocks with the white pool.
+  TLARS/TLARS_STAG $0.90\text{–}0.93$, TAFS $0.83\text{–}0.86$). A plausible reason is that longer in-block chains
+  give Single linkage more chances to merge blocks with the white pool, although the gap shrinks again at
+  $Q = 45\text{–}50$ (from $0.17\text{–}0.18$ at $Q = 30$ to $0.10\text{–}0.11$ at $Q = 50$).
 
 ![Q sweep across HAC linkage](simulation_results/plots/da_trex_mc_da_ar1_blocks_plus_white_Q_linkage_grid.png)
 
@@ -220,10 +219,11 @@ figures draw TLARS_STAG dashed in the TLARS colour.
 
 ## Interpretation
 
-- Compare directly against **Demo 03** (same block AR(1) core, *no* white-noise columns) to isolate
-  the effect of a much larger overall $p$ with mostly-null structure. The white padding *helps* FDR
-  control (max realized FDR $\approx 0.09$ here vs. hovering around target in Demo 03) without
-  hurting the detection of the true blocks at the base point.
+- Compare against **Demo 03** (same block AR(1) core, *no* white-noise columns), which also runs at half the
+  sample size ($n = 150$) and twice the target ($\mathrm{tFDR} = 0.2$). The white padding, together with the larger
+  $n$, keeps the FDR low here, also relative to the halved target. Outside the $M$ stress sweep it stays at or below
+  $0.039$ (and at most $0.088$ in it), while Demo 03 reaches $0.115$ already in its SNR sweep and $0.27$ at
+  $\rho = 0.9$. This comes without hurting the detection of the true blocks at the base point.
 - The linkage question gets a two-sided answer. Linkage is irrelevant at the well-correlated base
   point, but **Single linkage is fragile** exactly where the block structure is weak (low $\rho$) or
   large (high $Q$) — Complete or Average are the safer defaults for this DGP.
