@@ -1,60 +1,239 @@
-# Demo 07: T-Rex+DA+NN on Banded (Nearest-Neighbor) Data
+# Demo 07: DA-TRex+NN (Nearest-Neighbor Dependency-Aware T-Rex) on Banded Data + AR(1) Method-Mismatch Study
 
-## Purpose
+Monte Carlo (MC) results for **DA-TRex+NN** — the dependency-aware (DA) Terminating Random Experiments (T-Rex)
+selector (DA-TRex) with the nearest-neighbor (NN) group design (`da_method = "NN"`) — on banded moving-average (MA)
+data of order $\kappa$, MA($\kappa$), which is the correctly specified case, plus a **method-mismatch stress test**
+that applies the same NN correction to data from the first-order autoregressive (AR) model AR(1).
+Common setup: $n=300$, $p=1{,}000$, $s=10$, amplitude $3.0$, target false discovery rate (FDR) $\mathrm{tFDR}=0.2$,
+$K=20$ random experiments, $\mathrm{MC}=200$ per grid point, and solvers TLARS / TAFS / TOMP plus TLARS_STAG, which
+is TLARS with the T-loop stagnation stop on (window 7). Part 1 additionally runs the classical no-DA T-Rex baseline.
 
-Study the nearest-neighbor (NN) dependency-aware (DA) method `NN`, which targets a banded moving-average (MA(kappa))
-covariance where only the kappa nearest-neighboring columns are correlated and correlation is exactly zero beyond that
-band. Parts 1-2 cover the correctly-specified case (NN correction on NN data), while Part 3 applies the same NN
-correction to first-order autoregressive (AR(1)) data — a deliberate misspecification stress test (formerly its own
-demo, 03b, in the legacy R numbering).
+R port of the C++ demo
+[cpp/trex_selector_methods/ad/trex_da/demo_trex_da_07_mc_sim_nn](../../../../../cpp/trex_selector_methods/ad/trex_da/demo_trex_da_07_mc_sim_nn/README.md)
+— same data-generating processes (DGPs), control parameters, sweep axes, console summaries, and result-file naming.
+The AR(1) mismatch study was its own demo (03b) in the legacy R numbering, and it is Part 3 here. The numbers below
+come from the R run against library 44cf1ab (200 MC trials per cell, 8 workers, 6.8 h). R draws its own random
+numbers, so its cells agree with C++ and Python up to Monte Carlo noise, not exactly. Of the 1,728 FDR and true
+positive rate (TPR) cells compared with the C++ run, none lies more than three combined Monte Carlo standard errors
+away. Over the whole suite it is 25 of 9,344 cells (0.27 %), the rate noise alone produces.
 
-## Data-generating process
+The greedy solvers use *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for TAFS/TOMP, `0` for TLARS
+and TLARS_STAG) in every part, as in C++. TAFS and TOMP run with the T-loop stagnation stop, TLARS without it.
+TAFS runs with its adaptive forward-selection (AFS) correlation parameter `rho_afs = 0.3` throughout (`0` for
+TLARS/TOMP), which is why the figures label it `TAFS (rho = 0.3)`.
 
-`dgp_nn_snr` builds `X[i,j] = sum_{l=0..kappa} theta_l * eta[i,j+l]` with `theta_l ~ rho^l` normalized to unit
-variance, so `Sigma[j,k] = 0` once `|j-k| > kappa`. Part 3 uses `dgp_ar1_snr` (the same AR(1) Toeplitz design as
-Demo 01) with the NN correction. Monte Carlo config:
-`n=300, p=1000, s=10, amplitude=3.0, kappa=3, rho=0.7, SNR=2.0, tFDR=0.2, K=20, num_MC=200, seed=2026, max_gap=20`.
+---
 
-## DA method
+## Setup — the DA-TRex+NN selector
 
-`TRexDASelector$new(..., da_control = trex_da_control(da_method = "NN"), control = trex_control(...))` with the
-default solver set from `da_sim_common.R`: `TREX-DA+NN: TLARS` / `TREX-DA+NN: TAFS` / `TREX-DA+NN: TOMP`. Part 1 also
-runs the base (no-DA) `TREX: TLARS/TAFS/TOMP` comparison rows.
+The DA-TRex+NN selector deflates each variable's ordinary relative occurrence $\Phi_{T,L}(j)$ by a penalty
+built from its most similar competitor within a group of correlated variables,
 
-## What it runs
+```math
+\Phi^{\mathrm{NN}}_{T,L}(j, \rho_{\text{thr}}) := \Psi^{\mathrm{NN}}_{T,L}(j, \rho_{\text{thr}}) \cdot \Phi_{T,L}(j),
+\qquad
+\Psi^{\mathrm{NN}}_{T,L}(j, \rho_{\text{thr}}) :=
+\begin{cases}
+\displaystyle \frac{1}{2 - \underset{j' \in \mathrm{Gr}(j, \rho_{\text{thr}})}{\min}
+  \left| \Phi_{T,L}(j) - \Phi_{T,L}(j') \right|}\,,
+& \mathrm{Gr}(j, \rho_{\text{thr}}) \neq \emptyset \\[10pt]
+\displaystyle 1/2, & \mathrm{Gr}(j, \rho_{\text{thr}}) = \emptyset
+\end{cases}
+```
 
-- Part 1: signal-to-noise ratio (SNR) sweep `{0.1, 0.2, 0.5, 1.0, 2.0, 5.0}` on NN data (kappa=3, rho=0.7),
-  CappedSpread(max_gap=20) and Random support, DA + base Terminating Random Experiments (T-Rex) rows.
-- Part 2: 2D kappa x rho sweep on NN data over `kappa in {1,2,3,5,7,10,15}` and `rho in {0.1,0.3,0.5,0.7,0.8,0.9}` at
-  SNR=2.0, with CappedSpread and Random sub-sections.
-- Part 3: 2D SNR x rho sweep on AR(1) data with DA+NN over `SNR in {0.1,0.2,0.5,1.0,2.0,5.0}` and
-  `rho in seq(0.1, 0.9, by = 0.1)`, with CappedSpread and Random sub-sections.
+with the **NN group design**, in which every variable correlated with $j$ beyond a threshold joins its group,
 
-Result stems (`simulation_results/data/`): `da_trex_mc_da_nn_snr_{capped,random}`,
-`da_trex_mc_da_nn_kappa_rho`, `da_trex_mc_da_nn_ar_snr_rho`
-(each as `.txt` + `.csv`).
+```math
+\mathrm{Gr}(j, \rho_{\text{thr}}) := \left\{ j' \in \{1, \ldots, p\} \setminus \{j\} :
+\left|\mathrm{corr}(\boldsymbol{x}_j, \boldsymbol{x}_{j'})\right| \geq \rho_{\text{thr}} \right\}.
+```
+
+Unlike the `BT` (binary-tree) design, these groups may overlap arbitrarily. A true active whose group members
+all carry clearly *lower* occurrences keeps $\Psi \approx 1$ (no penalty), while a collinear shadow whose
+occurrence resembles its group's leader is deflated toward $1/2$. Selection then thresholds
+$\widehat{\mathcal{A}} = \lbrace j : \Phi_{T,L}^{\mathrm{NN}}(j, \rho_{\text{thr}}) > v \rbrace$ as usual.
+
+In R every trial builds and runs the selector as
+
+```r
+sel <- TRexDASelector$new(X, y, tFDR = 0.2, seed = -1,
+                          da_control = trex_da_control(da_method = "NN"),
+                          control = trex_control(...))
+sel$select()
+```
+
+with `seed = -1` (hardware entropy) as in all MC demos. The four solver rows come from
+`default_solvers("+NN")` in [`../da_sim_common.R`](../da_sim_common.R), and the shared control is `K = 20`,
+`max_dummy_multiplier = 10`, `use_max_T_stop = TRUE`, `lloop_strategy = "STANDARD"` and
+`tloop_max_stagnant_steps = 7`. The base rows of Part 1 build the plain `TRexSelector` with the same control.
+
+## Setup — data generating processes
+
+**NN / MA($\kappa$) model (Parts 1–2, `dgp_nn_snr`).** The $j$-th predictor is a causal convolution of
+independent and identically distributed (i.i.d.) standard-normal innovations $\eta$ across columns (a
+finite-impulse-response filter of length $\kappa+1$),
+
+```math
+X_{i,j} = \sum_{l=0}^{\kappa} \theta_l\, \eta_{i,j+l},
+\qquad
+\theta_l = c\,\rho^{\,l},
+\qquad
+c = \Bigl(\textstyle\sum_{m=0}^{\kappa} \rho^{2m}\Bigr)^{-1/2},
+```
+
+i.e. the coefficients follow a geometric path with common ratio $\rho$ and are normalized to unit variance.
+The resulting covariance is **banded Toeplitz**. For column distance $d = |j-k| \leq \kappa$,
+
+```math
+\Sigma_{jk} = c^2 \rho^{d} \sum_{l=0}^{\kappa-d} \rho^{2l},
+\qquad
+\Sigma_{jk} = 0 \;\text{ for } |j-k| > \kappa,
+```
+
+so correlation decays roughly geometrically *inside* the band and **cuts off exactly at bandwidth $\kappa$** —
+the hallmark difference to AR(1), whose correlation never truly vanishes. (Note that "nearest-neighbor" classically
+refers to a banded *precision* matrix. The MA($\kappa$) model instead has a banded *covariance* and a dense
+precision. $\rho$ here is the common ratio of the filter, not the lag-1 autocorrelation, although for
+$\kappa \gg 1$ the correlation at distance $d$ approaches $\rho^d$.)
+
+![Design-matrix correlation — banded MA(kappa) design](../dgp_corr_plots/da_nn.png)
+
+Empirical Pearson correlation of an exemplary design drawn from `dgp_nn_snr` ($\kappa=3$, $\rho=0.7$,
+seed 2026), in **natural variable order — no hierarchical clustering**, cropped to the leading 150 columns so the
+band stays legible. It shows a narrow red band of width $\kappa$ around the diagonal and only sampling noise beyond
+it.
+Regenerate the per-DGP figures with [`../generate_corr_plots.sh`](../generate_corr_plots.sh) (shared plotter
+[`../../../corr_plt_utils.R`](../../../corr_plt_utils.R)).
+
+**AR(1) model (Part 3, `dgp_ar1_snr` — same DGP as Demo 01).**
+
+```math
+X_{i,j} = \rho\, X_{i,j-1} + \sqrt{1-\rho^2}\; \eta_{i,j},
+\qquad
+\Sigma_{jk} = \rho^{|j-k|},
+```
+
+geometrically decaying but *unbanded* correlation — deliberately mismatched to the NN correction's finite-range
+group design.
+
+**Linear model and signal-to-noise ratio (SNR) control.** Each trial draws $y = X\beta + \varepsilon$ with
+$\varepsilon_i \stackrel{\text{iid}}{\sim} \mathcal{N}(0, \sigma^2)$ and
+$\sigma^2 = \widehat{\mathrm{Var}}(X\beta)/\mathrm{SNR}$. The $s=10$ active coefficients (amplitude $3.0$) are
+placed by two support policies:
+
+- **CappedSpread**: deterministic even spacing, $\text{gap} = \min(\lfloor p/s \rfloor, \text{max\_gap}=20)$,
+  i.e. support $\lbrace1, 21, 41, \ldots, 181\rbrace$ (1-based R indices) — fixed across trials,
+- **Random**: drawn uniformly without replacement, redrawn each trial.
+
+---
 
 ## Running
 
 ```bash
 Rscript R/trex_selector_methods/ad/trex_da/demo_trex_da_07_mc_sim_nn/demo_trex_da_07_mc_sim_nn.R      # full run
-Rscript R/trex_selector_methods/ad/trex_da/demo_trex_da_07_mc_sim_nn/demo_trex_da_07_mc_sim_nn.R 8    # 8 worker cores
+Rscript R/trex_selector_methods/ad/trex_da/demo_trex_da_07_mc_sim_nn/demo_trex_da_07_mc_sim_nn.R 8    # 8 workers
 ```
 
-Results are written to `simulation_results/data/` as `.txt` and `.csv` files. The
-script sources the consolidated `../trex_da_dgps.R`, the shared
-`../da_sim_common.R`, and `../../../support_generators.R`.
+The three parts are toggled by the `RUN_PART_*` flags at the top of the script (all `TRUE`, mirroring the cpp
+`if (true)` toggles). Reduce `NUM_MC` to preview. MC trials run in parallel over `num_cores` worker processes
+(first command-line argument, else `TREX_NUM_WORKERS`, else 8, and `0` uses every core). Every finished grid cell is
+kept in `simulation_results/cache/cells.tsv`, so a stopped run continues where it stopped, and a finished run
+removes the cache. The script sources `../../../mc_runtime.R`, `../../../support_generators.R`, the consolidated
+`../trex_da_dgps.R`, and the shared `../da_sim_common.R`.
 
-## Interpretation
+Afterwards, regenerate the figures from the comma-separated values (CSV) files with
+[`generate_plots.sh`](generate_plots.sh), which drives the shared ggplot2 plotter
+[`../trex_da_plt_utils.R`](../trex_da_plt_utils.R).
 
-- Because NN correlation has a hard cutoff at distance kappa, DA-NN's correction is most effective when active
-  variables are spaced further apart than kappa, analogous to Demo 01's gap-vs-kappa story but with a sharp rather than
-  decaying profile.
-- The 2D kappa x rho sweep (Part 2) is the most informative view. As kappa grows, the effective correlation
-  neighborhood widens, and DA-NN needs progressively wider correction windows with a corresponding true positive rate
-  (TPR) cost.
-- Part 3 directly tests robustness to model misspecification. NN assumes correlation vanishes beyond kappa columns,
-  while AR(1) correlation decays but never truly reaches zero, so some residual correlation should leak through as
-  extra false discoveries relative to Demo 01's matched AR1-on-AR1 results. If DA-NN performs nearly as well as DA-AR1
-  there, the method is reasonably robust to this mismatch. In contrast, a large gap would indicate sensitivity to
-  matching the true dependency structure.
+---
+
+## Output Files
+
+Data tables are written to `simulation_results/data/` (`.txt` pretty-printed, `.csv` tidy long format):
+
+- `da_trex_mc_da_nn_snr_capped.txt` / `.csv`, `da_trex_mc_da_nn_snr_random.txt` / `.csv` (Part 1)
+- `da_trex_mc_da_nn_kappa_rho.txt` / `.csv` (Part 2, two-support 2D schema)
+- `da_trex_mc_da_nn_ar_snr_rho.txt` / `.csv` (Part 3, two-support 2D schema)
+
+Figures go to `simulation_results/plots/` as Portable Network Graphics (PNG) and Portable Document Format (PDF)
+files with the same names as in the Python suite (this port renders no interactive `.html` page). The 2D CSVs are
+rendered by the plotter's `sweep2d` mode.
+
+---
+
+## Part 1 — SNR sweep on NN data ($\kappa = 3$, $\rho = 0.7$)
+
+DA-TRex+NN vs. base T-Rex over $\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 1, 2, 5\rbrace$, CappedSpread vs. Random support:
+
+- All four DA solvers stay below $\mathrm{tFDR}=0.2$ at every SNR (worst cell $0.118$, DA-TLARS_STAG at
+  $\mathrm{SNR}=5$, CappedSpread, with DA-TLARS at $0.117$ in the same cell). Base T-Rex TLARS violates from
+  $\mathrm{SNR}=0.5$ on with both support placements (FDR $0.22\text{–}0.27$), and base TLARS_STAG does the same
+  ($0.23\text{–}0.27$). Base TAFS grazes the target at $\mathrm{SNR}=5$ ($0.19\text{–}0.20$), and base TOMP stays
+  at or below $0.12$.
+- From $\mathrm{SNR}=2$ on, the DA cost in TPR is modest and concentrates in DA-TLARS ($0.88$ with CappedSpread
+  and $0.86$ with Random support vs. base $1.00$ at $\mathrm{SNR}=2$), while DA-TAFS/TOMP reach
+  $0.91\text{–}1.00$ from $\mathrm{SNR}=2$ on. DA-TAFS gives a little power back between $\mathrm{SNR}=2$ and $5$
+  ($0.96$ to $0.94$ with CappedSpread, $0.95$ to $0.91$ with Random support).
+- DA-TLARS runs its T-loop almost to the cap ($T \approx 131\text{–}143$ of $150$), while TLARS_STAG stops after
+  about $8$ steps with nearly the same FDR and TPR (within $0.009$ and $0.014$).
+- The two support placements behave nearly identically, and no FDR or TPR value differs between them by more than
+  $0.05$. The CappedSpread actives (spacing 20) sit far outside each other's bands of width $\kappa=3$, and Random
+  placements rarely put two actives that close together.
+
+![SNR sweep by support placement](simulation_results/plots/da_trex_mc_da_nn_snr_support_grid.png)
+
+---
+
+## Part 2 — 2D $\kappa \times \rho$ sweep on NN data ($\mathrm{SNR} = 2$)
+
+Per-solver TPR/FDR heatmaps over $\kappa \in \lbrace1,2,3,5,7,10,15\rbrace$ (band width) $\times$
+$\rho \in \lbrace0.1, 0.3, 0.5, 0.7, 0.8, 0.9\rbrace$ (filter common ratio). FDR cells above the target are outlined
+in cyan.
+
+- **FDR control holds almost everywhere**. Violations appear only in the top-right corner ($\rho \geq 0.8$ *and*
+  $\kappa \geq 7$), where the effective correlation neighborhood is both wide and strong. Only TLARS and TLARS_STAG
+  violate, in the same seven cells ($\rho = 0.9$ at $\kappa = 7, 10, 15$ with both placements, plus $\kappa = 15$,
+  $\rho = 0.8$ with Random support). TLARS is hit hardest ($0.38$ with CappedSpread and $0.37$ with Random support
+  at $\kappa=15$, $\rho=0.9$), while TAFS and TOMP stay controlled everywhere (at most $0.198$ and $0.165$, both at
+  $\kappa=15$, $\rho=0.9$ with Random support).
+- Group sizes grow with $\kappa$, so once the band is wide *and* strongly correlated the residual shadow
+  discoveries accumulate — the NN analogue of Demo 01's gap-vs-window story, but entering through the band
+  width rather than the support spacing.
+- **TPR degrades gracefully** toward the same corner, down to $0.61\text{–}0.72$ for every solver at
+  $\kappa = 15$, $\rho = 0.9$. At $\rho \leq 0.5$ every solver keeps at least $0.90$ for every $\kappa$, and the
+  narrowest band $\kappa = 1$ keeps at least $0.91$ at every $\rho$.
+- TLARS_STAG gives the same heatmaps as TLARS. Averaged over the 84 cells, its FDR is $0.003$ lower and its TPR
+  $0.002$ higher, and the largest single-cell change is $0.026$ in FDR.
+
+![kappa x rho, CappedSpread support](simulation_results/plots/da_trex_mc_da_nn_kappa_rho_capped.png)
+
+![kappa x rho, Random support](simulation_results/plots/da_trex_mc_da_nn_kappa_rho_random.png)
+
+---
+
+## Part 3 — 2D SNR $\times$ $\rho$ sweep on AR(1) data (method mismatch)
+
+The same DA-TRex+NN selector applied to AR(1) data over $\mathrm{SNR} \in \lbrace0.1, \ldots, 5\rbrace$ $\times$
+$\rho \in \lbrace0.1, \ldots, 0.9\rbrace$:
+
+- **Up to $\rho = 0.7$ the mismatch is benign**. FDR stays below the target for all solvers, SNRs and both
+  placements (worst cell $0.150$, TLARS at $\mathrm{SNR}=5$, $\rho=0.7$, Random support) — the NN groups capture
+  enough of the (rapidly decaying) AR(1) neighborhood to deflate the nearby shadows.
+- **At $\rho = 0.8\text{–}0.9$ control breaks down sharply** (up to $0.63$ for TLARS at $\mathrm{SNR}=0.5$,
+  $\rho=0.9$, CappedSpread, with TAFS $0.44$ and TOMP $0.42$ in the same cell). AR(1) correlation beyond the
+  effective NN window leaks through as false discoveries, exactly the failure mode the finite-range group design
+  cannot see (a plausible reading the data do not test directly). TLARS violates in $15$ cells and TLARS_STAG in
+  $14$ of them (it stays at $0.193$ where TLARS has $0.203$, $\mathrm{SNR}=2$, $\rho=0.8$, Random support). TAFS
+  violates in $8$ cells (one of them at $\rho=0.8$) and TOMP in $6$, all at $\rho=0.9$. TOMP is the most robust as
+  the SNR grows (at most $0.21$ from $\mathrm{SNR}=2$ on and $0.09\text{–}0.12$ at $\mathrm{SNR}=5$, $\rho=0.9$),
+  while TLARS stays at $0.37\text{–}0.50$ there.
+- Read this against [Demo 01](../demo_trex_da_01_mc_sim_ar1/README.md) (same AR(1) data, correctly specified `AR1`
+  correction). The $\rho$ sweep of its R run (Part 2, $\mathrm{SNR}=2$) keeps every DA FDR at or below $0.18$,
+  while DA-TRex+NN at the same SNR reaches $0.40\text{–}0.50$ for TLARS at $\rho=0.9$. The matched correction pays
+  for its control at $\rho=0.9$ with most of its power (TPR at most $0.32$), while DA-TRex+NN keeps
+  $0.57\text{–}0.63$. The gap between the two quantifies the price of the wrong dependency model — negligible at
+  moderate correlation, large in the strong-correlation regime.
+
+![SNR x rho on AR(1) data, CappedSpread support](simulation_results/plots/da_trex_mc_da_nn_ar_snr_rho_capped.png)
+
+![SNR x rho on AR(1) data, Random support](simulation_results/plots/da_trex_mc_da_nn_ar_snr_rho_random.png)

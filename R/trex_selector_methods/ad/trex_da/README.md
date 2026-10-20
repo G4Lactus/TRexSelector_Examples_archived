@@ -7,7 +7,7 @@
 ## Purpose
 
 R demos and Monte Carlo (MC) simulations for the **Dependency-Aware T-Rex (DA-TRex)** selector across correlated
-designs: first-order autoregressive (AR(1)) Toeplitz, equicorrelation, nearest-neighbor (NN) with a banded
+designs: first-order autoregressive (AR) Toeplitz, AR(1) for short, equicorrelation, nearest-neighbor (NN) with a banded
 moving-average (MA) structure, block-diagonal AR(1) (with and without white-noise augmentation), and heavy-tailed
 Student-t blocks.
 
@@ -19,10 +19,14 @@ trex_da/
   ├── README.md
   ├── da_sim_common.R                  <- solver set, MC runners, sweeps, writers
   ├── trex_da_dgps.R                   <- all scenario DGPs (one file)
+  ├── trex_da_plt_utils.R              <- shared plotter (figures of every demo)
   ├── demo_trex_da_01_mc_sim_ar1/
   │   ├── demo_trex_da_01_mc_sim_ar1.R
   │   ├── README.md
-  │   └── simulation_results/data/     <- da_trex_mc_*.{txt,csv}
+  │   ├── generate_plots.sh            <- renders this demo's figures
+  │   └── simulation_results/
+  │       ├── data/                    <- da_trex_mc_*.{txt,csv}
+  │       └── plots/                   <- *.{png,pdf}
   ├── demo_trex_da_02_mc_sim_ar1_blocks_plus_white/
   │   └── ...
   └── demo_trex_da_08_mc_sim_equi_and_bt/
@@ -53,10 +57,12 @@ runners, parameter sweeps, and the `.txt`/`.csv` result writers, mirroring the P
 
 Notes:
 
-- Every MC part runs three DA solver rows — `TREX-DA[+variant]: TLARS / TAFS / TOMP` (variant tags `+AR1`, `+BT`,
-  `+NN`, `+EQUI`, while the prior-groups demo 06 uses plain `TREX-DA:`) — with per-solver exchangeable tie-breaking
-  (`exch_tie_alpha = 0.25` for the greedy TAFS/TOMP) and stagnation control. Demos 01, 07, and 08 additionally run the
-  base (no-DA) `TREX: TLARS / TAFS / TOMP` comparison rows.
+- Every MC part runs four DA solver rows — `TREX-DA[+variant]: TLARS / TAFS / TOMP / TLARS_STAG` (variant tags
+  `+AR1`, `+BT`, `+NN`, `+EQUI`, while the prior-groups demo 06 uses plain `TREX-DA:`). The greedy TAFS and TOMP use
+  exchangeable tie-breaking (`exch_tie_alpha = 0.25`) and the T-loop stagnation stop, and TAFS runs with
+  `rho_afs = 0.3`. TLARS runs without the stagnation stop, and TLARS_STAG is the same TLARS with the stop on
+  (window 7). Demos 01, 07, and 08 additionally run the base (no-DA) `TREX: TLARS / TAFS / TOMP / TLARS_STAG`
+  comparison rows.
 - Hierarchical agglomerative clustering (HAC) linkage labels are capitalized (`Single`, `Complete`, `Average`) and also
   appear as filename tokens in the block demos' result stems.
 - The prior-groups method (demo 06) is driven by passing `prior_groups` to `trex_da_control()`. The C++ core routes on
@@ -90,7 +96,41 @@ and take the true support as 1-based R indices. (`dgp_bt_snr` and
 ## Results
 
 Each demo writes its result tables to its own `simulation_results/data/` folder as `da_trex_mc_<scenario_tag>.{txt,csv}`
-— the same stems and tidy comma-separated values (CSV) schemas as the C++ / Python suites.
+— the same stems and tidy comma-separated values (CSV) schemas as the C++ / Python suites. Each demo's
+`./generate_plots.sh` renders the figures from these tables into `simulation_results/plots/` via the shared
+[trex_da_plt_utils.R](trex_da_plt_utils.R), with the same file names as the Python suite.
+
+The committed results are the first R run of all eight demos (200 Monte Carlo trials per cell, 8 workers, about
+25 h in total). R draws its own random numbers, so its cells agree with C++ and Python up to Monte Carlo noise, not
+exactly. Of 9,344 cells compared with C++, 25 (0.27 %) lie more than three Monte Carlo standard errors away, the
+rate noise alone produces. The largest single differences are 0.085 in the false discovery rate (FDR) (Demo 08,
+DA-TOMP at $\rho = 0.7$ and $\mathrm{SNR} = 0.5$, the high-variance false-alarm cell) and 0.117 in the true positive
+rate (TPR).
+
+## What to expect
+
+DA-TRex keeps the FDR far closer to the target than the classical (no-DA) T-Rex selector on the same correlated
+data. In Demo 01 at $\mathrm{SNR} = 2$ and $\rho = 0.7$ the DA rows realize an FDR of $0.03\text{–}0.09$, while base
+T-Rex TLARS reaches $0.27\text{–}0.29$. The greedy DA solvers stay below the target of $0.2$ across the whole $\rho$
+grid of Demo 01 for both support placements (at most $0.18$).
+
+TLARS_STAG matches TLARS within Monte Carlo noise in every demo, except below the correction-window boundary of
+Demo 01, where it raises fewer false alarms (FDR at most $0.025$ against $0.085\text{–}0.115$ at $\rho = 0.9$).
+Averaged over a demo's DA cells, the TPR changes by at most $0.003$ and the FDR by at most $+0.001$. Each of the two
+breaks the target in 54 DA cells over all demos, the cells
+where only one of the two crosses it lie within $0.024$ of the target, and the T-loop of TLARS_STAG stops after at
+most $8.2$ steps on average.
+
+The demo READMEs document the known rough edges.
+
+- TLARS, and TLARS_STAG with it, breaks the target at $\rho = 0.9$ on the block designs under Average and Complete
+  linkage (Demos 03 and 04, FDR $0.22\text{–}0.25$), and on the multi-level prior-groups design of Demo 06, where its
+  FDR stays near $0.36$ from $\mathrm{SNR} = 0.5$ on while TAFS and TOMP stay below $0.2$.
+- Heavy-tailed noise raises the FDR in Demo 05 (mean over the DA cells $0.117$ against $0.075$ with Gaussian noise)
+  without costing power, while in Demo 04 the two noise models give the same averages.
+- The NN correction breaks down when applied to AR(1) data at $\rho \geq 0.8$ (Demo 07, FDR up to $0.63$ for TLARS
+  at $\rho = 0.9$).
+- Equicorrelation suppresses the DA selector from $\rho = 0.025$ on (Demo 08, TPR at most $0.005$).
 
 ---
 
