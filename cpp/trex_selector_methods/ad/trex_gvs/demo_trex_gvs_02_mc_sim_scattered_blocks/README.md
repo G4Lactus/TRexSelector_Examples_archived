@@ -100,13 +100,19 @@ produced by `./generate_plots.sh`.
 
 - **TENET** and **TENET_AUG** track each other closely and keep the false discovery rate (FDR) below the
    $\mathrm{tFDR} = 0.1$ target everywhere. **TIENET_AUG** is markedly more conservative (lower FDR), and its power
-   collapses in the extreme $\rho = 0.99$ column where the within-group columns become nearly collinear.
-- Because HAC-based grouping clusters columns by **correlation**, not by column adjacency, scattering group members
-   across the design leaves the FDR and true positive rate (TPR) pattern very close to Demo 01's contiguous-block
-   results — the clustering step is insensitive to column order by construction.
-- Best read side-by-side with Demo 01. Matching results confirm that group *discovery* depends on correlation
-   structure rather than spatial layout, while a noticeable divergence would point to a layout-sensitive bug or
-   clustering limitation.
+   collapses in the extreme $\rho = 0.99$ column where the within-group columns become nearly collinear. Its true
+   positive rate (TPR) there is at most $0.020$, about 3 of the 150 active variables. This is the only column that
+   the fixed cut at `corr_max = 0.98` splits into groups, and a plausible reading is that each group forms one
+   cluster there and TIENET_AUG selects about one variable per group, as in Demo 01.
+- Scattering the group members leaves the FDR and TPR pattern very close to Demo 01's contiguous-block results. Over
+   the 120 distinct cells (FDR and TPR of TENET and TIENET_AUG at every grid point) the largest gap is
+   $|z| = 2.27$ (TENET's FDR at $\mathrm{SNR} = 1$, $\rho = 0.7$, $0.072$ here against $0.081$), with $z$ the
+   difference divided by the combined Monte Carlo standard error of the two 200-trial means. Only 5 of the 120 cells
+   exceed $|z| = 2$, about the share that Monte Carlo noise alone produces.
+- HAC clusters on the distance $1 - |\mathrm{corr}|$, which does not depend on column order. Below $\rho = 0.99$ the
+   fixed cut at `corr_max = 0.98` lies above the within-group correlation, so it leaves every variable in its own
+   cluster, and only the $\rho = 0.99$ column, which the cut splits into groups, tests group *discovery*. There the
+   largest gap to Demo 01 is $|z| = 1.85$, so the scattered layout does not change it.
 
 TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver.
 FDR cells above the $\mathrm{tFDR} = 0.1$ target would be outlined in cyan.

@@ -120,9 +120,15 @@ produced by `./generate_plots.sh`.
   $\mathrm{SNR} = 1$ on it reaches TPR $\approx 1$ for $\rho = 0.7\text{–}0.95$. Its power collapses in the extreme
   $\rho = 0.99$ column (TPR $\le 0.02$), where the within-group columns become nearly collinear. This conservatism is
   not specific to this design — the same pattern recurs across the other block demos in this folder.
-- Along the $\rho$ axis, performance is stable across most within-group correlation levels, since
-  all three methods use HAC-based grouping to aggregate evidence across strongly correlated
-  columns. Only the extreme $\rho = 0.99$ column stresses TIENET_AUG.
+- Below $\rho = 0.99$ a stronger within-group correlation helps both solver families at low SNR. At
+  $\mathrm{SNR} = 0.2$ the TPR rises from $0.165$ at $\rho = 0.3$ to $0.808$ at $\rho = 0.95$ for TENET and from
+  $0.109$ to $0.631$ for TIENET_AUG. The grouping does not cause this gain. HAC clusters on the distance
+  $1 - |\mathrm{corr}|$ and joins each group at a distance of about $1 - \rho$, but the fixed cut at
+  `corr_max = 0.98` lies above the within-group correlation for every $\rho < 0.99$ (at $\rho = 0.95$ the largest
+  within-group sample correlation is about $0.97$), so it leaves every variable in its own cluster.
+- Only the extreme $\rho = 0.99$ column is cut into groups. A plausible reading of the TIENET_AUG collapse is that
+  each active group then forms one cluster and TIENET_AUG keeps very few members per cluster. A TPR of $0.020$ is 3
+  of the 150 active variables, which would fit one selected variable per group.
 
 TPR (top) and FDR (bottom) heatmaps, one column per solver. FDR cells above the
 $\mathrm{tFDR} = 0.1$ target would be outlined in cyan.
@@ -133,8 +139,8 @@ $\mathrm{tFDR} = 0.1$ target would be outlined in cyan.
 
 ### Part 2 — $\lambda_2$ selection method
 
-- For TENET, `CV_1SE_SVD` and `CV_1SE_CCD` give essentially the same FDR/TPR ($0.068$ / $1.000$), confirming the
-  pipeline is insensitive to the ridge-shaped penalty-selection backend.
+- For TENET, `CV_1SE_SVD` and `CV_1SE_CCD` give essentially the same FDR/TPR ($0.068$ / $1.000$), so at this
+  operating point the pipeline is insensitive to the ridge-shaped penalty-selection backend.
 - For TIENET_AUG, the IEN-geometry rule `CV_1SE_IEN_CCD` does clearly worse than `CV_1SE_CCD` here (FDR $0.040$ and
   TPR $0.830$ against $0.001$ and $0.998$), and all $200$ of its picks are boundary picks. The rule cross-validates
   $\lambda_2$ jointly with $\lambda_1$, and its $\lambda_1$ path stops at $0.8\, n_{\mathrm{train}} = 144$ selected
@@ -151,10 +157,14 @@ $\pm 1$ Monte Carlo standard deviation.
 
 ### Part 3 — HAC linkage
 
-- Single / Complete / Average / WPGMA linkage are interchangeable here — the strongly
-  equicorrelated groups are recovered identically regardless of the linkage rule.
-- Taken together, Parts 2 and 3 confirm that the Part 1 conclusions are not sensitive to the ridge-shaped
-  $\lambda_2$-selection backend (`CV_1SE_SVD` or `CV_1SE_CCD`) or the linkage rule for this data scenario.
+- Single / Complete / Average / WPGMA linkage produce numerically identical results (FDR $0.068$ and TPR $1.000$
+  for TENET, FDR $0.001$ and TPR $0.998$ for TIENET_AUG), equal to the Part 1 cell at this operating point.
+- At $\rho = 0.7$ the fixed cut at `corr_max = 0.98` lies far above the within-group correlation, so it leaves every
+  variable in its own cluster under any linkage, and this point cannot show a linkage effect. The linkage rule would
+  matter only where the cut forms groups, as in the $\rho = 0.99$ column of Part 1, which this comparison does not
+  cover.
+- Taken together, Parts 2 and 3 show that at $\mathrm{SNR} = 2$, $\rho = 0.7$ the results do not depend on the
+  ridge-shaped $\lambda_2$-selection backend (`CV_1SE_SVD` or `CV_1SE_CCD`) or on the linkage rule.
 
 Grouped bar charts at the same fixed operating point as Part 2. Error bars show $\pm 1$ Monte
 Carlo standard deviation.

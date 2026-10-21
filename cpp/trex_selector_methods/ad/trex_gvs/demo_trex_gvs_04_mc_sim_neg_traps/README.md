@@ -104,16 +104,24 @@ produced by `./generate_plots.sh`.
 
 - **TENET** and **TENET_AUG** are essentially identical. Both recover the active sign-flipped group almost
    completely (true positive rate (TPR) $\approx 1$ except at the lowest SNR $= 0.2$) while holding the false discovery
-   rate (FDR) at or just below target — the two inactive traps are excluded rather than falsely selected.
-- The mechanism behind that recovery is that HAC clusters on **unsigned** correlation, so the sign-flipped active
-   group is identified as a *single* group rather than split into its positive and negative halves.
-- **TIENET_AUG** is far more conservative (FDR $\le 0.045$ everywhere) and its TPR collapses to near zero in the
-   extreme $\rho = 0.99$ column. Otherwise it behaves as in the uniformly-positive-correlation scenarios of
+   rate (FDR) at or just below target, so the two inactive traps do not push the FDR over target.
+- HAC clusters on the **unsigned** dissimilarity $1 - |\mathrm{corr}|$, so the two sign-flipped halves sit as close
+   as two members of one half, and at $\rho = 0.99$ the cut can return the active group as a *single* group rather
+   than split it into its positive and negative halves. This does not explain the recovery. For $\rho \le 0.95$ the
+   fixed cut at `corr_max = 0.98` lies above the within-group correlation, so it leaves every variable in its own
+   cluster, yet at $\rho = 0.9$ and $0.95$ TENET already finds every active variable in every run at every SNR
+   (TPR $1$). A plausible reading is that the near-complete recovery does not hinge on the grouping. The data do not
+   record the groups.
+- **TIENET_AUG** is far more conservative (FDR at most about $0.045$ everywhere) and its TPR collapses to near zero
+   in the extreme $\rho = 0.99$ column. Otherwise it behaves as in the uniformly-positive-correlation scenarios of
    Demos 01–03 — the sign-flipped halves do not by themselves trigger different informed elastic net (IEN) behavior.
-- The two spatially separated traps are a stronger test of false-group exclusion than a single trap. Watch whether
-   FDR creeps up with SNR, which would indicate one of the traps starting to be (partially) selected. It does so
-   only slightly, and only at $\rho = 0.99$, where TENET's FDR rises from $0.085$ to $0.098$ with SNR and stays below
-   the target.
+- The two spatially separated traps are a stronger test of false-group exclusion than a single trap. In this run
+   TENET's FDR creeps up with SNR only slightly and only for $\rho \ge 0.9$, most at $\rho = 0.99$, where it rises
+   from $0.085$ to $0.098$ and stays below the target. From $\mathrm{SNR} = 0.2$ to $5$ each of these rises stays
+   below $1.5$ combined Monte Carlo standard errors, and the
+   [R run](../../../../../R/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_04_mc_sim_neg_traps/README.md#simulation-results)
+   shows no such trend, so this is an observation of this run. Whether one of the traps starts to be selected is not
+   measured, because the data do not record which variables are false discoveries.
 
 TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver.
 FDR cells above the $\mathrm{tFDR} = 0.1$ target are outlined in cyan.

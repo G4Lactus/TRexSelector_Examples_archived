@@ -56,11 +56,10 @@ Cholesky factor of $\Sigma_k$ returned by `chol()`, so that $U^\top U = \Sigma_k
 
 Empirical Pearson correlation of an exemplary design drawn from this DGP (`dgp_ar1_blocks_snr`, $n=200$, $p=500$,
 $\rho = 0.85$, seed 2026), in **natural variable order without hierarchical clustering**. Instead of the solid squares
-of the equicorrelated demos, each block shows as a **band that fades off the diagonal** with the $\rho^{|i-j|}$
-decay. In the two large blocks the band dies out well before the block ends. At this $\rho$ even neighboring
-columns stay below `corr_max = 0.98`, so the hierarchical agglomerative clustering (HAC) step leaves every variable
-in its own cluster. One figure per DGP lives in
-[`../dgp_corr_plots/`](../dgp_corr_plots/). Regenerate the whole suite with
+of the equicorrelated demos, each block shows as a **band that fades off the diagonal** with the $\rho^{|i-j|}$ decay.
+In the two large blocks the band dies out well before the block ends. At this $\rho$ even neighboring columns stay below
+`corr_max = 0.98`, so the fixed cut of the hierarchical agglomerative clustering (HAC) leaves every variable in its own
+cluster. One figure per DGP lives in [`../dgp_corr_plots/`](../dgp_corr_plots/). Regenerate the whole suite with
 [`../generate_corr_plots.sh`](../generate_corr_plots.sh) (shared plotter
 [`../../../corr_plt_utils.R`](../../../corr_plt_utils.R)).
 
@@ -191,9 +190,9 @@ of this demo (FDR and TPR of every solver at every grid point). Over the whole T
   $\rho = 0.5$ and $\mathrm{SNR} = 5$ it reaches $0.12$ here, against $0.92$ in the R run of the equicorrelated Demo 03.
   The AR(1) decay keeps only nearby columns of a block strongly correlated, so the active columns share no common factor
   and plausibly each carries too little of the signal on its own at $n = 200$. The HAC grouping is not the cause,
-  because below $\rho = 0.99$ neighboring columns stay under `corr_max = 0.98` and HAC forms no groups, here as in Demo
-  03. The C++ and Python runs show the same gap. Full recovery needs both a high $\rho$ and a high SNR, and only the
-  $\rho = 0.99$ column starts high ($0.78$ already at $\mathrm{SNR} = 0.2$).
+  because below $\rho = 0.99$ neighboring columns stay under `corr_max = 0.98` and the fixed cut leaves every variable
+  in its own cluster, here as in Demo 03. The C++ and Python runs show the same gap. Full recovery needs both a high
+  $\rho$ and a high SNR, and only the $\rho = 0.99$ column starts high ($0.78$ already at $\mathrm{SNR} = 0.2$).
 - **TIENET_AUG** has less power than the TENET variants, as in the other block demos. It gains power with SNR (from
   $0.11$ to $0.86$ at $\rho = 0.9$, against $0.95$ for TENET at $\mathrm{SNR} = 5$). In the $\rho = 0.99$ column,
   the only one where neighboring columns exceed `corr_max = 0.98` and single-linkage HAC chains each block into one

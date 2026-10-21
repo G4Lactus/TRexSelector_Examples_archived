@@ -101,15 +101,20 @@ produced by `./generate_plots.sh`.
 - Despite the $t(3)$ noise, false discovery rate (FDR) control holds throughout. **TENET** and **TENET_AUG**
    (identical here) stay in the $0.07\text{–}0.09$ band, just under the $\mathrm{tFDR} = 0.1$ target in every cell, with
    true positive rate (TPR) rising from $0.37$ to $0.95$.
-- The heavy tails cost the TENET variants a little power relative to the equivalent Gaussian case (Demo 03) at
-   comparable SNR — occasional large outliers make exact group boundaries noisier to detect — but they do not
-   compromise FDR control. The headline result is that heavy tails buy lower TPR, not FDR drift.
+- Against the Gaussian [Demo 03](../demo_trex_gvs_03_mc_sim_mixed_blocks/README.md) at the same SNR and $\rho$,
+   the heavy tails cost the TENET variants a little power and some FDR margin. TENET's TPR is lower in 24 of the 30
+   grid points (by at most $0.021$) and higher only at $\mathrm{SNR} = 0.2$. Its FDR is higher at all 30 grid points
+   (by $0.001\text{–}0.037$) but stays below target, so the heavy tails do not compromise FDR control. The data do
+   not show the cause. Noisier group boundaries are an unlikely one, because below $\rho = 0.99$ the fixed cut at
+   `corr_max = 0.98` lies above the within-block correlation and leaves almost every variable in its own cluster.
 - **TIENET_AUG** is the most conservative of the three within this demo (FDR $0.00\text{–}0.09$, peak TPR $0.85$ rather
    than $0.95$), and its power collapses entirely in the extreme $\rho = 0.99$ column (TPR $0.01\text{–}0.02$, flat in
    SNR), where the within-block columns become nearly collinear.
 - This is the same pattern as on the Gaussian equicorrelated designs (Demos 01–03). There, too, TIENET_AUG trades
    power for a lower FDR and collapses only at $\rho = 0.99$, while it reaches TPR $\approx 1$ in Demos 01–02 and
-   $\approx 0.87$ in Demo 03 elsewhere. The heavy tails therefore do not change its behavior.
+   $\approx 0.87$ in Demo 03 elsewhere. The heavy tails keep this pattern but cost TIENET_AUG some power and FDR
+   margin. From $\mathrm{SNR} = 1$ on, its TPR at $\rho \le 0.9$ lies $0.015\text{–}0.040$ below Demo 03 in all 15
+   cells, and its FDR is higher at all 30 grid points (by at most $0.077$).
 
 TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver.
 FDR cells above the $\mathrm{tFDR} = 0.1$ target would be outlined in cyan (none are here).

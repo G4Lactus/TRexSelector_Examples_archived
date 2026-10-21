@@ -130,14 +130,19 @@ The numbers and figure below are this Python run's own results (200 MC trials pe
 up to Monte-Carlo noise — the two ports draw from independent random number generator (RNG) streams.
 
 - **TENET** and **TENET_AUG** are numerically identical here and keep the false discovery rate (FDR) controlled
-   everywhere ($0.056\text{–}0.082$, no cyan violation outlines) — the inactive equicorrelated trap block does **not**
-   inflate FDR, since its group is identified as null and excluded. The true positive rate (TPR) peaks at $0.96$
-   (a ceiling below $1$, because the small 20-variable block is the hardest to recover).
-- **TIENET_AUG** is far more conservative (FDR $\le 0.042$, TPR $\le 0.88$), with a TPR collapse in the extreme
+   everywhere ($0.056\text{–}0.082$, no cyan violation outlines), so the inactive equicorrelated trap block does
+   **not** push the FDR over target. A plausible reading is that the selector mostly leaves the trap out, but the
+   saved data record no per-variable selections. The true positive rate (TPR) peaks at $0.96$, a ceiling below $1$,
+   so on average about 7 of the 150 active variables are missed. The data do not show which block they belong to.
+- **TIENET_AUG** is far more conservative (FDR $\le 0.043$, TPR $\le 0.88$), with a TPR collapse in the extreme
    $\rho = 0.99$ column (TPR $\approx 0.01$) where the within-block columns become nearly collinear.
-- The random gaps and random block order mainly test that the grouping/clustering logic is invariant to block
-   *placement*. TPR rises with SNR just as in the contiguous designs, so placement does not materially change
-   detection power.
+- The random gaps and random block order test whether the grouping and selection are invariant to block
+   *placement*. TPR rises with SNR here as in the contiguous design of
+   [Demo 01](../demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md), but on the 30 grid points both demos share it
+   stays lower in 26, and in every one from $\mathrm{SNR} = 1$ on. At $\mathrm{SNR} \ge 2$ and $\rho \ge 0.9$
+   Demo 01's TENET finds every active variable in every run (TPR $1$), while this demo reaches $0.938\text{–}0.956$.
+   The two demos also differ in block sizes and the trap block, so the data cannot attribute this gap to placement
+   alone.
 - Sweeping $\rho$ from $0.30$ up to $0.99$ shows how detection power and FDR control respond as within-block
    correlation strengthens, all else equal. For TENET at $\mathrm{SNR}=1$, TPR climbs $0.82 \to 0.92$ between
    $\rho = 0.30$ and $\rho = 0.85$ and then flattens, while FDR drifts *down* from $0.078$ to $0.056$.

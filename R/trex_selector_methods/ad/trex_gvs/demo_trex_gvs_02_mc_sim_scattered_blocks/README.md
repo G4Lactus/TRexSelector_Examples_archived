@@ -190,8 +190,8 @@ up to Monte Carlo noise (see [Purpose](#purpose)).
   Monte Carlo standard errors (largest $|z| = 1.98$). Both demos use the same trial seeds, but they draw their
   designs differently, so the comparison holds approximately.
 - HAC clusters the columns on the distance 1 − |correlation|, which does not depend on column order. Below
-  $\rho = 0.99$ the within-group correlation stays under `corr_max = 0.98` and HAC leaves every variable in its own
-  cluster, so only the $\rho = 0.99$ column tests group *discovery*. There the largest gap to Demo 01 is
+  $\rho = 0.99$ the within-group correlation stays under `corr_max = 0.98` and the fixed cut leaves every variable in
+  its own cluster, so only the $\rho = 0.99$ column tests group *discovery*. There the largest gap to Demo 01 is
   $|z| = 1.53$, so the scattered layout does not change it.
 
 TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver.

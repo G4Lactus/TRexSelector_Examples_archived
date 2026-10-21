@@ -206,18 +206,23 @@ up to Monte-Carlo noise — the two ports draw from independent random number ge
 - **For the EN variants the prior is inert**. M1 and M2 differ by at most $0.004$ TPR at every grid point. Since
    EN consumes the group information only through the dummy correlation structure, knowing the true groups
    neither helps nor hurts it here.
-- **For IEN the oracle prior is now close to neutral.** Below the discoverability boundary the `corr_max` $= 0.5$
-   cut sits above the within-block correlation, so no merge survives it (purity $0$, $M \approx 500$) and clustered
-   IEN works with per-variable rows, while the oracle variant gets the true 5-member groups. At $\rho = 0.35$,
-   $\mathrm{SNR} = 5$ clustered IEN reaches TPR $0.50$ vs. $0.44$ for oracle IEN, at $\rho = 0.2$ $0.26$ vs. $0.24$,
-   and at the boundary ($\rho = 0.5$, purity $0.58$, $M \approx 179$) $0.54$ vs. $0.53$. From $\rho \ge 0.65$ both
-   IEN variants are numerically identical because HAC recovers exactly the true blocks (purity $1.0$, $M = 100$).
-- **The IEN-geometry $\lambda_2$ rule removes the oracle penalty of the earlier setup.** With the ridge-shaped
+- **For IEN the oracle prior costs some power below the boundary.** There the fixed `corr_max` $= 0.5$ cut lies
+   above the within-block correlation, so it leaves almost every variable in its own cluster (purity about $0$,
+   $M \approx 495\text{–}500$) and clustered IEN works with per-variable rows, while the oracle variant gets the true
+   5-member groups. At $\rho = 0.35$ clustered IEN reaches TPR $0.099$, $0.266$ and $0.496$ at
+   $\mathrm{SNR} = 1$, $2$ and $5$, against $0.061$, $0.207$ and $0.440$ for oracle IEN, a gap of more than five
+   combined Monte Carlo standard errors in each cell ($|z| \approx 5.1$, $6.1$ and $5.1$). At $\rho = 0.2$ the gap is
+   at most $0.026$ ($0.120$ vs. $0.094$ at $\mathrm{SNR} = 2$), and at the boundary ($\rho = 0.5$, purity $0.58$,
+   $M \approx 179$) at most $0.010$ ($|z| < 1.6$). From $\rho \ge 0.65$ both IEN variants are numerically identical
+   because HAC recovers exactly the true blocks (purity $1.0$, $M = 100$).
+- **The IEN-geometry $\lambda_2$ rule shrinks the oracle penalty of the earlier setup.** With the ridge-shaped
    `CV_1SE_CCD`, which gave both IEN variants the same $\lambda_2$, the oracle's 5-member ties coupled each active with
    its group-aligned dummies. The false discovery proportion (FDP) estimate then stayed high and the T-loop
    terminated early, so oracle IEN lost most of its power (TPR $0.11$ vs. $0.30$ clustered at $\rho = 0.35$,
-   $\mathrm{SNR} = 5$, with $\overline T_{\mathrm{stop}} = 6.3$ vs. $13.1$, July run). The IEN rule picks a smaller
-   $\lambda_2$ for the oracle groups ($0.13$ vs. $0.39$), and both T-loops now run to about $14$ steps.
+   $\mathrm{SNR} = 5$, with $\overline T_{\mathrm{stop}} = 6.3$ vs. $13.1$, earlier run). The IEN rule picks a smaller
+   $\lambda_2$ for the oracle groups ($0.13$ vs. $0.39$), but the oracle T-loop still stops earlier ($13.5$ vs.
+   $14.3$ steps at $\rho = 0.35$, $\mathrm{SNR} = 5$, and $10.9$ vs. $12.7$ at $\mathrm{SNR} = 2$). A plausible
+   reading is a weaker form of the same effect.
 - **IEN gains a lot but stays more conservative than EN** (TPR at most $0.56$ for $\rho \ge 0.5$, up from $0.15$ with
    `CV_1SE_CCD`, vs. up to $0.90$ for EN), at FDR at most $0.059$.
 
@@ -228,15 +233,18 @@ The dashed red line marks the $\mathrm{tFDR} = 0.1$ target.
 
 - The supplementary vs.-SNR view below shows the same data at three discoverability regimes
    ($\rho = 0.2$ undiscoverable, $0.5$ partial, $0.9$ fully discovered). The EN pair overlaps in every panel,
-   and recovery grows with both SNR and $\rho$ (stronger within-block correlation concentrates the signal on
-   fewer effective directions, which helps whole-block recovery).
+   and EN recovery grows with both SNR and $\rho$ (TPR $0.250$, $0.645$ and $0.901$ at $\mathrm{SNR} = 5$). A
+   plausible reading is that stronger within-block correlation concentrates the signal on fewer effective
+   directions, which helps whole-block recovery. IEN rises with SNR too, but not with $\rho$ above the boundary. At
+   $\mathrm{SNR} = 5$ it falls from $0.562$ at $\rho = 0.65$ to $0.445$ at $\rho = 0.9$.
 
 ![Block benchmark — WHOLE, TPR/FDR vs SNR](simulation_results/plots/gvs_block_bench_whole.png)
 
 ### INDIVIDUAL truth — cautionary appendix
 
 - **Coordinate-level FDR control collapses by construction once siblings correlate strongly.** At $\rho = 0.9$
-   the EN methods realize FDR $\approx 0.77\text{–}0.80$ (target $0.1$) while selecting the active variable's whole
+   the EN methods realize FDR $\approx 0.77\text{–}0.80$ from $\mathrm{SNR} = 1$ on ($0.05$, $0.17$ and $0.60$ at
+   $\mathrm{SNR} = 0.1$, $0.2$ and $0.5$, target $0.1$) while selecting the active variable's whole
    block. IEN sits at $0.40\text{–}0.50$ from $\mathrm{SNR} = 1$ on, with TPR rising to $0.93$ at $\mathrm{SNR} = 5$.
    Oracle and clustered variants are identical here — no amount of correct group knowledge identifies *which*
    exchangeable member is active.

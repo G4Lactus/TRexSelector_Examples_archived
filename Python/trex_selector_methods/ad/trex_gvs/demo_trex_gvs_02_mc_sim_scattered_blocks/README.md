@@ -130,16 +130,25 @@ up to Monte-Carlo noise — the two ports draw from independent random number ge
    $\mathrm{tFDR} = 0.1$ target in every cell ($0.042\text{–}0.088$, no cyan violation outlines), with true positive
    rate (TPR) $\approx 1$ from $\mathrm{SNR} \ge 1$ for $\rho \ge 0.5$ and $0.87 \to 0.96 \to 0.99$ over
    $\mathrm{SNR} \in \lbrace1, 2, 5\rbrace$ in the weakest column $\rho = 0.30$.
-- **TIENET_AUG** is markedly more conservative (FDR $\le 0.043$) and has less power at low SNR, but from
+- **TIENET_AUG** is markedly more conservative (FDR $\le 0.044$) and has less power at low SNR, but from
    $\mathrm{SNR} = 1$ on it reaches TPR $\approx 1$ for $\rho = 0.7\text{–}0.95$. Its power collapses in the extreme
-   $\rho = 0.99$ column (TPR $\le 0.02$), where the within-group columns become nearly collinear.
-- Because HAC-based grouping clusters columns by **correlation**, not by column adjacency, scattering group members
-   across the design leaves the FDR/TPR pattern very close to Demo 01's contiguous-block results — the clustering
-   step is insensitive to column order by construction. Cell by cell the two demos differ by at most a few
-   hundredths of TPR (e.g. $0.87$ here vs. $0.88$ in Demo 01 at $\mathrm{SNR}=1$, $\rho=0.3$).
-- Best read side-by-side with Demo 01. Matching results confirm that group *discovery* depends on correlation
-   structure rather than spatial layout, while a noticeable divergence would point to a layout-sensitive bug or
-   clustering limitation.
+   $\rho = 0.99$ column (TPR $\le 0.02$, about 3 of the 150 active variables), where the within-group columns become
+   nearly collinear. This is the only column that the fixed cut at `corr_max = 0.98` divides into groups, and a
+   plausible reading is that each group then forms one cluster and TIENET_AUG keeps about one variable per group, as
+   in Demo 01.
+- Scattering the group members leaves the FDR/TPR pattern very close to Demo 01's contiguous-block results. Over the
+   120 distinct cells (FDR and TPR of TENET and TIENET_AUG at every grid point) the largest gap is $0.024$ in TPR
+   (TENET at $\mathrm{SNR}=0.2$, $\rho=0.7$, $0.657$ here vs. $0.682$) and $0.011$ in FDR. The largest gap in units
+   of the combined Monte Carlo standard error is $|z| = 2.44$, and 5 of the 120 cells exceed $|z| = 1.96$. TENET's
+   FDR is lower here in 28 of 30 cells, by $0.004$ on average. All cells of a demo reuse the same 200 trial seeds,
+   so their Monte Carlo errors are correlated, and such a common shift does not by itself point to a layout effect.
+- HAC clusters the columns on the distance $1 - |\mathrm{corr}|$, which does not depend on column order. The
+   dendrogram merges each group at a distance of about $1 - \rho$, but below $\rho = 0.99$ the fixed cut at
+   `corr_max = 0.98` lies above the within-group correlation and leaves every variable in its own cluster. So only
+   the $\rho = 0.99$ column, the only one cut into groups, tests group *discovery*. There the TPR of both families
+   agrees with Demo 01 within $0.005$, and the largest standardized gap is the TENET FDR at $\mathrm{SNR}=1$
+   ($0.053$ vs. $0.063$, $|z| = 2.44$). A gap of the same size appears without any grouping at $\rho = 0.95$
+   ($0.058$ vs. $0.067$, $|z| = 2.03$), so it does not point to a layout effect on group discovery.
 
 TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver.
 FDR cells above the $\mathrm{tFDR} = 0.1$ target would be outlined in cyan.

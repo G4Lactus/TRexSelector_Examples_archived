@@ -101,13 +101,18 @@ produced by `./generate_plots.sh`.
 ## Simulation Results
 
 - **TENET** and **TENET_AUG** track each other closely and keep the false discovery rate (FDR) controlled (roughly
-   $0.05\text{–}0.08$, everywhere below target) — the inactive equicorrelated trap block does **not** inflate FDR, since
-   its group is identified as null and excluded.
+   $0.05\text{–}0.08$, everywhere below target), so the inactive equicorrelated trap block does not push the FDR over
+   target. A plausible reading is that the trap variables are mostly left out, but the data do not record which
+   variables are false discoveries.
 - **TIENET_AUG** is far more conservative (FDR near $0$, lower true positive rate (TPR)), with a TPR collapse in the
    extreme $\rho = 0.99$ column where the within-block columns become nearly collinear.
-- The random gaps and random block order mainly test that the grouping/clustering logic is invariant to block
-   *placement*. TPR rises with SNR just as in the contiguous designs, so placement does not materially change
-   detection power.
+- The random gaps and random block order test whether the grouping and selection are invariant to block
+   *placement*. TPR rises with SNR just as in the contiguous design of
+   [Demo 01](../demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md), but TENET's TPR stays below Demo 01 in 26 of the
+   30 shared grid points and lies above it only in four cells with $\mathrm{SNR} \le 0.5$ and $\rho \le 0.7$. At
+   $\mathrm{SNR} \ge 2$ and $\rho \ge 0.9$ Demo 01's TENET finds every active variable in every run (TPR $1$), while
+   this demo reaches $0.940\text{–}0.957$. The two demos also differ in block sizes and the trap block, so the data
+   cannot attribute this gap to placement alone.
 - Sweeping $\rho$ from $0.30$ up to $0.99$ shows how detection power and FDR control respond as within-block
    correlation strengthens, all else equal.
 

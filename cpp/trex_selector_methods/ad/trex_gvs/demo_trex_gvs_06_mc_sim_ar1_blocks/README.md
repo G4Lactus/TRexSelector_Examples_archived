@@ -106,12 +106,18 @@ produced by `./generate_plots.sh`.
    each other and peak near $0.09$, just below the $\mathrm{tFDR} = 0.1$ target, while **TIENET_AUG** is markedly more
    conservative (FDR $\le 0.05$).
 - **The true positive rate (TPR) recovers much more slowly with SNR than in the equicorrelated Hastie/Mixed-Blocks
-   demos.** AR(1) decay means only nearby columns within a block stay strongly correlated, weakening the group-level
-   evidence aggregation that HAC clustering relies on — full recovery needs both high $\rho$ and high SNR, and even at
-   $\mathrm{SNR} = 5$ the $\text{low-}\rho$ columns barely lift off zero.
+   demos.** At $\mathrm{SNR} = 5$ and $\rho = 0.5$ TENET reaches $0.13$ here, against $0.93$ in the equicorrelated
+   [Demo 03](../demo_trex_gvs_03_mc_sim_mixed_blocks/README.md). The grouping is not the cause, because below
+   $\rho = 0.99$ the fixed cut at `corr_max = 0.98` lies above the correlation of even neighboring columns, so it
+   leaves every variable in its own cluster, here as in Demo 03. The
+   AR(1) decay keeps only nearby columns of a block strongly correlated, so the active columns share no common factor
+   and plausibly each carries too little of the signal on its own at $n = 200$. Full recovery needs both high $\rho$
+   and high SNR, and even at $\mathrm{SNR} = 5$ the $\text{low-}\rho$ columns barely lift off zero.
 - **TIENET_AUG** again has less power than the TENET-based methods (TPR up to $0.86$ against $0.96$), as in the
-   other block demos. It gains power as SNR increases rather than staying flat — except in the
-   $\rho = 0.99$ near-collinear column, where its TPR collapses ($\approx 0.01$).
+   other block demos. Its TPR rises with SNR in every column, but in the $\rho = 0.99$ column it stays collapsed at
+   $0.008\text{–}0.012$. That is the only column the fixed cut at `corr_max = 0.98` splits into groups. Neighboring
+   columns, correlated at $0.99$, lie above the cut, so single-linkage HAC chains each block into one cluster.
+   Only neighboring columns are nearly collinear there, because the correlation still decays with column distance.
 - The $\rho$ axis is the most informative view of this demo. Watch how quickly recovery degrades as $\rho$
    decreases and the AR(1) decay becomes steeper (correlation vanishing faster with column distance).
 

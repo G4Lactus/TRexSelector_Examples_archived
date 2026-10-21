@@ -54,9 +54,10 @@ generated as $X_{\text{block}} = Z L^\top$, where $Z \sim \mathcal{N}(0, I_{n \t
 Empirical Pearson correlation of an exemplary design drawn from the data-generating process (DGP) `dgp_ar1_blocks_snr`
 ($n=200$, $p=500$, $\rho = 0.85$, seed 2026), in **natural variable order — no hierarchical clustering**. Instead of
 the solid squares of the equicorrelated demos, each block shows as a **band fading off the diagonal** — the
-$\rho^{|i-j|}$ decay. In the two large blocks the band dies out well before the block ends, which is precisely why
-evidence aggregation based on hierarchical agglomerative clustering (HAC) has less to work with here. One figure per
-DGP lives in [`../dgp_corr_plots/`](../dgp_corr_plots/). Regenerate the whole suite with
+$\rho^{|i-j|}$ decay. In the two large blocks the band dies out well before the block ends. At this $\rho$ the
+fixed cut of the hierarchical agglomerative clustering (HAC) at `corr_max = 0.98` lies above even the correlation
+of neighboring columns, so it leaves every variable in its own cluster. One figure per DGP lives in
+[`../dgp_corr_plots/`](../dgp_corr_plots/). Regenerate the whole suite with
 [`../generate_corr_plots.sh`](../generate_corr_plots.sh) (shared plotter
 [`../../../corr_plt_utils.py`](../../../corr_plt_utils.py)).
 
@@ -134,14 +135,18 @@ up to Monte-Carlo noise — the two ports draw from independent random number ge
    numerically identical and peak at $0.087$, just below the $\mathrm{tFDR} = 0.1$ target, while **TIENET_AUG** is
    markedly more conservative (FDR $\le 0.042$).
 - **The true positive rate (TPR) recovers much more slowly with SNR than in the equicorrelated Hastie/Mixed-Blocks
-   demos.** AR(1) decay means only nearby columns within a block stay strongly correlated, weakening the group-level
-   evidence aggregation that HAC clustering relies on — full recovery needs both high $\rho$ and high SNR. At
-   $\mathrm{SNR} = 5$, TENET's TPR runs $0.02 / 0.12 / 0.51 / 0.88 / 0.95 / 0.96$ across
+   demos.** At $\mathrm{SNR} = 5$, TENET's TPR runs $0.02 / 0.12 / 0.51 / 0.88 / 0.95 / 0.96$ across
    $\rho \in \lbrace0.3, 0.5, 0.7, 0.85, 0.9, 0.99\rbrace$, so the $\text{low-}\rho$ columns barely lift off zero.
-- **TIENET_AUG** again has less power than the TENET-based methods, as in the other block demos. It shows real
-   (though smaller) power gains as SNR increases rather than staying flat (TPR $0.86$ at $\rho = 0.9$,
-   $\mathrm{SNR} = 5$, against $0.95$ for TENET) — except in the $\rho = 0.99$ near-collinear column, where its TPR
-   collapses to $\approx 0.01$.
+   At $\rho = 0.5$ and $\mathrm{SNR} = 5$ it reaches $0.12$ here, against $0.93$ in the equicorrelated
+   [Demo 03](../demo_trex_gvs_03_mc_sim_mixed_blocks/README.md). The HAC grouping is not the cause, because below
+   $\rho = 0.99$ the fixed cut at `corr_max = 0.98` lies above the correlation of even neighboring columns and
+   leaves every variable in its own cluster, here as in Demo 03. A plausible reading is that the AR(1) decay keeps
+   only nearby columns of a block strongly correlated, so the active columns share no common factor and each carries
+   too little of the signal on its own at $n = 200$. Full recovery needs both a high $\rho$ and a high SNR.
+- **TIENET_AUG** again has less power than the TENET-based methods, as in the other block demos. Its TPR rises with
+   SNR in every column (to $0.86$ at $\rho = 0.9$, $\mathrm{SNR} = 5$, against $0.95$ for TENET). In the
+   $\rho = 0.99$ column, where neighboring columns are nearly collinear, it rises too but stays collapsed at
+   $0.007\text{–}0.012$.
 - The $\rho$ axis is the most informative view of this demo. Recovery degrades sharply as $\rho$ decreases and the
    AR(1) decay becomes steeper (correlation vanishing faster with column distance).
 

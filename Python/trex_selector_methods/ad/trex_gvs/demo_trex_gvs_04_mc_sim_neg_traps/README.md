@@ -132,22 +132,30 @@ up to Monte-Carlo noise — the two ports draw from independent random number ge
 
 - **TENET** and **TENET_AUG** are numerically identical here. Both recover the active sign-flipped group almost
    completely (true positive rate (TPR) $\ge 0.97$ everywhere except the $\mathrm{SNR}=0.2$, $\rho=0.3$ cell at
-   $0.80$) — the two inactive traps are excluded rather than falsely selected.
+   $0.80$). Neither inactive trap is selected as a whole, since that would push the FDR far above the levels below,
+   but the saved data do not record which variables are false discoveries.
 - The false discovery rate (FDR) sits just below the $\mathrm{tFDR} = 0.1$ target across the grid
    ($0.077\text{–}0.099$), with **two cells marginally above it**. The $\rho = 0.99$ cells at $\mathrm{SNR} = 2$
    and $5$ realize $0.107$ and $0.112$ (outlined cyan in the figure). The Monte-Carlo standard error of those cells
    is $\approx 0.009$, so both sit within $\approx 1.3$ standard errors of the target. The C++ reference peaks at
    $0.098$ in the same near-collinear column. This is MC-scale jitter in the hardest corner of the grid, not a
    systematic loss of control.
-- The mechanism behind the recovery is that HAC clusters on **unsigned** correlation, so the sign-flipped active
-   group is identified as a *single* group rather than split into its positive and negative halves.
+- HAC clusters on **unsigned** correlation, the dissimilarity $1 - |\mathrm{corr}|$, so the dendrogram merges the two
+   halves of a group at the same distance as two members of one half, and at $\rho = 0.99$ the cut keeps the
+   sign-flipped active group as a *single* group rather than splitting it into its positive and negative halves.
+   This does not explain the recovery at $\rho \le 0.95$. There the fixed cut at `corr_max = 0.98` lies above the
+   within-group correlation and leaves every variable in its own cluster, yet the TPR is already at least $0.994$ at
+   $\rho = 0.9\text{–}0.95$ for every SNR. A plausible reading is that the near-complete recovery does not hinge on
+   the grouping.
 - **TIENET_AUG** is far more conservative (FDR $\le 0.039$ everywhere) and its TPR collapses to $0.03\text{–}0.08$ in
    the extreme $\rho = 0.99$ column. Elsewhere it reaches TPR $\approx 1$ from $\mathrm{SNR} \ge 0.5$ (from
    $\mathrm{SNR} = 1$ at $\rho = 0.3$), so the sign-flipped halves do not by themselves trigger different informed
    elastic net behavior.
 - The two spatially separated traps are a stronger test of false-group exclusion than a single trap. FDR does not
    creep up with SNR outside the $\rho = 0.99$ column, so neither trap starts being selected as the signal
-   strengthens.
+   strengthens. Inside that column the FDR of this run rises steadily with SNR, from $0.094$ to $0.112$. This is an
+   observation of this run only. The C++ reference rises less ($0.085$ to $0.098$), and the R run shows no trend
+   ($0.087\text{–}0.095$).
 
 TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver.
 FDR cells above the $\mathrm{tFDR} = 0.1$ target are outlined in cyan.
