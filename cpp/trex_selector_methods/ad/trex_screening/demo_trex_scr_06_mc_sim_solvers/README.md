@@ -9,9 +9,9 @@ performance, or whether it
  [Demo 01](../demo_trex_scr_01_mc_sim_screen_trex/README.md) is used, so the numbers here are directly comparable to
  the baseline established there.
  Three backends are swept over the signal-to-noise ratio (SNR). They are **TLARS**, the terminating form of
- least-angle regression (LARS), **TAFS** with $\rho = 0.3$ (terminating adaptive forward selection) and **TOMP**
+ least-angle regression (LARS), **TAFS** with $\rho = 0.3$ (terminating adaptive forward stepwise) and **TOMP**
  (terminating orthogonal matching pursuit), first under the Ordinary thresholding rule alone and then crossed with
- the Bootstrap-CI rule.
+ the Bootstrap-CI rule, whose threshold comes from a bootstrap confidence interval (CI).
  Screening returns a *candidate set*, and the false discovery rate (FDR) and the true positive rate (TPR) are evaluated
  on the individual selected variables
  (see [What is actually measured](../README.md#what-is-actually-measured-in-these-demos)).
@@ -30,8 +30,9 @@ We consider the linear model:
 - $\boldsymbol{y} \in \mathbb{R}^n$ is the response vector.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ is the design matrix.
 - $\boldsymbol{\beta} \in \mathbb{R}^p$ is the coefficient vector, with $s$ nonzero entries.
-- $\boldsymbol{\epsilon}$ is the noise vector, i.i.d. standard normal.
-- $\sigma_{\varepsilon}^2$ is the noise variance, calibrated to achieve a target linear SNR.
+- $\boldsymbol{\epsilon}$ is the noise vector, i.i.d. normal.
+- $\sigma_{\varepsilon}^2$ is the noise variance, calibrated to a target linear SNR as the sample variance of
+   $\boldsymbol{X}\boldsymbol{\beta}$ (divisor $n$) divided by the SNR.
 - $n = 300$, $p = 1{,}000$, $s = 10$ (high-dimensional, $p > n$).
 
 The design matrix has **no correlation structure**:
@@ -42,10 +43,12 @@ X_{ij} \sim \mathcal{N}(0,1) \quad \text{i.i.d.}
 
 - The active support is drawn uniformly at random *per Monte Carlo (MC) trial*, so the results are not tied to
    one support pattern.
-- All active coefficients are $\beta_j = 1$, and the support-selection and coefficient random number generators
-   (RNGs) are offset from the trial seed so they stay independent of the design and noise draws.
-- This is the **same data-generating process (DGP) as Demo 01**, so the two demos are directly comparable — any
-   difference in the curves below is attributable to the solver backend, not to the data.
+- All active coefficients are $\beta_j = 1$, and the support comes from a random number generator (RNG) seeded at
+   the trial seed plus `500000`, so it stays apart from the design and noise draws of the trial seed.
+- This is the **same data-generating process (DGP) as Demo 01** with the same seeds. Trial `mc` at grid index
+   `snr_idx` uses seed `24 + 1000 * snr_idx + mc`, so every series of both demos screens the **same 200 datasets**
+   at one SNR point. Differences between the series at one SNR point therefore come from the solver, the
+   thresholding rule and the random experiments, not from the data.
 
 ---
 
@@ -56,7 +59,9 @@ K = 20                       # Random experiments per T-loop iteration
 R_boot = 1000                # Bootstrap replicates (Bootstrap-CI rule only)
 ci_grid_step = 0.001         # Bootstrap-CI threshold grid granularity
 solver = TLARS / TAFS / TOMP # T-Rex solver backends compared
-rho_afs = 0.3                # AFS penalty parameter (TAFS only)
+rho_afs = 0.3                # Adaptive forward stepwise shrinkage step (read by TAFS only)
+tloop_stagnation_stop = true # Stagnation stop enabled for every backend here
+tloop_max_stagnant_steps = 5 # Stagnant T-loop steps before the stop
 MC = 200                     # Monte Carlo repetitions per grid point
 ```
 
@@ -71,8 +76,9 @@ Three T-Rex solver backends [[1]](#references), all driving `ScreenTRexMethod::T
 
 - **TLARS** — terminating LARS, the default backend, which follows the least-angle regression path until the
    dummy-based stopping criterion fires.
-- **TAFS-0.3** — terminating adaptive forward selection with penalty $\rho = 0.3$, a greedy forward path
-   with an adaptive penalty on the already-selected directions.
+- **TAFS-0.3** — terminating adaptive forward stepwise with shrinkage step $\rho = 0.3$, which moves the fit only a
+   fraction $\rho$ toward the least-squares fit on the active set and so lies between forward stepwise ($\rho = 1$)
+   and least-angle regression ($\rho \to 0$).
 - **TOMP** — terminating orthogonal matching pursuit, the greediest of the three, taking the predictor most
    correlated with the current residual at each step.
 
@@ -129,7 +135,7 @@ produced by `./generate_plots.sh`.
 - **All three converge at high SNR.** By $\mathrm{SNR} = 2$ TAFS-0.3 and TOMP reach TPR $1.000$ and TLARS
    $0.994$, and at $\mathrm{SNR} = 5$ all three recover every active variable at FDR $0.061\text{–}0.071$. The choice
    of backend therefore only matters where the signal is neither absent nor obvious.
-- **At very low SNR the backends are indistinguishable — and all uncontrolled.** For $\mathrm{SNR} \le 0.2$
+- **At very low SNR the backends are indistinguishable, and all uncontrolled.** For $\mathrm{SNR} \le 0.2$
    the realized FDR runs $0.272\text{–}0.457$ for all three with TPR $\le 0.124$, reproducing the Demo 01 finding
    that screening is not FDR-controlling when there is no recoverable signal.
 - **The internal FDR estimate behaves the same way for every backend.** It peaks around $0.47\text{–}0.50$ at
@@ -147,7 +153,7 @@ is the realized FDR and the dashed line the procedure's own estimated FDR.
    the bootstrap TPR spans $0.341$ (TLARS), $0.635$ (TAFS-0.3), and $0.912$ (TOMP) — more than half the
    achievable power — against a spread of roughly $0.12$ for the same three backends under the Ordinary
    rule.
-- **TLARS and TAFS-0.3 are the conservative backends.** Under Bootstrap-CI both keep FDR at or below $0.055$ from
+- **TLARS and TAFS-0.3 are the conservative backends under Bootstrap-CI.** Both keep FDR at or below $0.055$ from
    $\mathrm{SNR} = 0.5$ onwards. TLARS gives up the most power around $\mathrm{SNR} = 1$ (TPR $0.34$ vs. $0.63$ for
    TAFS-0.3) but recovers at high SNR, where its TPR reaches $0.855$ at $\mathrm{SNR} = 5$. TOMP under
    Bootstrap-CI, in contrast, behaves almost like Ordinary screening. At $\mathrm{SNR} = 1$ its TPR is
@@ -157,9 +163,10 @@ is the realized FDR and the dashed line the procedure's own estimated FDR.
 - **The low-SNR regime is unaffected by either choice.** For $\mathrm{SNR} \le 0.2$ all six series have
    TPR $\le 0.127$ and FDR between $0.137$ and $0.452$. Neither the backend nor the thresholding rule
    rescues screening when there is nothing to find.
-- **Practical takeaway.** TLARS is the safe conservative default, while TOMP and TAFS-0.3 buy substantial power at
-   mid SNR at a comparable error rate. Under Bootstrap-CI the backend choice moves the operating point more
-   than the thresholding rule does — pick the solver first, the rule second.
+- **Practical takeaway.** Under the Ordinary rule TOMP and TAFS-0.3 buy substantial power over TLARS at mid SNR at
+   a comparable error rate. Under Bootstrap-CI TLARS and TAFS-0.3 keep the lowest FDR, while TOMP keeps most of the
+   power. At $\mathrm{SNR} = 1$ the backend moves the Bootstrap-CI TPR by $0.571$, a little more than switching
+   TLARS from Ordinary to Bootstrap-CI ($0.825 \to 0.341$), so there the solver matters as much as the rule.
 
 TPR (left) and FDR (right) vs. SNR, one line per solver × rule combination. On the FDR panel the
 solid line is the realized FDR and the dashed line the procedure's own estimated FDR.

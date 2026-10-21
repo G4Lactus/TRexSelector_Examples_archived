@@ -5,11 +5,11 @@
 The demo measures what **predictor correlation does to Screen-TRex**, and whether the **dependency-aware (DA)**
  variants repair the damage.
  Three correlation structures are put in front of the screener — first-order autoregressive (AR(1)),
- equicorrelated, and block-equicorrelated — and in each case the plain Ordinary and Bootstrap-CI rules are
- compared against their DA counterparts, which deflate the vote share of every variable that resembles a
- correlated neighbour.
- Demo 01 established the independent and identically distributed (i.i.d.) baseline, and everything reported
- here is the cost of leaving it.
+ equicorrelated, and block-equicorrelated — and in each case the plain Ordinary rule and the Bootstrap-CI rule,
+ built on a bootstrap confidence interval (CI), are compared against their DA counterparts, which deflate the
+ vote share of every variable that resembles a correlated neighbour.
+ Demo 01 established the independent and identically distributed (i.i.d.) baseline that the results here are
+ read against.
  Screening returns a *candidate set*, and the false discovery rate (FDR) and the true positive rate (TPR) are
  evaluated on the individual selected variables
  (see [What is actually measured](../README.md#what-is-actually-measured-in-these-demos)).
@@ -32,7 +32,7 @@ We consider the linear model:
 - $\boldsymbol{y} \in \mathbb{R}^n$ is the response vector.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ is the design matrix.
 - $\boldsymbol{\beta} \in \mathbb{R}^p$ is the coefficient vector, with $s$ nonzero entries.
-- $\boldsymbol{\epsilon}$ is the noise vector, i.i.d. standard normal.
+- $\boldsymbol{\epsilon}$ is the noise vector, i.i.d. normal.
 - $\sigma_{\varepsilon}^2$ is the noise variance, calibrated to achieve a target linear signal-to-noise ratio (SNR).
 - $n = 300$, $p = 1{,}000$, $s = p_1 = 10$ (high-dimensional, $p > n$).
 
@@ -56,8 +56,8 @@ x_j = \sqrt{\rho}\, z + \sqrt{1 - \rho}\, w_j
  correlate at $\rho$ *within* a block and are independent across blocks. Five contiguous blocks of 200
  columns each are used.
 
-- All columns are **standardised to zero mean and unit variance** after generation, so $\rho$ is the
-   realized column correlation rather than a nominal parameter.
+- All columns are **standardised to zero mean and unit variance** after generation, which leaves the column
+   correlations, and so the meaning of $\rho$, unchanged.
 - $\boldsymbol{\beta}$ has $p_1 = 10$ **evenly spaced** active entries, all of equal magnitude
    ($\beta_j = 1$ for the AR(1) parts, $\beta_j = 3$ for the equicorrelated and block-equicorrelated
    parts, matching the C++ source), and the design and the noise are drawn afresh in every Monte Carlo (MC)
@@ -83,7 +83,7 @@ Regenerate the whole suite with [`../generate_corr_plots.sh`](../generate_corr_p
 
 ```text
 K = 20                       # Random experiments per T-loop iteration
-rho_thr_DA = 0.02            # Correlation threshold for dependency-aware grouping
+rho_thr_DA = 0.02            # DA skip threshold (EQUI, BLOCK-EQUI), sets the DA-AR1 window
 n_blocks = 5                 # Blocks assumed by the DA-BLOCK-EQUI variant (Part 5)
 R_boot = 1000                # Bootstrap replicates (Bootstrap-CI rule only)
 ci_grid_step = 0.001         # Bootstrap-CI threshold grid granularity
@@ -119,7 +119,8 @@ The DA adjustment deflates each vote share before the threshold is applied,
 where the neighbourhood $\mathcal{N}(j)$ holds the variables within the AR(1) window, all variables (EQUI), or
  the variables of the same block (BLOCK-EQUI). A variable whose vote share matches a correlated neighbour's is
  divided by up to 2, so a cluster of near-duplicate predictors cannot inflate the selection on its own. The
- adjustment is skipped when the estimated correlation does not exceed `rho_thr_DA = 0.02`.
+ EQUI and BLOCK-EQUI adjustments are skipped when the estimated correlation does not exceed `rho_thr_DA = 0.02`,
+ while for AR1 the threshold sets the window half-width $\kappa = \lceil \log 0.02 / \log \hat\rho \rceil$.
 
 The DA variant is always matched to the design that generated the data — this demo therefore reports the
  **best case for DA**, not a misspecification study. All methods also report an **estimated FDR**
@@ -177,25 +178,31 @@ methods $\times$ 8–9 grid points $\times$ 200 trials.
 ## Simulation Results
 
 The numbers and figures below are this Python run's own results (200 MC trials per grid point).
-They agree with the
+They are compared with the
 [C++ reference](../../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_03_mc_sim_correlated/README.md#simulation-results)
-up to Monte-Carlo noise — the two ports draw from independent RNG streams (NumPy here, the C++ engine
-there).
+by size, not digit for digit, because the two ports draw from independent random number generator (RNG) streams
+(NumPy here, the C++ engine there). The tables store only the 200-trial means without standard deviations. Over
+the five tables the mean absolute difference from the C++ run is $0.004\text{–}0.019$ per table in the FDR and
+the TPR.
 
 ### Part 1 — AR(1) Design, SNR Sweep ($\rho = 0.5$)
 
-- **AR(1) correlation is survivable.** At $\rho = 0.5$ the Ordinary rule behaves much as in Demo 01. FDR
-   falls $0.43 \to 0.10$ across the sweep while TPR climbs $0.002 \to 1.00$, recovering all ten active
-   variables at $\mathrm{SNR} = 5$. Local, decaying dependence does not break the screener.
+- **AR(1) correlation is survivable.** At $\rho = 0.5$ the Ordinary rule's FDR falls from $0.40\text{–}0.43$ at
+   the two lowest SNR points to $0.10$ while TPR climbs $0.002 \to 1.00$, recovering all ten active variables at
+   $\mathrm{SNR} = 5$. For $\mathrm{SNR} \ge 0.5$ the TPR matches Demo 01 within $0.014$, while the FDR runs
+   $0.03\text{–}0.07$ higher ($0.101$ vs. $0.060$ at $\mathrm{SNR} = 1$). The two demos also differ in the
+   support placement (evenly spaced here, random there), so the data cannot attribute this gap to the
+   correlation alone. Local, decaying dependence does not break the screener.
 - **DA lowers the error rate at a modest power cost.** Ordinary+DA-AR1 more than *halves* the plain
    Ordinary FDR for $\mathrm{SNR} \ge 1$ ($0.041$ vs. $0.101$ at $\mathrm{SNR} = 1$, and $0.027$ vs. $0.093$
    at $\mathrm{SNR} = 2$) while giving up only a few points of TPR ($0.754$ vs. $0.823$ at $\mathrm{SNR} = 1$).
 - **Bootstrap-CI+DA-AR1 is extremely conservative.** Its FDR never exceeds $0.018$ once
    $\mathrm{SNR} \ge 0.5$, but its TPR tops out at $0.384$ at $\mathrm{SNR} = 2$ — it buys near-zero
    false discoveries by leaving more than half the true signal on the table.
-- **The internal estimate is still well-behaved here.** For $\mathrm{SNR} \ge 0.5$ it brackets the
-   realized FDR closely and often exceeds it (Ordinary+DA-AR1: $0.132$ estimated vs. $0.041$ realized at
-   $\mathrm{SNR} = 1$). This is the last part where that holds.
+- **The internal estimate is still well-behaved here.** For $\mathrm{SNR} \ge 0.5$ it tracks the realized FDR
+   of the two plain rules within $0.06$ and never lies more than $0.013$ below it. For the DA rules it sits
+   2 to 4 times above the realized FDR (Ordinary+DA-AR1: $0.132$ estimated vs. $0.041$ realized at
+   $\mathrm{SNR} = 1$). The equicorrelated parts below show where this breaks.
 
 TPR (left) and FDR (right) vs. SNR, one line per method. On the FDR panel the solid line is
 the realized FDR and the dashed line the procedure's own estimated FDR.
@@ -220,16 +227,14 @@ the realized FDR and the dashed line the procedure's own estimated FDR.
    (`screen_trex()`) uses the same adjustment and the same strict rule, and on identical data it selects
    nothing as well (details in the
    [C++ README](../../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_03_mc_sim_correlated/README.md#simulation-results)).
-   The July run on an older library accepted the tie ($\Phi_j' \ge 0.5$) and kept the tied variables instead,
-   at a realized FDR of $0.79\text{–}0.89$ (Ordinary) and $0.60\text{–}0.68$ (Bootstrap-CI) for
-   $\mathrm{SNR} \ge 0.5$. Neither outcome is a usable screen, so under equicorrelation the DA-EQUI variants of
-   Screen-TRex carry no information.
+   Under equicorrelation the DA-EQUI variants of Screen-TRex therefore carry no information.
 - **A non-monotone artifact at the bottom of the sweep.** The realized Ordinary FDR is *lower* at
    $\mathrm{SNR} = 0.01$ ($0.552$) than at $\mathrm{SNR} = 0.1$ ($0.959$). This is not a sweet spot, because at
-   $\mathrm{SNR} = 0.01$ the rule selects almost nothing (TPR $= 0.0025$), so there are barely any
-   discoveries left to be false. Low-SNR FDR numbers must be read alongside the TPR column.
-- **The FDR estimate has already come apart.** For $\mathrm{SNR} \ge 0.1$ it reports $0.020\text{–}0.114$
-   while the realized FDR is $0.80\text{–}0.96$ — off by an order of magnitude, in the optimistic direction.
+   $\mathrm{SNR} = 0.01$ the rule finds almost nothing true (TPR $= 0.0025$). Low-SNR FDR numbers must be read
+   alongside the TPR column.
+- **The FDR estimate has already come apart.** For $\mathrm{SNR} \ge 0.1$ the Ordinary estimate reports
+   $0.020\text{–}0.114$ while the realized FDR is $0.80\text{–}0.96$, a factor of 8 to 40 too low, in the
+   optimistic direction.
 
 TPR (left) and FDR (right) vs. SNR, one line per method. Solid = realized FDR, dashed =
 estimated FDR.
@@ -245,10 +250,10 @@ estimated FDR.
 - **DA-AR1 buys roughly one step of the $\rho$ grid.** Ordinary+DA-AR1 lowers FDR at every $\rho$
    ($0.337$ vs. $0.509$ at $\rho = 0.9$, and $0.176$ vs. $0.334$ at $\rho = 0.8$) at a cost of six to
    twenty points of TPR. It is a real improvement, but it delays the failure rather than preventing it.
-- **Bootstrap-CI+DA-AR1 controls the FDR by declining to select.** Its FDR stays within $0.002\text{–}0.014$
+- **Bootstrap-CI+DA-AR1 keeps the FDR near zero by declining to select.** Its FDR stays within $0.002\text{–}0.014$
    across the *entire* $\rho$ range — nominally the best result in this demo — but its TPR falls from
    $0.209$ at $\rho = 0.2$ to $0.082$ at $\rho = 0.6$ and $0.005$ at $\rho = 0.9$. At high correlation it
-   returns essentially an empty set. This is a bias/variance trade, not a free fix, and a near-zero FDR
+   returns essentially an empty set. This is an FDR/power trade, not a free fix, and a near-zero FDR
    is only meaningful when read next to its TPR.
 - **The estimate degrades in step with the method.** At $\rho = 0.9$ Ordinary reports $0.079$ against a
    realized $0.509$ — the estimate is least trustworthy exactly where the user most needs a warning.
@@ -262,8 +267,9 @@ TPR (left) and FDR (right) vs. $\rho$, one line per method. Solid = realized FDR
 - **Failure from the very first grid point.** Ordinary FDR starts at $0.663$ for $\rho = 0.1$ and rises
    monotonically to $0.965$ at $\rho = 0.9$, while TPR collapses $0.900 \to 0.050$. Unlike AR(1), there
    is no usable region of the sweep.
-- **No variant rescues it.** Plain Bootstrap-CI tracks the Ordinary rule (FDR $0.45 \to 0.96$), and both
-   DA-EQUI rules select nothing at any $\rho$ (FDR $=$ TPR $= 0$), for the tie reason explained in Part 2.
+- **No variant rescues it.** Plain Bootstrap-CI tracks the Ordinary rule from $\rho = 0.2$ on (FDR
+   $0.76 \to 0.96$) and lies clearly below it only at $\rho = 0.1$ ($0.449$ vs. $0.663$). Both DA-EQUI rules
+   select nothing at any $\rho$ (FDR $=$ TPR $= 0$), for the tie reason explained in Part 2.
 - **The demo's central caution is that the FDR estimate is wildly optimistic exactly where the method
    fails.** Across the whole sweep the estimate reports $0.028\text{–}0.073$ while the realized FDR is
    $0.66\text{–}0.97$, a gap of a factor of thirteen to thirty.
@@ -278,7 +284,7 @@ TPR (left) and FDR (right) vs. $\rho$, one line per method. Solid = realized FDR
 
 - **Block structure sits between the two extremes — but closer to the bad one.** Ordinary FDR grows
    $0.193 \to 0.915$ over the sweep. It is far better than the fully equicorrelated case at low $\rho$
-   ($0.193$ vs. $0.663$ at $\rho = 0.1$), because independence *across* blocks survives, but by
+   ($0.193$ vs. $0.663$ at $\rho = 0.1$), plausibly because independence *across* blocks survives, but by
    $\rho = 0.9$ the two designs are equally hopeless.
 - **DA-BLOCK-EQUI trades almost all power for a low FDR.** Ordinary+DA-BLOCK-EQUI keeps the FDR at
    $0.03\text{–}0.20$ up to $\rho = 0.6$ (against $0.19\text{–}0.76$ without DA), but its TPR falls from $0.251$
@@ -286,10 +292,12 @@ TPR (left) and FDR (right) vs. $\rho$, one line per method. Solid = realized FDR
    block, so the tie effect of Part 2 halves every variable whose vote share has a twin in its block, and
    only shares that stand alone in their block survive.
 - **Bootstrap-CI+DA-BLOCK-EQUI selects nothing** at any $\rho$ (FDR $=$ TPR $= 0$).
-- **The estimate is again too optimistic for the plain rules, though less catastrophically.** Ordinary
-   reports $0.037\text{–}0.096$ against a realized $0.19\text{–}0.91$. As in Part 4, it gives no signal that
-   anything has gone wrong. With DA-BLOCK-EQUI it turns pessimistic instead ($0.44\text{–}0.59$ against a
-   realized $0.03\text{–}0.52$).
+- **The estimate is again too optimistic for the plain rules, though less catastrophically at weak
+   correlation.** Ordinary reports $0.037\text{–}0.096$ against a realized $0.19\text{–}0.91$, a factor of $2.0$
+   too low at $\rho = 0.1$ but of $18\text{–}22$ from $\rho = 0.5$ on. As in Part 4, it gives no signal that
+   anything has gone wrong. With DA-BLOCK-EQUI it turns pessimistic instead
+   ($0.44\text{–}0.59$ against a realized $0.03\text{–}0.52$). It lies above the realized FDR up to
+   $\rho = 0.8$ and just below it at $\rho = 0.9$ ($0.503$ vs. $0.521$).
 
 TPR (left) and FDR (right) vs. $\rho$, one line per method. Solid = realized FDR, dashed = estimated FDR.
 

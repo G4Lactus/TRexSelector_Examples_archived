@@ -40,8 +40,8 @@
  *             variance being reported as explained variance); and the method's
  *             own Sig+Mix part over that same denominator (the paper's
  *             "Ordinary PCA (Sig + Mix)" reference when read for OrdPCA).
- *             The Definition-1 denominator convention was validated against
- *             the published Fig. 3 by the legacy R reference
+ *             The Definition-1 denominator follows the active-column
+ *             convention of the legacy R reference
  *             (demo_trex_spca_03_fig3.R, mode "active").
  *
  *  Section 2: union-support FDR per PC over the same SNR grid — each PC's

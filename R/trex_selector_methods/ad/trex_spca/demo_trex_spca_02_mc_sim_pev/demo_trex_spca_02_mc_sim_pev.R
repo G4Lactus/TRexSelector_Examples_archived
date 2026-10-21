@@ -18,8 +18,9 @@
 # supports), a denominator FIXED per dataset and SHARED by all methods. The
 # ratio is deliberately uncapped: a method that spends loadings on null
 # variables (ordinary PCA above all) accumulates variance the denominator does
-# not contain and climbs past 100 %. Sparse FDR-controlled methods saturate
-# near (below) 100 %. Alongside it, the total-variance PEV (bounded by 1) and
+# not contain and climbs past 100 %. The FDR-controlled T-Rex variants stay
+# below 100 %, with plateaus of about 80-83 % (ActiveSet) and 86-96 %
+# (Thresholded). Alongside it, the total-variance PEV (bounded by 1) and
 # PEVsigmix (the method's own Sig + Mix part over the same denominator; for
 # OrdPCA the paper's "Ordinary PCA (Sig + Mix)" reference curve) are reported.
 #

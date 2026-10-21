@@ -18,21 +18,22 @@
 # ratio is deliberately uncapped: a method that spends loadings on null
 # variables (ordinary PCA above all) accumulates variance the denominator does
 # not contain and climbs past 100 %, which the paper reads as inferior
-# performance. Sparse FDR-controlled methods saturate near (below) 100 %.
+# performance. The FDR-controlled T-Rex variants stay below 100 %, with
+# plateaus of about 80-83 % (ActiveSet) and 86-96 % (Thresholded).
 #
 # NOTE the cpp demo originally normalized by each method's OWN Signal + Mixed
 # EV. That self-normalized reading is structurally >= 100 % for null-capturing
 # methods, INVERTS the SNR trend, and cannot reproduce the rising curves of
 # the published Fig. 3 — it is why the first Fig.-3 reproduction attempt
-# failed. The convention used now was validated against the published figure
-# by the legacy R reference (demo_trex_spca_03_fig3.R, denominator mode
-# "active"), which also documents the remaining convention ambiguity of the
-# paper text.
+# failed. The convention used now follows the legacy R reference
+# (demo_trex_spca_03_fig3.R, denominator mode "active"). It reproduces the
+# Fig. 3(b) rise from about 40 %, but no constructible denominator matches
+# all published Fig. 3 anchors. The R script documents the open conventions.
 #
 # Alongside it, two companions are reported: the conventional total-variance
 # PEV (bounded by 1), and PEVsigmix — the method's own Sig+Mix part over the
 # same data-level denominator. Read for OrdPCA, the latter is the paper's
-# "Ordinary PCA (Sig + Mix)" reference curve, which saturates near 100 %
+# "Ordinary PCA (Sig + Mix)" reference curve, which levels off near 108 %
 # while plain OrdPCA keeps climbing on Null EV.
 #
 # Four sweeps, each varying ONE axis with the others held at their defaults

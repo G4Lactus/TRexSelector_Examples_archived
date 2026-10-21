@@ -16,12 +16,12 @@ Screen-TRex targets settings where $p$ is so large that running the classical T-
 
 The demos in this folder are designed to help users understand:
 
-1. how the **Ordinary** (majority-vote) and **Bootstrap-CI** thresholding rules behave, in memory and
-    memory-mapped,
+1. how the **Ordinary** (majority-vote) rule and the **Bootstrap-CI** rule, built on a bootstrap confidence
+    interval (CI), behave in memory and memory-mapped,
 2. how screening degrades under **correlated designs**, and how far the **dependency-aware (DA)** variants
     can correct it,
-3. how the **Biobank** workflow ("Algorithm 1") adaptively routes each of many phenotypes through
-    Ordinary → Bootstrap-CI → classical T-Rex fallback,
+3. how the **Biobank** workflow ("Algorithm 1") routes each of many phenotypes to the Ordinary or the
+    Bootstrap-CI selection, or to a classical T-Rex fallback when neither estimate is acceptable,
 4. how the choice of underlying T-Rex **solver backend** (TLARS, TAFS, TOMP) shifts the power/FDR operating
     point.
 
@@ -99,8 +99,8 @@ As elsewhere in this project,
 >
 > Screen-TRex additionally reports an **estimated FDR** — its own internal assessment of the selection's
 > error rate. Every figure in this folder plots it (dashed) against the realized FDR (solid), because the
-> two can diverge severely. The estimate is conservative on i.i.d. designs but wildly optimistic under
-> equicorrelation (Demo 03).
+> two can diverge severely. The estimate is conservative on i.i.d. designs, except at the weakest signal, but
+> wildly optimistic under equicorrelation (Demo 03).
 >
 > In the biobank demos, the FDR and the true positive rate (TPR) are accumulated **conditionally** on which method a
 > phenotype was routed to, alongside the unconditional **Usage %**. A conditional rate over a route that handled no
@@ -122,11 +122,13 @@ As elsewhere in this project,
    variables of the same block), so redundant correlated variables cannot pass the vote together. Screen-TRex
    runs a single step, so the proportions are coarse, and under (block-)equicorrelation many of them tie. A
    tied proportion is halved onto the threshold and rejected, which makes DA-EQUI select nothing and
-   DA-BLOCK-EQUI select very little in Demo 03, exactly as the reference R package does.
+   DA-BLOCK-EQUI select very little in Demo 03. For DA-EQUI the reference R package selects nothing on
+   identical data as well.
 - **Biobank / "Algorithm 1"** (`BiobankScreenTRexControl`, Demos 04–05) — screens **multiple phenotypes
-   against one shared design matrix**. Per phenotype it tries Screen-TRex Ordinary. If the estimated FDR
-   falls outside `[lower_bound_FDR, upper_bound_FDR]` it tries Bootstrap-CI, and failing that it falls back to
-   the classical T-Rex selector at `target_FDR_trex`. The share routed to each method is reported as
+   against one shared design matrix**. Per phenotype, one Screen-TRex run yields an Ordinary and a
+   Bootstrap-CI estimated FDR. A rule whose estimate lies in `[lower_bound_FDR, upper_bound_FDR]` is used, and
+   if both do, the larger estimate wins (a tie goes to Bootstrap-CI). If neither does, the classical T-Rex
+   selector runs as the fallback at `target_FDR_trex`. The share routed to each method is reported as
    **Usage %**.
 
 ---

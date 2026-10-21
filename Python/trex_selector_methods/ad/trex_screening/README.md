@@ -8,7 +8,8 @@ variable-**screening** step for ultra-high-dimensional data, according to
 that running the classical T-Rex selector directly is impractical (genome- or
 biobank-scale designs). It first thresholds a dummy-based voting statistic
 `Phi_j` to screen down to a small candidate set, using either the **Ordinary**
-majority-vote rule (`Phi_j > 0.5`) or a **Bootstrap-CI** rule, plus
+majority-vote rule (`Phi_j > 0.5`) or a **Bootstrap-CI** rule built on a bootstrap
+confidence interval (CI), plus
 **dependency-aware (DA)** variants meant for correlated designs.
 Unlike the classical T-Rex selector, screening has **no target parameter for the
 false discovery rate (FDR)**. It reports its own *estimated FDR* alongside the
@@ -136,8 +137,8 @@ As elsewhere in this project,
 >
 > Screen-TRex additionally reports an **estimated FDR** — its own internal assessment of the selection's
 > error rate. Every figure in this folder plots it (dashed) against the realized FDR (solid), because the
-> two can diverge severely: conservative on i.i.d. designs, but wildly optimistic under equicorrelation
-> (Demo 03).
+> two can diverge severely. The estimate is conservative on i.i.d. designs, except at the weakest signal, but
+> wildly optimistic under equicorrelation (Demo 03).
 >
 > In the biobank demos, the FDR and the true positive rate (TPR) are accumulated **conditionally** on which
 > method a phenotype was routed to, alongside the unconditional **Usage %**. A conditional rate over a route
@@ -158,12 +159,14 @@ As elsewhere in this project,
    distance to the nearest one among its correlated neighbours (the AR(1) window, all variables, or the
    variables of the same block), so redundant correlated variables cannot pass the vote together. Screen-TRex
    runs a single step, so the proportions are coarse, and under (block-)equicorrelation many of them tie. A
-   tied proportion is halved onto the threshold and rejected, which makes DA-EQUI select nothing and
-   DA-BLOCK-EQUI select very little in Demo 03, exactly as the reference R package does.
+   tied proportion is halved onto the threshold and rejected, which makes `TREX_DA_EQUI` select nothing and
+   `TREX_DA_BLOCK_EQUI` select very little in Demo 03. For `TREX_DA_EQUI` the reference R package selects
+   nothing on identical data as well.
 - **Biobank / "Algorithm 1"** (`BiobankScreenTRexControl`, Demos 04–05) — screens **multiple phenotypes
-   against one shared design matrix**. Per phenotype it tries Screen-TRex Ordinary. If the estimated FDR
-   falls outside `[lower_bound_FDR, upper_bound_FDR]` it tries Bootstrap-CI, and failing that it falls back to
-   the classical T-Rex selector at `target_FDR_trex`. The share routed to each method is reported as
+   against one shared design matrix**. Per phenotype, one Screen-TRex run yields an Ordinary and a
+   Bootstrap-CI estimated FDR. A rule whose estimate lies in `[lower_bound_FDR, upper_bound_FDR]` is used, and
+   if both do, the larger estimate wins (a tie goes to Bootstrap-CI). If neither does, the classical T-Rex
+   selector runs as the fallback at `target_FDR_trex`. The share routed to each method is reported as
    **Usage %**.
 
 ---
@@ -209,8 +212,8 @@ trex_screening/
 Each demo folder has its own `README.md` with its data-generating process, control parameters, recorded
 results and figures.
 
-| # | Folder | Description | cpp counterpart | Key APIs |
-|---|---|---|---|---|
+| # | Folder | Description | cpp counterpart | Key classes and fields |
+| --- | --- | --- | --- | --- |
 | 01 | [demo_trex_scr_01_mc_sim_screen_trex/](demo_trex_scr_01_mc_sim_screen_trex/) | In-memory Ordinary vs. Bootstrap-CI screening: an 8-point SNR-sweep Monte Carlo reporting FDR / TPR / Estimated FDR | [demo_trex_scr_01_mc_sim_screen_trex/](../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_01_mc_sim_screen_trex/) | `TRexScreeningSelector`, `ScreenTRexControlParameter.use_bootstrap_CI` |
 | 02 | [demo_trex_scr_02_mc_sim_screen_trex_mmap/](demo_trex_scr_02_mc_sim_screen_trex_mmap/) | The same SNR sweep with `use_memory_mapping=True` (dummy matrices on disk), equivalent to Demo 01 at a lower memory footprint | [demo_trex_scr_02_mc_sim_screen_trex_mmap/](../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_02_mc_sim_screen_trex_mmap/) | `TRexControlParameter.use_memory_mapping` |
 | 03 | [demo_trex_scr_03_mc_sim_correlated/](demo_trex_scr_03_mc_sim_correlated/) | Ordinary/Bootstrap vs. DA screening on correlated designs: 5 MC sweeps (AR(1)/equi SNR sweeps and AR(1)/equi/block-equi rho sweeps) | [demo_trex_scr_03_mc_sim_correlated/](../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_03_mc_sim_correlated/) | `ScreenTRexMethod.TREX_DA_*`, `estimated_correlation` |
@@ -266,8 +269,9 @@ which the library requires for valid Monte Carlo FDR estimates.
   `solver_params.rho_afs`, `tloop_stagnation_stop`, `tloop_max_stagnant_steps`,
   … (the same object as the classical `trex_core/` demos).
 - `BiobankScreenTRexControl` — `lower_bound_FDR`, `upper_bound_FDR` (the
-  acceptable-FDR window for Algorithm 1's Ordinary → Bootstrap-CI → T-Rex-fallback
-  routing), and `target_FDR_trex` (the fallback target). It nests
+  acceptable-FDR window that decides between the Ordinary result, the
+  Bootstrap-CI result and the T-Rex fallback in Algorithm 1), and
+  `target_FDR_trex` (the fallback target). It nests
   `trex_screen_ctrl` (a `ScreenTRexControlParameter`, which in turn nests
   `trex_ctrl`).
 
@@ -278,10 +282,10 @@ exposes `phenotype_index`, `method_used` (`"Screen-TRex (ordinary)"`,
 `"Screen-TRex (bootstrap-CI)"`, `"T-Rex (fallback)"`), `estimated_FDR`,
 `estimated_FDR_screen_ordinary`, `estimated_FDR_screen_bootstrap`,
 `selected_indices` (and `selected_indices_screen_ordinary` /
-`selected_indices_screen_bootstrap`), and `used_fallback_trex`. This differs
-from the R binding, which returns a list with a `$statistics` data frame. The
-Python binding returns the per-phenotype result objects directly (mirroring the
-C++ `BiobankScreenTRexResult` vector).
+`selected_indices_screen_bootstrap`), and `used_fallback_trex`. The binding
+returns the per-phenotype result objects directly (mirroring the C++
+`BiobankScreenTRexResult` vector), and the R binding returns one record per
+phenotype in the same shape.
 
 ---
 
@@ -315,7 +319,7 @@ TREX_NUM_WORKERS=0 python <demo>.py   # use every usable CPU
 ```
 
 "Usable" honours central processing unit (CPU) affinity and cgroup quotas where the platform reports them,
-so a container granted 4 CPUs yields 4, not the host's core count.
+so a container granted 4 processors yields 4, not the host's core count.
 
 ---
 

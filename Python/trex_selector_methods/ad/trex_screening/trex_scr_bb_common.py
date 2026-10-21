@@ -10,11 +10,10 @@
 #   (makeBiobankControl + save_and_print_biobank_mc_results).
 #
 # The biobank workflow ("Algorithm 1") screens MANY phenotypes against ONE
-# shared design matrix X. Per phenotype it routes adaptively:
-#   1. Screen-TRex Ordinary; accept if its estimated FDR lands in the window
-#      [lower_bound_FDR, upper_bound_FDR];
-#   2. else Screen-TRex Bootstrap-CI;
-#   3. else fall back to the classical T-Rex selector at target_FDR_trex.
+# shared design matrix X. Per phenotype, one Screen-TRex run yields both an
+# Ordinary and a Bootstrap-CI estimated FDR. A rule whose estimate lies in
+# [lower_bound_FDR, upper_bound_FDR] is used (the larger if both, a tie goes
+# to Bootstrap-CI), else the classical T-Rex selector runs at target_FDR_trex.
 # The fraction of phenotypes routed to each method is the "Usage %".
 #
 # Support sets and selected indices are 0-BASED (matching the C++ sources).

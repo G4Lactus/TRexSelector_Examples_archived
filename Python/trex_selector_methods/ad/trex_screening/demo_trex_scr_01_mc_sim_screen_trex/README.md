@@ -5,7 +5,7 @@
 The demo establishes the **baseline behaviour of Screen-TRex** [[1]](#references) on the easiest
  possible design: independent Gaussian predictors with no correlation structure at all.
 Two thresholding rules are compared — the **Ordinary** majority-vote rule ($\Phi_j > 0.5$) and the
- **Bootstrap-CI** rule — over a signal-to-noise sweep.
+ **Bootstrap-CI** rule, built on a bootstrap confidence interval (CI) — over a signal-to-noise sweep.
 Everything the later demos add (correlation, dependency-aware corrections, biobank routing, solver
  backends) is measured against the numbers established here.
 Screening returns a *candidate set*, and the false discovery rate (FDR) and the true positive rate (TPR) are
@@ -31,7 +31,7 @@ We consider the linear model:
 - $\boldsymbol{y} \in \mathbb{R}^n$ is the response vector.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ is the design matrix.
 - $\boldsymbol{\beta} \in \mathbb{R}^p$ is the coefficient vector, with $s$ nonzero entries.
-- $\boldsymbol{\epsilon}$ is the noise vector, independent and identically distributed (i.i.d.) standard normal.
+- $\boldsymbol{\epsilon}$ is the noise vector, independent and identically distributed (i.i.d.) normal.
 - $\sigma_{\varepsilon}^2$ is the noise variance, calibrated to achieve a target linear signal-to-noise ratio (SNR).
 - $n = 300$, $p = 1{,}000$, $s = 10$ (high-dimensional, $p > n$).
 
@@ -43,9 +43,8 @@ X_{ij} \sim \mathcal{N}(0,1) \quad \text{i.i.d.}
 
 - The active support is drawn uniformly at random *per Monte Carlo (MC) trial*, so the results are not tied to
    one support pattern.
-- All active coefficients are $\beta_j = 1$, and the support-selection and coefficient random number generators
-   (RNGs) are offset from the trial seed (by $500000$ / $600000$) so they stay independent of the design and
-   noise draws.
+- All active coefficients are $\beta_j = 1$. The support draw uses its own random number generator (RNG) seed,
+   the trial seed plus `500000`, so it stays independent of the design and noise draws.
 - Noise calibration:
    $\sigma_{\varepsilon} = \sqrt{\lVert \boldsymbol{X}\boldsymbol{\beta} \rVert^2 / (n \cdot \mathrm{SNR})}$.
 
@@ -134,15 +133,15 @@ temporarily reduce `_NUM_MC` and `SNR_GRID` at the top of the script.
 ## Simulation Results
 
 The numbers and figure below are this Python run's own results (200 MC trials per grid point).
-They agree with the
+They are compared with the
 [C++ reference](../../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_01_mc_sim_screen_trex/README.md#simulation-results)
-up to Monte-Carlo noise — the two ports draw from independent RNG streams (NumPy here, the C++ engine
-there).
+by size, not digit for digit, because the two ports draw from independent RNG streams (NumPy here, the C++
+engine there). The tables store only the 200-trial means without standard deviations. The mean absolute
+difference from the C++ run is $0.022$ in the FDR, $0.015$ in the TPR and $0.012$ in the estimated FDR.
 
 - **Screening is not FDR-controlling at low SNR.** At $\mathrm{SNR} \le 0.2$ the realized FDR runs between
-   $0.17$ and $0.45$ for both rules. With almost no recoverable signal (TPR $\le 0.12$), nearly every
-   selection is a false one — a property of thresholding a voting statistic without a target level, not a
-   defect of the implementation.
+   $0.17$ and $0.45$ for both rules, while the TPR stays at or below $0.12$. Screening has no target level that
+   would hold the FDR down when almost no signal can be recovered.
 - **Both rules become reliable once signal is present.** From $\mathrm{SNR} \ge 0.5$ the Ordinary rule's
    FDR drops to $0.12$ and settles around $0.05\text{–}0.06$, while its TPR climbs $0.43 \to 1.00$. All ten
    active variables are recovered at $\mathrm{SNR} = 5$.
@@ -150,8 +149,8 @@ there).
    $0.06$ for $\mathrm{SNR} \ge 0.5$ (roughly half the Ordinary rule's up to $\mathrm{SNR} = 1$), paid for with
    TPR $0.91$ vs. $1.00$ at $\mathrm{SNR} = 5$, and a much wider gap mid-sweep ($0.41$ vs. $0.84$ at
    $\mathrm{SNR} = 1$).
-   Choose it when false discoveries are costlier than missed ones. It is also the slower rule, at
-   `R_boot = 1000` bootstrap replicates per trial.
+   Choose it when false discoveries are costlier than missed ones. It also runs `R_boot = 1000` bootstrap
+   replicates per trial on top of the voting step.
 - **The internal FDR estimate is conservative here.** For $\mathrm{SNR} \ge 0.5$ it sits *above* the
    realized FDR for both rules (e.g. $0.115$ vs. $0.060$ for Ordinary at $\mathrm{SNR} = 1$) — it
    over-states the error rate rather than hiding it. At the lowest SNR points it becomes unreliable in both

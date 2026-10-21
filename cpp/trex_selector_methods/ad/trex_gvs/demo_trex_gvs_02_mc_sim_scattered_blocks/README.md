@@ -125,7 +125,7 @@ FDR cells above the $\mathrm{tFDR} = 0.1$ target would be outlined in cyan.
 
 1. Machkour, J., Muma, M., & Palomar, D. P., "False Discovery Rate Control for Grouped Variable Selection
    in High-Dimensional Linear Models using the T-Knock Filter.", European Signal Processing Conference (EUSIPCO), 2022,
-    pp. 892–896, EURASIP.
+    pp. 892–896, European Association for Signal Processing (EURASIP).
     [DOI-Link](https://doi.org/10.23919/EUSIPCO55093.2022.9909883)
 2. Machkour, J., Muma, M., & Palomar, D. P., "The Informed Elastic Net for Fast Grouped Variable Selection and
    FDR Control in Genomics Research.", Workshop on Computational Advances in Multi-Sensor Adaptive Processing (CAMSAP),

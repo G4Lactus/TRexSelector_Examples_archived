@@ -397,8 +397,8 @@ inline SPCASingleResult evaluate_spca(
     // ----------------------------------------------------------------------
     // 2b. PEV, normalized by the data's SIGNAL + MIXED EV (Definition 1)
     // ----------------------------------------------------------------------
-    // Definition 1 of the reference paper, in the convention validated against
-    // the published Fig. 3 by the legacy R reference
+    // Definition 1 of the reference paper, in the active-column convention of
+    // the legacy R reference
     // (TRex_Simulations/TRex Legacy CRAN Simulations/trex_spca/
     //  demo_trex_spca_03_fig3.R, denominator mode "active"):
     //
@@ -415,9 +415,9 @@ inline SPCASingleResult evaluate_spca(
     // A method that additionally captures null-variable variance (ordinary
     // PCA above all) pushes its numerator past the denominator, so this ratio
     // is deliberately uncapped — exceeding 100 % is the paper's marker of a
-    // method claiming variance it should not. Sparse FDR-controlled methods
-    // saturate near (but below) 100 %: the gap to 100 % is the noise variance
-    // that sits on the active columns yet is not captured by M components.
+    // method claiming variance it should not. FDR-controlled T-Rex variants
+    // plateau below 100 % (about 80-83 % ActiveSet, 86-96 % Thresholded). The
+    // gap is not just noise: OrdPCA's Sig + Mix part reaches about 108 %.
     //
     // NOTE the denominator is NOT the method's own Signal + Mixed EV. The
     // self-normalized reading of Definition 1 (each method divided by its own
@@ -457,8 +457,8 @@ inline SPCASingleResult evaluate_spca(
     //     sig+mix part = ( ||X V_hat||_F^2 - ||X V_AC||_F^2 ) / (n - 1),
     //
     // reported as a share of the same data-level denominator. For ordinary
-    // PCA this is the paper's "Ordinary PCA (Sig + Mix)" curve: it saturates
-    // near 100 % once all components are extracted, and its distance to the
+    // PCA this is the paper's "Ordinary PCA (Sig + Mix)" curve: it levels off
+    // near 108 % once all components are extracted, and its distance to the
     // plain PEVsig curve is exactly the Null EV ordinary PCA piles up.
     Eigen::MatrixXd V_null = V_est;
     for (Eigen::Index j = 0; j < p; ++j)

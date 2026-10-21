@@ -5,7 +5,7 @@
 The demo establishes the **baseline behaviour of Screen-TRex** [[1]](#references) on the easiest
  possible design, independent Gaussian predictors with no correlation structure at all.
 Two thresholding rules are compared — the **Ordinary** majority-vote rule ($\Phi_j > 0.5$) and the
- **Bootstrap-CI** rule — over a signal-to-noise sweep.
+ **Bootstrap-CI** rule, built on a bootstrap confidence interval (CI) — over a signal-to-noise sweep.
 Everything the later demos add (correlation, dependency-aware corrections, biobank routing, solver
  backends) is measured against the numbers established here.
 Screening returns a *candidate set*, and the false discovery rate (FDR) and the true positive rate (TPR) are evaluated
@@ -26,7 +26,7 @@ We consider the linear model:
 - $\boldsymbol{y} \in \mathbb{R}^n$ is the response vector.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ is the design matrix.
 - $\boldsymbol{\beta} \in \mathbb{R}^p$ is the coefficient vector, with $s$ nonzero entries.
-- $\boldsymbol{\epsilon}$ is the noise vector, independent and identically distributed (i.i.d.) standard normal.
+- $\boldsymbol{\epsilon}$ is the noise vector, independent and identically distributed (i.i.d.) normal.
 - $\sigma_{\varepsilon}^2$ is the noise variance, calibrated to achieve a target linear signal-to-noise ratio (SNR).
 - $n = 300$, $p = 1{,}000$, $s = 10$ (high-dimensional, $p > n$).
 
@@ -38,8 +38,8 @@ X_{ij} \sim \mathcal{N}(0,1) \quad \text{i.i.d.}
 
 - The active support is drawn uniformly at random *per Monte Carlo (MC) trial*, so the results are not tied to
    one support pattern.
-- All active coefficients are $\beta_j = 1$, and the support-selection and coefficient random number generators
-   (RNGs) are offset from the trial seed so they stay independent of the design and noise draws.
+- All active coefficients are $\beta_j = 1$. The support draw uses its own random number generator (RNG) seed,
+   the trial seed plus `500000`, so it stays independent of the design and noise draws.
 
 ---
 
@@ -102,16 +102,16 @@ produced by `./generate_plots.sh`.
 ## Simulation Results
 
 - **Screening is not FDR-controlling at low SNR.** At $\mathrm{SNR} \le 0.2$ the realized FDR runs between
-   $0.22$ and $0.45$ for both rules. With almost no recoverable signal (TPR $\le 0.12$), nearly every
-   selection is a false one — a property of thresholding a voting statistic without a target level, not a
-   defect of the implementation.
+   $0.22$ and $0.45$ for both rules, while the TPR stays at or below $0.12$. Screening has no target level that
+   would hold the FDR down when almost no signal can be recovered.
 - **Both rules become reliable once signal is present.** From $\mathrm{SNR} \ge 0.5$ the Ordinary rule's
    FDR drops to $0.11$ and settles around $0.04\text{–}0.07$, while its TPR climbs $0.45 \to 1.00$. All ten
    active variables are recovered at $\mathrm{SNR} = 5$.
 - **Bootstrap-CI is the conservative rule, with lower FDR and clearly less power.** Its FDR stays below $0.06$ for
-   $\mathrm{SNR} \ge 0.5$ (roughly half the Ordinary rule's), paid for with TPR $0.84$ vs. $1.00$ at
-   $\mathrm{SNR} = 5$, and a much wider gap mid-sweep ($0.40$ vs. $0.82$ at $\mathrm{SNR} = 1$). Choose it
-   when false discoveries are costlier than missed ones.
+   $\mathrm{SNR} \ge 0.5$, less than half the Ordinary rule's up to $\mathrm{SNR} = 1$ and about $0.8$ times it at
+   $\mathrm{SNR} = 2$ and $5$. It pays for this with TPR $0.84$ vs. $1.00$ at $\mathrm{SNR} = 5$ and a much
+   wider gap mid-sweep ($0.40$ vs. $0.82$ at $\mathrm{SNR} = 1$). Choose it when false discoveries are costlier
+   than missed ones.
 - **The internal FDR estimate is conservative here.** For $\mathrm{SNR} \ge 0.5$ it sits *above* the
    realized FDR for both rules (e.g. $0.115$ vs. $0.069$ for Ordinary at $\mathrm{SNR} = 1$) — it
    over-states the error rate rather than hiding it. At the lowest SNR points it becomes unreliable in both

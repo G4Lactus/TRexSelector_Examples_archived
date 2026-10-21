@@ -16,9 +16,9 @@ The demo compares the Terminating Random Experiments (T-Rex) selector for sparse
  FDR and the true positive rate (TPR) are evaluated on **the loading support of the first principal component
  (PC1) only**, and FDR *control* is assumed for PC1 only.
  The factor supports are drawn from a shared pool and overlap, and ordinary PCA's orthogonality constraint
- mixes the supports of components 2 and 3 across the true factors — the plug-in PC a later component's
- selector regresses on is already a blend of overlapping supports, so beyond PC1 there is no unambiguous
- per-component ground truth and hence no clean notion of a false discovery to control against. This mirrors
+ mixes the supports of components 2 and 3 across the true factors — the plug-in principal component (PC) that a
+ later component's selector regresses on is already a blend of overlapping supports, so beyond PC1 there is no
+ unambiguous per-component ground truth and hence no clean notion of a false discovery to control against. This mirrors
  the reference paper, whose Fig. 2 reports FDR and TPR "for the first PC". The proportion of explained variance
  (PEV) does not suffer that ambiguity and is cumulative over all $M$ components.
 
@@ -66,13 +66,13 @@ tFDR = 0.10           # Target FDR for the per-component selector
 lambda_2 = -1         # < 0 selects the ridge penalty by k-fold CV (0 = none, > 0 = fixed)
 scaling = L2          # Per-component selector scaling mode
 MC = 200              # Monte Carlo repetitions per grid point
-base_seed = 42        # Trial mc draws its data from base_seed + mc * 1000
+base_seed = 42        # Trial mc draws its data from base_seed_offset + mc * 1000,
+                      # with base_seed_offset = base_seed + round(snr_db)
 ```
 
 Note that only the **data** is seeded deterministically. Each trial's dummies are drawn from hardware entropy
- (selector seed $-1$) by design, which is what makes the Monte Carlo FDR estimate valid — so a re-run
- reproduces the committed numbers only to within Monte Carlo noise ($\approx \pm 0.01$ at 200 trials), not
- exactly.
+ (selector seed $-1$) by design, which is what makes the Monte Carlo FDR estimate valid, so a re-run
+ reproduces the committed numbers only to within Monte Carlo noise, not exactly.
 
 ---
 
@@ -87,9 +87,10 @@ Note that only the **data** is seeded deterministically. Each trial's dummies ar
 | **TRexSPCA-EN-Thr** | T-Rex+GVS selection [[2]](#references) | `Thresholded` | `TENET` |
 | **TRexSPCA-ENaug-Thr** | T-Rex+GVS selection [[2]](#references) | `Thresholded` | `TENET_AUG` |
 
-The two modes differ in how the loadings are rebuilt once the support is chosen. `ActiveSet` keeps the
- selector's ridge coefficients, while `Thresholded` re-solves the ordinary PCA problem restricted to the
- selected support.
+The two modes differ in how the loadings are rebuilt once the support is chosen. `ActiveSet` refits the plug-in
+ PC on the selected columns by ridge regression (`lambda2_ridge_loadings`, default $10^{-6}$), while `Thresholded`
+ keeps the $|\widehat{\mathcal A_m}|$ largest-magnitude entries of the ordinary PCA loading vector, so it takes only
+ the support size from the selector.
 
 ---
 
@@ -113,17 +114,17 @@ with the expectations estimated as Monte Carlo means over the 200 trials. FDR *c
 For the explained variance (EV), the classical quantity is the EV of the estimated components,
 
 ```math
-\mathrm{EV} = \mathrm{tr}\bigl(\widehat{\boldsymbol{Z}}^\top \widehat{\boldsymbol{Z}}\bigr)
-            = \sum_{m=1}^{M} \lVert \widehat{\boldsymbol{z}}_m \rVert_2^2 .
+\mathrm{EV} = \frac{1}{n-1}\,\mathrm{tr}\bigl(\widehat{\boldsymbol{Z}}^\top \widehat{\boldsymbol{Z}}\bigr)
+            = \frac{1}{n-1} \sum_{m=1}^{M} \lVert \widehat{\boldsymbol{z}}_m \rVert_2^2 .
 ```
 
 Sparse PCA drops the orthogonality constraint, so correlated components double-count shared variance under
  this trace. Zou, Hastie & Tibshirani [[3]](#references) therefore correct it. With
- $\widehat{\boldsymbol{Z}} = \boldsymbol{Q}\boldsymbol{R}$ the QR decomposition of the estimated score
- matrix, the **adjusted EV** keeps only each component's incremental contribution,
+ $\widehat{\boldsymbol{Z}} = \boldsymbol{Q}\boldsymbol{R}$ the orthogonal-triangular (QR) decomposition of the
+ estimated score matrix, the **adjusted EV** keeps only each component's incremental contribution,
 
 ```math
-\mathrm{EV}_{\mathrm{adj}} = \sum_{m=1}^{M} r_{mm}^2 .
+\mathrm{EV}_{\mathrm{adj}} = \frac{1}{n-1} \sum_{m=1}^{M} r_{mm}^2 .
 ```
 
 The **TRex-SPCA** paper [[1]](#references) adopts this corrected EV and builds its **Definition 1** on top of
@@ -147,8 +148,9 @@ where the denominator is the **Signal + Mixed EV of the data** — the variance
  carried by the true active variables ($\mathcal{A}$ = union of the factor supports), fixed per dataset
  and shared by all methods. Methods that additionally capture null-variable variance push past $100\%$,
  so this ratio is **not** capped at 1 — exceeding $100\%$ is the failure the metric is designed to
- expose. (Denominator convention validated against the published Fig. 3 by the legacy R reference,
- `demo_trex_spca_03_fig3.R`, mode `"active"`.)
+ expose. (The denominator follows the legacy R reference `demo_trex_spca_03_fig3.R`, mode `"active"`, which
+ reproduces the rise of the published Fig. 3(b) from about $40\%$. No constructible denominator reproduces all
+ published anchors, see [demo 02](../demo_trex_spca_02_mc_sim_pev/README.md#relation-to-the-papers-fig-3).)
 
 The third, tagged `PEVsigmix` in the output, is the method's *own* Signal + Mixed part over the same shared
  denominator. Read for OrdPCA it is the paper's "Ordinary PCA (Sig + Mix)" reference curve.
@@ -208,18 +210,21 @@ and `TREX_SPCA_PARTS` selects the sections (default `12`, with `1` = method comp
 - **All four T-Rex SPCA variants hold the FDR at the $\mathrm{tFDR} = 0.10$ target across the whole sweep**,
    with realized values between $0.053$ and $0.099$ — highest at the hardest point ($-10$ dB) and settling
    around $0.05\text{–}0.08$ from $-7$ dB upward. The highest reading (`TRexSPCA-EN-Act`, $0.0990$ at
-   $-10$ dB) stays just below the target, and the standard error of a 200-trial mean FDR is
-   $\approx \pm 0.009$. TPR is $1.000$ everywhere except $-10$ dB, where it is $0.995\text{–}0.996$.
+   $-10$ dB) stays just below the target. TPR is $1.000$ everywhere except $-10$ dB, where it is
+   $0.995\text{–}0.996$.
 - **OrdPCA's FDR of $0.95$ is not a defeat, it is arithmetic.** Retaining all $p = 100$ loadings against a
    true support of $p_1 = 5$ makes 95 of every 100 selections false by construction. It is a non-sparse
    reference line, not a competitor.
-- **OraclePCA is the ceiling**, with FDR $\approx 0$ and TPR $\approx 1$ — it is handed the true support
-   size. The gap between it and the T-Rex variants is the price of *estimating* the support rather than
-   knowing it, and on this design that price is small.
-- **`TENET` and `TENET_AUG` are the same estimator on this problem.** Given identical dummy seeds they
-   produce bit-identical selections, so the EN-vs-ENaug differences in the table are Monte Carlo dummy noise.
-   The $\approx \pm 0.009$ standard error is an order of magnitude larger than the row-to-row differences —
-   and the sign of those differences flips between modes and SNR points, which is what noise looks like.
+- **OraclePCA is the near-ideal reference**, with FDR $\leq 0.006$ and TPR $\geq 0.994$, because it is handed the
+   true support size. Its FDR gap to the T-Rex variants is the price of *estimating* the support rather than
+   being told its size, and on this design that price is small. It is no strict ceiling, because the T-Rex variants pass
+   its TPR at $-10$ dB ($0.995\text{–}0.996$ vs. $0.994$), and `Thresholded` passes its Definition 1 reading at
+   $-10$ and $-7$ dB.
+- **`TENET` and `TENET_AUG` behave alike on this problem.** Their rows differ by at most $0.008$ in FDR in the
+   `ActiveSet` mode and $0.007$ in the `Thresholded` mode, by at most $0.003$ in the Definition 1 reading, and the
+   sign of the differences flips between SNR points. The dummies come from hardware entropy in every trial, so these
+   differences include dummy noise, and the data cannot show whether the two solvers would select identically on
+   identical dummies.
 
 TPR (left) and FDR (right, with the $\mathrm{tFDR} = 0.10$ target as a dotted line) vs. SNR in decibels, one
 line per method.
@@ -241,7 +246,7 @@ The **union of the factor supports** is well-posed for every component, because 
  mix.
 Section 2 of the demo (`TREX_SPCA_PARTS=2`) therefore scores each PC's selected support
  (`ActiveSet`/`TENET`, the selector's own active sets) against that union. This answers the one question the
- overlap leaves answerable. *Does the selector start harvesting pure-noise variables on the later PCs?*
+ overlap leaves answerable. *Does the selector start harvesting pure-noise variables on the later components?*
 
 Formally, with $\mathcal S_{\cup} = \bigcup_{k=1}^{M} \mathcal S_k$ the union of the true factor supports
  and $\widehat{\mathcal A_m}$ the selector's active set for component $m$,
@@ -258,21 +263,23 @@ again as a Monte Carlo mean, while the right panel of the figure reports the com
 
 - **PC1 is controlled everywhere** (union-FDR $0.013\text{–}0.065$, the union is a more lenient truth than factor 1's
    own support).
-- **PC2 and PC3 are controlled exactly where their factors are alive, and break where they drown.** The
-   factors have amplitudes $\sigma = (5, 3, 1)$, so relative to factor 1 the second factor sits
-   $\approx 4$ dB and the third $\approx 14$ dB lower in effective SNR. That offset is precisely what the
-   curves show. PC2 holds the target from $-5$ dB up ($\leq 0.06$) and breaks below it ($0.15$ at $-7$ dB,
-   $0.43$ at $-10$ dB), while PC3 holds only from $+5$ dB up ($\leq 0.04$) and collapses below ($0.40$ at
-   $0$ dB, $0.74\text{–}0.83$ at $\leq -3$ dB). Once a factor is buried, its plug-in PC is essentially a noise
-   direction, and the selector — asked to explain a noise response — dutifully selects noise variables.
-   The support-size panel corroborates it. PC3's selection is inflated ($6.3\text{–}7.5$ variables) exactly in
-   its broken regime and drops to $\approx 3.6$ once the factor emerges.
+- **The second component (PC2) and the third (PC3) are controlled where their factors are strong, and break where
+   they drown.** The factors have amplitudes $\sigma = (5, 3, 1)$, so relative to factor 1 the second factor sits
+   $\approx 4$ dB and the third $\approx 14$ dB lower in effective SNR. PC2 holds the target from $-5$ dB up
+   ($\leq 0.06$) and breaks below it ($0.15$ at $-7$ dB, $0.43$ at $-10$ dB), while PC3 holds only from $+5$ dB up
+   ($\leq 0.04$), exceeds the target at $+3$ dB ($0.12$) and collapses below ($0.40$ at $0$ dB,
+   $0.74\text{–}0.83$ at $\leq -3$ dB). The two crossings lie about 10 dB apart (between $-7$ and $-5$ dB for PC2,
+   between $+3$ and $+5$ dB for PC3), in line with the $\approx 9.5$ dB amplitude gap between factors 2 and 3.
+   A plausible reading is that once a factor is buried, its plug-in PC is essentially a noise direction, and the
+   selector, asked to explain a noise response, selects noise variables. In the support-size panel PC3's selection
+   is inflated ($6.3\text{–}7.5$ variables) at $-3$ dB and below, falls to $5.5$ at $0$ dB and $4.3$ at $+3$ dB,
+   and settles at $3.6\text{–}3.7$ from $+5$ dB up.
 
-**Consequences**: the FDR guarantee is **conditional on the plug-in PC being a faithful proxy for its
+**Consequences.** The FDR guarantee is **conditional on the plug-in PC being a faithful proxy for its
 factor**. Where a factor is buried, the selector still controls the FDR of the noise regression it was
-handed — the nominal guarantee holds and is vacuous. Per-component control is therefore only as good as
-the component's effective SNR. This caveat is inherited from the one-shot plug-in construction, not from
-the selector.
+handed, so the nominal guarantee holds and is vacuous. Per-component control is therefore only as good as
+the component's effective SNR. The data point to the one-shot plug-in construction rather than the selector as
+the source of this caveat, but only demo 02's oracle-response comparison for PC1 tests that directly.
 
 ![T-Rex SPCA: union-support FDR per PC](simulation_results/plots/demo_trex_spca_01_mc_sim_union_fdr.png)
 
@@ -296,24 +303,29 @@ with the dashed reference in the right panel showing OrdPCA's own Signal + Mixed
 
 - **Under the total-variance normalization (left panel), ordinary PCA wins at every SNR**
    ($20.2\% \to 91.7$\% across the grid), because it keeps all $p$ loadings. The T-Rex variants trail it, and
-   `Thresholded` is consistently the better of the two modes ($88.1$\% vs. $74.4$\% at $+10$ dB) because
-   re-solving on the selected support recovers more variance than the active-set ridge coefficients do.
-   Reading alone, this panel says sparsity is a pure cost.
-- **Under Definition 1 (right panel) the picture reverses. Ordinary PCA's lead is mostly Null EV.** The
-   oracle and `Thresholded` curves now *rise* with SNR, as in the reference paper's Fig. 3(b), because the
+   `Thresholded` is the better of the two modes at every SNR point ($88.1\%$ vs. $74.2\text{–}74.4\%$ at $+10$ dB).
+   This fits the `Thresholded` mode taking its loadings from ordinary PCA instead of from a ridge refit on the
+   selected columns. Read alone, this panel says sparsity is a pure cost.
+- **Under Definition 1 (right panel) the picture changes, and at low SNR ordinary PCA's lead is mostly Null EV.**
+   The oracle and `Thresholded` curves now *rise* with SNR, as in the reference paper's Fig. 3(b), because the
    denominator is the variance the true active variables carry, and at low SNR most of that is noise no
    3-component method can capture. The `ActiveSet` pair peaks at $85.4\text{–}85.6\%$ at $+3$ dB and eases to
    $80.6\text{–}80.8\%$ at $+10$ dB. Ordinary PCA hugs the $100\%$ line ($96.5\text{–}99.6\%$) — but the dashed
    reference curve shows how.
    At $-10$ dB only $66.4\%$ of its $98.3\%$ points are Signal + Mixed EV, and the rest is variance harvested from
-   null variables. The sparse methods carry almost no Null EV (their solid and Sig + Mix readings nearly
-   coincide), with `Thresholded` reaching $95.7\%$ and OraclePCA $96.9\%$ at $+10$ dB. (With only $M = 3$
-   extracted PCs the ordinary-PCA overshoot past $100\%$ stays latent, and demo 02's PC-count sweep is where it
-   erupts to $165\%$.)
-- **The two panels together are the actual result.** Ordinary PCA's lead in the left panel is bought with
-   exactly the variance the dashed decomposition in the right panel exposes as null. The FDR-controlled
-   variants pay a modest, quantified price in captured variance and in exchange claim almost nothing that
-   is not theirs.
+   null variables. The gap closes with rising SNR ($2.6$ points at $0$ dB, below $0.1$ point at $+10$ dB). The
+   sparse methods carry far less of this excess, though not none at low SNR. From $0$ dB up their Definition 1 and
+   Sig + Mix readings lie within $0.021$ of each other for the T-Rex variants and $0.043$ for OraclePCA, while at
+   $-10$ dB the Definition 1 reading exceeds the Sig + Mix part by $0.08\text{–}0.10$ and $0.07$, against $0.32$
+   for ordinary PCA. (The Sig + Mix part comes from the raw, unadjusted EV, so for correlated sparse components
+   the difference is no clean Null EV measure.) `Thresholded` reaches $95.7\%$ and OraclePCA $96.9\%$ at
+   $+10$ dB. (With only $M = 3$ extracted components the ordinary-PCA overshoot past $100\%$ stays latent, and
+   demo 02's PC-count sweep is where it erupts to $165\%$.)
+- **The two panels together are the actual result.** At low SNR ordinary PCA's lead in the left panel is bought
+   largely with the variance the dashed decomposition in the right panel exposes as null, and at high SNR the lead
+   shrinks to a few points ($91.7\%$ vs. $88.1\%$ for `Thresholded` and $89.3\%$ for OraclePCA at $+10$ dB). The
+   FDR-controlled variants pay a modest, quantified price in captured variance, and in exchange claim much less
+   variance that is not theirs.
 
 ![T-Rex SPCA: cumulative PEV under both normalizations](simulation_results/plots/demo_trex_spca_01_mc_sim_pev.png)
 
@@ -330,7 +342,7 @@ For the full Fig.-3-style treatment of [[1]](#references) of this metric — swe
    [DOI-Link](https://doi.org/10.1109/ICASSP48485.2024.10448237)
 2. Machkour, J., Muma, M., & Palomar, D. P., "False Discovery Rate Control for Grouped Variable Selection
    in High-Dimensional Linear Models using the T-Knock Filter.", European Signal Processing Conference (EUSIPCO), 2022,
-    pp. 892–896, EURASIP.
+    pp. 892–896, European Association for Signal Processing (EURASIP).
     [DOI-Link](https://doi.org/10.23919/EUSIPCO55093.2022.9909883)
 3. Zou, H., Hastie, T., & Tibshirani, R., "Sparse Principal Component Analysis.", Journal of Computational
    and Graphical Statistics, vol. 15, no. 2, 2006, pp. 265–286, Taylor & Francis.

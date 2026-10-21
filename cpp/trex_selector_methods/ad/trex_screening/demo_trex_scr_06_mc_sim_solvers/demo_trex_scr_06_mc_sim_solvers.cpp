@@ -54,14 +54,14 @@ namespace {
  * @brief Combined descriptor for a Screen-TRex solver × method variant.
  *
  * @details Extends the library's ScreenMethodInfo with the solver backend
- *          and the AFS penalty parameter so that the outer MC loop can build
+ *          and the TAFS shrinkage step rho_afs so that the outer MC loop can build
  *          both the TRexControlParameter and the ScreenTRexControlParameter
  *          from a single object.
  */
 struct SolverVariant {
     std::string       name;                             ///< Display name
     SolverTypeForTRex solver_type;                      ///< T-Rex solver backend
-    double            rho_afs   = 0.0;                  ///< AFS penalty (TAFS only)
+    double            rho_afs   = 0.0;                  ///< Shrinkage step (TAFS only)
     ScreenTRexMethod  method    = ScreenTRexMethod::TREX; ///< Screen-TRex variant
     bool              bootstrap = false;                 ///< Use bootstrap-CI threshold
 };

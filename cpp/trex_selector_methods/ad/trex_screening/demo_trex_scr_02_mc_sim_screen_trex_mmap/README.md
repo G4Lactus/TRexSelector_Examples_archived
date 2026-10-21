@@ -6,8 +6,8 @@ The demo shows that the **memory-mapped Screen-TRex workflow** reproduces the in
  dummy (D) matrices on disk instead of in random-access memory (RAM).
 The study is the same experiment as [Demo 01](../demo_trex_scr_01_mc_sim_screen_trex/README.md) — same
  independent and identically distributed (i.i.d.) Gaussian design, same signal-to-noise ratio (SNR) sweep, same two
- thresholding rules (**Ordinary** and **Bootstrap-CI**) — with the single change
- `TRexControlParameter::use_memory_mapping = true`.
+ thresholding rules (**Ordinary** and **Bootstrap-CI**, the latter built on a bootstrap confidence interval (CI)) —
+ with the single change `TRexControlParameter::use_memory_mapping = true`.
 The point of this demo is therefore *equivalence at a lower memory footprint*, not a different statistical
  regime, because memory mapping is what makes very large $p$ feasible on machines that cannot hold the dummy
  matrices in RAM.
@@ -29,7 +29,7 @@ We consider the linear model:
 - $\boldsymbol{y} \in \mathbb{R}^n$ is the response vector.
 - $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ is the design matrix.
 - $\boldsymbol{\beta} \in \mathbb{R}^p$ is the coefficient vector, with $s$ nonzero entries.
-- $\boldsymbol{\epsilon}$ is the noise vector, i.i.d. standard normal.
+- $\boldsymbol{\epsilon}$ is the noise vector, i.i.d. normal.
 - $\sigma_{\varepsilon}^2$ is the noise variance, calibrated to achieve a target linear SNR.
 - $n = 300$, $p = 1{,}000$, $s = 10$ (high-dimensional, $p > n$).
 
@@ -41,8 +41,8 @@ X_{ij} \sim \mathcal{N}(0,1) \quad \text{i.i.d.}
 
 - The active support is drawn uniformly at random *per Monte Carlo (MC) trial*, so the results are not tied to
    one support pattern.
-- All active coefficients are $\beta_j = 1$, and the support-selection and coefficient random number generators
-   (RNGs) are offset from the trial seed so they stay independent of the design and noise draws.
+- All active coefficients are $\beta_j = 1$. The support draw uses its own random number generator (RNG) seed,
+   the trial seed plus `500000`, so it stays independent of the design and noise draws.
 
 ---
 
@@ -111,16 +111,18 @@ produced by `./generate_plots.sh`.
    TPR difference is about $0.02$ (Bootstrap at $\mathrm{SNR} = 2$: $0.763$ here vs. $0.739$ in Demo 01) and
    the largest FDR difference about $0.01$. It is the same procedure on the same statistics — only the D
    matrices live on disk.
-- **Exact equality is not expected.** Both demos use nondeterministic selector seeds (the library resolves
-   `seed = -1` via `std::random_device`), so the two runs draw different random experiments. The residual
-   gaps are Monte Carlo noise, not a discrepancy in the memory-mapped path.
+- **Exact equality is not expected.** Both demos screen the same datasets (same trial seeds) but use
+   nondeterministic selector seeds (the library resolves `seed = -1` via `std::random_device`), so the two runs
+   draw different random experiments. The tables carry no standard deviations, so the gaps cannot be tested
+   against Monte Carlo noise, but at their size they give no sign of a discrepancy in the memory-mapped path.
 - **The baseline conclusions carry over unchanged.** Screening is not FDR-controlling at low SNR — at
-   $\mathrm{SNR} \le 0.2$ the realized FDR runs between $0.16$ and $0.44$ with TPR $\le 0.12$ — and both
+   $\mathrm{SNR} \le 0.2$ the realized FDR runs between $0.16$ and $0.44$ with TPR $\le 0.124$ — and both
    rules become reliable from $\mathrm{SNR} \ge 0.5$, where the Ordinary rule's FDR falls to $0.118$ and
    settles around $0.05\text{–}0.07$ while its TPR climbs $0.448 \to 1.000$.
 - **Bootstrap-CI remains the conservative rule, with lower FDR and clearly less power.** Its FDR stays at or below
-   $0.051$ for $\mathrm{SNR} \ge 0.5$, roughly half the Ordinary rule's, paid for with TPR $0.835$ vs.
-   $1.000$ at $\mathrm{SNR} = 5$ and a wide mid-sweep gap ($0.386$ vs. $0.816$ at $\mathrm{SNR} = 1$).
+   $0.051$ for $\mathrm{SNR} \ge 0.5$, less than half the Ordinary rule's up to $\mathrm{SNR} = 1$ and about
+   three quarters of it at $\mathrm{SNR} = 2$ and $5$, paid for with TPR $0.835$ vs. $1.000$ at
+   $\mathrm{SNR} = 5$ and a wide mid-sweep gap ($0.386$ vs. $0.816$ at $\mathrm{SNR} = 1$).
 - **The internal FDR estimate is conservative here.** For $\mathrm{SNR} \ge 0.5$ it sits *above* the
    realized FDR for both rules (e.g. $0.117$ vs. $0.069$ for Ordinary at $\mathrm{SNR} = 1$), over-stating
    the error rate rather than hiding it. At the lowest SNR points it becomes unreliable in both directions.

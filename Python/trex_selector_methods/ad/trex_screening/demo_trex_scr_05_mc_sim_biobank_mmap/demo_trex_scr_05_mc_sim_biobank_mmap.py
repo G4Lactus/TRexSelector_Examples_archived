@@ -7,11 +7,11 @@
 # Statistically identical to demo 04, but the internal dummy matrices are backed
 # by memory-mapped files (use_memory_mapping = True), the storage mode intended
 # for biobank-scale problems where holding the dummy matrices in RAM is
-# infeasible. Everything else about Algorithm 1 - the Ordinary -> Bootstrap-CI ->
-# T-Rex-fallback routing and its per-method Usage % - is unchanged. As in the cpp
-# source, the design matrix X still lives in RAM; only the dummy matrices move to
-# disk, and the library manages those temporary files in its own scratch
-# directories (nothing to clean up in this script).
+# infeasible. Everything else about Algorithm 1 - the FDR-window routing to
+# Ordinary, Bootstrap-CI or the T-Rex fallback and its per-method Usage % - is
+# unchanged. As in the cpp source, the design matrix X still lives in RAM; only
+# the dummy matrices move to disk, and the library manages those temporary files
+# in its own scratch directories (nothing to clean up in this script).
 #
 # Mirrors:
 #   cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_05_mc_sim_biobank_mmap/

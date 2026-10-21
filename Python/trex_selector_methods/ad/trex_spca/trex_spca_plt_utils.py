@@ -23,8 +23,8 @@ metrics are reported per method:
 * **PEVsig** — the same adjusted EV normalized by the **Signal + Mixed EV of
   the data**: the variance carried by the true active variables, a denominator
   fixed per dataset and shared by all methods (Definition 1 of the reference
-  paper, in the convention validated against the published Fig. 3 by the
-  legacy R reference demo_trex_spca_03_fig3.R). Uncapped: overshooting 100 %
+  paper, in the active-column convention of the legacy R reference
+  demo_trex_spca_03_fig3.R). Uncapped: overshooting 100 %
   marks a method that is explaining null variance. Not present in older CSVs;
   when it is present a second figure is rendered that puts the two
   normalizations side by side.
@@ -231,7 +231,7 @@ def plot_spca_pev_normalizations(df: pd.DataFrame, title: str,
 
     Right panel: EV divided by the **Signal + Mixed EV of the data** — the
     variance carried by the true active variables, fixed per dataset and
-    shared by all methods (Definition 1 of the reference paper, validated
+    shared by all methods (Definition 1 of the reference paper, active-column
     convention of the legacy R reference). The point of the panel is that this
     ratio is *not* capped: loadings spent on null variables accumulate
     variance the denominator does not contain, so the curve climbs past

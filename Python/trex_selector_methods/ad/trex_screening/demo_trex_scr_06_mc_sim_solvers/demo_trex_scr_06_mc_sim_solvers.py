@@ -8,7 +8,7 @@
 # produced by an underlying T-Rex solver. This demo asks whether the choice of
 # solver backend changes screening performance:
 #   * TLARS    - terminating LARS (the default),
-#   * TAFS-0.3 - terminating adaptive forward selection (rho_afs = 0.3),
+#   * TAFS-0.3 - terminating adaptive forward stepwise (shrinkage step rho_afs = 0.3),
 #   * TOMP     - terminating orthogonal matching pursuit,
 # each combined with Ordinary and Bootstrap-CI screening. The same i.i.d.
 # Gaussian design as demo 01 is used, so the numbers are directly comparable.

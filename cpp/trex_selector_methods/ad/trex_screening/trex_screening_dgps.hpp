@@ -25,8 +25,8 @@
  *   - support_from_beta()     — nonzero indices of a coefficient vector
  *
  *  The correlated designs (AR1 / equi / block-equi) standardise every column
- *  to zero mean and unit variance after generation, so rho is the realized
- *  column correlation rather than a nominal parameter.
+ *  to zero mean and unit variance after generation, which leaves the column
+ *  correlations unchanged.
  *
  * @note Demo-internal header — not part of the TRexSelector library.
  */

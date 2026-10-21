@@ -294,8 +294,8 @@ def evaluate_spca(X, V_est, Z_est, V_true):
                    methods. Deliberately uncapped: a method that spends
                    loadings on null variables accumulates variance the
                    denominator does not contain and climbs past 1. Denominator
-                   convention validated against the published Fig. 3 by the
-                   legacy R reference (demo_trex_spca_03_fig3.R, mode
+                   follows the active-column convention of the legacy R
+                   reference (demo_trex_spca_03_fig3.R, mode
                    "active"); it is NOT the method's own Signal + Mixed EV —
                    that self-normalized reading is structurally >= 1 for
                    null-capturing methods and inverts the SNR trend.
