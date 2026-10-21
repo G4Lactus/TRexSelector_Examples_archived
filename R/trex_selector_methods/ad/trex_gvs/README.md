@@ -27,9 +27,15 @@ trex_gvs/
 ```
 
 Demos 01–07 each run a single Monte Carlo **2-D signal-to-noise ratio (SNR) × correlation sweep** comparing the three
-dummy-generation methods **TENET / TENET_AUG / TIENET_AUG** (demo 01 adds two fixed-operating-point method
-comparisons: `lambda2_method` and `hc_linkage`). The typical fixed settings are n = 200, p = 500, a target false
-discovery rate (FDR) of $\mathrm{tFDR} = 0.1$, K = 20 and 200 MC runs.
+solver variants **TENET** (elastic net (EN)), **TENET_AUG** (EN, row-augmented solver) and **TIENET_AUG** (informed
+elastic net (IEN), augmented solver). Demo 01 adds two fixed-operating-point comparisons, `lambda2_method` and
+`hc_linkage`. The typical fixed settings are n = 200, p = 500, a target false discovery rate (FDR) of
+$\mathrm{tFDR} = 0.1$, K = 20, `corr_max = 0.98` and 200 MC runs.
+
+The shared `.gvs_select()` adapter sets the solver and the $\lambda_2$ rule explicitly, as the C++ and Python
+suites do. The IEN rows run TIENET_AUG, demos 01–07 choose $\lambda_2$ by `CV_1SE_CCD`, and the IEN rows of demo 08
+(and the IEN half of demo 01's `lambda2_method` comparison) use `CV_1SE_IEN_CCD`, the rule built for the IEN
+geometry.
 
 Dependencies: `TRexSelectorNeo`, `parallel`. Each demo sources the
 consolidated [trex_gvs_dgps.R](trex_gvs_dgps.R) (all scenario generators in one
@@ -69,8 +75,8 @@ Demo 08 compares four variants — **M1** = elastic net (EN) + HAC-discovered gr
 cautionary appendix). Oracle groups are supplied via `trex_gvs_control(groups = ...)` with contiguous 1..G labels,
 while the HAC variants discover groups from the data (`corr_max = 0.5`, single linkage). It reports the coordinate
 true positive rate (TPR) and FDR, the block-level FDR and a scenario-specific block metric (`blk_hit` / `full_blk`),
-plus **purity** (computed from the selector's per-variable cluster labels, `$groups`), `T_stop`, and `M_found`
-(number of clusters formed, from `$max_clusters`).
+plus **purity** (computed from the selector's per-variable cluster labels, its `groups` field), `T_stop`, and
+`M_found` (number of clusters formed, its `max_clusters` field).
 
 ---
 
@@ -89,10 +95,16 @@ fixed-noise `generate_*()` variants of the scenarios, which no demo used.
 
 ## Recorded results
 
-Result tables are written to each demo's `simulation_results/data/` folder
-(`<stem>.txt` + `<stem>.csv`). Manually-recorded result summaries also live
-there, e.g.
-[demo_trex_gvs_01_mc_sim_hastie_en_blocks/simulation_results/data/demo_trex_gvs_01_hastie_models.md](demo_trex_gvs_01_mc_sim_hastie_en_blocks/simulation_results/data/demo_trex_gvs_01_hastie_models.md).
+Result tables are written to each demo's `simulation_results/data/` folder (`<stem>.txt` + `<stem>.csv`), with the
+same stems and comma-separated values (CSV) schemas as the C++ and Python suites. Each demo's `./generate_plots.sh`
+renders the figures from these tables into `simulation_results/plots/` via the shared
+[trex_gvs_plt_utils.R](trex_gvs_plt_utils.R), with the same file names as the Python suite.
+
+The committed results are the first R run of all eight demos (200 MC trials per cell, 8 workers, 30.0 h in total).
+R draws its own random numbers, so its cells agree with C++ and Python up to Monte Carlo noise, not exactly. Of
+1,698 cells compared with C++, 4 (0.24 %) lie more than three Monte Carlo standard errors away, all in demo 07, the
+rate noise alone produces. The block benchmark of demo 08 agrees in all 384 compared cells (largest $|z| = 2.82$),
+and its IEN rows pick $\lambda_2$ with the IEN rule at the same order of magnitude as in C++ and Python.
 
 ---
 
