@@ -27,7 +27,7 @@ TAFS additionally runs with its adaptive forward-selection (AFS) correlation par
 ## Setup — the DA-TRex+AKG selector (constrained sub-clustering)
 
 The known three-level hierarchy is passed via `da_control.prior_groups` (when non-empty, the
-`method` field is ignored). Since 2026-07-17 the `PRIOR_GROUPS` method treats these labels as
+`method` field is ignored). The `PRIOR_GROUPS` method treats these labels as
 **merge constraints**, not as deflation neighbourhoods:
 
 1. the **finest common refinement** of the supplied levels (here the groups of 10) partitions the
@@ -45,7 +45,7 @@ The known three-level hierarchy is passed via `da_control.prior_groups` (when no
 
 Negative group labels are rejected by the Python binding.
 
-**Why not use the raw groups as neighbourhoods?** That was the pre-2026-07-17 behaviour, and it
+**Why not use the raw groups as neighbourhoods?** That was the earlier behaviour, and it
 fails by design, because the nearest-partner penalty
 $\Psi_j = 1/(2 - \min_{j' \in \mathrm{Gr}(j)} |\Phi_j - \Phi_{j'}|)$ presumes tight, near-exchangeable
 neighbourhoods. Inside a 10/50/250-member group nearly every variable has *some*

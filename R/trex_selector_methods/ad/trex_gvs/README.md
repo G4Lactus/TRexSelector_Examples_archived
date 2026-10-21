@@ -8,9 +8,9 @@
 ## Purpose
 
 R demos and Monte Carlo (MC) simulations for the **Terminating Random Experiments (T-Rex) selector with Grouped
-Variable Selection (T-Rex+GVS)** on designs where the active variables cluster into groups. The folder layout mirrors
-the C++/Python suites one-to-one, with one subfolder per demo plus a single consolidated data-generating process (DGP)
-file and a shared simulation-common file.
+Variable Selection (GVS)**, in short T-Rex+GVS, on designs where the active variables cluster into groups. The folder
+layout mirrors the C++/Python suites one-to-one, with one subfolder per demo plus a single consolidated
+data-generating process (DGP) file and a shared simulation-common file.
 
 ```txt
 trex_gvs/
@@ -87,7 +87,7 @@ All scenario generators live in the single [trex_gvs_dgps.R](trex_gvs_dgps.R)
 `dgp_scattered_grouped_snr`, `dgp_mixed_blocks_snr`, `dgp_neg_traps_snr`,
 `dgp_t3_equi_blocks_snr`, `dgp_ar1_blocks_snr`, `dgp_arma_blocks_snr`
 (+ the `.sim_arma()` helper), and `dgp_block_equicorr`. Earlier speculative,
-demo-less DGPs (factor-model, hapgen, neg-corr, random/unequal blocks, the
+demo-less generators (factor-model, hapgen, neg-corr, random/unequal blocks, the
 `dgp_gvs` collection) were removed in the consolidation, and so were the
 fixed-noise `generate_*()` variants of the scenarios, which no demo used.
 

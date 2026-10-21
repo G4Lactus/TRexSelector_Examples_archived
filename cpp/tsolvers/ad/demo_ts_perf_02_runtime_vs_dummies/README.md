@@ -128,10 +128,11 @@ T-AFS (rho 1)             302.0    537.5   1189.3   2118.7   3929.0
 
 The time per step grows with the number of columns $p + L$, since every step scans the correlations of all columns.
 T-LARS needs 0.40 ms per step at $L = p$ and 4.3 ms at $L = 20p$, 10.7 times as much for 10.5 times as many columns.
-The OMP family starts lower, at about 0.3 ms, and grows 12 to 16 times, so at $L = 20p$ all solvers except T-ENET need
-about 4 to 5 ms per step, where the scan over the columns dominates. T-ENET needs about twice as long per step as the
-other solvers. More dummies therefore cut the path by the null variables they keep out, but every step gets dearer,
-and in total a path to $T = 10$ at $L = 20p$ costs about 7.5 times a path at $L = p$.
+The orthogonal matching pursuit (OMP) family starts lower, at about 0.3 ms, and grows 12 to 16 times, so at
+$L = 20p$ all solvers except T-ENET need about 4 to 5 ms per step, where the scan over the columns dominates. T-ENET
+needs about twice as long per step as the other solvers. More dummies therefore cut the path by the null variables
+they keep out, but every step gets dearer, and in total a path to $T = 10$ at $L = 20p$ costs about 7.5 times a
+path at $L = p$.
 
 ### Warm start
 

@@ -116,7 +116,7 @@ other variable's DA correction set, and the correction deflates all candidates a
 - **Legacy R CRAN** (`Results_trex_da_02_equi.md`, $n=150$, $p=500$, $s=5$): total suppression at
   every grid point except $\rho = 0$ — true positive proportion (TPP) $=$ false discovery proportion (FDP) $= 0$ across
   all SNRs at $\rho = 0.25$, and power only at $\rho = 0.0$ in the $\rho$ sweep (TPP $\approx 1.0$, FDP $\approx 0.13$).
-- **C++ 1D sweeps (2026-07-15, superseded by this 2D sweep)**: reproduced the legacy behavior
+- **C++ 1D sweeps (superseded by this 2D sweep)**: reproduced the legacy behavior
   exactly at $n=300$, $p=1{,}000$ — at $\rho = 0$ all six methods controlled
   (FDR $\approx 0.12\text{–}0.14$, true positive rate (TPR) $\approx 1$). From $\rho = 0.1$ on, DA was in total
   suppression (TLARS consuming all $T = 150$ dummies without votes) while base TLARS jumped to FDR $0.73$ and climbed to

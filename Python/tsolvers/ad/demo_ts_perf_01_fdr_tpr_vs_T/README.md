@@ -119,10 +119,11 @@ T-AFS (rho 0.5)           96.7    99.9    99.9    99.9    99.9    99.9    99.9
 T-AFS (rho 1)             96.8    99.5    99.9    99.9    99.9    99.9    99.9
 ```
 
-At $T = 1$ every solver keeps the FDR between 6.5% and 9.8%, and the TPR separates the families. The solvers that
-refit by least squares after each entry (T-Stepwise, the OMP family and T-AFS for $\rho \ge 0.3$) find 95.1% to 96.8%
-of the true variables. T-LARS, T-LASSO and T-Stagewise find 77.5%, T-ENET 67.7%, and T-AFS at $\rho = 0.1$ sits close
-to its LARS end at 80.8%. The C++ run gives the same picture within about two percentage points.
+At $T = 1$ every solver keeps the FDR between 6.5% and 9.8%, and the TPR separates the families. The solvers that refit
+by least squares after each entry (T-Stepwise, the orthogonal matching pursuit (OMP) family and T-AFS for
+$\rho \ge 0.3$) find 95.1% to 96.8% of the true variables. T-LARS, T-LASSO and T-Stagewise find 77.5%, T-ENET 67.7%, and
+T-AFS at $\rho = 0.1$ sits close to its least-angle regression (LARS) end at 80.8%. The C++ run gives the same picture
+within about two percentage points.
 
 As $T$ grows, the FDR rises alike for all solvers except T-Stagewise, to about 30% at $T = 5$, 46% at $T = 10$ and 64%
 at $T = 20$. This follows from the exchangeability of null variables and dummies. The 290 null variables and the 300

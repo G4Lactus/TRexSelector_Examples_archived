@@ -4,8 +4,8 @@
 
 Test whether spatially **scattering** the members of a correlated group across the design matrix — rather than
  keeping them contiguous — affects the group recovery of the Terminating Random Experiments (T-Rex) selector with
- Grouped Variable Selection (T-Rex+GVS). This isolates the effect of column layout from the effect of correlation
- strength, since the underlying group
+ Grouped Variable Selection (GVS), in short T-Rex+GVS. This isolates the effect of column layout from the effect of
+ correlation strength, since the underlying group
   structure is otherwise identical to Demo 01.
  Selection and evaluation are per variable (see
  [What is actually measured](../README.md#what-is-actually-measured-in-these-demos)).

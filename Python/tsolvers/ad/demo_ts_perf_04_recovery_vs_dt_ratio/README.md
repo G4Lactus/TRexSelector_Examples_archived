@@ -131,15 +131,15 @@ T-AFS (rho 0.5)            0.0     0.0    12.2    85.2    98.4   100.0   100.0
 T-AFS (rho 1)              0.0     0.0    11.2    87.2    98.6   100.0   100.0
 ```
 
-From $p = 250$ to $p = 5{,}000$ the number of variables grows 20-fold, and at the same $n/(s \log p)$ the recoveries
-of the five $p$ lie within 11.2 percentage points of each other. Only T-AFS ($\rho = 0.1$) moves more at 2, from 50.0%
-at $p = 250$ to 75.6% at $p = 5{,}000$. So $n$ has to grow like $s \log p$. The solvers fall into two groups. The OMP
-family, T-Stepwise and T-AFS with $\rho \ge 0.3$ recover the support in 68% to 87% of the runs at
-$n/(s \log p) = 1.5$ and in at least 94% at 2. T-LARS, T-LASSO, T-Stagewise and T-AFS with $\rho = 0.1$ need about
-1.5 times as many observations and reach 50% to 76% at 2. Their steep rise between 1.5 and 3 brackets the $s$-step
-bound of Donoho and Tsaig (2008), by which LARS recovers the support in its first $s$ steps once $n > 2 s \ln N$ with
-$N = p + L$ columns, which is $n/(s \log p) > 2.16$ to $2.25$ here. T-ENET needs the most observations and recovers
-the support in 78% to 89% of the runs at 3.
+From $p = 250$ to $p = 5{,}000$ the number of variables grows 20-fold, and at the same $n/(s \log p)$ the recoveries of
+the five $p$ lie within 11.2 percentage points of each other. Only T-AFS ($\rho = 0.1$) moves more at 2, from 50.0% at
+$p = 250$ to 75.6% at $p = 5{,}000$. So $n$ has to grow like $s \log p$. The solvers fall into two groups. The
+orthogonal matching pursuit (OMP) family, T-Stepwise and T-AFS with $\rho \ge 0.3$ recover the support in 68% to 87% of
+the runs at $n/(s \log p) = 1.5$ and in at least 94% at 2. T-LARS, T-LASSO, T-Stagewise and T-AFS with $\rho = 0.1$ need
+about 1.5 times as many observations and reach 50% to 76% at 2. Their steep rise between 1.5 and 3 brackets the $s$-step
+bound of Donoho and Tsaig (2008), by which least-angle regression (LARS) recovers the support in its first $s$ steps
+once $n > 2 s \ln N$ with $N = p + L$ columns, which is $n/(s \log p) > 2.16$ to $2.25$ here. T-ENET needs the most
+observations and recovers the support in 78% to 89% of the runs at 3.
 
 T-AFS moves between the two groups. With $\rho = 0.1$ it takes small steps and follows T-LARS, ahead of it at 2 from
 $p = 500$ on, and with $\rho = 1$ it takes full steps and equals T-OMP. T-OMP, T-Stepwise and T-AFS ($\rho = 1$) show

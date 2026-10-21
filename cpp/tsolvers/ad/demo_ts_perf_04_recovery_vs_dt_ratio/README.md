@@ -110,13 +110,13 @@ T-AFS (rho 1)              0.0     0.0     8.6    85.2    99.4   100.0   100.0
 ```
 
 From $p = 250$ to $p = 5{,}000$ the number of variables grows 20-fold, and at the same $n/(s \log p)$ the recovery
-changes by a few percentage points only, so $n$ has to grow like $s \log p$. The solvers fall into two groups. The OMP
-family, T-Stepwise and T-AFS with $\rho \ge 0.3$ recover the support in 69% to 87% of the runs at
-$n/(s \log p) = 1.5$ and in at least 94% at 2. T-LARS, T-LASSO, T-Stagewise and T-AFS with $\rho = 0.1$ need about
-1.5 times as many observations and cross 50% at 2. Their steep rise between 1.5 and 3 brackets the $s$-step bound of
-Donoho and Tsaig (2008), by which LARS recovers the support in its first $s$ steps once $n > 2 s \ln N$ with
-$N = p + L$ columns, which is $n/(s \log p) > 2.16$ to $2.25$ here. T-ENET needs the most observations and recovers
-the support in 78% to 91% of the runs at 3.
+changes by a few percentage points only, so $n$ has to grow like $s \log p$. The solvers fall into two groups. The
+orthogonal matching pursuit (OMP) family, T-Stepwise and T-AFS with $\rho \ge 0.3$ recover the support in 69% to 87%
+of the runs at $n/(s \log p) = 1.5$ and in at least 94% at 2. T-LARS, T-LASSO, T-Stagewise and T-AFS with
+$\rho = 0.1$ need about 1.5 times as many observations and cross 50% at 2. Their steep rise between 1.5 and 3
+brackets the $s$-step bound of Donoho and Tsaig (2008), by which least-angle regression (LARS) recovers the support
+in its first $s$ steps once $n > 2 s \ln N$ with $N = p + L$ columns, which is $n/(s \log p) > 2.16$ to $2.25$ here.
+T-ENET needs the most observations and recovers the support in 78% to 91% of the runs at 3.
 
 T-AFS moves between the two groups. With $\rho = 0.1$ it takes small steps and follows T-LARS, and with $\rho = 1$ it
 takes full steps and equals T-OMP. T-OMP, T-Stepwise and T-AFS ($\rho = 1$) show the same rows, and so do T-MP and

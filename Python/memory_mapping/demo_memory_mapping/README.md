@@ -75,12 +75,12 @@ that removes the backing file after the map is released.
 
 ### Demo 2: Out-of-core streaming (serial)
 
-The matrix is never allocated as a whole. Each column is drawn from its own seed (1000 + column index) into a buffer of
-100 doubles and appended to the file as one contiguous `float64` block, which is exactly one column of the column-major
-layout that `MemoryMappedMatrix` maps. The writes go through a plain file handle, and the map is opened afterwards in
-`ReadOnly` mode. Because `to_numpy()` needs `ReadWrite` mode, the spot check reads column 0 element by element through
-`mmap[r, 0]`, regenerates it from seed 1000 and compares the two. This is how a reader can verify any column later
-without the full matrix.
+The matrix is never allocated as a whole. Each column is drawn from its own seed (`1000` + column index) into a buffer
+of 100 doubles and appended to the file as one contiguous `float64` block, which is exactly one column of the
+column-major layout that `MemoryMappedMatrix` maps. The writes go through a plain file handle, and the map is opened
+afterwards in `ReadOnly` mode. Because `to_numpy()` needs `ReadWrite` mode, the spot check reads column 0 element by
+element through `mmap[r, 0]`, regenerates it from seed `1000` and compares the two. This is how a reader can verify any
+column later without the full matrix.
 
 ```text
 ==============================================================================
@@ -101,7 +101,7 @@ Spot-check column 0 (seed 1000): max|diff| = 0.0  (expected: 0.0)
 
 The C++ demo fills the columns with `#pragma omp parallel for`, which is C++-only. The Python demo keeps the part that
 makes the parallel fill deterministic and runs it serially. It opens the file in `ReadWrite` mode and writes every
-column through the zero-copy view straight into the file, each from its own seed (3000 + column index). Because no
+column through the zero-copy view straight into the file, each from its own seed (`3000` + column index). Because no
 column depends on another one, the result does not depend on the order in which the columns are filled. The two spot
 checks at both ends of the matrix regenerate columns 0 and 49 from their seeds and match exactly.
 

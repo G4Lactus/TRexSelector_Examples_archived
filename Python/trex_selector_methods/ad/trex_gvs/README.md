@@ -2,9 +2,9 @@
 
 ## Overview
 
-This folder contains the Python ports of the **Terminating Random Experiments (T-Rex) Selector with Grouped Variable
-Selection (T-Rex+GVS)** demonstration suite according to [[1,2]](#references), using `trex_selector_neo`'s
-`TRexGVSSelector`. They mirror the authoritative C++ suite in
+This folder contains the Python ports of the demonstration suite for the **Terminating Random Experiments (T-Rex)
+Selector with Grouped Variable Selection (GVS)**, in short T-Rex+GVS, according to [[1,2]](#references), using
+`trex_selector_neo`'s `TRexGVSSelector`. They mirror the authoritative C++ suite in
 [cpp/trex_selector_methods/ad/trex_gvs/](../../../../cpp/trex_selector_methods/ad/trex_gvs/README.md) one-to-one (folder
 names, scenarios, sweep grids, console tables, and result-file names all match).
 
@@ -101,7 +101,7 @@ Grouped selection introduces a few additional control parameters and types beyon
   - `TENET_AUG`: the augmented least absolute shrinkage and selection operator (LASSO) formulation of the
     elastic net.
 - **`trex.LambdaSelectionMethod`** — how the elastic-net penalty $\lambda_2$ is chosen: `CV_1SE_CCD`
-   (cross-validation, one-standard-error (1-SE) rule, via coordinate descent) or `CV_1SE_SVD` (via singular value
+   (cross-validation, rule of one standard error (SE), via coordinate descent) or `CV_1SE_SVD` (via singular value
    decomposition (SVD)). The rule `CV_1SE_IEN_CCD`, built for the IEN geometry, cross-validates $\lambda_2$ jointly
    with $\lambda_1$ on the group structure and applies to `GVSType.IEN` only. Demo 08 uses it for its IEN rows.
    Demos 01–07 keep `CV_1SE_CCD`. Six of them have a true support of $s = 150$, above the rule's $\lambda_1$ support

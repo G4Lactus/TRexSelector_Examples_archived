@@ -153,7 +153,9 @@ are read at Average linkage unless stated otherwise.
 
 ---
 
-## Part 3 — Block-size $Q$ sweep ($Q \in \lbrace5, 10, \ldots, 50\rbrace$, $p_{\text{ar}} = 5Q$, $p_{\text{white}} = 500 - 5Q$)
+## Part 3 — Block-size $Q$ sweep ($Q \in \lbrace5, 10, \ldots, 50\rbrace$)
+
+The block part grows as $p_{\text{ar}} = 5Q$, while the white padding shrinks as $p_{\text{white}} = 500 - 5Q$.
 
 - TPR is remarkably flat in $Q$ (TOMP $0.90\text{–}0.93$, TAFS $0.83\text{–}0.88$, TLARS and TLARS_STAG
   $0.73\text{–}0.80$ at Average linkage) — growing the correlated blocks inside a fixed $p_{\text{total}}$ barely

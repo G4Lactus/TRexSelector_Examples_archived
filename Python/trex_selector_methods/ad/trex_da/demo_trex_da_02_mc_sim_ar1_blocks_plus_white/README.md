@@ -175,7 +175,9 @@ linkage-comparison grid (Single/Complete/Average columns) per sweep — the four
 
 ---
 
-## Part 3 — Block-size $Q$ sweep ($Q \in \lbrace5, 10, \ldots, 50\rbrace$, $p_{\text{ar}} = 5Q$, $p_{\text{white}} = 1{,}000 - 5Q$)
+## Part 3 — Block-size $Q$ sweep ($Q \in \lbrace5, 10, \ldots, 50\rbrace$)
+
+Here $p_{\text{ar}} = 5Q$ and $p_{\text{white}} = 1{,}000 - 5Q$.
 
 - FDR is controlled everywhere (max $0.039$, TAFS with Complete linkage at $Q = 25$).
 - **Single linkage costs power as blocks grow**. From $Q \geq 20$ it dips to a trough around

@@ -141,7 +141,7 @@ Output appears on the console and is simultaneously written to the files above.
 
 - **Console output** shows real-time progress and the final selection summary.
 - **File output** provides a permanent record for the single run.
-- This demo is NOT a Monte Carlo study. Results are from a single random seed and should not be interpreted as
-   population averages.
+- This demo is **not** a Monte Carlo study. Results come from a single run with fixed seeds and should not be
+   interpreted as population averages.
 - Compare the false discovery rate (FDR) and the true positive rate (TPR) with Demos 02–04 for empirical performance
    over many repetitions.

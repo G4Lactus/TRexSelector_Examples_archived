@@ -42,8 +42,9 @@ Every demo has the five parts of its C++ counterpart:
    $p = 5{,}000$),
 5. terminated solution paths of one warm-started object, drawn as a figure.
 
-The performance demos compare all solvers side by side, for example by false discovery rate (FDR) and true positive
-rate (TPR), with the designs, seeds and CSV columns of the C++ ones and figures drawn by `ts_plt_utils.py`:
+The performance demos compare all solvers side by side, for example by false discovery rate (FDR) and true positive rate
+(TPR), with the designs, seeds and comma-separated values (CSV) columns of the C++ ones and figures drawn by
+`ts_plt_utils.py`:
 
 | # | Folder | Question |
 |---|--------|----------|

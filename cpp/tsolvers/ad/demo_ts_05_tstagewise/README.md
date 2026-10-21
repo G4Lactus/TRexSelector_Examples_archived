@@ -47,8 +47,9 @@ cpp/tsolvers/ad/demo_ts_05_tstagewise/generate_plots.sh                         
 ```
 
 The optional arguments select the parts to run. Part 4 writes about 44 GB of temporary files, so `1 2 3` and `5` leave
-it out. `generate_plots.sh` uses the repository's `.venv` and writes the figure as PNG and PDF to
-`simulation_results/plots/`. The output below is a run against library b95b984.
+it out. `generate_plots.sh` uses the repository's `.venv` and writes the figure as Portable Network Graphics (PNG)
+and Portable Document Format (PDF) files to `simulation_results/plots/`. The output below is a run against
+library b95b984.
 
 ---
 
@@ -276,11 +277,11 @@ Path data written to:
 ```
 
 The path equals the T-LARS path of [demo_ts_01_tlars](../demo_ts_01_tlars/README.md) to the last digit. Incremental
-forward stagewise regression departs from LARS only when a coefficient would move against the sign of its correlation
-with the residual, and this does not happen before the fifth dummy. T-Stagewise therefore takes the same 16 steps, with
-a FDP of 0.375, 0.500 and 0.545 and a TPP of 1. The figure shows the three snapshots. Original variables are black,
-dummies red and dashed, a red vertical line marks each included dummy, and the top axis names the variable that enters
-at each step.
+forward stagewise regression departs from least-angle regression (LARS) only when a coefficient would move against
+the sign of its correlation with the residual, and this does not happen before the fifth dummy. T-Stagewise therefore
+takes the same 16 steps, with a FDP of 0.375, 0.500 and 0.545 and a TPP of 1. The figure shows the three snapshots.
+Original variables are black, dummies red and dashed, a red vertical line marks each included dummy, and the top axis
+names the variable that enters at each step.
 
 ![T-Stagewise terminated solution paths for T = 1, 2 and 5](simulation_results/plots/tstagewise_terminated_paths.png)
 

@@ -3,8 +3,8 @@
 ## Purpose
 
 The following demo presents the Terminating Random Experiments (T-Rex) selector with Grouped Variable Selection
-(T-Rex+GVS) according to [[1]](#references) and [[2]](#references). We evaluate grouped-signal recovery under strong
-equicorrelation, using the classical three-group design of
+(GVS), in short T-Rex+GVS, according to [[1]](#references) and [[2]](#references). We evaluate grouped-signal
+recovery under strong equicorrelation, using the classical three-group design of
  Zou & Hastie (2005) [[3]](#references).
  In our demos all variables within an active group are themselves active, so the task is recovering all
  of them, but on an individual-variable basis, rather than using a group-level selection method.

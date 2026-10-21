@@ -17,7 +17,7 @@ forward-selection (AFS) correlation parameter `rho_afs = 0.3` (`0` for TLARS/TOM
 
 ## Setup — the DA-TRex+AKG selector (constrained sub-clustering)
 
-The known three-level hierarchy is passed via `da_ctrl.prior_groups`. Since 2026-07-17 the
+The known three-level hierarchy is passed via `da_ctrl.prior_groups`. The
 `PRIOR_GROUPS` method treats these labels as **merge constraints**, not as deflation
 neighbourhoods:
 
@@ -34,7 +34,7 @@ neighbourhoods:
    [Demo 02](../demo_trex_da_02_mc_sim_ar1_blocks_plus_white/README.md) for the penalty formula)
    run unchanged on these tight within-group neighbourhoods.
 
-**Why not use the raw groups as neighbourhoods?** That was the pre-2026-07-17 behaviour, and it
+**Why not use the raw groups as neighbourhoods?** That was the earlier behaviour, and it
 fails by design, because the nearest-partner penalty
 $\Psi_j = 1/(2 - \min_{j' \in \mathrm{Gr}(j)} |\Phi_j - \Phi_{j'}|)$ presumes tight, near-exchangeable
 neighbourhoods. Inside a 10/50/250-member group nearly every variable has *some*

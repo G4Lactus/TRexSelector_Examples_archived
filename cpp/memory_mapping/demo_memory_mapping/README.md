@@ -79,9 +79,9 @@ Demo 1: Basics
 
 ### Demo 2: Out-of-core streaming (serial)
 
-The matrix is never allocated as a whole. Each column is drawn from its own seed (1000 + column index) into a
+The matrix is never allocated as a whole. Each column is drawn from its own seed (`1000` + column index) into a
 buffer of `n_rows` doubles and written straight into the mapped file. The spot check regenerates column 0 from
-seed 1000 and compares it with the file, which is how a reader can verify any column later without the full
+seed `1000` and compares it with the file, which is how a reader can verify any column later without the full
 matrix.
 
 ```text
@@ -102,7 +102,7 @@ C++ advantage: no full-matrix allocation; O(n_rows) working memory per column.
 ### Demo 3: Out-of-core parallel generation (C++ only)
 
 Same idea with `#pragma omp parallel for`, so the columns are filled by 6 threads at once. Because every column
-derives its random stream from its own seed (3000 + column index), the result does not depend on which thread
+derives its random stream from its own seed (`3000` + column index), the result does not depend on which thread
 handled which column or in what order. The two spot checks at both ends of the matrix confirm this. The fill
 time rounds to 0 ms at this size. The point is the mechanism, not the speed.
 

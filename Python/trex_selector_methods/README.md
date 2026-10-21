@@ -25,6 +25,9 @@ demos. [sd/](sd/README.md) is reserved for the sparse-dummy (SD) selector and [v
 
 ## Category overview
 
+The table uses the short names of the variants. T-Rex+GVS is the T-Rex selector for Grouped Variable Selection (GVS),
+and T-Rex SPCA is its sparse PCA (SPCA) variant.
+
 | Category | Folder | Purpose |
 |----------|--------|---------|
 | **Classical T-Rex** | [ad/trex_core/](ad/trex_core/README.md) | Terminating Random Experiments Selector — baseline FDR-controlled variable selection in low- and high-dimensional Gaussian linear models (demos 01–08) |

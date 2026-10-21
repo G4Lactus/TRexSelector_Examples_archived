@@ -150,7 +150,9 @@ columns) per sweep — the four grids embedded below.
 
 ---
 
-## Part 3 — Block-size $Q$ sweep ($Q \in \lbrace5, 10, \ldots, 50\rbrace$, $p_{\text{ar}} = 5Q$, $p_{\text{white}} = 1{,}000 - 5Q$)
+## Part 3 — Block-size $Q$ sweep ($Q \in \lbrace5, 10, \ldots, 50\rbrace$)
+
+Here $p_{\text{ar}} = 5Q$ and $p_{\text{white}} = 1{,}000 - 5Q$.
 
 - FDR is controlled everywhere (max $0.031$, TAFS with Complete linkage at $Q = 45$).
 - **Single linkage costs power once blocks grow**. From $Q = 15$ on its TPR falls, most at $Q = 30\text{–}35$

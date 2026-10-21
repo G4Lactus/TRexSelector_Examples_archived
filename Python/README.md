@@ -116,6 +116,10 @@ Notes:
 
 ## Contents
 
+Each row below is one demo area. The selector extensions in the lower rows cover Grouped Variable Selection (GVS),
+Screen-TRex with its Ordinary rule and its Bootstrap rule built on a confidence interval (CI), and sparse principal
+component analysis (SPCA).
+
 | Area | Folder | What it covers | C++ counterpart |
 |---|---|---|---|
 | Memory mapping | [memory_mapping/](memory_mapping/) | Disk-backed matrices via `MemoryMappedMatrix`, `numpy_to_memmap`, out-of-core workflows | [cpp/memory_mapping/](../cpp/memory_mapping/) |
@@ -146,7 +150,7 @@ the standalone terminating solvers (`tsolvers/`, 12 demos), memory mapping,
 and the full `ml_methods` demo set (HAC clustering, scaler methods, PCA, SVD,
 ridge regression, model selection) — every cpp demo suite is ported, with
 matching demo names, folder layout, and result-file schemas (as of the
-2026-07-21 sync).
+last sync with cpp).
 
 The scaler/HAC cross-language reference programs that used to live under
 `cpp/ml_methods/validation/` moved to the TRexSelector library test suite

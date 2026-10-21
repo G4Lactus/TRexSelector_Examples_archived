@@ -2,8 +2,8 @@
 
 ## Purpose
 
-Test whether the Terminating Random Experiments (T-Rex) selector with Grouped Variable Selection (T-Rex+GVS) can
-correctly recover an
+Test whether the Terminating Random Experiments (T-Rex) selector with Grouped Variable Selection (GVS), in short
+T-Rex+GVS, can correctly recover an
  **active group with negative within-group correlation structure**
  while **excluding two spatially separated inactive trap groups** that share the same sign-flipped correlation
  pattern.

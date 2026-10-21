@@ -89,11 +89,11 @@ MemoryMappedMatrix [100 x 50]
 
 ### Demo 2: Out-of-core streaming (serial)
 
-The matrix is never allocated as a whole. Each column is drawn from its own seed (1000 + column index - 1, so column 1
-uses seed 1000 like column 0 in C++) into a vector of 100 doubles and appended to the file by `writeBin()` as one
+The matrix is never allocated as a whole. Each column is drawn from its own seed (`1000` + column index - 1, so column
+1 uses seed `1000` like column 0 in C++) into a vector of 100 doubles and appended to the file by `writeBin()` as one
 contiguous `double` block, which is exactly one column of the column-major layout that the handle maps. The writes go
 through a plain file connection, and the map is opened afterwards in `"readonly"` mode. Reading needs no write access
-in R, so the spot check reads column 1 as one block through `mmap[1:100, 1]`, regenerates it from seed 1000 and
+in R, so the spot check reads column 1 as one block through `mmap[1:100, 1]`, regenerates it from seed `1000` and
 compares the two. This is how a reader can verify any column later without the full matrix. The two closing lines
 state the point of the exercise, a remark the Python demo leaves out.
 
@@ -118,9 +118,9 @@ the full matrix is never held in R memory.
 
 The C++ demo fills the columns with `#pragma omp parallel for`, which is C++-only. The R demo keeps the part that makes
 the parallel fill deterministic and runs it serially. It opens a new file in `"readwrite"` mode and writes every column
-through the `[<-` method straight into the file, each from its own seed (3000 + column index - 1). Because no column
-depends on another one, the result does not depend on the order in which the columns are filled. The two spot checks at
-both ends of the matrix regenerate columns 1 and 50 from their seeds 3000 and 3049 and match exactly.
+through the `[<-` method straight into the file, each from its own seed (`3000` + column index - 1). Because no
+column depends on another one, the result does not depend on the order in which the columns are filled. The two spot
+checks at both ends of the matrix regenerate columns 1 and 50 from their seeds `3000` and `3049` and match exactly.
 
 ```text
 ==============================================================================

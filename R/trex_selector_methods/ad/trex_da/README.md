@@ -1,6 +1,6 @@
 # DA-TRex: Dependency-Aware T-Rex — R Demonstration Suite
 
-> **Status**: NEW — migrated to the **TRexSelectorNeo** R6 application programming interface (API)
+> **Status**: New — migrated to the **TRexSelectorNeo** R6 application programming interface (API)
 > (`TRexDASelector$new(..., da_control = trex_da_control(...))$select()`, with `trex_fdp()` / `trex_tpp()`). No
 > longer depends on the `TRexSelector` package from the Comprehensive R Archive Network (CRAN).
 
@@ -87,7 +87,7 @@ All scenario generators live in the single [trex_da_dgps.R](trex_da_dgps.R)
   innovation sheet (demo 07).
 - `dgp_equi_snr` — pure equicorrelation via a single latent factor (demo 08).
 
-All DGPs calibrate the noise variance to a target SNR = Var(signal)/Var(noise)
+All generators calibrate the noise variance to a target SNR = Var(signal)/Var(noise)
 and take the true support as 1-based R indices. (`dgp_bt_snr` and
 `dgp_nn_block_snr` are demo-less leftovers kept for reference.)
 

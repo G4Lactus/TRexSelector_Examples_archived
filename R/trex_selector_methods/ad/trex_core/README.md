@@ -76,7 +76,7 @@ C++ `trex_sim_utils.hpp` and is sourced by every demo in this folder:
   - `execute_with_temp_mmap()` — lifecycle manager for temporary mmap files, in the style of Resource Acquisition Is
     Initialization (RAII).
   - `.make_trex_ctrl()` — builds a `trex_control()` from a solver descriptor.
-  - `.run_mc_trex()` — parallel MC runner over the R6 API on PSOCK workers (`mc_map()` of
+  - `.run_mc_trex()` — parallel MC runner over the R6 API on parallel socket (PSOCK) workers (`mc_map()` of
     `../../mc_runtime.R`), resumable per grid cell.
   - `.print_solver_table()`, `.save_mc_csv()`, `.save_and_print_mc()` —
     console table plus combined `.txt` / `.csv` output.
@@ -140,9 +140,9 @@ generated artifacts only — `data/` for tables, `plots/` for figures, matching
 the C++ suite convention):
 
 - `.txt` files — human-readable summaries,
-- `.csv` files — tidy long-format tables for plotting and post-processing
-  (e.g.
-  `demo_trex_02_mc_sim_fixed_support/simulation_results/data/demo_trex_02_mc_sim_fixed_support_trex_results_n300_p1000_stagnation_window_7.csv`).
+- `.csv` files — tidy long-format tables for plotting and post-processing (e.g.
+  `demo_trex_02_mc_sim_fixed_support_trex_results_n300_p1000_stagnation_window_7.csv` in
+  `demo_trex_02_mc_sim_fixed_support/simulation_results/data/`).
 
 All demos persist result files (`.csv`/`.txt`, or the mmap selection/benchmark
 comma-separated values (CSV) files), and demo 01 (single run) writes its result block to a `.txt` per dimension

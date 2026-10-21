@@ -83,7 +83,7 @@ $\mathrm{SNR} = \mathrm{Var}(\boldsymbol{X}\boldsymbol{\beta})/\mathrm{Var}(\bol
 - **Base T-Rex comparison row**: several demos additionally run the *classical* T-Rex selector (no DA correction) side
   by side with DA-TRex on the same correlated data, to directly show the benefit for false discovery rate (FDR) control,
   or the cost in true positive rate (TPR), of the dependency-aware correction.
-- **Exchangeable tie-breaking for greedy solvers** (`exch_tie_alpha`, since 2026-07-15): the DA deflation
+- **Exchangeable tie-breaking for greedy solvers** (`exch_tie_alpha`): the DA deflation
   $\delta_j = 2 - \min_k |\Phi_j - \Phi_k|$ suppresses collinear shadows only when exchangeable cluster members end up
   with *similar occurrence values within a trial*. Path solvers of the least-angle regression (LARS) type produce that
   spread naturally, while greedy solvers (TOMP/TAFS) are winner-take-all — the in-sample cluster winner is a
@@ -92,8 +92,8 @@ $\mathrm{SNR} = \mathrm{Var}(\boldsymbol{X}\boldsymbol{\beta})/\mathrm{Var}(\bol
   cluster at $\rho = 0.9$, above the target FDR (tFDR) of $\mathrm{tFDR} = 0.2$). `default_solvers()` therefore sets
   `exch_tie_alpha = 0.25` for TAFS/TOMP, so statistically indistinguishable top candidates within highly correlated
   clusters are picked uniformly at random per random experiment, which restores the occurrence spread the DA correction
-  relies on. TLARS keeps `0` (unneeded). See `HISTORY.md` (2026-07-15) in the TRexSelector repository for details and
-  validation.
+  relies on. TLARS keeps `0` (unneeded). See the `exch_tie_alpha` entry in `HISTORY.md` of the TRexSelector repository
+  for details and validation.
 - **TAFS' adaptive forward-selection (AFS) correlation parameter** (`rho_afs = 0.3`): `default_solvers()` runs TAFS with
   `rho_afs = 0.3`, the correlation threshold of its AFS step, while TLARS and TOMP take `0` (unused). Because it is a
   defining part of the method rather than an incidental tuning knob, the plotting module annotates every legend entry as
@@ -202,16 +202,16 @@ those CSVs.)
 Every demo now ships with real committed data, and a consistent pattern emerges. DA-TRex's FDR stays much closer to
 well-controlled than the classical (no-DA) T-Rex selector on the same correlated data — for example, in Demo 01 at
 $\mathrm{SNR}=2.0$, DA-TRex achieves $\mathrm{FDR}\approx0.05$ vs. base T-Rex's $\mathrm{FDR}\approx0.29$ at the same
-TPR ballpark — at some cost in TPR, largest around $\mathrm{SNR} = 1$ and under `Random` support. Since the 2026-07-15
-exchangeable-tie fix (see *DA-TRex specific concepts* above), Demo 01's DA rows are FDR-controlled for **all four
-solvers across the full $\rho$ grid and both support placements** — including the previously violating greedy-solver
-cells at $\rho=0.9$ with power (e.g. for gap=100: TAFS $0.24\to0.15$, TOMP $0.21\to0.12$, and for Random support: TAFS
-$0.26\to0.16$, TOMP $0.27\to0.15$), where the greedy DA solvers now also retain *more* power than DA-TLARS. Heavy-tailed
-predictors cost power more than FDR control (Demo 04 against the Gaussian Demo 03 at the same $\rho$). Heavy-tailed
-noise raises the FDR in Demo 05 (mean over the DA cells $0.123$ against $0.078$ with Gaussian noise) without costing
-power, while in Demo 04 the two noise models give the same averages ($0.097$ / $0.098$). The multi-level grouped design
-of Demo 06 pushes DA-TLARS above the $\mathrm{tFDR}$ target (FDR $0.33\text{–}0.38$ from $\mathrm{SNR}=0.5$ on), while
-TAFS and TOMP stay below it.
+TPR ballpark — at some cost in TPR, largest around $\mathrm{SNR} = 1$ and under `Random` support. Since the library
+added exchangeable tie-breaking (see *DA-TRex specific concepts* above), Demo 01's DA rows are FDR-controlled for
+**all four solvers across the full $\rho$ grid and both support placements** — including the previously violating
+greedy-solver cells at $\rho=0.9$ with power (e.g. for gap=100: TAFS $0.24\to0.15$, TOMP $0.21\to0.12$, and for Random
+support: TAFS $0.26\to0.16$, TOMP $0.27\to0.15$), where the greedy DA solvers now also retain *more* power than
+DA-TLARS. Heavy-tailed predictors cost power more than FDR control (Demo 04 against the Gaussian Demo 03 at the same
+$\rho$). Heavy-tailed noise raises the FDR in Demo 05 (mean over the DA cells $0.123$ against $0.078$ with Gaussian
+noise) without costing power, while in Demo 04 the two noise models give the same averages ($0.097$ / $0.098$). The
+multi-level grouped design of Demo 06 pushes DA-TLARS above the $\mathrm{tFDR}$ target (FDR $0.33\text{–}0.38$ from
+$\mathrm{SNR}=0.5$ on), while TAFS and TOMP stay below it.
 
 ---
 

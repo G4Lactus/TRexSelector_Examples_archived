@@ -19,14 +19,15 @@ size (see [cpp/ml_methods/hac_clustering/](../../../cpp/ml_methods/hac_clusterin
 Cross-language correctness checks against R references live in the library's test suite (`cpp/tests/validation/`), not
 in these examples.
 
-The public entry points are `ml_agglomerative_cluster(data, method, metric, use_mmap)`, which clusters the **rows** of
-a numeric matrix or an `mmap_matrix` and returns a linkage matrix, and `ml_cut_tree(linkage, num_orig_objs,
-num_clusters)`, together with the lists `ml_linkage_method` (`Ward`, `Average`, `Complete`, `Single`, `WPGMA`,
-`Median`, `Centroid`) and `ml_distance_metric` (`Euclidean`, `Correlation`, `Manhattan`, `Correlation_LSH_Filter`,
-`Correlation_LSH_Approx`). Merge ids and cluster labels are 1-based, following the R convention of the repository. The
-R wrapper rejects Ward, median and centroid linkage for the correlation and Manhattan metrics, with the one exception
-of Ward under `Correlation_LSH_Approx`, which runs in a 64-dimensional projected Euclidean space. Both scripts are
-self-contained, with their helpers (the adjusted Rand index, the data generators, the standardization) inlined.
+The public entry points are `ml_agglomerative_cluster(data, method, metric, use_mmap)`, which clusters the **rows** of a
+numeric matrix or an `mmap_matrix` and returns a linkage matrix, and
+`ml_cut_tree(linkage, num_orig_objs, num_clusters)`, together with the lists `ml_linkage_method` (`Ward`, `Average`,
+`Complete`, `Single`, `WPGMA`, `Median`, `Centroid`) and `ml_distance_metric` (`Euclidean`, `Correlation`, `Manhattan`,
+`Correlation_LSH_Filter`, `Correlation_LSH_Approx`). Merge ids and cluster labels are 1-based, following the R
+convention of the repository. The R wrapper rejects Ward, median and centroid linkage for the correlation and Manhattan
+metrics, with the one exception of Ward under `Correlation_LSH_Approx`, which runs in a 64-dimensional projected
+Euclidean space. Both scripts are self-contained, with their helpers (the adjusted Rand index, the data generators, the
+standardization) inlined.
 
 ---
 

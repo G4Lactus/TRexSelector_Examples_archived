@@ -2,8 +2,8 @@
 
 ## Purpose
 
-Stress-test the Terminating Random Experiments (T-Rex) selector with Grouped Variable Selection (T-Rex+GVS) on
-non-Gaussian data.
+Stress-test the Terminating Random Experiments (T-Rex) selector with Grouped Variable Selection (GVS), in short
+T-Rex+GVS, on non-Gaussian data.
  This demo reuses the same four-block active/trap geometry as Demo 03 (Mixed Blocks), but replaces every Gaussian
  component of the data-generating process (DGP) — latent factors, within-block perturbations, and response noise — with
  scaled Student-t(3) variables, testing robustness to heavy-tailed departures from the Gaussian assumption.

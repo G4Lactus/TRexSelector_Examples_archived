@@ -4,7 +4,7 @@
 
 Quantify what **prior group knowledge is actually worth** to the Terminating Random Experiments (T-Rex) selector with
 Grouped Variable Selection
- (T-Rex+GVS), as a function of how easily the groups could have been discovered from the data anyway.
+ (GVS), in short T-Rex+GVS, as a function of how easily the groups could have been discovered from the data anyway.
  Four method variants factorize the question into elastic net (EN) vs. informed elastic net (IEN), each run once with
  groups discovered by hierarchical agglomerative clustering (HAC) and once with the true ("oracle") groups from the
  data-generating process (DGP).

@@ -46,5 +46,6 @@ This is not a Monte Carlo study. Results are from a single seed.
 Rscript R/trex_selector_methods/ad/trex_core/demo_trex_01_single_run/demo_trex_01_single_run.R
 ```
 
-Output is console-only (no result files are written). The script sources the shared
+The output goes to the console and, for each dimension setting, to
+`simulation_results/data/d01_trex_basic_n{n}_p{p}.txt`. The script sources the shared
 `../../../support_generators.R` and `../trex_sim_utils.R`.

@@ -47,8 +47,9 @@ cpp/tsolvers/ad/demo_ts_03_tstepwise/generate_plots.sh                          
 ```
 
 The optional arguments select the parts to run. Part 4 writes about 44 GB of temporary files, so `1 2 3` and `5` leave
-it out. `generate_plots.sh` uses the repository's `.venv` and writes the figure as PNG and PDF to
-`simulation_results/plots/`. The output below is a run against library b95b984.
+it out. `generate_plots.sh` uses the repository's `.venv` and writes the figure as Portable Network Graphics (PNG)
+and Portable Document Format (PDF) files to `simulation_results/plots/`. The output below is a run against
+library b95b984.
 
 ---
 

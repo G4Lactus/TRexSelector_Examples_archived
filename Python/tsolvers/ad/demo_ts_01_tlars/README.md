@@ -49,8 +49,8 @@ Python/tsolvers/ad/demo_ts_01_tlars/generate_plots.sh                           
 
 The optional arguments select the parts to run, and all five parts run in a few seconds. `generate_plots.sh` draws the
 figure with the plotting module of the C++ demos, of which `Python/tsolvers/ts_plt_utils.py` is a byte-identical copy,
-and writes it as PNG and PDF to `simulation_results/plots/`. The output below is a run against library b95b984
-(TRexSelectorNeo 1.0.0).
+and writes it as Portable Network Graphics (PNG) and Portable Document Format (PDF) files to
+`simulation_results/plots/`. The output below is a run against library b95b984 (TRexSelectorNeo 1.0.0).
 
 ---
 
@@ -240,8 +240,9 @@ $p = 500{,}000$ and about 44 GB, while the Python port keeps the size of Part 1.
 
 Part 5 repeats the quick start of the R tlars vignette. With $n = 150$, $p = 300$, five true coefficients equal to 1 and
 $L = p = 300$ dummies, one T-LARS object runs to $T = 1$ and is then warm-started to $T = 2$ and $T = 5$. Each call
-continues the stored path, and a snapshot of the path after each call goes to `simulation_results/data/`, in the CSV
-format of the C++ demo. The setting `snr = 5` gives a noise standard deviation of about 1, as in the vignette.
+continues the stored path, and a snapshot of the path after each call goes to `simulation_results/data/`, in the
+comma-separated values (CSV) format of the C++ demo. The setting `snr = 5` gives a noise standard deviation of about 1,
+as in the vignette.
 
 ```text
 ============================================================

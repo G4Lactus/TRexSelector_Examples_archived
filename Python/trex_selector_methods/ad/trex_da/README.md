@@ -46,7 +46,7 @@ dendrogram-based hierarchical block detection via hierarchical agglomerative clu
 - **BT linkage method** (`LinkageMethod` from `trex_selector_neo.ml_methods.clustering`) — for the `BT` method,
   variables are grouped via hierarchical agglomerative clustering, and several demos sweep **Single**, **Complete**, and
   **Average** linkage to study sensitivity to this choice.
-- **Prior groups as merge constraints** (since 2026-07-17): the `PRIOR_GROUPS` method sub-clusters *within* the finest
+- **Prior groups as merge constraints**: the `PRIOR_GROUPS` method sub-clusters *within* the finest
   common refinement of the supplied label vectors and calibrates over a data-driven ascending rho grid anchored at the
   conservative rho = 1 singleton point. Negative labels are rejected.
 - **Support placement policies**: `CappedSpread` (deterministic, evenly spaced
@@ -56,11 +56,11 @@ dendrogram-based hierarchical block detection via hierarchical agglomerative clu
 - **Base T-Rex comparison rows**: Demos 01, 07, and 08 additionally run the
   *classical* T-Rex selector (no DA correction) side by side with DA-TRex on
   the same correlated data (`TREX: <solver>` rows).
-- **Exchangeable tie-breaking for greedy solvers** (`exch_tie_alpha`, since 2026-07-15): `default_solvers()` sets
+- **Exchangeable tie-breaking for greedy solvers** (`exch_tie_alpha`): `default_solvers()` sets
   `exch_tie_alpha = 0.25` for TAFS/TOMP so that statistically indistinguishable top candidates within highly correlated
   clusters are picked uniformly at random per random experiment — restoring the occurrence spread the DA deflation's
   false discovery rate (FDR) control relies on. TLARS and TLARS_STAG keep `0` (path solvers spread naturally). See
-  HISTORY.md (2026-07-15) in the TRexSelector repository.
+  the `exch_tie_alpha` entry in HISTORY.md of the TRexSelector repository.
 - **TAFS' adaptive forward-selection (AFS) correlation parameter**: `default_solvers()` runs TAFS with
   `rho_afs = 0.3`, while TLARS, TLARS_STAG and TOMP take `0` (unused).
 - **TLARS_STAG, TLARS with the stagnation stop**: `default_solvers()` runs TLARS without the T-loop stagnation stop,

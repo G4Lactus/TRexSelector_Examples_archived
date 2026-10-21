@@ -68,8 +68,9 @@ data and print different numbers.
 With $n = 500$, $p = 200$ and $M = 10$, the fit returns a $500 \times 10$ score matrix and a $200 \times 10$ loading
 matrix. The data hold no structure, so an infinite sample would spread the variance evenly at 0.5% per component. In
 a finite sample, the eigenvalues of the sample correlation matrix fill the Marchenko-Pastur interval
-$[(1-\sqrt{\gamma})^2, (1+\sqrt{\gamma})^2]$ with $\gamma = p/n = 0.4$. Its upper edge of 2.66 matches the 1.33% of
-PC1 (2.66/200), and together the ten leading components hold 12%, all of it noise.
+$[(1-\sqrt{\gamma})^2, (1+\sqrt{\gamma})^2]$ with $\gamma = p/n = 0.4$. Its upper edge of 2.66 matches the 1.33%
+(2.66/200) of the first principal component (PC1), and together the ten leading components hold 12%, all of it
+noise.
 
 ```text
 ============================================================

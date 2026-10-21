@@ -73,11 +73,11 @@ different numbers that agree qualitatively, not bitwise.
 With $n = 500$, $p = 200$ and $M = 10$, the fit returns a $500 \times 10$ score matrix and a $200 \times 10$ loading
 matrix. The data hold no structure, so an infinite sample would spread the variance evenly at 0.5% per component, or
 5% for ten components. In a finite sample, the eigenvalues of the sample correlation matrix fill the Marchenko-Pastur
-interval $[(1-\sqrt{\gamma})^2, (1+\sqrt{\gamma})^2]$ with $\gamma = p/n = 0.4$. PC1 holds 1.30%, an eigenvalue of
-about 2.60 (1.30% of 200). That is just below the upper edge of 2.66, where the largest eigenvalue of a finite sample
-typically lies, and the Python run prints the same 1.30% while the C++ run prints 1.33%. The ten leading of 200
-components correspond to the top 5% of the Marchenko-Pastur law, which predicts that they hold 11.97% of the variance.
-The R run finds 11.89%, all of it noise, while the Python and C++ runs find 11.92% and 12.00%.
+interval $[(1-\sqrt{\gamma})^2, (1+\sqrt{\gamma})^2]$ with $\gamma = p/n = 0.4$. The first principal component (PC1)
+holds 1.30%, an eigenvalue of about 2.60 (1.30% of 200). That is just below the upper edge of 2.66, where the largest
+eigenvalue of a finite sample typically lies, and the Python run prints the same 1.30% while the C++ run prints 1.33%.
+The ten leading of 200 components correspond to the top 5% of the Marchenko-Pastur law, which predicts that they hold
+11.97% of the variance. The R run finds 11.89%, all of it noise, while the Python and C++ runs find 11.92% and 12.00%.
 
 The `stopifnot()` check that the R version adds confirms that the EV does not increase from one component to the
 next, up to a tolerance of $10^{-12}$.

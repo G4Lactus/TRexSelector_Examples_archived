@@ -2,8 +2,8 @@
 
 ## Purpose
 
-Stress-test the Terminating Random Experiments (T-Rex) selector with Grouped Variable Selection (T-Rex+GVS) when
-different blocks follow
+Stress-test the Terminating Random Experiments (T-Rex) selector with Grouped Variable Selection (GVS), in short
+T-Rex+GVS, when different blocks follow
  **different time-series structures** rather than a single uniform correlation model.
  This is the most heterogeneous of the four-block scenarios.
  Each block has its own autoregressive moving-average (ARMA) specification, testing

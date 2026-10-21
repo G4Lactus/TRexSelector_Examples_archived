@@ -71,19 +71,19 @@ explicitly where fixed supports are mirrored from C++.
 
 | Area | Status | What it covers | cpp counterpart |
 |---|---|---|---|
-| [memory_mapping/](memory_mapping/README.md) | NEW (TRexSelectorNeo) | `mem_matrix` / `mem_matrix_from` walkthrough: basics, out-of-core streaming, per-column seeded fill, element access (folder-per-demo) | [cpp/memory_mapping/](../cpp/memory_mapping/) |
-| [ml_methods/hac_clustering/](ml_methods/hac_clustering/README.md) | NEW (TRexSelectorNeo) | Agglomerative hierarchical clustering: six in-memory scenarios (`demo_mlm_hac_01`) plus the out-of-core locality-sensitive hashing (LSH) linkage comparison (`demo_mlm_hac_02_mmap`), adjusted Rand index (ARI) evaluation | [cpp/ml_methods/hac_clustering/](../cpp/ml_methods/hac_clustering/) |
-| [ml_methods/scaler_methods/](ml_methods/scaler_methods/README.md) | NEW (TRexSelectorNeo) | `MLZScoreScaler` / `MLLpNormScaler`: center/scale switches, inverse transform, serialization, mmap-backed scaling | [cpp/ml_methods/scaler_methods/](../cpp/ml_methods/scaler_methods/) |
-| [ml_methods/pca/](ml_methods/pca/README.md) | NEW (TRexSelectorNeo) | `MLPCA` R6 class: fit, restore round-trip, out-of-sample transform | [cpp/ml_methods/pca/](../cpp/ml_methods/pca/) |
-| [ml_methods/svd/](ml_methods/svd/README.md) | NEW (TRexSelectorNeo) | Truncated singular value decomposition (SVD) via `MLSVD` | [cpp/ml_methods/svd/](../cpp/ml_methods/svd/) |
-| [ml_methods/ridge_regression/](ml_methods/ridge_regression/README.md) | NEW (TRexSelectorNeo) | L2-penalized least squares via `MLRidge` | [cpp/ml_methods/ridge_regression/](../cpp/ml_methods/ridge_regression/) |
-| [ml_methods/model_selection/](ml_methods/model_selection/README.md) | NEW (TRexSelectorNeo) | K-fold cross-validation (CV) ridge via `MLRidgeCV` incl. a memory-mapped design matrix, plus elastic-net path fitting and CV via `MLElasticNet` / `MLElasticNetCV` | [cpp/ml_methods/model_selection/](../cpp/ml_methods/model_selection/) |
-| [trex_selector_methods/ad/trex_core/](trex_selector_methods/ad/trex_core/README.md) | NEW (TRexSelectorNeo) | Classical T-Rex: single runs, MC studies, l-loop strategies, mmap, scalability (demos 01–08) | [cpp/trex_selector_methods/ad/trex_core/](../cpp/trex_selector_methods/ad/trex_core/) |
-| [trex_selector_methods/ad/trex_da/](trex_selector_methods/ad/trex_da/README.md) | NEW (TRexSelectorNeo) | Dependency-Aware (DA) T-Rex: first-order autoregressive (AR(1)), equi, nearest-neighbor (NN), Binary-Tree (BT) block, heavy-tailed data-generating processes (DGPs) (demos 01–08), NN demos skip until the R binding exposes `da_method="NN"` | [cpp/trex_selector_methods/ad/trex_da/](../cpp/trex_selector_methods/ad/trex_da/) |
-| [trex_selector_methods/ad/trex_gvs/](trex_selector_methods/ad/trex_gvs/README.md) | NEW (TRexSelectorNeo) | Grouped Variable Selection T-Rex: elastic net (EN) vs informed elastic net (IEN) over grouped DGPs (demos 01–08) | [cpp/trex_selector_methods/ad/trex_gvs/](../cpp/trex_selector_methods/ad/trex_gvs/) |
-| [trex_selector_methods/ad/trex_spca/](trex_selector_methods/ad/trex_spca/README.md) | NEW (TRexSelectorNeo) | T-Rex sparse principal component analysis (PCA) MC comparison vs. ordinary/oracle PCA (`TRexSPCASelector`, demo 01, folder-per-demo), C++/R cross-check probes moved to the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/trex_selector_methods/ad/trex_spca/`) | [cpp/trex_selector_methods/ad/trex_spca/](../cpp/trex_selector_methods/ad/trex_spca/) |
-| [trex_selector_methods/ad/trex_screening/](trex_selector_methods/ad/trex_screening/README.md) | NEW (TRexSelectorNeo) | Screen-TRex: in-memory / mmap screening, correlated designs, biobank-scale, solver comparison (6 demos) | [cpp/trex_selector_methods/ad/trex_screening/](../cpp/trex_selector_methods/ad/trex_screening/) |
-| [tsolvers/](tsolvers/README.md) | NEW (TRexSelectorNeo) | 12 standalone terminating-solver demos (`demo_ts_01` … `demo_ts_12`: early stopping, external normalization, serialization, mmap, terminated solution paths with ggplot2 figures), the terminating elastic net (TENET)/TENETAug equivalence check and CRAN tlars path-equivalence reference generator moved to the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/tsolvers/`) | [cpp/tsolvers/](../cpp/tsolvers/) |
+| [memory_mapping/](memory_mapping/README.md) | New (TRexSelectorNeo) | `mem_matrix` / `mem_matrix_from` walkthrough: basics, out-of-core streaming, per-column seeded fill, element access (folder-per-demo) | [cpp/memory_mapping/](../cpp/memory_mapping/) |
+| [ml_methods/hac_clustering/](ml_methods/hac_clustering/README.md) | New (TRexSelectorNeo) | Agglomerative hierarchical clustering: six in-memory scenarios (`demo_mlm_hac_01`) plus the out-of-core locality-sensitive hashing (LSH) linkage comparison (`demo_mlm_hac_02_mmap`), adjusted Rand index (ARI) evaluation | [cpp/ml_methods/hac_clustering/](../cpp/ml_methods/hac_clustering/) |
+| [ml_methods/scaler_methods/](ml_methods/scaler_methods/README.md) | New (TRexSelectorNeo) | `MLZScoreScaler` / `MLLpNormScaler`: center/scale switches, inverse transform, serialization, mmap-backed scaling | [cpp/ml_methods/scaler_methods/](../cpp/ml_methods/scaler_methods/) |
+| [ml_methods/pca/](ml_methods/pca/README.md) | New (TRexSelectorNeo) | `MLPCA` R6 class: fit, restore round-trip, out-of-sample transform | [cpp/ml_methods/pca/](../cpp/ml_methods/pca/) |
+| [ml_methods/svd/](ml_methods/svd/README.md) | New (TRexSelectorNeo) | Truncated singular value decomposition (SVD) via `MLSVD` | [cpp/ml_methods/svd/](../cpp/ml_methods/svd/) |
+| [ml_methods/ridge_regression/](ml_methods/ridge_regression/README.md) | New (TRexSelectorNeo) | L2-penalized least squares via `MLRidge` | [cpp/ml_methods/ridge_regression/](../cpp/ml_methods/ridge_regression/) |
+| [ml_methods/model_selection/](ml_methods/model_selection/README.md) | New (TRexSelectorNeo) | K-fold cross-validation (CV) ridge via `MLRidgeCV` incl. a memory-mapped design matrix, plus elastic-net path fitting and CV via `MLElasticNet` / `MLElasticNetCV` | [cpp/ml_methods/model_selection/](../cpp/ml_methods/model_selection/) |
+| [trex_selector_methods/ad/trex_core/](trex_selector_methods/ad/trex_core/README.md) | New (TRexSelectorNeo) | Classical T-Rex: single runs, MC studies, l-loop strategies, mmap, scalability (demos 01–08) | [cpp/trex_selector_methods/ad/trex_core/](../cpp/trex_selector_methods/ad/trex_core/) |
+| [trex_selector_methods/ad/trex_da/](trex_selector_methods/ad/trex_da/README.md) | New (TRexSelectorNeo) | Dependency-Aware (DA) T-Rex: first-order autoregressive (AR(1)), equi, nearest-neighbor (NN), Binary-Tree (BT) block, heavy-tailed data-generating processes (DGPs) (demos 01–08) | [cpp/trex_selector_methods/ad/trex_da/](../cpp/trex_selector_methods/ad/trex_da/) |
+| [trex_selector_methods/ad/trex_gvs/](trex_selector_methods/ad/trex_gvs/README.md) | New (TRexSelectorNeo) | Grouped Variable Selection T-Rex: the terminating elastic net (TENET), its augmented form TENET_AUG and the informed elastic net variant TIENET_AUG over grouped DGPs (demos 01–08) | [cpp/trex_selector_methods/ad/trex_gvs/](../cpp/trex_selector_methods/ad/trex_gvs/) |
+| [trex_selector_methods/ad/trex_spca/](trex_selector_methods/ad/trex_spca/README.md) | New (TRexSelectorNeo) | T-Rex sparse principal component analysis (PCA) MC comparison vs. ordinary/oracle PCA (`TRexSPCASelector`, demos 01–02, folder-per-demo), C++/R cross-check probes moved to the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/trex_selector_methods/ad/trex_spca/`) | [cpp/trex_selector_methods/ad/trex_spca/](../cpp/trex_selector_methods/ad/trex_spca/) |
+| [trex_selector_methods/ad/trex_screening/](trex_selector_methods/ad/trex_screening/README.md) | New (TRexSelectorNeo) | Screen-TRex: in-memory / mmap screening, correlated designs, biobank-scale, solver comparison (demos 01–06) | [cpp/trex_selector_methods/ad/trex_screening/](../cpp/trex_selector_methods/ad/trex_screening/) |
+| [tsolvers/](tsolvers/README.md) | New (TRexSelectorNeo) | 12 standalone terminating-solver demos (`demo_ts_01` … `demo_ts_12`: early stopping, external normalization, serialization, mmap, terminated solution paths with ggplot2 figures), the TENET/TENETAug equivalence check and CRAN tlars path-equivalence reference generator moved to the TRexSelector library test suite (`TRexSelector/cpp/tests/validation/tsolvers/`) | [cpp/tsolvers/](../cpp/tsolvers/) |
 
 Shared helpers for the selector demos live in
 [trex_selector_methods/](trex_selector_methods/README.md)
@@ -98,12 +98,12 @@ expose these methods.
 ## Coverage relative to the C++ tree
 
 The R tree now mirrors the selector suites — `trex_core`, `trex_da`, `trex_gvs`,
-`trex_spca`, and `trex_screening` — on the new TRexSelectorNeo R6 API. A few
-gaps relative to [cpp/](../cpp/README.md) remain:
+`trex_spca`, and `trex_screening` — on the new TRexSelectorNeo R6 API. The notes
+below detail the coverage of a few parts relative to [cpp/](../cpp/README.md):
 
-- **trex+DA+NN** — the C++ core supports `DAMethod::NN`, but the installed
-  TRexSelectorNeo R binding does not expose `da_method="NN"` yet, so the two
-  `trex_da` nearest-neighbour demos skip cleanly until it is added.
+- **trex+DA+NN** — the R binding exposes `da_method = "NN"`, so the nearest-neighbor
+  demo `demo_trex_da_07_mc_sim_nn` runs the NN method like its C++ counterpart and
+  has committed results.
 - **tsolvers** — all 12 per-solver demos are mirrored
   (`demo_ts_01` … `demo_ts_12`). The validation programs
   (`validation_ts_01_tenet_aug_comparison` and the CRAN tlars cross-comparison

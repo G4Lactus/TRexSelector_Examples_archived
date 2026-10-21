@@ -108,9 +108,9 @@ T-AFS (rho 1)             95.8    99.4    99.9    99.9    99.9    99.9    99.9
 ```
 
 At $T = 1$ every solver keeps the FDR between 6.8% and 9.9%, and the TPR separates the families. The solvers that
-refit by least squares after each entry (T-Stepwise, the OMP family and T-AFS for $\rho \ge 0.3$) find 95.5% to 96.5%
-of the true variables. T-LARS, T-LASSO and T-Stagewise find 79.1%, T-ENET 68.8%, and T-AFS at $\rho = 0.1$ sits close
-to its LARS end at 81.9%.
+refit by least squares after each entry (T-Stepwise, the orthogonal matching pursuit (OMP) family and T-AFS for
+$\rho \ge 0.3$) find 95.5% to 96.5% of the true variables. T-LARS, T-LASSO and T-Stagewise find 79.1%, T-ENET 68.8%,
+and T-AFS at $\rho = 0.1$ sits close to its least-angle regression (LARS) end at 81.9%.
 
 As $T$ grows, the FDR rises alike for all solvers except T-Stagewise, to about 29% at $T = 5$, 47% at $T = 10$ and 64%
 at $T = 20$. This follows from the exchangeability of null variables and dummies. The 290 null variables and the 300
@@ -337,7 +337,7 @@ selections past $n$.
 - Every solver gets the seed of its run for its tie-break engine, which resolves exact ties such as several dummies
   entering at once. The library default seeds that engine from `std::random_device`, which made single runs at $T = 50$
   differ between repetitions.
-- The support is drawn once with the seed 12345 and printed 0-based. In the vignette it comes from an unseeded
+- The support is drawn once with the seed `12345` and printed 0-based. In the vignette it comes from an unseeded
   `sample()`.
 - The active set is not the selection for every solver. T-Stagewise keeps frozen variables with their coefficients
   outside it, so this demo selects by nonzero coefficient, as the T-Rex selector does.

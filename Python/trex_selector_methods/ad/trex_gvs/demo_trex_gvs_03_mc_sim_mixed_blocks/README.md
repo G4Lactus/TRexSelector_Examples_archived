@@ -2,8 +2,8 @@
 
 ## Purpose
 
-Evaluate the Terminating Random Experiments (T-Rex) selector with Grouped Variable Selection (T-Rex+GVS) on a more
-realistic grouped design:
+Evaluate the Terminating Random Experiments (T-Rex) selector with Grouped Variable Selection (GVS), in short T-Rex+GVS,
+on a more realistic grouped design:
  four contiguous equicorrelated blocks of unequal size,
  placed in **random order** with **random noise gaps** between and around them, and including one **inactive
  equicorrelated trap block**.
@@ -88,8 +88,7 @@ A single **2-D SNR $\times$ $\rho$ grid**, over
 $\mathrm{SNR} \in \lbrace0.2, 0.5, 1, 2, 5\rbrace$ and
 $\rho \in \lbrace0.30, 0.50, 0.70, 0.85, 0.90, 0.95, 0.99\rbrace$
 (with $\sigma_x = \sqrt{(1-\rho)/\rho}$), 200 Monte Carlo (MC) trials per cell. The seven $\rho$ levels span
-weak to near-collinear within-block correlation (the grid subsumes the former second
-"Rho075" preset of this demo).
+weak to near-collinear within-block correlation.
 
 ---
 

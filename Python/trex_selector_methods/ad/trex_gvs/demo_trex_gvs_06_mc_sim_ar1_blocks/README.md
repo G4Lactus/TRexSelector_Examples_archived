@@ -2,8 +2,8 @@
 
 ## Purpose
 
-Evaluate the Terminating Random Experiments (T-Rex) selector with Grouped Variable Selection (T-Rex+GVS) when
-within-block correlation follows a
+Evaluate the Terminating Random Experiments (T-Rex) selector with Grouped Variable Selection (GVS), in short T-Rex+GVS,
+when within-block correlation follows a
  **first-order autoregressive (AR(1)) time-series structure** instead of equicorrelation.
  This uses the same four-block active/trap geometry as Demo 03, but replaces the shared-latent-factor
  equicorrelated model with an AR(1) Toeplitz covariance within each block, testing robustness to more realistic,
