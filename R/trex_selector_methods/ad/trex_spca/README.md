@@ -43,7 +43,8 @@ synthetic sparse-factor-model dataset. They are the R counterparts of the C++ de
   so that the realized signal-to-noise ratio (SNR) matches a target value **in decibels**,
 
 ```math
-\mathrm{SNR}_{\mathrm{dB}} = 10 \log_{10}\!\left(\frac{\mathrm{Var}(\boldsymbol{Z}\boldsymbol{V}^\top)}{\mathrm{Var}(\boldsymbol{E})}\right).
+\mathrm{SNR}_{\mathrm{dB}}
+= 10 \log_{10}\!\left(\frac{\mathrm{Var}(\boldsymbol{Z}\boldsymbol{V}^\top)}{\mathrm{Var}(\boldsymbol{E})}\right).
 ```
 
 All methods are evaluated on the same $\boldsymbol{X}$ after a shared **center-only** preprocessing step (mean
@@ -59,20 +60,21 @@ is that the T-Rex SPCA FDR degrades from $\approx 0.13$ to $\approx 0.53$ (see t
 
 - **`mode`** (in `trex_spca_control()`) — how the sparse loading vector for each principal component is assembled
   from the underlying T-Rex+GVS selection:
-  - `"ActiveSet"`: use only the T-Rex+GVS *selected* variables' loadings.
-  - `"Thresholded"`: assemble loadings from the full ordinary-PCA solution, thresholded down to the
-    T-Rex+GVS-selected support.
+  - `"ActiveSet"`: refit the plug-in PC on the T-Rex+GVS *selected* variables by ridge regression and use
+    those coefficients as loadings.
+  - `"Thresholded"`: keep the largest-magnitude entries of the ordinary-PCA loading vector, as many as
+    T-Rex+GVS selected, so only the support size comes from the selector.
 - **`en_solver`** — the elastic-net solver driving each per-component T-Rex+GVS selection: `"TENET"` (Gram-based) or
   `"TENET_AUG"` (augmented least absolute shrinkage and selection operator (LASSO) formulation). See
   [../trex_gvs/README.md](../trex_gvs/README.md) for the shared elastic-net background.
-- **PC1-only FDR/TPR** — FDR and the true positive rate (TPR) are evaluated **strictly on the first principal
-  component's loading support**. PCs 2 and 3 are intentionally excluded from these metrics because ordinary PCA's
-  orthogonality constraint mixes their loading supports across the true factors, making a per-component "true support"
-  comparison ambiguous beyond PC1. This is a deliberate scope limitation of the evaluation, not a limitation of T-Rex
-  SPCA itself.
+- **PC1-only FDR/TPR** — FDR and the true positive rate (TPR) are evaluated **strictly on the loading support of the
+  first principal component (PC1)**. Components 2 and 3 are intentionally excluded from these metrics because ordinary
+  PCA's orthogonality constraint mixes their loading supports across the true factors, making a per-component "true
+  support" comparison ambiguous beyond PC1. This is a deliberate scope limitation of the evaluation, not a limitation
+  of T-Rex SPCA itself.
 - **Cumulative PEV** — the proportion of explained variance (PEV) is instead evaluated cumulatively across **all** $M$
-  components (via a QR decomposition of the estimated score matrix), since this metric does not suffer from the same
-  per-component ambiguity.
+  components (via an orthogonal-triangular (QR) decomposition of the estimated score matrix), since this metric does
+  not suffer from the same per-component ambiguity.
 - **Internal scaling (R binding note)** — `trex_spca_control()` does not expose the per-PC selector's internal
   `scaling_mode`, but this is moot, because the C++ demo and the Python port also use the library default (unit-L2
   column scaling), which matches the legacy `lm_dummy.R` centering + L2 normalization.
@@ -102,8 +104,8 @@ is that the T-Rex SPCA FDR degrades from $\approx 0.13$ to $\approx 0.53$ (see t
 where $\mathcal S_1$ is PC1's true active loading support and $\widehat{\mathcal S_1}$ its estimated counterpart (both
 **1-based** in R). **Ordinary PCA** trivially achieves $\mathrm{TPR}=1$ and $\mathrm{FDR}\approx(p-p_1)/p$ since it
 retains all $p$ loadings — it is a non-sparse reference point, not a genuine competitor on these two metrics.
-**Oracle PCA** (knows the true support cardinality $p_1$) provides an upper bound on what any data-driven sparse method
-could achieve.
+**Oracle PCA** (knows the true support cardinality $p_1$) is a near-ideal sparse reference, though not a strict bound,
+because the T-Rex variants match or pass its TPR and explained variance at some grid points.
 
 ---
 
@@ -118,9 +120,9 @@ the full parameter breakdown.
 ## Demo descriptions
 
 | # | Name | Purpose | Setting | Main parameters |
-|---|------|---------|---------|-----------------|
+| --- | --- | --- | --- | --- |
 | **01** | MC Sim | Compare T-Rex SPCA (2 solvers × 2 modes) against OrdPCA/OraclePCA, plus the union-support FDR per PC | Sparse 3-factor model, $n=50$, $p=100$ | $p_1=5$, `overlap_pool_size=30`, target FDR $\mathrm{tFDR}=0.10$, SNR $\in \lbrace-10, \ldots, 10\rbrace$ dB (9 points), MC = 200 |
-| **02** | MC Sim PEV | Cumulative PEV under four sweeps (Fig. 3) and FDR/TPR heatmaps over target FDR $\times$ SNR | Sparse 3-factor model, $n=50$, $p=100$ | $p_1=10$, sweeps over #PCs, SNR, $p_1$ and target FDR, $11 \times 9$ heatmap grid, MC = 200 |
+| **02** | MC Sim PEV | Cumulative PEV under four sweeps (Fig. 3) and FDR/TPR heatmaps over target FDR $\times$ SNR | Sparse 3-factor model, $n=50$, $p=100$ | $p_1=10$, sweeps over the number of components, SNR, $p_1$ and target FDR, $11 \times 9$ heatmap grid, MC = 200 |
 
 ---
 
@@ -131,7 +133,9 @@ trex_spca/
   ├── README.md
   ├── trex_spca_sim_utils.R
   ├── trex_spca_plt_utils.R
+  ├── generate_corr_plots.sh
   ├── run_overnight.sh
+  ├── dgp_corr_plots/                (spca_factor.png)
   ├── demo_trex_spca_01_mc_sim/
   │   ├── demo_trex_spca_01_mc_sim.R
   │   ├── generate_plots.sh
@@ -156,22 +160,28 @@ The suite-level [trex_spca_sim_utils.R](trex_spca_sim_utils.R) mirrors the C++ `
 normalizations), the Monte Carlo runners `run_mc_trials_pca()` / `run_mc_trials_oracle_pca()` /
 `run_mc_trials_trex_spca()`, and the writers `save_and_print_spca_sweep_results()` /
 `save_and_print_spca_mc_results()` (console + `.txt` table plus a tidy comma-separated values (CSV) file
-`method,metric,<sweep>,value`). The trials run on spawned R worker processes, a PSOCK cluster via `mc_map()` in the
-family-level [../../mc_runtime.R](../../mc_runtime.R), and both demos are resumable through its cell cache. Figures are
-rendered by [trex_spca_plt_utils.R](trex_spca_plt_utils.R) with ggplot2 as Portable Network Graphics (PNG) and Portable
-Document Format (PDF) files via each demo's `generate_plots.sh`.
+`method,metric,<sweep>,value`). The trials run on spawned R worker processes, a parallel socket (PSOCK) cluster via
+`mc_map()` in the family-level [../../mc_runtime.R](../../mc_runtime.R), and both demos are resumable through its cell
+cache. Figures are rendered by [trex_spca_plt_utils.R](trex_spca_plt_utils.R) with ggplot2 as Portable Network Graphics
+(PNG) and Portable Document Format (PDF) files via each demo's `generate_plots.sh`, with the same file names as the
+Python suite.
 
 ---
 
-## Results
+## Recorded results
 
-No R results are committed yet. They follow with the first full run of the R suite. The C++ suite at
-[../../../../cpp/trex_selector_methods/ad/trex_spca/](../../../../cpp/trex_selector_methods/ad/trex_spca/README.md)
-shows the reference results, and the R runs are expected to agree with them within Monte Carlo noise. Exact numbers
-cannot match across languages, because R's generator draws other data from the same seeds, and the per-trial dummies
-use hardware entropy (selector `seed = -1L`), as required for a valid Monte Carlo FDR estimate.
+The committed results are the first R run of both demos on library commit 44cf1ab (200 trials per grid point,
+8 workers, 84 minutes in total, 9 for demo 01 and 76 for demo 02). Each demo README shows its R numbers and figures.
+R's generator draws other data from the same seeds, and the per-trial dummies use hardware entropy (selector
+`seed = -1L`), as required for a valid Monte Carlo FDR estimate. The R cells therefore agree with C++ and Python up
+to Monte Carlo noise, not exactly.
 
-> **History note (z-scoring episode, fixed 2026-07-08)**: an earlier version of this pipeline z-score-standardized
+The result tables carry no standard deviations, so the comparison with C++ measures the size of the gaps and sets it
+against the gaps between Python and C++. Over the 951 FDR and TPR cells of both demos, the mean gap per table is
+0.002–0.010 between R and C++ and 0.003–0.011 between Python and C++. The explained-variance cells differ by
+0.002–0.003 on average in both comparisons, and the signed bias of R against C++ stays below 0.003 in every table.
+
+> **History note (z-scoring episode)**: an earlier version of this pipeline z-score-standardized
 > $\boldsymbol{X}$, which destroyed the factor amplitude signal and inflated the measured T-Rex FDR to $\approx 0.53$ at
 > $-10$ dB. The C++ `validation_trex_spca_06_handrolled_comparison` isolated the cause, and the pipeline is back to
 > center-only.
@@ -181,14 +191,36 @@ use hardware entropy (selector `seed = -1L`), as required for a valid Monte Carl
 ## Running the demos
 
 ```bash
-Rscript R/trex_selector_methods/ad/trex_spca/demo_trex_spca_01_mc_sim/demo_trex_spca_01_mc_sim.R          # 8 workers
-Rscript R/trex_selector_methods/ad/trex_spca/demo_trex_spca_01_mc_sim/demo_trex_spca_01_mc_sim.R 8        # 8 workers
-Rscript R/trex_selector_methods/ad/trex_spca/demo_trex_spca_02_mc_sim_pev/demo_trex_spca_02_mc_sim_pev.R  # 8 workers
-R/trex_selector_methods/ad/trex_spca/run_overnight.sh                                                     # both demos
+# Optional first argument = worker processes (default TREX_NUM_WORKERS, else 8, 0 = all cores)
+Rscript R/trex_selector_methods/ad/trex_spca/demo_trex_spca_01_mc_sim/demo_trex_spca_01_mc_sim.R
+Rscript R/trex_selector_methods/ad/trex_spca/demo_trex_spca_02_mc_sim_pev/demo_trex_spca_02_mc_sim_pev.R 8
+TREX_SPCA_NUM_MC=10 Rscript R/trex_selector_methods/ad/trex_spca/demo_trex_spca_01_mc_sim/demo_trex_spca_01_mc_sim.R
+R/trex_selector_methods/ad/trex_spca/run_overnight.sh                  # both demos
+SKIP_HEAVY=1 R/trex_selector_methods/ad/trex_spca/run_overnight.sh     # demo 01 only
 ```
 
-Dependencies: `TRexSelectorNeo` and base-R `parallel` only (the old `elasticnet`/`glmnet` dependencies are gone from
-this suite).
+`TREX_SPCA_NUM_MC=<k>` overrides the Monte Carlo count for quick pilot runs, and `TREX_SPCA_PARTS` selects the parts
+to run (default `"12"` in demo 01 and `"12345"` in demo 02), as in the C++ and Python demos. Every finished grid point
+is stored in the demo's cell cache (`simulation_results/cache/`, gitignored), so a restarted demo resumes where it
+stopped. `TREX_FRESH=1` starts from scratch, and a finished demo removes its cache.
+
+Runtimes of the committed run at 8 workers:
+
+| Demo | 01 | 02 | total |
+| :--- | :--- | :--- | :--- |
+| Runtime | 9 min | 76 min | 84 min |
+
+Each demo folder has a `generate_plots.sh` that renders its figures from the saved CSVs into
+`simulation_results/plots/`, and `generate_corr_plots.sh` renders the design-correlation heatmap of the factor model
+into `dgp_corr_plots/`:
+
+```bash
+cd R/trex_selector_methods/ad/trex_spca/demo_trex_spca_01_mc_sim && ./generate_plots.sh
+R/trex_selector_methods/ad/trex_spca/generate_corr_plots.sh
+```
+
+Dependencies are `TRexSelectorNeo` and base-R `parallel` for the demos plus ggplot2 and patchwork for the figures.
+The old `elasticnet`/`glmnet` dependencies are gone from this suite.
 
 ---
 
@@ -208,7 +240,7 @@ longer reproduces the old probe tables.
 - Start with `demo_trex_spca_01_mc_sim/`, then `demo_trex_spca_02_mc_sim_pev/`.
 - Read the PC1-only FDR/TPR rationale above before interpreting results — this is a deliberate evaluation-scope choice,
   not a bug.
-- Support sets and `$active_sets` indices are **1-based** in R (the C++ sources are 0-based).
+- Support sets and the indices in the `active_sets` field are **1-based** in R (the C++ sources are 0-based).
 - The counterparts are the C++ suite at
   [../../../../cpp/trex_selector_methods/ad/trex_spca/](../../../../cpp/trex_selector_methods/ad/trex_spca/), the
   Python suite at

@@ -7,11 +7,11 @@
 # Statistically identical to demo 04, but the internal dummy matrices are backed
 # by memory-mapped files (use_memory_mapping = TRUE), the storage mode intended
 # for biobank-scale problems where holding the dummy matrices in RAM is
-# infeasible. Everything else about Algorithm 1 — the Ordinary -> Bootstrap-CI ->
-# T-Rex-fallback routing and its per-method Usage % — is unchanged. As in the cpp
-# source, the design matrix X still lives in RAM; only the dummy matrices move to
-# disk, and the library manages those temporary files in its own scratch
-# directories (nothing to clean up in this script).
+# infeasible. Everything else about Algorithm 1 — the routing between Ordinary,
+# Bootstrap-CI and the T-Rex fallback and its per-method Usage % — is
+# unchanged. As in the cpp source, the design matrix X still lives in RAM; only
+# the dummy matrices move to disk, and the library manages those temporary
+# files in its own scratch directories (nothing to clean up in this script).
 #
 # See demo 04 for the full description of the result accessors and method-used
 # labels (they are identical here).

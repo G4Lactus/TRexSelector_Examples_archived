@@ -15,9 +15,9 @@
 #
 # NOTE: R's trex_screen_control() exposes only use_bootstrap_CI, R_boot,
 # ci_grid_step, and trex_method. The C++/Python make_screen_control()
-# additionally takes rho_thr_DA and n_blocks; in R those use the library's
-# internal defaults (so Part 5's block DGP n_blocks is not forwarded to the
-# screener).
+# additionally takes rho_thr_DA and n_blocks. R uses the library defaults
+# (rho_thr_DA = 0.02, n_blocks = 5), the values the C++/Python demos set, so
+# Part 5 screens with the DGP's 5 blocks in all three ports.
 #
 # Mirrors:
 #   Python/trex_selector_methods/ad/trex_screening/demo_trex_scr_03_mc_sim_correlated/

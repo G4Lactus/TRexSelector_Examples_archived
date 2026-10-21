@@ -5,11 +5,11 @@
 # Biobank Screen-TRex Selector ("Algorithm 1"), in-memory Monte Carlo variant.
 #
 # The biobank workflow screens MANY phenotypes against ONE shared design matrix
-# X. Per phenotype it routes adaptively:
-#   1. Screen-TRex Ordinary; accept if its estimated FDR lands in the window
-#      [lower_bound_FDR, upper_bound_FDR];
-#   2. else Screen-TRex Bootstrap-CI;
-#   3. else fall back to the classical T-Rex selector at tFDR.
+# X. Per phenotype one Screen-TRex run yields an Ordinary and a Bootstrap-CI
+# estimated FDR, and the selector routes adaptively:
+#   1. a rule whose estimate lies in [lower_bound_FDR, upper_bound_FDR] is used,
+#   2. if both do, the larger estimate wins (a tie goes to Bootstrap-CI),
+#   3. if neither does, the classical T-Rex selector runs at tFDR (fallback).
 # The fraction of phenotypes routed to each method is the "Usage %". FDR/TPR are
 # accumulated conditionally on which method handled a phenotype.
 #
