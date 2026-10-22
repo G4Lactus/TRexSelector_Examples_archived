@@ -43,7 +43,8 @@ def dgp_hastie_snr(n, p=500, snr=2.0, sd_x=_SD_X_DEFAULT, seed=None):
     Three latent-factor groups of 50 variables each (columns 0-49, 50-99,
     100-149), all active with beta = 3, plus p-150 i.i.d. background columns.
     Each grouped column is X_j = Z_g + sd_x * xi, giving within-group correlation
-    rho = 1 / (1 + sd_x^2). SNR-calibrated noise.
+    rho = 1 / (1 + sd_x^2). SNR-calibrated noise. prior_groups labels the three
+    blocks 0-2 and every background column as its own singleton group.
     """
     if p < 150:
         raise ValueError("'p' must be at least 150 to accommodate the 3 groups.")
@@ -66,8 +67,12 @@ def dgp_hastie_snr(n, p=500, snr=2.0, sd_x=_SD_X_DEFAULT, seed=None):
     sigma_y = _snr_sigma(signal, snr)
     y = signal + rng.standard_normal(n) * sigma_y
 
-    return dict(X=X, y=y, beta=beta, n=n, p=p, s=150, snr=snr,
-                sigma_y=sigma_y, sd_x=sd_x)
+    # Oracle groups: 0-2 for the three blocks, background columns as singletons
+    prior_groups = np.concatenate([np.repeat(np.arange(3), 50),
+                                   np.arange(3, p - 147)])
+
+    return dict(X=X, y=y, beta=beta, prior_groups=prior_groups, n=n, p=p,
+                s=150, snr=snr, sigma_y=sigma_y, sd_x=sd_x)
 
 
 # ==============================================================================
@@ -337,7 +342,8 @@ def _sim_arma(rng, ar, ma, length):
     """Simulate one ARMA(p, q) series via a direct recursion with burn-in:
     x_t = eps_t + sum_k ar[k] x_{t-k} + sum_k ma[k] eps_{t-k}, burn-in
     max(100, p + q + 10) discarded. Does not enforce stationarity (matches the
-    R/cpp inline generator); downstream column standardisation keeps unit variance.
+    R/cpp inline generator), so the callers pass stationary coefficients;
+    downstream column standardisation keeps unit variance.
     """
     p_ar = len(ar)
     q_ma = len(ma)
@@ -376,7 +382,8 @@ def dgp_arma_blocks_snr(n, p=500, snr=2.0, ar_coef=0.8, ma_coefs=(0.5, 0.3, 0.1)
     models = [
         (list([ar_coef]), []),                          # Block 0: AR(1)
         ([], ma_coefs),                                 # Block 1: MA(3)
-        ([ar_coef, ar_coef / 5.0], [ma_coefs[0]]),      # Block 2: ARMA(2,1)
+        # Block 2: ARMA(2,1), AR terms 5:1 summing to ar_coef (stationary on (0, 1))
+        ([ar_coef * 5.0 / 6.0, ar_coef / 6.0], [ma_coefs[0]]),
         ([ar_coef], []),                                # Block 3: AR(1) trap
     ]
 

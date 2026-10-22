@@ -43,7 +43,7 @@
  *                          a deliberate probe of the exchangeability axis.
  *
  *    High-dimensional  (n = 300, p = 1000, s = 10).
- *    SNR sweep: {0.1, 0.2, ..., 2.0, 5.0}  (21 values).
+ *    SNR sweep: {0.1, 0.2, 0.5, 0.6, 1, 2, 5}  (7 values).
  *    Two support scenarios:
  *      random support  — redrawn per trial;
  *      block support   — contiguous block {0, 1, ..., s-1}.
@@ -160,11 +160,8 @@ void demo_TRexSelector_dummy_distributions(std::size_t num_MC, bool rnd_coef,
               << ",  s = " << s << ",  num_MC = " << num_MC
               << "  [" << (block_support ? "block" : "random") << " support]\n\n";
 
-    // SNR values: 0.1, 0.2, ..., 2.0, 5.0  (21 values)
-    std::vector<double> snr_values = {0.1, 0.2, 0.5, 0.6, 1, 2, 5}; //(20);
-    //std::iota(snr_values.begin(), snr_values.end(), 1);
-    //for (auto& x : snr_values) x *= 0.1;
-    //snr_values.push_back(5.0);
+    // SNR values (7 values)
+    std::vector<double> snr_values = {0.1, 0.2, 0.5, 0.6, 1, 2, 5};
 
     // -----------------------------------------------------------------------
     // Base solvers and dummy distributions to sweep

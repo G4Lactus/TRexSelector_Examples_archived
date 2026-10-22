@@ -11,16 +11,20 @@
  *
  *
  * @details
- *  Three parts, each in its own function:
+ *  Four parts, each in its own function:
  *    sim_hastie_part_1() — 2-D SNR × rho grid
  *    sim_hastie_part_2() — lambda2_method comparison: SVD / CCD (EN), CCD / IEN_CCD (IEN)
  *    sim_hastie_part_3() — hc_linkage comparison: Single / Complete / Average / WPGMA
+ *    sim_hastie_part_4() — clustering cut: corr_max 0.98 / noise floor / oracle groups
  *
  * DGP: three equicorrelated groups of 50 variables each, all active (s = 150),
  *      plus 350 null white-noise variables; p = 500 and n = 200.
  *  Selector: K=20, tFDR=0.1, corr_max=0.98, lambda2=CV_1SE_CCD (Part 2 adds CV_1SE_IEN_CCD for IEN).
- *  Methods compared in Parts 1–3: TENET, TENET_AUG, TIENET_AUG.
+ *  Methods compared in Parts 1–3: TENET, TENET_AUG, TIENET_AUG (Part 4: TENET, TIENET_AUG).
  *  MC: 200 trials per grid point.
+ *
+ *  Part selection: TREX_GVS_PARTS (default "1234"), e.g. TREX_GVS_PARTS=4
+ *  runs only the cut comparison.
  */
 // ==============================================================================
 
@@ -80,7 +84,7 @@ static void sim_hastie_part_1(const GVSSimConfig& cfg, const std::string& tag)
     gvs_ctrl_ien.corr_max       = cfg.corr_max;
     gvs_ctrl_ien.hc_linkage     = hac::LinkageMethod::Single;
 
-    cdiag::print_section_header("Part 1/3: 2-D SNR x rho Sweep  |  " + tag);
+    cdiag::print_section_header("Part 1/4: 2-D SNR x rho Sweep  |  " + tag);
     std::cout << "  n=" << cfg.n << "  p=" << cfg.p << "  s=150"
               << "  MC=" << cfg.num_MC << "  tFDR=" << fmt_num(cfg.tFDR)
               << "  K=" << cfg.K << "  corr_max=" << fmt_num(cfg.corr_max) << "\n"
@@ -169,7 +173,7 @@ static void sim_hastie_part_2(const GVSSimConfig& cfg, const std::string& tag)
     };
     const std::vector<std::string> ien_labels = {"CV_1SE_CCD", "CV_1SE_IEN_CCD"};
 
-    cdiag::print_section_header("Part 2/3: lambda2_method Comparison  |  " + tag);
+    cdiag::print_section_header("Part 2/4: lambda2_method Comparison  |  " + tag);
     std::cout << "  n=" << cfg.n << "  p=" << cfg.p << "  s=150"
               << "  MC=" << cfg.num_MC << "  tFDR=" << fmt_num(cfg.tFDR)
               << "  K=" << cfg.K << "\n"
@@ -295,7 +299,7 @@ static void sim_hastie_part_3(const GVSSimConfig& cfg, const std::string& tag)
     const std::vector<std::string> linkage_labels = {
         "Single", "Complete", "Average", "WPGMA"};
 
-    cdiag::print_section_header("Part 3/3: hc_linkage Comparison  |  " + tag);
+    cdiag::print_section_header("Part 3/4: hc_linkage Comparison  |  " + tag);
     std::cout << "  n=" << cfg.n << "  p=" << cfg.p << "  s=150"
               << "  MC=" << cfg.num_MC << "  tFDR=" << fmt_num(cfg.tFDR)
               << "  K=" << cfg.K << "  lambda2=CV_1SE_CCD\n"
@@ -384,6 +388,134 @@ static void sim_hastie_part_3(const GVSSimConfig& cfg, const std::string& tag)
 
 
 // ==============================================================================
+//  Part 4 — clustering-cut comparison
+// ==============================================================================
+
+/**
+ * @brief Compare the clustering cut at a fixed Hastie operating point.
+ *
+ * Runs TENET and TIENET_AUG at SNR = 2.0 and rho = 0.7 with the demos' fixed
+ * cut corr_max = 0.98 (no groups below rho = 0.99), the Bonferroni noise floor
+ * (noise_floor_corr_max(), about 0.35 here) and the DGP's oracle groups, and
+ * records variable-level FDP / TPP next to group-level rates.
+ */
+static void sim_hastie_part_4(const GVSSimConfig& cfg, const std::string& tag)
+{
+    // Same fixed operating point as Parts 2-3, lambda2 = CV_1SE_CCD as in Parts 1 and 3
+    constexpr double fixed_snr = 2.0;
+    constexpr double fixed_rho = 0.7;
+    const double     fixed_sdx = std::sqrt((1.0 - fixed_rho) / fixed_rho);
+    const double     floor_cut = noise_floor_corr_max(cfg.n, cfg.p);
+
+    GVSDGPFactory dgp_fn = [&cfg, fixed_snr, fixed_sdx](double /*unused*/, unsigned seed) {
+        return make_hastie_dgp(cfg.n, cfg.p, fixed_snr, fixed_sdx, seed);
+    };
+    auto trex_ctrl = make_gvs_trex_control(cfg.K);
+
+    struct Cut { std::string label; double corr_max; bool oracle; };
+    const std::vector<Cut> cuts = {
+        {"fixed_0.98", cfg.corr_max, false},
+        {"noise_floor", floor_cut, false},
+        {"oracle", cfg.corr_max, true}};
+
+    cdiag::print_section_header("Part 4/4: Clustering-cut Comparison  |  " + tag);
+    std::cout << "  n=" << cfg.n << "  p=" << cfg.p << "  s=150"
+              << "  MC=" << cfg.num_MC << "  tFDR=" << fmt_num(cfg.tFDR)
+              << "  K=" << cfg.K << "  lambda2=CV_1SE_CCD  linkage=Single\n"
+              << "  fixed operating point: SNR=" << fmt_num(fixed_snr)
+              << "  rho=" << fmt_num(fixed_rho) << "\n"
+              << "  cuts: corr_max " << fmt_num(cfg.corr_max) << " / noise floor "
+              << std::fixed << std::setprecision(3) << floor_cut
+              << " / oracle groups  |  selectors: TENET, TIENET_AUG  (6 runs)\n\n";
+
+    std::vector<GVSCutPointResult> en_results, ien_results;
+    for (const auto& cut : cuts) {
+        TRexGVSControlParameter gvs_ctrl_en;
+        gvs_ctrl_en.gvs_type       = GVSType::EN;
+        gvs_ctrl_en.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
+        gvs_ctrl_en.corr_max       = cut.corr_max;
+        gvs_ctrl_en.hc_linkage     = hac::LinkageMethod::Single;
+        gvs_ctrl_en.en_solver      = ENSolverType::TENET;
+        en_results.push_back(run_gvs_mc_trials_cut(
+            dgp_fn, cfg.num_MC, "TENET+" + cut.label, cfg.tFDR, gvs_ctrl_en, trex_ctrl,
+            static_cast<unsigned>(cfg.base_seed), cut.oracle));
+
+        TRexGVSControlParameter gvs_ctrl_ien;
+        gvs_ctrl_ien.gvs_type       = GVSType::IEN;
+        gvs_ctrl_ien.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
+        gvs_ctrl_ien.corr_max       = cut.corr_max;
+        gvs_ctrl_ien.hc_linkage     = hac::LinkageMethod::Single;
+        ien_results.push_back(run_gvs_mc_trials_cut(
+            dgp_fn, cfg.num_MC, "TIENET_AUG+" + cut.label, cfg.tFDR, gvs_ctrl_ien, trex_ctrl,
+            static_cast<unsigned>(cfg.base_seed), cut.oracle));
+    }
+
+    const std::string dir(DEMO_OUTPUT_DIR);
+    const std::string stem = "gvs_" + tag + "_cut";
+    std::filesystem::create_directories(dir);
+    std::ofstream txt_file(dir + out_stem(stem) + ".txt");
+    auto write = [&](const std::string& s) {
+        std::cout << s;
+        if (txt_file.is_open()) txt_file << s;
+    };
+
+    std::ostringstream os;
+    os << "\n" << std::string(78, '=') << "\n"
+       << "  T-Rex+GVS MC: " << tag << " — clustering-cut comparison"
+       << "  (SNR=" << fixed_snr << ", rho=" << fixed_rho
+       << ", MC=" << cfg.num_MC << ", tFDR=" << cfg.tFDR << ")\n"
+       << "  noise floor corr_max = " << std::fixed << std::setprecision(4) << floor_cut
+       << " (Bonferroni, alpha = 0.05)\n"
+       << std::string(78, '=') << "\n";
+    const auto block = [&](const std::string& name, const std::vector<GVSCutPointResult>& rs) {
+        os << "\n" << name << "\n" << std::left << std::setw(16) << "  metric";
+        for (const auto& cut : cuts) os << std::right << std::setw(14) << cut.label;
+        os << "\n";
+        const auto row = [&](const std::string& m, auto get) {
+            os << std::left << std::setw(16) << ("  " + m);
+            for (const auto& r : rs) os << std::right << std::setw(14) << std::fixed
+                                        << std::setprecision(4) << get(r);
+            os << "\n";
+        };
+        row("FDR",        [](const GVSCutPointResult& r) { return r.mean_fdp; });
+        row("TPR",        [](const GVSCutPointResult& r) { return r.mean_tpp; });
+        row("group hit",  [](const GVSCutPointResult& r) { return r.grp_hit; });
+        row("group full", [](const GVSCutPointResult& r) { return r.grp_full; });
+        row("group FDR",  [](const GVSCutPointResult& r) { return r.grp_fdp; });
+        row("groups",     [](const GVSCutPointResult& r) { return r.n_groups; });
+    };
+    block("TENET", en_results);
+    block("TIENET_AUG", ien_results);
+    os << std::string(78, '=') << "\n\n";
+    write(os.str());
+    if (txt_file.is_open()) {
+        txt_file.close();
+        std::cout << "[Info] TXT saved to: " << dir + out_stem(stem) + ".txt\n";
+    }
+
+    std::ofstream csv(dir + out_stem(stem) + ".csv");
+    if (csv.is_open()) {
+        csv << "method,metric,cut,mean,sd\n" << std::fixed << std::setprecision(6);
+        const auto rows = [&](const std::string& name, const std::vector<GVSCutPointResult>& rs) {
+            for (std::size_t i = 0; i < cuts.size(); ++i) {
+                const auto& r = rs[i];
+                const std::string& c = cuts[i].label;
+                csv << name << ",mean_FDP," << c << "," << r.mean_fdp << "," << r.sd_fdp << "\n"
+                    << name << ",mean_TPP," << c << "," << r.mean_tpp << "," << r.sd_tpp << "\n"
+                    << name << ",grp_hit,"  << c << "," << r.grp_hit  << "," << r.sd_grp_hit  << "\n"
+                    << name << ",grp_full," << c << "," << r.grp_full << "," << r.sd_grp_full << "\n"
+                    << name << ",grp_FDP,"  << c << "," << r.grp_fdp  << "," << r.sd_grp_fdp  << "\n"
+                    << name << ",n_groups," << c << "," << r.n_groups << "," << r.sd_n_groups << "\n";
+            }
+        };
+        rows("TENET", en_results);
+        rows("TIENET_AUG", ien_results);
+        std::cout << "[Info] CSV saved to: " << dir + out_stem(stem) + ".csv\n\n";
+    }
+}
+
+
+// ==============================================================================
 //  main
 // ==============================================================================
 
@@ -415,9 +547,15 @@ int main()
     //  Run simulations
     // ==========================================================================
 
-    if (true) sim_hastie_part_1(cfg, scenario_tag);
-    if (true) sim_hastie_part_2(cfg, scenario_tag);
-    if (true) sim_hastie_part_3(cfg, scenario_tag);
+    // TREX_GVS_PARTS selects parts, e.g. "4" (default "1234"); not part of the cache fingerprint
+    const char* parts_env = std::getenv("TREX_GVS_PARTS");
+    const std::string parts = (parts_env && *parts_env) ? parts_env : "1234";
+    const auto run = [&parts](char p) { return parts.find(p) != std::string::npos; };
+
+    if (run('1')) sim_hastie_part_1(cfg, scenario_tag);
+    if (run('2')) sim_hastie_part_2(cfg, scenario_tag);
+    if (run('3')) sim_hastie_part_3(cfg, scenario_tag);
+    if (run('4')) sim_hastie_part_4(cfg, scenario_tag);
 
     std::cout << "\n" << scenario_tag << " GVS MC simulations complete.\n";
     return 0;

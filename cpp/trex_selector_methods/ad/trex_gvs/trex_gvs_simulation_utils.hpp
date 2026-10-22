@@ -538,6 +538,217 @@ inline GVSGridPointResult run_gvs_mc_trials(
 
 
 // ==============================================================================
+// Clustering-cut comparison (fixed cut, noise floor, oracle groups)
+// ==============================================================================
+
+/**
+ * @brief Bonferroni noise floor for |corr| between independent columns.
+ *
+ * @details corr_max = tanh(z / sqrt(n - 3)) with P(Z > z) = alpha / (2 m) and
+ *  m = p (p - 1) / 2 column pairs (Fisher z). Correlations above it are not
+ *  explained by independence, so a cut there merges only real groups.
+ *
+ * @param n      Observations.
+ * @param p      Variables.
+ * @param alpha  Family-wise level (default 0.05).
+ * @return The cut as corr_max (0.346 at n = 200, p = 500).
+ */
+inline double noise_floor_corr_max(int n, int p, double alpha = 0.05) {
+    const double m = 0.5 * static_cast<double>(p) * static_cast<double>(p - 1);
+    const double q = alpha / (2.0 * m);
+    double lo = 0.0, hi = 40.0;  // upper normal quantile by bisection on erfc
+    for (int it = 0; it < 200; ++it) {
+        const double mid = 0.5 * (lo + hi);
+        if (0.5 * std::erfc(mid / std::sqrt(2.0)) > q) lo = mid; else hi = mid;
+    }
+    return std::tanh(0.5 * (lo + hi) / std::sqrt(static_cast<double>(n - 3)));
+}
+
+/** @brief Mean and sd of FDP / TPP plus group-level rates over MC trials. */
+struct GVSCutPointResult {
+    double mean_fdp = 0.0, sd_fdp = 0.0;    ///< variable-level FDP
+    double mean_tpp = 0.0, sd_tpp = 0.0;    ///< variable-level TPP
+    double grp_hit  = 0.0, sd_grp_hit  = 0.0;  ///< share of active groups with >= 1 selection
+    double grp_full = 0.0, sd_grp_full = 0.0;  ///< share of active groups selected in full
+    double grp_fdp  = 0.0, sd_grp_fdp  = 0.0;  ///< share of touched groups without an active variable
+    double n_groups = 0.0, sd_n_groups = 0.0;  ///< clusters with >= 2 members formed by the selector
+};
+
+namespace cell_detail {
+
+inline trex_cell_cache::Cell cut_to_cell(const GVSCutPointResult& r) {
+    return {{"mean_fdp", r.mean_fdp}, {"sd_fdp", r.sd_fdp},
+            {"mean_tpp", r.mean_tpp}, {"sd_tpp", r.sd_tpp},
+            {"grp_hit", r.grp_hit}, {"sd_grp_hit", r.sd_grp_hit},
+            {"grp_full", r.grp_full}, {"sd_grp_full", r.sd_grp_full},
+            {"grp_fdp", r.grp_fdp}, {"sd_grp_fdp", r.sd_grp_fdp},
+            {"n_groups", r.n_groups}, {"sd_n_groups", r.sd_n_groups}};
+}
+
+inline GVSCutPointResult cut_from_cell(const trex_cell_cache::Cell& c) {
+    using trex_cell_cache::get;
+    GVSCutPointResult r;
+    r.mean_fdp = get(c, "mean_fdp"); r.sd_fdp = get(c, "sd_fdp");
+    r.mean_tpp = get(c, "mean_tpp"); r.sd_tpp = get(c, "sd_tpp");
+    r.grp_hit = get(c, "grp_hit"); r.sd_grp_hit = get(c, "sd_grp_hit");
+    r.grp_full = get(c, "grp_full"); r.sd_grp_full = get(c, "sd_grp_full");
+    r.grp_fdp = get(c, "grp_fdp"); r.sd_grp_fdp = get(c, "sd_grp_fdp");
+    r.n_groups = get(c, "n_groups"); r.sd_n_groups = get(c, "sd_n_groups");
+    return r;
+}
+
+}  // namespace cell_detail
+
+/**
+ * @brief Group-level rates of one selection against the DGP's prior_groups.
+ *
+ * @details Oracle groups are the DGP labels (background columns are singleton
+ *  groups); a group is active when it holds an active variable.
+ */
+inline void gvs_group_rates(const std::vector<std::size_t>& sel, const GVSDGPResult& dat,
+                            double& hit, double& full, double& fdp) {
+    const auto& g = dat.prior_groups;
+    Eigen::Index n_groups = 0;
+    for (const auto l : g) n_groups = std::max(n_groups, l + 1);
+    std::vector<int> size(static_cast<std::size_t>(n_groups), 0);
+    std::vector<int> active(size.size(), 0), chosen(size.size(), 0);
+    for (const auto l : g) ++size[static_cast<std::size_t>(l)];
+    for (const auto j : dat.true_support) ++active[static_cast<std::size_t>(g[j])];
+    for (const auto j : sel) ++chosen[static_cast<std::size_t>(g[j])];
+
+    int n_active = 0, n_hit = 0, n_full = 0, n_touched = 0, n_false = 0;
+    for (std::size_t m = 0; m < size.size(); ++m) {
+        if (active[m] > 0) {
+            ++n_active;
+            if (chosen[m] > 0) ++n_hit;
+            if (chosen[m] == size[m]) ++n_full;
+        }
+        if (chosen[m] > 0) {
+            ++n_touched;
+            if (active[m] == 0) ++n_false;
+        }
+    }
+    hit  = n_active ? static_cast<double>(n_hit) / n_active : 0.0;
+    full = n_active ? static_cast<double>(n_full) / n_active : 0.0;
+    fdp  = n_touched ? static_cast<double>(n_false) / n_touched : 0.0;
+}
+
+/** @brief Uncached body of run_gvs_mc_trials_cut(). */
+inline GVSCutPointResult run_gvs_mc_trials_cut_impl(
+    const GVSDGPFactory&           dgp_fn,
+    std::size_t                    num_MC,
+    const std::string&             progress_label,
+    double                         tFDR,
+    const TRexGVSControlParameter& gvs_ctrl,
+    const TRexControlParameter&    trex_ctrl,
+    unsigned                       base_seed,
+    bool                           oracle)
+{
+    const int iMC = static_cast<int>(num_MC);
+    std::vector<double> fdp(num_MC), tpp(num_MC), hit(num_MC), full(num_MC),
+                        gfdp(num_MC), groups(num_MC);
+
+    std::cout << "  " << progress_label
+              << " — Running " << num_MC << " MC trials ...\n" << std::flush;
+
+    #pragma omp parallel for schedule(dynamic)
+    for (int mc = 0; mc < iMC; ++mc) {
+        const unsigned trial_seed = base_seed + static_cast<unsigned>(mc);
+        auto dat = dgp_fn(0.0, trial_seed);
+        Eigen::Map<Eigen::MatrixXd> X_map(dat.X.data(), dat.X.rows(), dat.X.cols());
+        Eigen::Map<Eigen::VectorXd> y_map(dat.y.data(), dat.y.rows());
+
+        // Same selector setup as run_gvs_mc_trials_impl(); oracle groups bypass the HAC cut
+        TRexGVSControlParameter ctrl = gvs_ctrl;
+        ctrl.trex_ctrl = trex_ctrl;
+        ctrl.cv_seed   = trial_seed;
+        if (ctrl.gvs_type == GVSType::EN)
+            ctrl.trex_ctrl.solver_type = (ctrl.en_solver == ENSolverType::TENET_AUG)
+                                             ? SolverTypeForTRex::TENET_AUG
+                                             : SolverTypeForTRex::TENET;
+        else
+            ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TIENET_AUG;
+        if (oracle) ctrl.prior_groups = dat.prior_groups;
+
+        TRexGVSSelector selector(X_map, y_map, tFDR, ctrl,
+                                 static_cast<int>(trial_seed), /*verbose=*/false);
+        selector.select();
+
+        const auto& sel = selector.getSelectedIndices();
+        const auto& res = selector.getGVSResult();
+        std::vector<int> size(res.max_clusters, 0);
+        for (Eigen::Index j = 0; j < res.groups_vec.size(); ++j)
+            ++size[static_cast<std::size_t>(res.groups_vec(j))];
+        int multi = 0;
+        for (const int s : size) if (s >= 2) ++multi;
+
+        const auto i = static_cast<std::size_t>(mc);
+        fdp[i]    = rates::compute_fdp(sel, dat.true_support);
+        tpp[i]    = rates::compute_tpp(sel, dat.true_support);
+        groups[i] = multi;
+        gvs_group_rates(sel, dat, hit[i], full[i], gfdp[i]);
+    }
+
+    const auto mean_sd = [](const std::vector<double>& v, double& mean, double& sd) {
+        const double m = static_cast<double>(v.size());
+        mean = std::accumulate(v.begin(), v.end(), 0.0) / m;
+        double sq = 0.0;
+        for (const double x : v) sq += (x - mean) * (x - mean);
+        sd = v.size() > 1 ? std::sqrt(sq / (m - 1.0)) : 0.0;
+    };
+    GVSCutPointResult r;
+    mean_sd(fdp, r.mean_fdp, r.sd_fdp);
+    mean_sd(tpp, r.mean_tpp, r.sd_tpp);
+    mean_sd(hit, r.grp_hit, r.sd_grp_hit);
+    mean_sd(full, r.grp_full, r.sd_grp_full);
+    mean_sd(gfdp, r.grp_fdp, r.sd_grp_fdp);
+    mean_sd(groups, r.n_groups, r.sd_n_groups);
+
+    std::cout << "  " << progress_label << " — done. TPP=" << std::fixed << std::setprecision(3)
+              << r.mean_tpp << "  FDP=" << r.mean_fdp << "  groups=" << r.n_groups << "\n\n"
+              << std::flush;
+    return r;
+}
+
+/**
+ * @brief num_MC parallel trials at one fixed operating point under one cut
+ *        (resumable grid cell).
+ *
+ * @param dgp_fn          DGP factory; its first argument is ignored.
+ * @param num_MC          Number of trials.
+ * @param progress_label  Label printed before/after the run.
+ * @param tFDR            Target FDR level.
+ * @param gvs_ctrl        GVS control parameters, including the cut corr_max.
+ * @param trex_ctrl       Base T-Rex control parameters.
+ * @param base_seed       Seed for trial 0; trial i uses base_seed + i.
+ * @param oracle          Pass the DGP's prior_groups (the cut is then unused).
+ * @return Variable-level FDP/TPP and group-level rates.
+ */
+inline GVSCutPointResult run_gvs_mc_trials_cut(
+    const GVSDGPFactory&           dgp_fn,
+    std::size_t                    num_MC,
+    const std::string&             progress_label,
+    double                         tFDR,
+    const TRexGVSControlParameter& gvs_ctrl,
+    const TRexControlParameter&    trex_ctrl,
+    unsigned                       base_seed,
+    bool                           oracle)
+{
+    if (!method_selected(progress_label)) {
+        const double nan = std::numeric_limits<double>::quiet_NaN();
+        return {nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan};
+    }
+    std::ostringstream lbl;
+    lbl << progress_label << "|oracle=" << (oracle ? 1 : 0);
+    return cell_detail::cut_from_cell(TREX_CELL_CACHED(
+        cell_detail::key("gvscut", lbl.str(), num_MC, base_seed, tFDR, gvs_ctrl), [&] {
+            return cell_detail::cut_to_cell(run_gvs_mc_trials_cut_impl(
+                dgp_fn, num_MC, progress_label, tFDR, gvs_ctrl, trex_ctrl, base_seed, oracle));
+        }));
+}
+
+
+// ==============================================================================
 // SNR sweep
 // ==============================================================================
 

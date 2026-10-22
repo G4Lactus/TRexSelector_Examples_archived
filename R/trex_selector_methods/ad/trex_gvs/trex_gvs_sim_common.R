@@ -16,6 +16,10 @@
 #   save_mc_2d_tables()          — .txt (all six matrices) + tidy .csv writer.
 #   save_mc_1d_method_tables()   — .txt + .csv writer for the demo-01 method
 #                                  comparisons (lambda2_method / hc_linkage).
+#   noise_floor_corr_max() /
+#   .gvs_group_rates() /
+#   save_mc_cut_tables()         — demo-01 clustering-cut comparison (fixed
+#                                  cut, Bonferroni noise floor, oracle groups).
 #   print_block_grid_table()     — block-benchmark console table + .txt/.csv
 #                                  writer for demo 08.
 #
@@ -298,6 +302,93 @@ save_mc_1d_method_tables <- function(scenario_tag, comparison, param_col,
     for (k in seq_along(ien_labels))
       csv_lines <- c(csv_lines,
                      rows_of("TIENET_AUG", ien_labels[k], ien_results[[k]]))
+  }
+  csv_path <- file.path(out_dir, paste0(file_stem, ".csv"))
+  writeLines(csv_lines, csv_path)
+  cat(sprintf("[Info] CSV saved to: %s\n\n", csv_path))
+  invisible(NULL)
+}
+
+
+# ==============================================================================
+# Clustering-cut comparison (demo 01 Part 4; mirrors Python / cpp)
+# ==============================================================================
+
+#' Bonferroni noise floor for |corr| between independent columns:
+#' corr_max = tanh(z / sqrt(n - 3)) with P(Z > z) = alpha / (2 m) over the
+#' m = p (p - 1) / 2 column pairs (Fisher z); 0.346 at n = 200, p = 500.
+noise_floor_corr_max <- function(n, p, alpha = 0.05) {
+  z <- stats::qnorm(alpha / (p * (p - 1)), lower.tail = FALSE)
+  tanh(z / sqrt(n - 3))
+}
+
+
+#' Group-level rates of one selection against the oracle prior_groups (1-based,
+#' background columns as singletons): share of active groups hit, share of
+#' active groups selected in full, share of touched groups without an active
+#' variable.
+#'
+#' @return Named numeric vector c(hit, full, fdp).
+.gvs_group_rates <- function(sel, prior_groups, true_support) {
+  m      <- max(prior_groups)
+  size   <- tabulate(prior_groups, nbins = m)
+  active <- tabulate(prior_groups[true_support], nbins = m) > 0L
+  chosen <- tabulate(prior_groups[sel], nbins = m)
+  touched <- chosen > 0L
+  c(hit  = if (any(active)) sum(active & touched) / sum(active) else 0,
+    full = if (any(active)) sum(active & chosen == size) / sum(active) else 0,
+    fdp  = if (any(touched)) sum(touched & !active) / sum(touched) else 0)
+}
+
+
+#' Console + .txt + .csv writer for the clustering-cut comparison (one column
+#' per cut, TENET and TIENET_AUG blocks). CSV schema mirrors cpp/Python:
+#' method,metric,cut,mean,sd.
+save_mc_cut_tables <- function(scenario_tag, cut_labels, en_results,
+                               ien_results, fixed_snr, fixed_rho, floor_cut,
+                               cfg, out_dir, file_stem) {
+  rows <- list(c("FDR", "mean_FDP", "mean_FDP", "sd_FDP"),
+               c("TPR", "mean_TPP", "mean_TPP", "sd_TPP"),
+               c("group hit", "grp_hit", "grp_hit", "sd_grp_hit"),
+               c("group full", "grp_full", "grp_full", "sd_grp_full"),
+               c("group FDR", "grp_FDP", "grp_FDP", "sd_grp_FDP"),
+               c("groups", "n_groups", "n_groups", "sd_n_groups"))
+  blocks <- list(TENET = en_results, TIENET_AUG = ien_results)
+  dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+
+  lines <- c("", strrep("=", 78),
+             sprintf("  T-Rex+GVS MC: %s — clustering-cut comparison  (SNR=%s, rho=%s, MC=%d, tFDR=%s)",
+                     scenario_tag, fmt_num(fixed_snr), fmt_num(fixed_rho),
+                     cfg$num_MC, fmt_num(cfg$tFDR)),
+             sprintf("  noise floor corr_max = %.4f (Bonferroni, alpha = 0.05)",
+                     floor_cut),
+             strrep("=", 78))
+  for (name in names(blocks)) {
+    lines <- c(lines, "", name,
+               paste0(sprintf("%-16s", "  metric"),
+                      paste(sprintf("%14s", cut_labels), collapse = "")))
+    for (r in rows) {
+      vals <- vapply(blocks[[name]], function(res) res[[r[2L]]], numeric(1L))
+      lines <- c(lines, paste0(sprintf("%-16s", paste0("  ", r[1L])),
+                               paste(sprintf("%14.4f", vals), collapse = "")))
+    }
+  }
+  txt <- paste0(paste(c(lines, strrep("=", 78)), collapse = "\n"), "\n\n")
+  cat(txt)
+  txt_path <- file.path(out_dir, paste0(file_stem, ".txt"))
+  writeLines(txt, txt_path, sep = "")
+  cat(sprintf("[Info] TXT saved to: %s\n", txt_path))
+
+  csv_lines <- "method,metric,cut,mean,sd"
+  for (name in names(blocks)) {
+    for (k in seq_along(cut_labels)) {
+      res <- blocks[[name]][[k]]
+      for (r in rows) {
+        csv_lines <- c(csv_lines,
+                       sprintf("%s,%s,%s,%.6f,%.6f", name, r[3L], cut_labels[k],
+                               res[[r[2L]]], res[[r[4L]]]))
+      }
+    }
   }
   csv_path <- file.path(out_dir, paste0(file_stem, ".csv"))
   writeLines(csv_lines, csv_path)

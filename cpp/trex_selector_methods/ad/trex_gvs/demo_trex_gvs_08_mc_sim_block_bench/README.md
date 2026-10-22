@@ -132,9 +132,10 @@ The primary metrics are the usual **coordinate-level FDR/TPR** — the quantitie
   oracle runs).
 - **`T_stop`**, **`M_found`** — selector diagnostics.
 
-> The block-level numbers are **descriptive diagnostics only**. The selector provides no guarantee for them —
-> FDR control applies to the coordinate level, and a block-level error rate is a different quantity with its own
-> definition of a false discovery (cf.
+> The block-level numbers are **descriptive diagnostics only**. T-Rex+GVS as implemented controls the FDR of the
+> selected variables and is not designed to control a block-level FDR, so no target and no guarantee attach to
+> `block_FDR`, and a value above $\mathrm{tFDR}$ does not indicate a loss of FDR control. A block-level error rate
+> is a different quantity with its own definition of a false discovery (cf.
 > [the group-FDR discussion](../README.md#what-is-actually-measured-in-these-demos)).
 
 ---
@@ -220,9 +221,9 @@ The dashed red line marks the $\mathrm{tFDR} = 0.1$ target.
    representative per block. Oracle IEN gives the lower FDR in all three cells from $\mathrm{SNR} = 1$ on
    ($0.057\text{–}0.072$ vs. $0.069\text{–}0.088$ clustered), a consistent sign, but each single gap stays below two
    combined Monte Carlo standard errors ($|z| = 1.3\text{–}1.6$).
-- The block-level diagnostics in the saved tables stay near the target ($\mathrm{block\_FDR} \approx 0.12$ at
-   $\rho = 0.9$ for EN), which is exactly the point. The method still finds the right *blocks*, but no guarantee
-   attaches to that number.
+- The block-level diagnostics in the saved tables stay small ($\mathrm{block\_FDR} \approx 0.12$ at
+   $\rho = 0.9$ for EN), so the method still finds the right *blocks* while the coordinate-level FDR fails.
+   T-Rex+GVS is not designed to control a block-level FDR, so this value is descriptive and carries no guarantee.
 
 TPR (top) and FDR (bottom) vs. SNR, one panel per $\rho \in \lbrace0.35, 0.9\rbrace$. Note the different FDR
 axis scales.

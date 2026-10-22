@@ -35,12 +35,18 @@ The design matrix keeps the 4-block geometry of Demos 03/05/06 (sizes $\lbrace20
 
 - **Block 0** (20 vars, active, $\beta_j = 3$): first-order autoregressive (AR(1)), $\phi_1 = \texttt{ar\_coef}$.
 - **Block 1** (50 vars, active): moving-average (MA(3)), $\theta = (0.5, 0.3, 0.1)$.
-- **Block 2** (80 vars, active): ARMA(2,1), $\phi = (\texttt{ar\_coef}, \texttt{ar\_coef}/5)$, $\theta = 0.5$.
+- **Block 2** (80 vars, active): ARMA(2,1), $\phi = (\tfrac{5}{6}\,\texttt{ar\_coef}, \tfrac{1}{6}\,\texttt{ar\_coef})$,
+  $\theta = 0.5$.
 - **Block 3** (65 vars, inactive trap): AR(1), $\phi_1 = \texttt{ar\_coef}$ — structurally identical to Block 0.
 - Gap columns (between and around the blocks) are i.i.d. $\mathcal{N}(0,1)$.
 
 Unlike Demo 06, the sweep parameter here is `ar_coef` (shared by the AR(1) and ARMA(2,1) blocks), **not** $\rho$ —
  the MA(3) block has no AR component at all, so it does not respond to the sweep.
+
+The two AR coefficients of the ARMA(2,1) block keep a ratio of 5 to 1 and sum to `ar_coef`, so the block is stationary
+for every `ar_coef` in $(0, 1)$. The former $\phi = (\texttt{ar\_coef}, \texttt{ar\_coef}/5)$ summed to
+$1.2 \cdot \texttt{ar\_coef}$ and turned the block explosive for `ar_coef` $\ge 5/6$, so at $0.9$ and $0.95$ its
+columns were nearly collinear.
 
 ---
 
@@ -99,25 +105,36 @@ produced by `./generate_plots.sh`.
 
 ## Simulation Results
 
-- Because the three active blocks carry genuinely different correlation structures (AR(1), MA(3), ARMA(2,1)),
-   recovery is **uneven across blocks** — the MA(3) block (short-range, decaying-but-bounded correlation) and the
-   ARMA(2,1) block behave differently from the pure AR(1) block, so the aggregate true positive rate (TPR) blends these
-   per-block difficulties.
-- **TENET** and **TENET_AUG** track each other closely and keep the false discovery rate (FDR) below the
-   $\mathrm{tFDR} = 0.1$ target (at most $0.08$), with a TPR that levels off at $0.55\text{–}0.62$ from
-   `ar_coef` $= 0.7\text{–}0.8$ on.
-   The trap block (AR(1), same `ar_coef` as the active AR(1) block) is structurally similar to an active block and
-   is the main test of false-group exclusion here.
-- **TIENET_AUG** is markedly more conservative — lower FDR (at most $0.04$), with a TPR collapse in the
-   high-`ar_coef` columns ($\approx 0.01$ at `ar_coef` $\ge 0.9$, after up to $0.44$ at $0.8$). Almost all of the
-   console's `collinear; dropped` messages of this demo come from TIENET_AUG at `ar_coef` $= 0.95$, where its inner
-   terminating lasso meets nearly collinear augmented columns.
-- Compare against Demo 06 (uniform AR(1) blocks) to see whether heterogeneity across blocks costs additional power
-   beyond what AR(1) decay alone costs.
+- **TENET** and **TENET_AUG** return identical numbers in every cell (means and standard deviations alike) and keep
+   the false discovery rate (FDR) below the $\mathrm{tFDR} = 0.1$ target everywhere (at most $0.079$, no cyan
+   outlines). Their FDR grows with `ar_coef` at every SNR, from at most $0.039$ at `ar_coef` $= 0.3$ to
+   $0.066\text{–}0.079$ at $0.95$. The trap block (AR(1), same `ar_coef` as the active AR(1) block) is structurally
+   similar to an active block and is the main test of false-group exclusion here. The FDR stays below the target
+   despite it, although the demo does not record which false discoveries fall into the trap.
+- Their true positive rate (TPR) rises with both SNR and `ar_coef`. At $\mathrm{SNR} = 5$ it climbs from $0.077$ at
+   `ar_coef` $= 0.3$ to $0.664$ at $0.9$ and $0.666$ at $0.95$, and at $\mathrm{SNR} = 0.2$ from $0.000$ to $0.465$.
+   The ceiling of about two thirds matches 100 of the 150 active variables, the size of the AR(1) and ARMA(2,1) blocks
+   together. A plausible reading is that the MA(3) block, whose correlation vanishes beyond lag 3 and does not follow
+   the sweep, stays mostly unselected, but the demo records no per-block rates.
+- **TIENET_AUG** is more conservative, with an FDR of at most $0.043$ and a somewhat lower TPR ($0.569\text{–}0.581$
+   at `ar_coef` $\ge 0.9$ and $\mathrm{SNR} = 5$, against $0.664\text{–}0.666$ for TENET). Its FDR falls toward zero
+   at high `ar_coef` and SNR (at most $0.006$ at `ar_coef` $\ge 0.9$ and $\mathrm{SNR} \ge 2$), while the FDR of
+   TENET rises there.
+- Against Demo 06 (AR(1) in every block, with $\rho$ in the role of `ar_coef`), the ARMA design has the higher TPR at
+   low coefficients and the lower ceiling. Up to a coefficient of $0.7$ it gives the higher TENET TPR at 14 of the 15
+   shared grid points ($0.230$ against $0.134$ at $0.5$ and $\mathrm{SNR} = 5$, for example). Its ARMA(2,1) block is
+   more strongly correlated at short lags than an AR(1) block with the same coefficient (lag-1 autocorrelation
+   $0.59$, $0.71$ and $0.83$ against $0.3$, $0.5$ and $0.7$), because its MA term adds correlation. At $0.9$ and
+   $\mathrm{SNR} \ge 0.5$, in contrast, Demo 06 reaches $0.62\text{–}0.95$ against $0.53\text{–}0.66$ here, and its
+   top TENET TPR is $0.959$ against $0.666$.
+- With the former explosive ARMA(2,1) block (see the data generation section), the TENET TPR leveled off at
+   $0.55\text{–}0.62$ from `ar_coef` $= 0.7\text{–}0.8$ on, and TIENET_AUG collapsed to a TPR of about $0.01$ at
+   `ar_coef` $\ge 0.9$ with many `collinear; dropped` console messages. Both effects came from the nearly collinear
+   block, and the stationary block shows neither.
 
 TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ `ar_coef` grid, one column per solver
 (row axis = SNR, column axis = AR coefficient). FDR cells above the $\mathrm{tFDR} = 0.1$ target
-are outlined in cyan.
+would be outlined in cyan (none are here).
 
 ![ARMA blocks SNR × AR-coefficient sweep](simulation_results/plots/gvs_arma_blocks_2d.png)
 

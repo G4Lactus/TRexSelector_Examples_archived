@@ -47,7 +47,7 @@ All demos study sparse variable selection in a Gaussian (or near-Gaussian) linea
 
 | # | Demo | Scenario | Output stem | cpp counterpart |
 |---|---|---|---|---|
-| 01 | [demo_trex_gvs_01_mc_sim_hastie_en_blocks](demo_trex_gvs_01_mc_sim_hastie_en_blocks/) | Hastie: 3 equicorrelated active groups of 50 (s = 150), 2-D grid + lambda2/linkage studies | `gvs_Hastie_*` | [cpp demo 01](../../../../cpp/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md) |
+| 01 | [demo_trex_gvs_01_mc_sim_hastie_en_blocks](demo_trex_gvs_01_mc_sim_hastie_en_blocks/) | Hastie: 3 equicorrelated active groups of 50 (s = 150), 2-D grid + lambda2/linkage/cut studies | `gvs_Hastie_*` | [cpp demo 01](../../../../cpp/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md) |
 | 02 | [demo_trex_gvs_02_mc_sim_scattered_blocks](demo_trex_gvs_02_mc_sim_scattered_blocks/) | Same 3 groups, members permuted across columns | `gvs_scattered_grouped_2d` | [cpp demo 02](../../../../cpp/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_02_mc_sim_scattered_blocks/README.md) |
 | 03 | [demo_trex_gvs_03_mc_sim_mixed_blocks](demo_trex_gvs_03_mc_sim_mixed_blocks/) | 3 active blocks (20/50/80) + 1 trap (65), random order, noise gaps | `gvs_mixed_blocks_2d` | [cpp demo 03](../../../../cpp/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_03_mc_sim_mixed_blocks/README.md) |
 | 04 | [demo_trex_gvs_04_mc_sim_neg_traps](demo_trex_gvs_04_mc_sim_neg_traps/) | Active +Z/−Z group + two inactive +Z/−Z traps (s = 100) | `gvs_Neg-Traps_2d` | [cpp demo 04](../../../../cpp/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_04_mc_sim_neg_traps/README.md) |
@@ -59,7 +59,8 @@ All demos study sparse variable selection in a Gaussian (or near-Gaussian) linea
 Demos 01–07 compare the three solver variants **TENET** (elastic net (EN)), **TENET_AUG** (EN, row-augmented
 solver), and **TIENET_AUG** (informed elastic net (IEN)) on a 2-D signal-to-noise ratio (SNR) × correlation grid
 (fixed settings: `n = 200`, `p = 500`, `tFDR = 0.1`, `K = 20`, `corr_max = 0.98`, 200 Monte Carlo (MC) trials per
-grid point). Demo 01 adds `lambda2_method` and `hc_linkage` robustness checks. Demo 08 compares EN/IEN × HAC/oracle
+grid point). Demo 01 adds `lambda2_method` and `hc_linkage` robustness checks and a clustering-cut comparison
+(Part 4). Demo 08 compares EN/IEN × HAC/oracle
 (M1–M4) at `corr_max = 0.5`.
 
 ---
@@ -76,9 +77,14 @@ grid point). Demo 01 adds `lambda2_method` and `hc_linkage` robustness checks. D
 > notion of the group null hypothesis. See [[3]](#references) for such a formulation in the knockoff setting. It is
 > *not* obtainable by reinterpreting the coordinate-level numbers.
 
-Demo 08 is the only demo that additionally reports block-level diagnostics (block hit rate, block FDR, full-block
- rate, block purity). These are descriptive only. The selector controls the coordinate-level FDR, and no guarantee
- attaches to any block-level rate.
+Demo 01 Part 4 (group hit, group full, group FDR, groups formed under three clustering cuts) and Demo 08 (block hit
+ rate, block FDR, full-block rate, block purity) additionally report group-level rates.
+
+> **T-Rex+GVS as implemented is not designed to control a group-level FDR.** It controls the FDR of the selected
+> variables, and $\mathrm{tFDR}$ bounds that rate only. The group- and block-level rates are descriptive, carry no
+> target and no guarantee, and a value above $\mathrm{tFDR}$ does not indicate a loss of FDR control. With many
+> singleton background groups next to a few active groups, the group FDR can be large (Demo 01 Part 4) while the
+> variable-level FDR stays below the target.
 
 For the statistical model, the within-group correlation models, and the FDR/TPR definitions, see the
 [C++ suite README](../../../../cpp/trex_selector_methods/ad/trex_gvs/README.md#statistical-model-and-targets) — the

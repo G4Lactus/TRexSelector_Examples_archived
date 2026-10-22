@@ -30,3 +30,6 @@ tfdr=0.1
 "$rscript" "$plotter" "$data/gvs_Hastie_hc_linkage.csv" \
   --title 'T-Rex+GVS on Hastie: HAC linkage (SNR=2, ρ=0.7)' \
   --param-label 'HAC linkage' --tfdr "$tfdr" "$@"
+"$rscript" "$plotter" "$data/gvs_Hastie_cut.csv" \
+  --title 'T-Rex+GVS on Hastie: clustering cut (SNR=2, ρ=0.7)' \
+  --param-label 'Clustering cut' --tfdr "$tfdr" "$@"

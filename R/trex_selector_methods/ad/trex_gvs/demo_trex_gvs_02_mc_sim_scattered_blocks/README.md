@@ -18,7 +18,7 @@ own results. R draws its own random numbers, so they differ from the C++ and
 runs within Monte Carlo (MC) noise, not exactly. A cell-by-cell comparison with the C++ run, with $z$ the difference
 divided by the combined Monte Carlo standard error of the two 200-trial means, finds no cell with $|z| > 3$ among the
 180 cells of this demo (false discovery rate (FDR) and true positive rate (TPR) of every method at every grid point).
-Over the whole T-Rex+GVS suite 4 of 1,698 cells (0.24 %) have $|z| > 3$, which is within Monte Carlo noise.
+Over the whole T-Rex+GVS suite no cell of 1,710 has $|z| > 3$.
 
 ---
 

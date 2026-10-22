@@ -104,8 +104,8 @@ below detail the coverage of a few parts relative to [cpp/](../cpp/README.md):
 - **trex+DA+NN** — the R binding exposes `da_method = "NN"`, so the nearest-neighbor
   demo `demo_trex_da_07_mc_sim_nn` runs the NN method like its C++ counterpart and
   has committed results.
-- **tsolvers** — all 12 per-solver demos are mirrored
-  (`demo_ts_01` … `demo_ts_12`). The validation programs
+- **tsolvers** — all 12 per-solver demos and the four performance demos are mirrored
+  (`demo_ts_01` … `demo_ts_12`, `demo_ts_perf_01` … `demo_ts_perf_04`). The validation programs
   (`validation_ts_01_tenet_aug_comparison` and the CRAN tlars cross-comparison
   generator `validation_ts_02_tlars_tlasso_rcompare`) moved to the TRexSelector
   library test suite (`TRexSelector/cpp/tests/validation/tsolvers/`).

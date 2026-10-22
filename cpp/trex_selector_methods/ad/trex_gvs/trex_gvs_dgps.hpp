@@ -78,7 +78,9 @@ struct GVSDGPResult {
      * @brief 0-based cluster (group) assignment per column (length p).
      *
      * Suitable for passing directly to TRexGVSControlParameter::prior_groups.
-     * Background (i.i.d.) columns each receive a unique singleton group ID.
+     * Blocks carry labels 0 .. G-1, and background (i.i.d.) columns each get a
+     * singleton label G, G+1, ... in column order, so the labels are
+     * contiguous in [0, M-1].
      */
     std::vector<Eigen::Index> prior_groups;
 
@@ -116,6 +118,27 @@ struct GVSDGPResult {
     /** @brief 0-based indices of the active blocks (block_equicorr DGP). */
     std::vector<int> active_blocks;
 };
+
+
+/**
+ * @brief Gives each background column its own singleton group label.
+ *
+ * @details
+ *  Block columns hold labels 0 .. n_blocks-1 and background columns hold -1.
+ *  The background columns receive n_blocks, n_blocks+1, ... in column order,
+ *  so the labels are contiguous in [0, M-1], as the GVS selector requires.
+ *
+ * @param groups    Per-column labels (length p), background marked with -1.
+ * @param n_blocks  Number of block labels in use.
+ */
+inline void label_background_singletons(std::vector<Eigen::Index>& groups,
+                                        Eigen::Index n_blocks)
+{
+    Eigen::Index next = n_blocks;
+    for (Eigen::Index& g : groups)
+        if (g < 0)
+            g = next++;
+}
 
 
 // ==============================================================================
@@ -198,10 +221,11 @@ inline GVSDGPResult make_hastie_dgp(int n,
 
     // Background predictors — each is its own singleton group
     for (int k = 150; k < p; ++k) {
-        out.prior_groups[static_cast<std::size_t>(k)] = k;  // unique ID
+        out.prior_groups[static_cast<std::size_t>(k)] = -1;  // labelled below
         for (int i = 0; i < n; ++i)
             out.X(i, k) = N01(rng);
     }
+    label_background_singletons(out.prior_groups, 3);
 
     // True signal: beta_j = 3 for all 150 grouped variables
     out.s = 150;
@@ -300,10 +324,11 @@ inline GVSDGPResult make_ien_grouping_dgp(int n, int p, double snr,
 
     // Background: i.i.d. N(0,1), singleton group IDs
     for (int j = 6; j < p; ++j) {
-        out.prior_groups[static_cast<std::size_t>(j)] = j;  // unique ID
+        out.prior_groups[static_cast<std::size_t>(j)] = -1;  // labelled below
         for (int i = 0; i < n; ++i)
             out.X(i, j) = N01(rng);
     }
+    label_background_singletons(out.prior_groups, 2);
 
     // True signal
     out.s = 6;
@@ -497,10 +522,11 @@ inline GVSDGPResult make_unequal_blocks_dgp(int n, int p, double snr,
 
     // Background columns — i.i.d. N(0, 1), singleton group IDs
     for (int j = 150; j < p; ++j) {
-        out.prior_groups[static_cast<std::size_t>(j)] = j;
+        out.prior_groups[static_cast<std::size_t>(j)] = -1;  // labelled below
         for (int i = 0; i < n; ++i)
             out.X(i, j) = N01(rng);
     }
+    label_background_singletons(out.prior_groups, 3);
 
     // SNR-calibrated noise
     const Eigen::VectorXd signal = out.X * out.beta;
@@ -603,7 +629,7 @@ inline GVSDGPResult make_mixed_blocks_dgp(int n, int p, double snr,
         // Noise gap
         const int g = gaps[static_cast<std::size_t>(slot)];
         for (int k = 0; k < g; ++k, ++col) {
-            out.prior_groups[static_cast<std::size_t>(col)] = col;  // singleton
+            out.prior_groups[static_cast<std::size_t>(col)] = -1;  // labelled below
             for (int i = 0; i < n; ++i)
                 out.X(i, col) = N01(rng);
         }
@@ -625,6 +651,7 @@ inline GVSDGPResult make_mixed_blocks_dgp(int n, int p, double snr,
             }
         }
     }
+    label_background_singletons(out.prior_groups, num_blocks);
     std::sort(out.true_support.begin(), out.true_support.end());
     out.s = static_cast<int>(out.true_support.size());  // = 150
 
@@ -724,7 +751,7 @@ inline GVSDGPResult make_random_blocks_dgp(int n, int p, double snr,
         // Noise gap
         const int g = gaps[static_cast<std::size_t>(slot)];
         for (int k = 0; k < g; ++k, ++col) {
-            out.prior_groups[static_cast<std::size_t>(col)] = col;  // singleton
+            out.prior_groups[static_cast<std::size_t>(col)] = -1;  // labelled below
             for (int i = 0; i < n; ++i)
                 out.X(i, col) = N01(rng);
         }
@@ -743,6 +770,7 @@ inline GVSDGPResult make_random_blocks_dgp(int n, int p, double snr,
             out.true_support.push_back(static_cast<std::size_t>(col));
         }
     }
+    label_background_singletons(out.prior_groups, num_blocks);
     std::sort(out.true_support.begin(), out.true_support.end());
     out.s = 150;
 
@@ -853,10 +881,11 @@ inline GVSDGPResult make_neg_corr_dgp(int n, int p, double snr,
 
     // Background (200..p-1): i.i.d. N(0,1), singleton group IDs
     for (int j = 200; j < p; ++j) {
-        out.prior_groups[static_cast<std::size_t>(j)] = j;
+        out.prior_groups[static_cast<std::size_t>(j)] = -1;  // labelled below
         for (int i = 0; i < n; ++i)
             out.X(i, j) = N01(rng);
     }
+    label_background_singletons(out.prior_groups, 2);
 
     out.s = 100;
 
@@ -959,7 +988,7 @@ inline GVSDGPResult make_neg_traps_dgp(int n, int p, double snr,
 
     // Noise1 (200–299): i.i.d. N(0,1), singleton group IDs
     for (int j = 200; j < 300; ++j) {
-        out.prior_groups[static_cast<std::size_t>(j)] = j;
+        out.prior_groups[static_cast<std::size_t>(j)] = -1;  // labelled below
         for (int i = 0; i < n; ++i)
             out.X(i, j) = N01(rng);
     }
@@ -980,10 +1009,11 @@ inline GVSDGPResult make_neg_traps_dgp(int n, int p, double snr,
 
     // Noise2 (360..p-1): i.i.d. N(0,1), singleton group IDs
     for (int j = 360; j < p; ++j) {
-        out.prior_groups[static_cast<std::size_t>(j)] = j;
+        out.prior_groups[static_cast<std::size_t>(j)] = -1;  // labelled below
         for (int i = 0; i < n; ++i)
             out.X(i, j) = N01(rng);
     }
+    label_background_singletons(out.prior_groups, 3);
 
     out.s = 100;
 
@@ -1262,7 +1292,7 @@ inline GVSDGPResult make_t3_equicorr_blocks_dgp(int n, int p, double snr,
     for (int slot = 0; slot <= num_blocks; ++slot) {
         const int g = gaps[static_cast<std::size_t>(slot)];
         for (int k = 0; k < g; ++k, ++col) {
-            out.prior_groups[static_cast<std::size_t>(col)] = col;
+            out.prior_groups[static_cast<std::size_t>(col)] = -1;  // labelled below
             for (int i = 0; i < n; ++i)
                 out.X(i, col) = t3_unit();
         }
@@ -1282,6 +1312,7 @@ inline GVSDGPResult make_t3_equicorr_blocks_dgp(int n, int p, double snr,
             }
         }
     }
+    label_background_singletons(out.prior_groups, num_blocks);
     std::sort(out.true_support.begin(), out.true_support.end());
     out.s = 150;
 
@@ -1391,7 +1422,7 @@ inline GVSDGPResult make_ar1_blocks_dgp(int n, int p, double snr,
     for (int slot = 0; slot <= num_blocks; ++slot) {
         const int g = gaps[static_cast<std::size_t>(slot)];
         for (int k = 0; k < g; ++k, ++col) {
-            out.prior_groups[static_cast<std::size_t>(col)] = col;
+            out.prior_groups[static_cast<std::size_t>(col)] = -1;  // labelled below
             for (int i = 0; i < n; ++i)
                 out.X(i, col) = N01(rng);
         }
@@ -1418,6 +1449,7 @@ inline GVSDGPResult make_ar1_blocks_dgp(int n, int p, double snr,
             }
         }
     }
+    label_background_singletons(out.prior_groups, num_blocks);
     std::sort(out.true_support.begin(), out.true_support.end());
     out.s = static_cast<int>(out.true_support.size());  // 150
 
@@ -1449,15 +1481,18 @@ inline GVSDGPResult make_ar1_blocks_dgp(int n, int p, double snr,
  * @details
  *  Block 0 (size 20, active): AR(1),    phi = ar_coef
  *  Block 1 (size 50, active): MA(3),    theta = (0.5, 0.3, 0.1)
- *  Block 2 (size 80, active): ARMA(2,1), AR = (ar_coef, ar_coef/5), MA = 0.5
+ *  Block 2 (size 80, active): ARMA(2,1), AR = (5/6, 1/6) * ar_coef, MA = 0.5
  *  Block 3 (size 65, trap):   AR(1),    phi = ar_coef
  *
  *  For each observation row i, an independent ARMA series of length = block_size
- *  is simulated (100-step burn-in), then all columns in the block are
- *  standardised to unit empirical variance (matching R's arima.sim approach).
+ *  is simulated by a direct recursion from zero with a 100-step burn-in (the
+ *  series runs along the columns of the block), then all columns in the block
+ *  are standardised to unit empirical variance.
  *
- *  The ARMA(2,1) block is stationary only for ar_coef < 0.833; column
- *  standardisation suppresses near-non-stationarity at higher ar_coef values.
+ *  The two ARMA(2,1) AR terms keep a 5:1 ratio and sum to ar_coef, as in the
+ *  AR(1) blocks, so the block is stationary for every ar_coef in (0, 1). (The
+ *  former (ar_coef, ar_coef/5) summed to 1.2 * ar_coef and turned explosive for
+ *  ar_coef >= 5/6, which standardisation does not repair.)
  *
  * @param n        Number of observations.
  * @param p        Number of predictors (>= 218).
@@ -1483,7 +1518,8 @@ inline GVSDGPResult make_arma_blocks_dgp(int n, int p, double snr,
     const std::vector<std::vector<double>> ar_per_block = {
         {ar_coef},                       // Block 0: AR(1)
         {},                              // Block 1: MA(3)
-        {ar_coef, ar_coef / 5.0},        // Block 2: ARMA(2,1)
+        {ar_coef * 5.0 / 6.0,
+         ar_coef / 6.0},                 // Block 2: ARMA(2,1), AR sum = ar_coef
         {ar_coef}                        // Block 3: AR(1) trap
     };
     const std::vector<std::vector<double>> ma_per_block = {
@@ -1558,7 +1594,7 @@ inline GVSDGPResult make_arma_blocks_dgp(int n, int p, double snr,
     for (int slot = 0; slot <= num_blocks; ++slot) {
         const int g = gaps[static_cast<std::size_t>(slot)];
         for (int k = 0; k < g; ++k, ++col) {
-            out.prior_groups[static_cast<std::size_t>(col)] = col;
+            out.prior_groups[static_cast<std::size_t>(col)] = -1;  // labelled below
             for (int i = 0; i < n; ++i)
                 out.X(i, col) = N01(rng);
         }
@@ -1594,6 +1630,7 @@ inline GVSDGPResult make_arma_blocks_dgp(int n, int p, double snr,
             }
         }
     }
+    label_background_singletons(out.prior_groups, num_blocks);
     std::sort(out.true_support.begin(), out.true_support.end());
     out.s = static_cast<int>(out.true_support.size());  // 150
 
@@ -1739,9 +1776,9 @@ inline GVSDGPResult make_hapgen_dgp(int n, double snr,
     out.beta.setZero(p);
     out.prior_groups.resize(static_cast<std::size_t>(p));
 
-    // Initialize all columns as singletons
+    // Initialize all columns as background, labelled after the blocks
     for (int j = 0; j < p; ++j)
-        out.prior_groups[static_cast<std::size_t>(j)] = j;
+        out.prior_groups[static_cast<std::size_t>(j)] = -1;
 
     // Block group IDs and beta
     struct HapBlockInfo { int start; int sz; bool active; int group_id; };
@@ -1765,6 +1802,8 @@ inline GVSDGPResult make_hapgen_dgp(int n, double snr,
             }
         }
     }
+    label_background_singletons(out.prior_groups,
+                                static_cast<Eigen::Index>(block_info.size()));
     std::sort(out.true_support.begin(), out.true_support.end());
     out.s = static_cast<int>(out.true_support.size());  // 130
 

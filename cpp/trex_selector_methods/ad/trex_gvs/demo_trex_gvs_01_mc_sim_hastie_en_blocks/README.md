@@ -49,7 +49,7 @@ X_{ij} = Z_{i,\,g(j)} + \sigma_x\, \xi_{ij}, \qquad \xi_{ij} \sim \mathcal{N}(0,
 ```text
 K = 20                       # Random experiments per T-loop iteration
 tFDR = 0.1                   # Target FDR
-corr_max = 0.98              # HAC auto-clustering correlation threshold
+corr_max = 0.98              # HAC cut (Part 4 adds the noise floor and oracle groups)
 hc_linkage = Single          # Single-linkage HAC
 lambda2_method = CV_1SE_CCD  # Elastic-net penalty selection (Part 2 adds CV_1SE_IEN_CCD for IEN)
 MC = 200                     # Monte Carlo repetitions per grid point
@@ -70,7 +70,7 @@ Three T-Rex+GVS solver variants:
 
 ---
 
-## Three Parts
+## Four Parts
 
 1. **2-D SNR $\times$ $\rho$ sweep** — TENET / TENET_AUG / TIENET_AUG over
    $\mathrm{SNR} \in \lbrace0.2, 0.5, 1, 2, 5\rbrace$ and
@@ -82,8 +82,30 @@ Three T-Rex+GVS solver variants:
 3. **Hierarchical agglomerative clustering (HAC) linkage comparison** — Single / Complete / Average / weighted pair
    group method with arithmetic mean (WPGMA) linkage at the same fixed
    operating point (TENET and TIENET_AUG).
+4. **Clustering-cut comparison** — TENET and TIENET_AUG at the same fixed operating point (`CV_1SE_CCD`, single
+   linkage) under three groupings. These are the fixed cut `corr_max = 0.98` of Parts 1–3, the Bonferroni noise
+   floor (`corr_max` = 0.346 here, the absolute correlation that independent columns exceed with probability at
+   most $0.05$ over all $p(p-1)/2$ column pairs, via the Fisher $z$ transform) and the oracle groups of the design.
+   Besides the variable-level FDR and true positive rate (TPR) it reports group-level rates.
 
 Parts 2–3 are supplementary robustness checks over the $\lambda_2$-selection and linkage implementation choices.
+Part 4 shows what real groups do to the two solver families, while Parts 1–3 keep the fixed cut.
+
+Part 4 computes its group-level rates against the oracle groups, the three active blocks and every background
+column as its own singleton group:
+
+- **group hit** — share of the active groups with at least one selected variable,
+- **group full** — share of the active groups selected in full,
+- **group FDR** — share of the groups touched by the selection that hold no active variable,
+- **groups** — number of clusters with at least two members that the selector formed.
+
+> **T-Rex+GVS controls the FDR of the selected variables, not a group FDR.** As implemented, the selector is
+> designed to keep the variable-level FDR at or below $\mathrm{tFDR} = 0.1$, and every FDR of Parts 1–4 is this
+> variable-level rate. It is not designed to control a group-level FDR, so the group rates of Part 4 are
+> descriptive and carry no target. Each of the 350 background columns is a group of its own, so a few falsely
+> selected background variables already outnumber the three active groups among the selected groups. A group FDR
+> far above $0.1$ next to a variable-level FDR below $0.1$ is therefore expected and does not indicate a loss of
+> FDR control.
 
 ---
 
@@ -94,6 +116,7 @@ Written to `simulation_results/data/`:
 - `gvs_Hastie_2d.txt` / `.csv` — 2-D SNR $\times$ $\rho$ grid (Part 1).
 - `gvs_Hastie_lambda2_method.txt` / `.csv` — $\lambda_2$-selection comparison (Part 2).
 - `gvs_Hastie_hc_linkage.txt` / `.csv` — HAC-linkage comparison (Part 3).
+- `gvs_Hastie_cut.txt` / `.csv` — clustering-cut comparison (Part 4).
 
 Figures in Portable Network Graphics (PNG) and Portable Document Format (PDF) go to `simulation_results/plots/`,
 produced by `./generate_plots.sh`.
@@ -107,6 +130,8 @@ produced by `./generate_plots.sh`.
 ./generate_plots.sh   # render the figures below from the saved CSVs
 ```
 
+The environment variable `TREX_GVS_PARTS` selects the parts (default `1234`, and `TREX_GVS_PARTS=4` runs only Part 4).
+
 ---
 
 ## Simulation Results
@@ -114,7 +139,7 @@ produced by `./generate_plots.sh`.
 ### Part 1 — 2-D SNR $\times$ $\rho$ sweep
 
 - FDR stays at or below the $\mathrm{tFDR} = 0.1$ target everywhere (no cyan violation outlines, at most $0.09$),
-  and **TENET** and **TENET_AUG** reach a true positive rate (TPR) of $\approx 1$ once $\mathrm{SNR} \gtrsim 1$ and
+  and **TENET** and **TENET_AUG** reach a TPR of $\approx 1$ once $\mathrm{SNR} \gtrsim 1$ and
   $\rho \ge 0.5$.
 - **TIENET_AUG** is more conservative (FDR at most $0.044$) and has less power at low SNR, but from
   $\mathrm{SNR} = 1$ on it reaches TPR $\approx 1$ for $\rho = 0.7\text{–}0.95$. Its power collapses in the extreme
@@ -170,6 +195,36 @@ Grouped bar charts at the same fixed operating point as Part 2. Error bars show 
 Carlo standard deviation.
 
 ![HAC linkage comparison](simulation_results/plots/gvs_Hastie_hc_linkage.png)
+
+---
+
+### Part 4 — Clustering cut
+
+- With the fixed cut `corr_max = 0.98` the selector forms no group at this operating point, and both solvers
+  reproduce the Part 3 single-linkage numbers exactly (FDR $0.068$ and TPR $1.000$ for TENET, FDR
+  $0.001$ and TPR $0.998$ for TIENET_AUG). The noise floor forms $3.03$ clusters with at
+  least two members on average, against 3 for the oracle groups, and gives nearly the same rates as the oracle groups
+  for both solvers.
+- **TENET** keeps its TPR of $1.000$ under real groups, and its FDR drops slightly, from $0.068$ to
+  $0.056$. The Python and R runs show the same drop ($0.070$ to $0.058$ and $0.067$ to $0.053$). Its group FDR of
+  $0.66\text{–}0.69$ next to a variable-level FDR below $0.1$ is the effect described under
+  [Four Parts](#four-parts). The few falsely selected background variables are singleton groups, and next to the three
+  active groups they make up about two thirds of the selected groups. The selector does not control this rate.
+- **TIENET_AUG** keeps about one variable per active group once the groups are real. Its TPR falls from
+  $0.998$ to $0.020$, about 3 of the 150 active variables, while it still hits most active groups
+  (group hit $0.98$) with variable and group FDR $0$, and its full-group recovery falls from $0.94$
+  to $0$. A plausible reading is that the IEN penalty acts on the sum of the coefficients within each group, so one
+  member already carries the signal of its group. This matches the TIENET_AUG collapse in the $\rho = 0.99$ column of
+  Part 1, the only column where the fixed cut forms groups, and supports the reading given there.
+- Real groups therefore leave the EN selection nearly unchanged and reduce the IEN selection to one representative per
+  group. Parts 1–3 and Demos 02–07 keep the fixed cut `corr_max = 0.98`, which groups only variables correlated above
+  $0.98$, so outside such extreme correlations both solver families are evaluated on individual variables.
+
+Grouped bar charts at the same fixed operating point as Parts 2 and 3. The top row shows the variable-level TPR and
+FDR, and the bottom row shows the full-group recovery and the group FDR, which carries no target. Error bars show
+$\pm 1$ Monte Carlo standard deviation.
+
+![Clustering-cut comparison](simulation_results/plots/gvs_Hastie_cut.png)
 
 ---
 

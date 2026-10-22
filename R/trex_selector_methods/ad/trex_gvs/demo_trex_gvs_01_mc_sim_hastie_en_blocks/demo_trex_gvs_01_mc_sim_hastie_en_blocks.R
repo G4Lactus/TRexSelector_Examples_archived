@@ -13,12 +13,15 @@
 #   Part 1: 2-D SNR x rho grid.
 #   Part 2: lambda2_method comparison — SVD vs CCD (EN), CCD vs IEN_CCD (IEN).
 #   Part 3: hc_linkage comparison     — Single / Complete / Average / WPGMA.
+#   Part 4: clustering cut            — corr_max 0.98 / noise floor / oracle groups.
 #
 # DGP: three equicorrelated groups of 50 variables each, all active (s = 150),
 #      plus 350 null white-noise variables; p = 500 and n = 200.
 # Selector: K=20, tFDR=0.1, corr_max=0.98, lambda2=CV_1SE_CCD (Part 2 adds
 #   CV_1SE_IEN_CCD for IEN).
-# Methods compared: TENET, TENET_AUG, TIENET_AUG.
+# Methods compared: TENET, TENET_AUG, TIENET_AUG (Part 4: TENET, TIENET_AUG).
+# Part selection: TREX_GVS_PARTS (default "1234"), e.g. TREX_GVS_PARTS=4 runs
+#   only the cut comparison.
 # MC: 200 trials per grid point (the full run takes hours — reduce num_MC and
 #     the grids for a quick smoke test). Optional first CLI argument sets the
 #     number of parallel worker cores (default TREX_NUM_WORKERS, else 8).
@@ -82,9 +85,10 @@ GVS_METHODS <- list(
   list(label = "TIENET_AUG", GVS_type = "IEN", en_solver = NULL)
 )
 
-run_part_1 <- TRUE
-run_part_2 <- TRUE
-run_part_3 <- TRUE
+# Part selection (default "1234"); not part of the cache fingerprint
+PARTS <- Sys.getenv("TREX_GVS_PARTS", "")
+if (!nzchar(PARTS)) PARTS <- "1234"
+run_part <- function(k) grepl(k, PARTS, fixed = TRUE)
 
 
 # ==============================================================================
@@ -133,7 +137,7 @@ sim_hastie_part_1 <- function(cfg, tag) {
   snr_grid_2d <- c(0.2, 0.5, 1.0, 2.0, 5.0)
   rho_grid_2d <- c(0.30, 0.50, 0.70, 0.90, 0.95, 0.99)
 
-  print_section_header(sprintf("Part 1/3: 2-D SNR x rho Sweep  |  %s", tag))
+  print_section_header(sprintf("Part 1/4: 2-D SNR x rho Sweep  |  %s", tag))
   cat(sprintf("  n=%d  p=%d  s=150  MC=%d  tFDR=%s  K=%d  corr_max=%s\n",
               cfg$n, cfg$p, cfg$num_MC, fmt_num(cfg$tFDR), cfg$K,
               fmt_num(cfg$corr_max)))
@@ -191,7 +195,7 @@ sim_hastie_part_2 <- function(cfg, tag) {
   en_methods  <- c("CV_1SE_SVD", "CV_1SE_CCD")
   ien_methods <- c("CV_1SE_CCD", "CV_1SE_IEN_CCD")
 
-  print_section_header(sprintf("Part 2/3: lambda2_method Comparison  |  %s",
+  print_section_header(sprintf("Part 2/4: lambda2_method Comparison  |  %s",
                                tag))
   cat(sprintf("  n=%d  p=%d  s=150  MC=%d  tFDR=%s  K=%d\n",
               cfg$n, cfg$p, cfg$num_MC, fmt_num(cfg$tFDR), cfg$K))
@@ -236,7 +240,7 @@ sim_hastie_part_3 <- function(cfg, tag) {
   fixed_sdx <- sqrt((1 - fixed_rho) / fixed_rho)
   linkages  <- c("Single", "Complete", "Average", "WPGMA")
 
-  print_section_header(sprintf("Part 3/3: hc_linkage Comparison  |  %s", tag))
+  print_section_header(sprintf("Part 3/4: hc_linkage Comparison  |  %s", tag))
   cat(sprintf("  n=%d  p=%d  s=150  MC=%d  tFDR=%s  K=%d  lambda2=CV_1SE_CCD\n",
               cfg$n, cfg$p, cfg$num_MC, fmt_num(cfg$tFDR), cfg$K))
   cat(sprintf("  fixed operating point: SNR=%s  rho=%s\n",
@@ -266,14 +270,74 @@ sim_hastie_part_3 <- function(cfg, tag) {
 
 
 # ==============================================================================
+# Part 4: clustering-cut comparison
+# ==============================================================================
+# Compare the clustering cut at the fixed operating point SNR = 2.0, rho = 0.7:
+# the demos' fixed corr_max = 0.98 (no groups below rho = 0.99), the Bonferroni
+# noise floor (about 0.35 here) and the DGP's oracle groups, for TENET and
+# TIENET_AUG with lambda2 = CV_1SE_CCD and single linkage. Records
+# variable-level FDP / TPP next to group-level rates.
+
+sim_hastie_part_4 <- function(cfg, tag) {
+  fixed_snr <- 2.0
+  fixed_rho <- 0.7
+  fixed_sdx <- sqrt((1 - fixed_rho) / fixed_rho)
+  floor_cut <- noise_floor_corr_max(cfg$n, cfg$p)
+  cuts <- list(list(label = "fixed_0.98",  corr_max = cfg$corr_max, oracle = FALSE),
+               list(label = "noise_floor", corr_max = floor_cut,    oracle = FALSE),
+               list(label = "oracle",      corr_max = cfg$corr_max, oracle = TRUE))
+
+  print_section_header(sprintf("Part 4/4: Clustering-cut Comparison  |  %s",
+                               tag))
+  cat(sprintf("  n=%d  p=%d  s=150  MC=%d  tFDR=%s  K=%d  lambda2=CV_1SE_CCD  linkage=Single\n",
+              cfg$n, cfg$p, cfg$num_MC, fmt_num(cfg$tFDR), cfg$K))
+  cat(sprintf("  fixed operating point: SNR=%s  rho=%s\n",
+              fmt_num(fixed_snr), fmt_num(fixed_rho)))
+  cat(sprintf("  cuts: corr_max %s / noise floor %.3f / oracle groups",
+              fmt_num(cfg$corr_max), floor_cut),
+      "  |  selectors: TENET, TIENET_AUG  (6 runs)\n\n", sep = "")
+
+  cut_point <- function(label, GVS_type, en_solver, cut) {
+    cat(sprintf("  %s — Running %d MC trials ...\n", label, cfg$num_MC))
+    r <- .run_mc_hastie_cut(
+      n = cfg$n, p = cfg$p, snr = fixed_snr, sd_x = fixed_sdx,
+      tFDR = cfg$tFDR, K = cfg$K, num_MC = cfg$num_MC, seed = cfg$seed,
+      GVS_type = GVS_type, corr_max = cut$corr_max, en_solver = en_solver,
+      lambda2_method = "CV_1SE_CCD", oracle = cut$oracle, n_cores = num_cores
+    )
+    cat(sprintf("  %s — done. TPP=%.3f  FDP=%.3f  groups=%.3f\n\n",
+                label, r$mean_TPP, r$mean_FDP, r$n_groups))
+    r
+  }
+
+  en_results  <- list()
+  ien_results <- list()
+  for (cut in cuts) {
+    en_results[[length(en_results) + 1L]] <- cut_point(
+      sprintf("TENET+%s", cut$label), "EN", "TENET", cut
+    )
+    ien_results[[length(ien_results) + 1L]] <- cut_point(
+      sprintf("TIENET_AUG+%s", cut$label), "IEN", NULL, cut
+    )
+  }
+
+  save_mc_cut_tables(
+    tag, vapply(cuts, `[[`, character(1L), "label"), en_results, ien_results,
+    fixed_snr, fixed_rho, floor_cut, cfg, OUT_DIR, sprintf("gvs_%s_cut", tag)
+  )
+}
+
+
+# ==============================================================================
 # main
 # ==============================================================================
 
 cat(sprintf("Running with %d worker cores\n\n", num_cores))
 
-if (run_part_1) sim_hastie_part_1(CFG, SCENARIO_TAG)
-if (run_part_2) sim_hastie_part_2(CFG, SCENARIO_TAG)
-if (run_part_3) sim_hastie_part_3(CFG, SCENARIO_TAG)
+if (run_part("1")) sim_hastie_part_1(CFG, SCENARIO_TAG)
+if (run_part("2")) sim_hastie_part_2(CFG, SCENARIO_TAG)
+if (run_part("3")) sim_hastie_part_3(CFG, SCENARIO_TAG)
+if (run_part("4")) sim_hastie_part_4(CFG, SCENARIO_TAG)
 
 cat(sprintf("\n%s GVS MC simulations complete.\n", SCENARIO_TAG))
 

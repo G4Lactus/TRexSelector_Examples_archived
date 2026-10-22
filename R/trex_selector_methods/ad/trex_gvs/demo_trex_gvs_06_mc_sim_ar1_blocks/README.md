@@ -176,8 +176,8 @@ and the
 [Python port](../../../../../Python/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_06_mc_sim_ar1_blocks/README.md#simulation-results)
 up to Monte Carlo noise, not exactly. A cell-by-cell comparison with the C++ run, with $z$ the difference divided by
 the combined Monte Carlo standard error of the two 200-trial means, finds no cell with $|z| > 3$ among the 180 cells
-of this demo (FDR and TPR of every solver at every grid point). Over the whole T-Rex+GVS suite 4 of 1,698 cells
-(0.24 %) have $|z| > 3$, all of them in Demo 07, which lies within Monte Carlo noise.
+of this demo (FDR and TPR of every solver at every grid point). Over the whole T-Rex+GVS suite no cell of 1,710 has
+$|z| > 3$.
 
 - The FDR stays under control everywhere (no cyan cells). **TENET** and **TENET_AUG** return identical numbers
   (means and standard deviations agree in every cell). Their FDR is $0.009\text{–}0.018$ at $\rho = 0.3$, rises

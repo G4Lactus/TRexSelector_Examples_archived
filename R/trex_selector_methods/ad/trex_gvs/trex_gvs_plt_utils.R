@@ -19,9 +19,10 @@
 #     annotated with luminance-adaptive text colour.
 #
 #   * Method comparison — method,metric,<param>,mean,sd (demo 01's
-#     lambda2_method and hc_linkage studies). Rendered as grouped bar charts
-#     (TPR and FDR panels, bars grouped by parameter level, one colour per
-#     solver, +/- 1 sd error bars, tFDR reference line on the FDR panel).
+#     lambda2_method, hc_linkage and cut studies). Rendered as grouped bar
+#     charts (TPR and FDR panels, bars grouped by parameter level, one colour
+#     per solver, +/- 1 sd error bars, tFDR reference line on the FDR panel).
+#     The cut study adds full-group recovery and group FDR panels (2 x 2 grid).
 #
 #   * Block benchmark — scenario,rho,snr,method,... (demo 08). Rendered as
 #     TPR / FDR line plots, one line per method, tFDR reference on the FDR
@@ -256,7 +257,7 @@ plot_2d_heatmaps <- function(df, title, tfdr = DEFAULT_TFDR) {
 
 
 # ------------------------------------------------------------------------------
-# Method-comparison grouped bars (demo 01 lambda2_method / hc_linkage)
+# Method-comparison grouped bars (demo 01 lambda2_method / hc_linkage / cut)
 # ------------------------------------------------------------------------------
 
 .bar_panel <- function(df, param_col, metric, mlabel, solvers, levels,
@@ -288,7 +289,8 @@ plot_2d_heatmaps <- function(df, title, tfdr = DEFAULT_TFDR) {
     .panel_theme() +
     theme(panel.grid.major.x = element_blank(),
           panel.grid.minor.x = element_blank())
-  if (metric == "mean_TPP") p <- p + coord_cartesian(ylim = c(0, 1.05))
+  if (metric %in% c("mean_TPP", "grp_full", "grp_FDP"))
+    p <- p + coord_cartesian(ylim = c(0, 1.05))
   if (max(nchar(as.character(levels))) > 6)
     p <- p + theme(axis.text.x = element_text(angle = 15, hjust = 1))
   p
@@ -304,13 +306,26 @@ plot_method_bars <- function(df, param_col, title, param_label,
   p_fdr <- .bar_panel(df, param_col, "mean_FDP", "FDR (false discovery rate)",
                       solvers, levels, param_label, tfdr = tfdr)
 
-  fig <- (p_tpr | p_fdr) +
+  # Cut study: group-level panels below the variable-level ones
+  grouped <- "grp_full" %in% df$metric
+  layout <- if (grouped) {
+    p_full <- .bar_panel(df, param_col, "grp_full", "Full-group recovery",
+                         solvers, levels, param_label)
+    p_gfdr <- .bar_panel(df, param_col, "grp_FDP",
+                         "Group FDR (groups without signal)", solvers, levels,
+                         param_label)
+    (p_tpr | p_fdr) / (p_full | p_gfdr)
+  } else {
+    p_tpr | p_fdr
+  }
+  fig <- layout +
     plot_layout(guides = "collect") +
     plot_annotation(title = title,
                     theme = theme(plot.title = element_text(
                       size = 14, face = "bold", hjust = 0.5
                     )))
-  list(fig = fig, width = max(11.0, 2.2 * length(levels) + 5), height = 4.8)
+  list(fig = fig, width = max(11.0, 2.2 * length(levels) + 5),
+       height = if (grouped) 8.6 else 4.8)
 }
 
 

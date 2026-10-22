@@ -25,10 +25,10 @@ of this demo (coordinate true positive rate (TPR) and false discovery rate (FDR)
 288 for the whole-block truth and 96 for the individual-variable truth). The largest is $|z| = 2.82$, for IEN with HAC
 groups under whole-block truth at $\rho = 0.2$ and a signal-to-noise ratio (SNR) of 2 (TPR $0.117$ in R vs. $0.094$ in
 C++). The largest single differences are $0.032$ in TPR and $0.067$ in FDR, the latter for EN with HAC groups under
-individual-variable truth at $\rho = 0.9$, $\mathrm{SNR} = 0.5$ ($0.642$ vs. $0.575$). Over the whole T-Rex+GVS suite 4
-of 1,698 cells (0.24 %) have $|z| > 3$, which is within Monte Carlo noise. The $\lambda_2$ picks agree as well. Cell by
-cell, the R mean $\lambda_2$ lies within a factor of $1.25$ of the C++ one in 92 of the 96 IEN cells and in 46 of the 48
-EN cells, with a median ratio of $1.01$ and $1.00$.
+individual-variable truth at $\rho = 0.9$, $\mathrm{SNR} = 0.5$ ($0.642$ vs. $0.575$). Over the whole T-Rex+GVS suite no
+cell of 1,710 has $|z| > 3$. The $\lambda_2$ picks agree as well. Cell by cell, the R mean $\lambda_2$ lies within a
+factor of $1.25$ of the C++ one in 92 of the 96 IEN cells and in 46 of the 48 EN cells, with a median ratio of $1.01$
+and $1.00$.
 
 ---
 
@@ -205,9 +205,10 @@ and targets. The saved tables additionally report block-level and grouping diagn
   oracle runs).
 - **`T_stop`**, **`M_found`** — selector diagnostics.
 
-> The block-level numbers are **descriptive diagnostics only**. The selector provides no guarantee for them —
-> FDR control applies to the coordinate level, and a block-level error rate is a different quantity with its own
-> definition of a false discovery (cf.
+> The block-level numbers are **descriptive diagnostics only**. T-Rex+GVS as implemented controls the FDR of the
+> selected variables and is not designed to control a block-level FDR, so no target and no guarantee attach to
+> `block_FDR`, and a value above $\mathrm{tFDR}$ does not indicate a loss of FDR control. A block-level error rate
+> is a different quantity with its own definition of a false discovery (cf.
 > [the group-FDR discussion](../../../../../cpp/trex_selector_methods/ad/trex_gvs/README.md#what-is-actually-measured-in-these-demos)).
 
 The grouping diagnostics come straight from the fitted selector. Its `max_clusters` field gives `M_found`, and its
@@ -300,7 +301,8 @@ up to Monte Carlo noise (see [Purpose](#purpose)).
   lower only at $\mathrm{SNR} \le 0.2$). `block_FDR` reaches $0.18$ for EN ($\rho = 0.5$, $\mathrm{SNR} = 5$) and $0.14$
   for IEN ($\rho = 0.35$, $\mathrm{SNR} = 5$), while the coordinate FDR stays at most $0.070$. A plausible reading is
   that a false selection usually lands alone in a null block, while the true selections share the 10 active blocks, so
-  null blocks weigh more in the block count. No guarantee attaches to this number.
+  null blocks weigh more in the block count. T-Rex+GVS is not designed to control the block-level FDR, so no
+  guarantee attaches to this number.
 
 TPR (top) and FDR (bottom) vs. $\rho$, one panel per SNR $\in \lbrace0.5, 2, 5\rbrace$, one line per method.
 The dotted black line marks the $\mathrm{tFDR} = 0.1$ target.
@@ -332,9 +334,9 @@ The dotted black line marks the $\mathrm{tFDR} = 0.1$ target.
 - Oracle IEN gives the lower FDR in all three cells from $\mathrm{SNR} = 1$ on ($0.061\text{–}0.064$ vs.
   $0.074\text{–}0.084$ clustered). Each single gap is below two Monte Carlo standard errors, but the sign is the same
   in every cell.
-- The block-level diagnostics in the saved tables stay near the target (`block_FDR` at most $0.14$ at $\rho = 0.9$
-  for EN and at most $0.056$ for IEN), which is exactly the point. The method still finds the right *blocks*, but
-  no guarantee attaches to that number.
+- The block-level diagnostics in the saved tables stay small (`block_FDR` at most $0.14$ at $\rho = 0.9$ for EN
+  and at most $0.056$ for IEN), so the method still finds the right *blocks* while the coordinate-level FDR fails.
+  T-Rex+GVS is not designed to control a block-level FDR, so this value is descriptive and carries no guarantee.
 
 TPR (top) and FDR (bottom) vs. SNR, one panel per $\rho \in \lbrace0.35, 0.9\rbrace$. Note the different FDR
 axis scales.

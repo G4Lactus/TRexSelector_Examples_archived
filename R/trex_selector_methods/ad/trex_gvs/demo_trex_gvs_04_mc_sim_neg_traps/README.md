@@ -180,7 +180,7 @@ they agree with the
 up to Monte Carlo noise, not exactly. A cell-by-cell comparison with the C++ run, with $z$ the difference divided by
 the combined Monte Carlo standard error of the two 200-trial means, finds no cell with $|z| > 3$ among the 180 cells
 of this demo (false discovery rate (FDR) and true positive rate (TPR) of every solver at every grid point). Over the
-whole T-Rex+GVS suite 4 of 1,698 cells (0.24 %) have $|z| > 3$, within Monte Carlo noise.
+whole T-Rex+GVS suite no cell of 1,710 has $|z| > 3$.
 
 - **TENET** and **TENET_AUG** are numerically identical in every cell, means and standard deviations alike, so the
   first two columns of the figure coincide. Both recover the active sign-flipped group almost completely. The TPR is

@@ -12,6 +12,7 @@
 #   .print_matrix()            — Print a labelled 2-D results matrix.
 #   .print_table_multi()       — Print aligned table with multiple key columns.
 #   .run_mc_hastie()           — Wrapper: dgp_hastie_snr             + trex+GVS (EN or IEN).
+#   .run_mc_hastie_cut()       — Same, per clustering cut (corr_max or oracle groups).
 #   .run_mc_scattered()        — Wrapper: dgp_scattered_grouped_snr  + trex+GVS (EN or IEN).
 #   .run_mc_mixed_blocks()     — Wrapper: dgp_mixed_blocks_snr       + trex+GVS (EN or IEN).
 #   .run_mc_neg_traps()        — Wrapper: dgp_neg_traps_snr          + trex+GVS (EN or IEN).
@@ -299,6 +300,64 @@ cap_hc <- function(hc_dist) {
       mean_TPP = mean(tpp_vec),
       sd_FDP   = sd(fdp_vec),
       sd_TPP   = sd(tpp_vec)
+    )
+  })
+}
+
+
+#' MC runner for the clustering-cut comparison on the Hastie DGP.
+#'
+#' Same trials as `.run_mc_hastie()` (single linkage), with the HAC cut at
+#' `corr_max` or, for `oracle = TRUE`, the DGP's prior_groups. Group rates come
+#' from `.gvs_group_rates()` in ad/trex_gvs/trex_gvs_sim_common.R.
+#'
+#' @inheritParams .run_mc_hastie
+#' @param oracle Pass the DGP's prior_groups (the cut is then unused).
+#'
+#' @return Named list: mean / sd of FDP, TPP, grp_hit, grp_full, grp_FDP and
+#'   n_groups (clusters with >= 2 members).
+.run_mc_hastie_cut <- function(
+  n,
+  p,
+  snr,
+  sd_x,
+  tFDR,
+  K,
+  num_MC,
+  seed,
+  GVS_type,
+  corr_max,
+  en_solver      = "TENET",
+  lambda2_method = "CV_1SE_CCD",
+  oracle   = FALSE,
+  n_cores  = num_cores
+) {
+  one_trial <- function(mc) {
+    trial_seed <- seed + mc - 1L
+    dat <- dgp_hastie_snr(n = n, p = p, snr = snr, sd_x = sd_x,
+                          seed = trial_seed)
+    sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
+                       "single", en_solver, lambda2_method,
+                       groups = if (oracle) dat$prior_groups else NULL,
+                       seed = trial_seed, cv_seed = trial_seed)
+    si <- sel$selected_indices
+    ts <- which(dat$beta != 0)
+    c(FDP = TRexSelectorNeo::trex_fdp(si, ts),
+      TPP = TRexSelectorNeo::trex_tpp(si, ts),
+      .gvs_group_rates(si, dat$prior_groups, ts),
+      n_groups = sum(table(sel$groups) >= 2L))
+  }
+
+  args <- mget(setdiff(names(formals(sys.function())), "n_cores"), envir = environment())
+  cell_cached(paste0(".run_mc_hastie_cut|", cell_digest(args)), function() {
+    res <- do.call(rbind, mc_map(seq_len(num_MC), one_trial, n_cores))
+    list(
+      mean_FDP = mean(res[, "FDP"]), sd_FDP = sd(res[, "FDP"]),
+      mean_TPP = mean(res[, "TPP"]), sd_TPP = sd(res[, "TPP"]),
+      grp_hit  = mean(res[, "hit"]),  sd_grp_hit  = sd(res[, "hit"]),
+      grp_full = mean(res[, "full"]), sd_grp_full = sd(res[, "full"]),
+      grp_FDP  = mean(res[, "fdp"]),  sd_grp_FDP  = sd(res[, "fdp"]),
+      n_groups = mean(res[, "n_groups"]), sd_n_groups = sd(res[, "n_groups"])
     )
   })
 }

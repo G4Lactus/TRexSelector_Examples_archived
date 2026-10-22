@@ -9,17 +9,20 @@
 #
 # Mirrors cpp/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_01_mc_sim_hastie_en_blocks.
 #
-# Three parts, each in its own function:
+# Four parts, each in its own function:
 #   sim_hastie_part_1() — 2-D SNR x rho grid
 #   sim_hastie_part_2() — lambda2_method comparison: SVD / CCD (EN),
 #                         CCD / IEN_CCD (IEN)
 #   sim_hastie_part_3() — hc_linkage comparison: Single / Complete / Average / WPGMA
+#   sim_hastie_part_4() — clustering cut: corr_max 0.98 / noise floor / oracle groups
 #
 # DGP: three equicorrelated groups of 50 variables each, all active (s = 150),
 #      plus 350 null white-noise variables; p = 500 and n = 200.
 # Selector: K=20, tFDR=0.1, corr_max=0.98, lambda2=CV_1SE_CCD (Part 2 adds
 #   CV_1SE_IEN_CCD for IEN).
-# Methods compared: TENET, TENET_AUG, TIENET_AUG.
+# Methods compared: TENET, TENET_AUG, TIENET_AUG (Part 4: TENET, TIENET_AUG).
+# Part selection: TREX_GVS_PARTS (default "1234"), e.g. TREX_GVS_PARTS=4 runs
+#   only the cut comparison.
 # MC: 200 trials per grid point (the full run takes hours — reduce num_MC and
 #     the grids for a quick smoke test). Optional first CLI argument sets the
 #     number of parallel worker processes (default TREX_NUM_WORKERS or 8).
@@ -37,9 +40,10 @@ for _p in (_THIS_DIR, _PARENT_DIR):
         sys.path.insert(0, _p)
 
 from gvs_sim_common import (N_CORES, resolve_workers, fmt_num, print_mc_matrix,  # noqa: E402
-                            print_section_header, run_gvs_2d_sweep,
-                            run_gvs_mc_trials, save_mc_1d_method_tables,
-                            save_mc_2d_tables)
+                            noise_floor_corr_max, print_section_header,
+                            run_gvs_2d_sweep, run_gvs_mc_trials,
+                            run_gvs_mc_trials_cut, save_mc_1d_method_tables,
+                            save_mc_2d_tables, save_mc_cut_tables)
 
 # Optional CLI worker count, resolved like TREX_NUM_WORKERS (0 = all usable cores).
 N_WORKERS = resolve_workers(sys.argv[1]) if len(sys.argv) > 1 else N_CORES
@@ -59,9 +63,8 @@ CFG = dict(
 
 SCENARIO_TAG = "Hastie"
 
-RUN_PART_1 = True
-RUN_PART_2 = True
-RUN_PART_3 = True
+# Part selection (default "1234"); not part of the cache fingerprint
+PARTS = os.environ.get("TREX_GVS_PARTS", "") or "1234"
 
 
 # ==============================================================================
@@ -77,7 +80,7 @@ def sim_hastie_part_1(cfg, tag):
         sd_x = math.sqrt((1.0 - rho) / rho)
         return dict(n=cfg["n"], p=cfg["p"], snr=snr, sd_x=sd_x)
 
-    print_section_header(f"Part 1/3: 2-D SNR x rho Sweep  |  {tag}")
+    print_section_header(f"Part 1/4: 2-D SNR x rho Sweep  |  {tag}")
     print(f"  n={cfg['n']}  p={cfg['p']}  s=150  MC={cfg['num_MC']}"
           f"  tFDR={fmt_num(cfg['tFDR'])}  K={cfg['K']}"
           f"  corr_max={fmt_num(cfg['corr_max'])}\n"
@@ -130,7 +133,7 @@ def sim_hastie_part_2(cfg, tag):
     en_methods = ["CV_1SE_SVD", "CV_1SE_CCD"]
     ien_methods = ["CV_1SE_CCD", "CV_1SE_IEN_CCD"]
 
-    print_section_header(f"Part 2/3: lambda2_method Comparison  |  {tag}")
+    print_section_header(f"Part 2/4: lambda2_method Comparison  |  {tag}")
     print(f"  n={cfg['n']}  p={cfg['p']}  s=150  MC={cfg['num_MC']}"
           f"  tFDR={fmt_num(cfg['tFDR'])}  K={cfg['K']}\n"
           f"  fixed operating point: SNR={fmt_num(fixed_snr)}"
@@ -173,7 +176,7 @@ def sim_hastie_part_3(cfg, tag):
 
     linkages = ["Single", "Complete", "Average", "WPGMA"]
 
-    print_section_header(f"Part 3/3: hc_linkage Comparison  |  {tag}")
+    print_section_header(f"Part 3/4: hc_linkage Comparison  |  {tag}")
     print(f"  n={cfg['n']}  p={cfg['p']}  s=150  MC={cfg['num_MC']}"
           f"  tFDR={fmt_num(cfg['tFDR'])}  K={cfg['K']}  lambda2=CV_1SE_CCD\n"
           f"  fixed operating point: SNR={fmt_num(fixed_snr)}"
@@ -201,17 +204,66 @@ def sim_hastie_part_3(cfg, tag):
 
 
 # ==============================================================================
+#  Part 4 — clustering-cut comparison
+# ==============================================================================
+
+def sim_hastie_part_4(cfg, tag):
+    """Compare the clustering cut at the fixed operating point SNR = 2.0,
+    rho = 0.7: the demos' fixed corr_max = 0.98 (no groups below rho = 0.99),
+    the Bonferroni noise floor (about 0.35 here) and the DGP's oracle groups,
+    for TENET and TIENET_AUG with lambda2 = CV_1SE_CCD and single linkage.
+    Records variable-level FDP / TPP next to group-level rates."""
+    fixed_snr, fixed_rho = 2.0, 0.7
+    fixed_sdx = math.sqrt((1.0 - fixed_rho) / fixed_rho)
+    dgp_kwargs = dict(n=cfg["n"], p=cfg["p"], snr=fixed_snr, sd_x=fixed_sdx)
+    floor_cut = noise_floor_corr_max(cfg["n"], cfg["p"])
+
+    cuts = [("fixed_0.98", cfg["corr_max"], False),
+            ("noise_floor", floor_cut, False),
+            ("oracle", cfg["corr_max"], True)]
+
+    print_section_header(f"Part 4/4: Clustering-cut Comparison  |  {tag}")
+    print(f"  n={cfg['n']}  p={cfg['p']}  s=150  MC={cfg['num_MC']}"
+          f"  tFDR={fmt_num(cfg['tFDR'])}  K={cfg['K']}"
+          "  lambda2=CV_1SE_CCD  linkage=Single\n"
+          f"  fixed operating point: SNR={fmt_num(fixed_snr)}"
+          f"  rho={fmt_num(fixed_rho)}\n"
+          f"  cuts: corr_max {fmt_num(cfg['corr_max'])} / noise floor"
+          f" {floor_cut:.3f} / oracle groups"
+          "  |  selectors: TENET, TIENET_AUG  (6 runs)\n")
+
+    en_results, ien_results = [], []
+    for label, corr_max, oracle in cuts:
+        en_results.append(run_gvs_mc_trials_cut(
+            "dgp_hastie_snr", dgp_kwargs, cfg["num_MC"], f"TENET+{label}",
+            cfg["tFDR"], cfg["K"], "EN", corr_max, hc_linkage="Single",
+            en_solver="TENET", lambda2_method="CV_1SE_CCD",
+            base_seed=cfg["base_seed"], oracle=oracle, max_workers=N_WORKERS))
+        ien_results.append(run_gvs_mc_trials_cut(
+            "dgp_hastie_snr", dgp_kwargs, cfg["num_MC"], f"TIENET_AUG+{label}",
+            cfg["tFDR"], cfg["K"], "IEN", corr_max, hc_linkage="Single",
+            en_solver=None, lambda2_method="CV_1SE_CCD",
+            base_seed=cfg["base_seed"], oracle=oracle, max_workers=N_WORKERS))
+
+    save_mc_cut_tables(tag, [c[0] for c in cuts], en_results, ien_results,
+                       fixed_snr, fixed_rho, floor_cut, cfg, OUT_DIR,
+                       f"gvs_{tag}_cut")
+
+
+# ==============================================================================
 #  main
 # ==============================================================================
 
 if __name__ == "__main__":
     print(f"Running with {N_WORKERS} worker processes\n")
 
-    if RUN_PART_1:
+    if "1" in PARTS:
         sim_hastie_part_1(CFG, SCENARIO_TAG)
-    if RUN_PART_2:
+    if "2" in PARTS:
         sim_hastie_part_2(CFG, SCENARIO_TAG)
-    if RUN_PART_3:
+    if "3" in PARTS:
         sim_hastie_part_3(CFG, SCENARIO_TAG)
+    if "4" in PARTS:
+        sim_hastie_part_4(CFG, SCENARIO_TAG)
 
     print(f"\n{SCENARIO_TAG} GVS MC simulations complete.")

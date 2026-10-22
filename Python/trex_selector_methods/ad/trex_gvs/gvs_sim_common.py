@@ -18,6 +18,10 @@
 #   save_mc_2d_tables()        — .txt (all six matrices) + tidy .csv writer.
 #   save_mc_1d_method_tables() — .txt + .csv writer for the demo-01 method
 #                                comparisons (lambda2_method / hc_linkage).
+#   noise_floor_corr_max() /
+#   run_gvs_mc_trials_cut() /
+#   save_mc_cut_tables()       — demo-01 clustering-cut comparison (fixed cut,
+#                                Bonferroni noise floor, oracle groups).
 #   Block-benchmark utilities  — block metrics, run_block_mc(), and
 #                                print_block_grid_table() for demo 08.
 #
@@ -404,6 +408,107 @@ def run_gvs_mc_trials(dgp_name, dgp_kwargs, num_MC, progress_label, tFDR, K,
 
 
 # ==============================================================================
+# Clustering-cut comparison (mirrors the cpp fixed cut / noise floor / oracle
+# section of trex_gvs_simulation_utils.hpp)
+# ==============================================================================
+
+def noise_floor_corr_max(n, p, alpha=0.05):
+    """Bonferroni noise floor for |corr| between independent columns:
+    corr_max = tanh(z / sqrt(n - 3)) with P(Z > z) = alpha / (2 m) over the
+    m = p (p - 1) / 2 column pairs (Fisher z); 0.346 at n = 200, p = 500."""
+    from statistics import NormalDist
+    q = alpha / (2.0 * 0.5 * p * (p - 1))
+    z = NormalDist().inv_cdf(1.0 - q)
+    return float(np.tanh(z / np.sqrt(n - 3)))
+
+
+def _gvs_group_rates(sel, prior_groups, true_support):
+    """Group-level rates of one selection against the oracle prior_groups
+    (background columns are singleton groups): share of active groups hit,
+    share of active groups selected in full, share of touched groups without
+    an active variable."""
+    g = np.asarray(prior_groups, dtype=int)
+    size = np.bincount(g)
+    active = np.bincount(g[np.asarray(true_support, dtype=int)], minlength=size.size)
+    chosen = np.bincount(g[np.asarray(sel, dtype=int)], minlength=size.size) \
+        if len(sel) else np.zeros(size.size, dtype=int)
+    act, touched = active > 0, chosen > 0
+    n_act, n_touched = int(act.sum()), int(touched.sum())
+    hit = float((act & touched).sum() / n_act) if n_act else 0.0
+    full = float((act & (chosen == size)).sum() / n_act) if n_act else 0.0
+    fdp = float((touched & ~act).sum() / n_touched) if n_touched else 0.0
+    return hit, full, fdp
+
+
+def _gvs_cut_trial_worker(args):
+    """One trial of the cut comparison (module-level for pickling): FDP, TPP,
+    group rates and the number of clusters with >= 2 members."""
+    import importlib
+
+    from trex_selector_neo.utils import compute_fdp, compute_tpp
+
+    (trial_seed, dgp_name, dgp_kwargs, tFDR, K, gvs_type, corr_max,
+     hc_linkage, en_solver, lambda2_method, oracle) = args
+
+    dgps = importlib.import_module("trex_gvs_dgps")
+    dat = getattr(dgps, dgp_name)(seed=trial_seed, **dgp_kwargs)
+
+    # Same setup as _gvs_trial_worker; oracle groups bypass the HAC cut
+    sel, res = build_gvs_selector(
+        dat["X"], dat["y"], tFDR, K, gvs_type, corr_max,
+        hc_linkage=hc_linkage, en_solver=en_solver,
+        lambda2_method=lambda2_method,
+        prior_groups=dat["prior_groups"] if oracle else None,
+        cv_seed=trial_seed, seed=trial_seed)
+
+    selected = list(sel.selected_indices)
+    true_support = np.flatnonzero(dat["beta"]).tolist()
+    sizes = np.bincount(np.asarray(res.groups_vec, dtype=int).ravel(),
+                        minlength=int(res.max_clusters))
+    hit, full, gfdp = _gvs_group_rates(selected, dat["prior_groups"], true_support)
+    return (compute_fdp(selected, true_support), compute_tpp(selected, true_support),
+            hit, full, gfdp, float((sizes >= 2).sum()))
+
+
+def run_gvs_mc_trials_cut(dgp_name, dgp_kwargs, num_MC, progress_label, tFDR,
+                          K, gvs_type, corr_max, hc_linkage="Single",
+                          en_solver: "str | None" = "TENET",
+                          lambda2_method="CV_1SE_CCD", base_seed=2026,
+                          oracle=False, max_workers=N_CORES):
+    """num_MC parallel trials at one fixed operating point under one cut
+    (corr_max, or the DGP's prior_groups when oracle=True). Returns mean / sd
+    of FDP, TPP, grp_hit, grp_full, grp_fdp and n_groups, matching the cpp
+    GVSCutPointResult."""
+    tasks = [(base_seed + mc, dgp_name, dgp_kwargs, tFDR, K, gvs_type,
+              corr_max, hc_linkage, en_solver, lambda2_method, bool(oracle))
+             for mc in range(num_MC)]
+    keys = ("fdp", "tpp", "grp_hit", "grp_full", "grp_fdp", "n_groups")
+
+    def compute():
+        print(f"  {progress_label} — Running {num_MC} MC trials ...", flush=True)
+        if max_workers > 1:
+            results = list(_get_executor(max_workers, len(tasks)).map(
+                _gvs_cut_trial_worker, tasks))
+        else:
+            results = [_gvs_cut_trial_worker(t) for t in tasks]
+        arr = np.array(results, dtype=float)
+        out = {}
+        for k, col in zip(keys, arr.T):
+            name = k if k.startswith(("grp", "n_")) else f"mean_{k}"
+            out[name] = float(col.mean())
+            out[f"sd_{k}"] = float(col.std(ddof=1)) if num_MC > 1 else 0.0
+        return out
+
+    out = cell_cache.cached(f"gvscut|{progress_label}|{cell_cache.digest(tasks)}",
+                            compute)
+
+    print(f"  {progress_label} — done. TPP={out['mean_tpp']:.3f}"
+          f"  FDP={out['mean_fdp']:.3f}  groups={out['n_groups']:.3f}\n",
+          flush=True)
+    return out
+
+
+# ==============================================================================
 # 2-D (SNR x rho) sweep (mirrors cpp run_gvs_2d_sweep)
 # ==============================================================================
 
@@ -605,6 +710,55 @@ def save_mc_1d_method_tables(scenario_tag, comparison, param_col, param_labels,
             rows += _rows("TIENET_AUG", lbl, ien_r)
     csv_path = os.path.join(out_dir, file_stem + ".csv")
     pd.DataFrame(rows)[["method", "metric", param_col, "mean", "sd"]].to_csv(
+        csv_path, index=False, float_format="%.6f")
+    print(f"[Info] CSV saved to: {csv_path}\n")
+
+
+# ==============================================================================
+# Save the clustering-cut comparison (demo 01 Part 4)
+# ==============================================================================
+
+_CUT_ROWS = (("FDR", "mean_fdp", "mean_FDP", "sd_fdp"),
+             ("TPR", "mean_tpp", "mean_TPP", "sd_tpp"),
+             ("group hit", "grp_hit", "grp_hit", "sd_grp_hit"),
+             ("group full", "grp_full", "grp_full", "sd_grp_full"),
+             ("group FDR", "grp_fdp", "grp_FDP", "sd_grp_fdp"),
+             ("groups", "n_groups", "n_groups", "sd_n_groups"))
+
+
+def save_mc_cut_tables(scenario_tag, cut_labels, en_results, ien_results,
+                       fixed_snr, fixed_rho, floor_cut, cfg, out_dir, file_stem):
+    """Console + .txt + .csv writer for the clustering-cut comparison (one
+    column per cut, TENET and TIENET_AUG blocks). CSV schema mirrors cpp:
+    method,metric,cut,mean,sd."""
+    os.makedirs(out_dir, exist_ok=True)
+    lines = ["", "=" * 78,
+             (f"  T-Rex+GVS MC: {scenario_tag} — clustering-cut comparison"
+              f"  (SNR={fmt_num(fixed_snr)}, rho={fmt_num(fixed_rho)},"
+              f" MC={cfg['num_MC']}, tFDR={fmt_num(cfg['tFDR'])})"),
+             f"  noise floor corr_max = {floor_cut:.4f} (Bonferroni, alpha = 0.05)",
+             "=" * 78]
+    for name, rs in (("TENET", en_results), ("TIENET_AUG", ien_results)):
+        lines += ["", name, f"{'  metric':<16}" + "".join(f"{c:>14}" for c in cut_labels)]
+        for label, key, _metric, _sd in _CUT_ROWS:
+            lines.append(f"{'  ' + label:<16}" + "".join(f"{r[key]:>14.4f}" for r in rs))
+    lines.append("=" * 78)
+    table = "\n".join(lines) + "\n\n"
+    print(table, end="")
+
+    txt_path = os.path.join(out_dir, file_stem + ".txt")
+    with open(txt_path, "w") as txt:
+        txt.write(table)
+    print(f"[Info] TXT saved to: {txt_path}")
+
+    rows = []
+    for name, rs in (("TENET", en_results), ("TIENET_AUG", ien_results)):
+        for cut, r in zip(cut_labels, rs):
+            for _label, key, metric, sd in _CUT_ROWS:
+                rows.append(dict(method=name, metric=metric, cut=cut,
+                                 mean=round(r[key], 6), sd=round(r[sd], 6)))
+    csv_path = os.path.join(out_dir, file_stem + ".csv")
+    pd.DataFrame(rows)[["method", "metric", "cut", "mean", "sd"]].to_csv(
         csv_path, index=False, float_format="%.6f")
     print(f"[Info] CSV saved to: {csv_path}\n")
 

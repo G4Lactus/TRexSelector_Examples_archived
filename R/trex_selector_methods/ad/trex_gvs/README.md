@@ -28,9 +28,9 @@ trex_gvs/
 
 Demos 01–07 each run a single Monte Carlo **2-D signal-to-noise ratio (SNR) × correlation sweep** comparing the three
 solver variants **TENET** (elastic net (EN)), **TENET_AUG** (EN, row-augmented solver) and **TIENET_AUG** (informed
-elastic net (IEN), augmented solver). Demo 01 adds two fixed-operating-point comparisons, `lambda2_method` and
-`hc_linkage`. The typical fixed settings are n = 200, p = 500, a target false discovery rate (FDR) of
-$\mathrm{tFDR} = 0.1$, K = 20, `corr_max = 0.98` and 200 MC runs.
+elastic net (IEN), augmented solver). Demo 01 adds three fixed-operating-point comparisons, `lambda2_method`,
+`hc_linkage` and the clustering cut (Part 4). The typical fixed settings are n = 200, p = 500, a target false
+discovery rate (FDR) of $\mathrm{tFDR} = 0.1$, K = 20, `corr_max = 0.98` and 200 MC runs.
 
 The shared `.gvs_select()` adapter sets the solver and the $\lambda_2$ rule explicitly, as the C++ and Python
 suites do. The IEN rows run TIENET_AUG, demos 01–07 choose $\lambda_2$ by `CV_1SE_CCD`, and the IEN rows of demo 08
@@ -55,7 +55,7 @@ result tables to `simulation_results/data/` as `.txt` + `.csv`.
 
 | # | Scenario | Sweeps | DGP (in `trex_gvs_dgps.R`) | cpp counterpart |
 |---|---|---|---|---|
-| [01](demo_trex_gvs_01_mc_sim_hastie_en_blocks/) | Hastie: 3 equicorrelated active groups of 50 (all active, s = 150) | 2-D SNR × rho, **lambda2_method**, **hc_linkage** | `dgp_hastie_snr` | `demo_trex_gvs_01_mc_sim_hastie_en_blocks` |
+| [01](demo_trex_gvs_01_mc_sim_hastie_en_blocks/) | Hastie: 3 equicorrelated active groups of 50 (all active, s = 150) | 2-D SNR × rho, **lambda2_method**, **hc_linkage**, **cut** | `dgp_hastie_snr` | `demo_trex_gvs_01_mc_sim_hastie_en_blocks` |
 | [02](demo_trex_gvs_02_mc_sim_scattered_blocks/) | Scattered-grouped: same 3 groups, members permuted across columns | 2-D SNR × rho | `dgp_scattered_grouped_snr` | `demo_trex_gvs_02_mc_sim_scattered_blocks` |
 | [03](demo_trex_gvs_03_mc_sim_mixed_blocks/) | Mixed blocks: 3 active blocks (20/50/80) + 1 trap (65), random order, noise gaps | 2-D SNR × rho (5 × 7 union grid) | `dgp_mixed_blocks_snr` | `demo_trex_gvs_03_mc_sim_mixed_blocks` |
 | [04](demo_trex_gvs_04_mc_sim_neg_traps/) | Negative traps: active +Z/−Z group + two inactive +Z/−Z traps (s = 100) | 2-D SNR × rho | `dgp_neg_traps_snr` | `demo_trex_gvs_04_mc_sim_neg_traps` |
@@ -64,8 +64,8 @@ result tables to `simulation_results/data/` as `.txt` + `.csv`.
 | [07](demo_trex_gvs_07_mc_sim_arma_blocks/) | Autoregressive moving-average (ARMA) blocks: AR(1) / moving-average (MA(3)) / ARMA(2,1) active blocks + AR(1) trap | 2-D SNR × **ar_coef** | `dgp_arma_blocks_snr` | `demo_trex_gvs_07_mc_sim_arma_blocks` |
 | [08](demo_trex_gvs_08_mc_sim_block_bench/) | Block benchmark: 100 blocks × 5 with 10 active, groups discovered by hierarchical agglomerative clustering (HAC) vs oracle groups | 4 methods (M1–M4) × 2 truth scenarios over a (rho × snr) grid | `dgp_block_equicorr` | `demo_trex_gvs_08_mc_sim_block_bench` |
 
-Each demo folder has its own `README.md`. Demo 01 exposes `run_part_*` flags
-at the top to enable/disable its three parts.
+Each demo folder has its own `README.md`. Demo 01 runs its four parts by default, and the environment variable
+`TREX_GVS_PARTS` selects a subset (`TREX_GVS_PARTS=4` runs only the clustering-cut comparison).
 
 ### Demo 08 notes (block benchmark)
 
@@ -77,6 +77,19 @@ while the HAC variants discover groups from the data (`corr_max = 0.5`, single l
 true positive rate (TPR) and FDR, the block-level FDR and a scenario-specific block metric (`blk_hit` / `full_blk`),
 plus **purity** (computed from the selector's per-variable cluster labels, its `groups` field), `T_stop`, and
 `M_found` (number of clusters formed, its `max_clusters` field).
+
+### Group-level rates (demos 01 and 08)
+
+Every FDR and TPR in these demos is computed over individual variables (see
+[What is actually measured](../../../../cpp/trex_selector_methods/ad/trex_gvs/README.md#what-is-actually-measured-in-these-demos)).
+Demo 01 Part 4 (group hit, group full, group FDR, groups formed under three clustering cuts) and demo 08 (block hit
+rate, block FDR, full-block rate, purity) additionally report group-level rates.
+
+> **T-Rex+GVS as implemented is not designed to control a group-level FDR.** It controls the FDR of the selected
+> variables, and $\mathrm{tFDR}$ bounds that rate only. The group- and block-level rates are descriptive, carry no
+> target and no guarantee, and a value above $\mathrm{tFDR}$ does not indicate a loss of FDR control. With many
+> singleton background groups next to a few active groups, the group FDR can be large (Demo 01 Part 4) while the
+> variable-level FDR stays below the target.
 
 ---
 
@@ -100,11 +113,12 @@ same stems and comma-separated values (CSV) schemas as the C++ and Python suites
 renders the figures from these tables into `simulation_results/plots/` via the shared
 [trex_gvs_plt_utils.R](trex_gvs_plt_utils.R), with the same file names as the Python suite.
 
-The committed results are the first R run of all eight demos (200 MC trials per cell, 8 workers, 30.0 h in total).
-R draws its own random numbers, so its cells agree with C++ and Python up to Monte Carlo noise, not exactly. Of
-1,698 cells compared with C++, 4 (0.24 %) lie more than three Monte Carlo standard errors away, all in demo 07, the
-rate noise alone produces. The block benchmark of demo 08 agrees in all 384 compared cells (largest $|z| = 2.82$),
-and its IEN rows pick $\lambda_2$ with the IEN rule at the same order of magnitude as in C++ and Python.
+The committed results are the first R run of all eight demos (200 MC trials per cell, 8 workers, 30.0 h in total),
+except demo 07 (stationary ARMA(2,1) block) and demo 01 Part 4, which come from a later run on library commit `61fd84c`.
+R draws its own random numbers, so its cells agree with C++ and Python up to Monte Carlo noise, not exactly. Of 1,710
+cells compared with C++, none lies more than three Monte Carlo standard errors away. The block benchmark of demo 08
+agrees in all 384 compared cells (largest $|z| = 2.82$), and its IEN rows pick $\lambda_2$ with the IEN rule at the same
+order of magnitude as in C++ and Python.
 
 ---
 

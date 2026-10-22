@@ -43,23 +43,26 @@ stationarity), and every block column is then standardized to unit empirical var
 
 - **Block 1** (20 vars, active, $\beta_j = 3$): first-order autoregressive (AR(1)), $\phi_1 = \texttt{ar\_coef}$.
 - **Block 2** (50 vars, active): moving-average (MA(3)), $\theta = (0.5, 0.3, 0.1)$.
-- **Block 3** (80 vars, active): ARMA(2,1), $\phi = (\texttt{ar\_coef}, \texttt{ar\_coef}/5)$, $\theta = 0.5$.
+- **Block 3** (80 vars, active): ARMA(2,1), $\phi = (\tfrac{5}{6}\,\texttt{ar\_coef}, \tfrac{1}{6}\,\texttt{ar\_coef})$,
+  $\theta = 0.5$.
 - **Block 4** (65 vars, inactive trap): AR(1), $\phi_1 = \texttt{ar\_coef}$, structurally identical to Block 1.
 - Each trial shuffles the block order and spreads the 285 remaining columns as gaps around the blocks, with at least
   one gap column between two blocks. The gap columns are i.i.d. $\mathcal{N}(0,1)$.
 
 Unlike Demo 06, the sweep parameter here is `ar_coef` (shared by the AR(1) and ARMA(2,1) blocks), **not** $\rho$. The
-MA(3) block has no AR component at all, so it does not respond to the sweep. The two AR coefficients of the ARMA(2,1)
-block sum to $1.2 \cdot \texttt{ar\_coef}$, so that block is stationary only for `ar_coef` $< 5/6 \approx 0.833$ (see
-the comment on `.sim_arma()`). At `ar_coef` $= 0.9$ and $0.95$ its recursion grows geometrically, and after the burn-in
-the columns of the block are close to multiples of one another, that is, nearly collinear.
+MA(3) block has no AR component at all, so it does not respond to the sweep.
+
+The two AR coefficients of the ARMA(2,1) block keep a ratio of 5 to 1 and sum to `ar_coef`, so the block is stationary
+for every `ar_coef` in $(0, 1)$. The former $\phi = (\texttt{ar\_coef}, \texttt{ar\_coef}/5)$ summed to
+$1.2 \cdot \texttt{ar\_coef}$ and turned the block explosive for `ar_coef` $\ge 5/6$, so at $0.9$ and $0.95$ its
+columns were nearly collinear.
 
 ![Design-matrix correlation, block-diagonal ARMA, natural order (no clustering)](../dgp_corr_plots/gvs_arma_blocks.png)
 
 Empirical Pearson correlation of an exemplary design drawn from this DGP (`dgp_arma_blocks_snr`, $n=200$, $p=500$,
 `ar_coef` $=0.8$, seed 2026), in **natural variable order without hierarchical clustering**. The heterogeneity is
-visible directly. The ARMA(2,1) block (80 vars) carries a broad, slowly decaying band, the two AR(1) blocks (20 and 65
-vars, active and trap) look alike, and the MA(3) block (50 vars) is nearly a bare diagonal, since its correlation
+visible directly. The ARMA(2,1) block (80 vars) and the two AR(1) blocks (20 and 65 vars, active and trap) carry
+decaying bands of similar width, and the MA(3) block (50 vars) is nearly a bare diagonal, since its correlation
 vanishes beyond lag 3. One figure per DGP lives in [`../dgp_corr_plots/`](../dgp_corr_plots/). Regenerate the whole
 suite with [`../generate_corr_plots.sh`](../generate_corr_plots.sh) (shared plotter
 [`../../../corr_plt_utils.R`](../../../corr_plt_utils.R)).
@@ -159,8 +162,8 @@ Monte Carlo trials run in parallel on a parallel socket (PSOCK) cluster of spawn
 `simulation_results/cache/`, so a stopped run resumes where it left off, and a completed run removes the cache. The
 script also sources [`../../../support_generators.R`](../../../support_generators.R),
 [`../../../simulation_utils.R`](../../../simulation_utils.R), [`../trex_gvs_dgps.R`](../trex_gvs_dgps.R) and
-[`../trex_gvs_sim_common.R`](../trex_gvs_sim_common.R). The recorded run (library commit `44cf1ab`, 8 workers) took
-about 2.7 hours. For a quick smoke test, reduce `num_MC` in `CFG` and the grids in `PRESET` at the top of the script.
+[`../trex_gvs_sim_common.R`](../trex_gvs_sim_common.R). The recorded run (library commit `61fd84c`, 8 workers) took
+about 2.4 hours. For a quick smoke test, reduce `num_MC` in `CFG` and the grids in `PRESET` at the top of the script.
 
 Afterwards, regenerate the figure from the CSV file with [`generate_plots.sh`](generate_plots.sh), which drives the
 suite's ggplot2 plotting module [`../trex_gvs_plt_utils.R`](../trex_gvs_plt_utils.R) through `Rscript` (set `RSCRIPT`
@@ -177,43 +180,38 @@ so the results agree with the
 and the
 [Python port](../../../../../Python/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_07_mc_sim_arma_blocks/README.md#simulation-results)
 up to Monte Carlo noise, not exactly. A cell-by-cell comparison with the C++ run, with $z$ the difference divided by
-the combined Monte Carlo standard error of the two 200-trial means, finds 4 cells with $|z| > 3$ among the 180 cells
-of this demo (FDR and TPR of every solver at every grid point). They are two grid points counted twice, because
-TENET and TENET_AUG return identical numbers. Both are TENET FDR values that R puts above C++, $0.086$ against
-$0.071$ at $\mathrm{SNR} = 0.5$ and `ar_coef` $= 0.95$ ($z = 3.02$), and $0.064$ against $0.050$ at
-$\mathrm{SNR} = 2$ and `ar_coef` $= 0.5$ ($z = 3.14$). Python lies between the two in both cells ($0.077$ and
-$0.055$), and all three stay below the target. Across the 30 grid points R's TENET FDR lies above the C++ value in 29,
-by $0.006$ on average. Every grid point reuses the same trial seeds, so the cells of one run are correlated and a
-shared sign is weaker evidence than it would be for independent cells. Over the whole T-Rex+GVS suite these are the
-only 4 of 1,698 cells (0.24 %) with $|z| > 3$, a rate within Monte Carlo noise.
+the combined Monte Carlo standard error of the two 200-trial means, finds no cell with $|z| > 3$ among the 180 cells
+of this demo (FDR and TPR of every solver at every grid point, largest $|z| = 2.68$). R's FDR lies above the C++ value
+at 25 of the 30 grid points for TENET and at 27 for TIENET_AUG, by $0.004$ on average, and Python lies above C++ at 21
+and 24. Every grid point reuses the same trial seeds, so the cells of one run are correlated and a shared sign is
+weaker evidence than it would be for independent cells. Over the whole T-Rex+GVS suite no cell of 1,710 has
+$|z| > 3$.
 
-- The aggregate TPR **levels off** instead of approaching 1. At $\mathrm{SNR} = 5$, TENET's TPR rises over `ar_coef`
-  $\in \lbrace0.3, 0.5, 0.7\rbrace$ ($0.11 \to 0.36 \to 0.59$) and then stays at $0.58\text{–}0.60$. From `ar_coef`
-  $= 0.8$ on it lies at $0.55\text{–}0.60$ for every $\mathrm{SNR} \ge 0.5$ (and $0.48\text{–}0.55$ at
-  $\mathrm{SNR} = 0.2$), roughly 83 to 91 of the 150 active variables. That is fewer than the 100 variables of the AR(1)
-  and ARMA(2,1) blocks together. A plausible reading is that the MA(3) block, whose correlation vanishes beyond lag 3,
-  adds few selections, but the demo records no per-block rates.
 - **TENET** and **TENET_AUG** return identical numbers (means and standard deviations agree in every cell) and keep
-  the FDR below the $\mathrm{tFDR} = 0.1$ target in every cell (no cyan outlines). Their FDR grows with `ar_coef`,
-  from at most $0.047$ at `ar_coef` $= 0.3$ to $0.081\text{–}0.086$ at $0.9$ and $0.95$, with the maximum $0.086$ at
-  $\mathrm{SNR} = 2$, `ar_coef` $= 0.95$. The trap block (AR(1), same `ar_coef` as the active AR(1) block) is
-  structurally similar to an active block and is the main test of false-group exclusion here. The FDR stays below
-  target despite it, although the demo does not record which false discoveries fall into the trap.
-- **TIENET_AUG** is more conservative, with an FDR of at most $0.046$. Its TPR peaks at $0.51$ (`ar_coef` $= 0.7$,
-  $\mathrm{SNR} = 5$), reaches up to $0.45$ at `ar_coef` $= 0.8$, and collapses to $0.006\text{–}0.007$ from
-  `ar_coef` $= 0.9$ on, while TENET keeps its $0.55\text{–}0.60$ there. In the six collapse cells from
-  $\mathrm{SNR} = 1$ on, the TPR is exactly $1/150$ and the FDR exactly $0$, both with standard deviation $0$, so
-  every trial selected a single variable, an active one. The collapse sets in where the ARMA(2,1) block turns
-  non-stationary and nearly collinear (see the DGP section). A plausible reading is that TIENET_AUG meets within-block
-  correlation above `corr_max = 0.98` as in the $\rho = 0.99$ columns of Demos 05 and 06, where it collapses as
-  well, although the ARMA(2,1) block is far more extreme (pairwise correlation of at least $0.999999$).
-- Against Demo 06 (uniform AR(1) blocks, R run), the ARMA design has a lower TENET ceiling, a top TPR of $0.605$ here
-  against $0.961$ there. At a coefficient of $0.9$ and $\mathrm{SNR} \ge 0.5$, Demo 06 reaches $0.63\text{–}0.95$
-  against $0.55\text{–}0.58$ here. At coefficients up to $0.7$, in contrast, the ARMA design gives the higher TPR at all
-  15 shared grid points ($0.36$ against $0.12$ at $0.5$ and $\mathrm{SNR} = 5$, for example). A plausible reading is
-  that its 80-variable ARMA(2,1) block is more strongly correlated at short lags than an AR(1) block with the same
-  coefficient (lag-1 autocorrelation $0.62$, $0.77$ and $0.91$ against $0.3$, $0.5$ and $0.7$), because its second AR
-  term and its MA term add correlation.
+  the FDR below the $\mathrm{tFDR} = 0.1$ target in every cell (at most $0.079$, no cyan outlines). Their FDR grows
+  with `ar_coef`, from at most $0.040$ at `ar_coef` $= 0.3$ to $0.067\text{–}0.079$ at $0.95$. The trap block (AR(1),
+  same `ar_coef` as the active AR(1) block) is structurally similar to an active block and is the main test of
+  false-group exclusion here. The FDR stays below target despite it, although the demo does not record which false
+  discoveries fall into the trap.
+- Their TPR rises with both SNR and `ar_coef`. At $\mathrm{SNR} = 5$ it climbs from $0.078$ at `ar_coef` $= 0.3$ to
+  $0.669$ at $0.9$ and $0.670$ at $0.95$, and at $\mathrm{SNR} = 0.2$ from $0.000$ to $0.451$. The ceiling of about
+  two thirds matches 100 of the 150 active variables, the size of the AR(1) and ARMA(2,1) blocks together. A plausible
+  reading is that the MA(3) block, whose correlation vanishes beyond lag 3 and does not follow the sweep, stays mostly
+  unselected, but the demo records no per-block rates.
+- **TIENET_AUG** is more conservative, with an FDR of at most $0.048$ and a somewhat lower TPR ($0.568\text{–}0.582$
+  at `ar_coef` $\ge 0.9$ and $\mathrm{SNR} = 5$, against $0.669\text{–}0.670$ for TENET). Its FDR falls toward zero
+  at high `ar_coef` and SNR (at most $0.006$ at `ar_coef` $\ge 0.9$ and $\mathrm{SNR} \ge 2$), while the FDR of
+  TENET rises there.
+- Against Demo 06 (uniform AR(1) blocks, R run), the ARMA design has the higher TPR at low coefficients and the lower
+  ceiling. At coefficients up to $0.7$ it gives the higher TENET TPR at 14 of the 15 shared grid points ($0.229$
+  against $0.119$ at $0.5$ and $\mathrm{SNR} = 5$, for example). A plausible reading is that its 80-variable ARMA(2,1)
+  block is more strongly correlated at short lags than an AR(1) block with the same coefficient (lag-1
+  autocorrelation $0.59$, $0.71$ and $0.83$ against $0.3$, $0.5$ and $0.7$), because its MA term adds correlation. At
+  a coefficient of $0.9$ and $\mathrm{SNR} \ge 0.5$, in contrast, Demo 06 reaches $0.63\text{–}0.95$ against
+  $0.53\text{–}0.67$ here, and its top TENET TPR is $0.961$ against $0.670$.
+- With the former explosive ARMA(2,1) block (see the DGP section), the TENET TPR leveled off at $0.55\text{–}0.60$
+  from `ar_coef` $= 0.8$ on, and the TIENET_AUG TPR collapsed to $0.006\text{–}0.007$ from `ar_coef` $= 0.9$ on.
+  Both effects came from the nearly collinear block, and the stationary block shows neither.
 
 TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ `ar_coef` grid, one column per solver
 (row axis = SNR, column axis = AR coefficient). FDR cells above the $\mathrm{tFDR} = 0.1$ target

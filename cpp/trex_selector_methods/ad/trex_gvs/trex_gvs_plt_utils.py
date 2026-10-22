@@ -16,9 +16,10 @@ Three CSV shapes are auto-detected from their columns:
   the swept correlation (rho or ar_coef).
 
 * **Method comparison** — ``method,metric,<param>,mean,sd`` (demo 01's
-  ``lambda2_method`` and ``hc_linkage`` studies). Rendered as grouped bar charts
-  (TPR and FDR panels, bars grouped by parameter level, one colour per solver,
-  +/- 1 sd error bars, tFDR reference line on the FDR panel).
+  ``lambda2_method``, ``hc_linkage`` and ``cut`` studies). Rendered as grouped
+  bar charts (TPR and FDR panels, bars grouped by parameter level, one colour
+  per solver, +/- 1 sd error bars, tFDR reference line on the FDR panel). The
+  cut study adds full-group recovery and group FDR panels (2 x 2 grid).
 
 * **Block benchmark** — ``scenario,rho,snr,method,...`` (demo 08). Rendered as
   TPR / FDR line plots, one line per method, tFDR reference on the FDR row.
@@ -267,7 +268,7 @@ def plot_2d_heatmaps(df: pd.DataFrame, title: str,
 
 
 # ---------------------------------------------------------------------------
-# Method-comparison grouped bars (demo 01 lambda2_method / hc_linkage)
+# Method-comparison grouped bars (demo 01 lambda2_method / hc_linkage / cut)
 # ---------------------------------------------------------------------------
 def plot_method_bars(df: pd.DataFrame, param_col: str, title: str,
                      param_label: str, tfdr: float = DEFAULT_TFDR) -> plt.Figure:
@@ -275,7 +276,17 @@ def plot_method_bars(df: pd.DataFrame, param_col: str, title: str,
     solvers = [s for s in SOLVER_ORDER if s in set(df["method"])]
     colors = plt.get_cmap("tab10").colors
 
-    fig, axes = plt.subplots(1, 2, figsize=(max(11.0, 2.2 * len(levels) + 5), 4.8))
+    panels = [("mean_TPP", "TPR (true positive rate)"),
+              ("mean_FDP", "FDR (false discovery rate)")]
+    # Cut study: group-level panels below the variable-level ones
+    grouped = "grp_full" in set(df["metric"])
+    if grouped:
+        panels += [("grp_full", "Full-group recovery"),
+                   ("grp_FDP", "Group FDR (groups without signal)")]
+    width_in = max(11.0, 2.2 * len(levels) + 5)
+    fig, axes = plt.subplots(2 if grouped else 1, 2,
+                             figsize=(width_in, 8.6 if grouped else 4.8))
+    axes = np.ravel(axes)
     x = np.arange(len(levels))
     width = 0.8 / max(len(solvers), 1)
 
@@ -283,9 +294,7 @@ def plot_method_bars(df: pd.DataFrame, param_col: str, title: str,
     legend_handles: list = []
     legend_labels: list[str] = []
 
-    for ai, (metric, mlabel) in enumerate(
-            [("mean_TPP", "TPR (true positive rate)"),
-             ("mean_FDP", "FDR (false discovery rate)")]):
+    for ai, (metric, mlabel) in enumerate(panels):
         ax = axes[ai]
         for si, solver in enumerate(solvers):
             sub = df[(df["method"] == solver) & (df["metric"] == metric)]
@@ -304,7 +313,7 @@ def plot_method_bars(df: pd.DataFrame, param_col: str, title: str,
         ax.set_xlabel(param_label, fontsize=11)
         ax.set_title(mlabel, fontsize=12, fontweight="bold")
         ax.grid(axis="y", alpha=0.3)
-        if metric == "mean_TPP":
+        if metric in ("mean_TPP", "grp_full", "grp_FDP"):
             ax.set_ylim(0, 1.05)
         if metric == "mean_FDP" and tfdr > 0:
             ref = ax.axhline(tfdr, color="black", linestyle=":", linewidth=2.0)
@@ -314,7 +323,11 @@ def plot_method_bars(df: pd.DataFrame, param_col: str, title: str,
     fig.suptitle(title, fontsize=14, fontweight="bold", y=0.97)
     place_figure_legend(fig, legend_handles, legend_labels, "Method",
                         anchor_x=0.815, fontsize=9)
-    fig.subplots_adjust(left=0.07, right=0.80, bottom=0.18, top=0.83, wspace=0.22)
+    if grouped:
+        fig.subplots_adjust(left=0.07, right=0.80, bottom=0.09, top=0.89,
+                            wspace=0.22, hspace=0.38)
+    else:
+        fig.subplots_adjust(left=0.07, right=0.80, bottom=0.18, top=0.83, wspace=0.22)
     return fig
 
 

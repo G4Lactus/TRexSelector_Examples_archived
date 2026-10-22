@@ -45,6 +45,7 @@
 #   X        n x p predictor matrix
 #   y        length-n response
 #   beta     length-p true coefficient vector (field consistent with .run_mc)
+#   prior_groups  oracle group labels: blocks 1-3, background columns singletons
 #   n, p, s  dimensions
 #   snr      target SNR
 #   sigma_y  realised noise standard deviation
@@ -85,6 +86,8 @@ dgp_hastie_snr <- function(n, p = 500, snr, sd_x = sqrt(0.01), seed = NULL) {
     X       = X,
     y       = y,
     beta    = beta,
+    # Oracle groups: 1-3 for the three blocks, background columns as singletons
+    prior_groups = c(rep(1:3, each = 50L), seq_len(p - 150L) + 3L),
     n       = n,
     p       = p,
     s       = 150L,
@@ -540,10 +543,9 @@ dgp_ar1_blocks_snr <- function(n, p = 500, snr, rho = 0.85, seed = NULL) {
 #'
 #' Mirrors the inline generator in the cpp DGP: x_t = eps_t + sum_k ar[k] x_{t-k}
 #' + sum_k ma[k] eps_{t-k}, with a burn-in of max(100, p + q + 10) discarded.
-#' Unlike stats::arima.sim, it does not enforce stationarity, so near-non-
-#' stationary specifications (e.g. the ARMA(2,1) block at high ar_coef, which is
-#' stationary only for ar_coef < 0.833) are generated rather than rejected;
-#' downstream column standardisation keeps the columns unit-variance.
+#' Unlike stats::arima.sim, it does not enforce stationarity, so the callers pass
+#' stationary coefficients (the ARMA(2,1) block uses AR terms 5:1 that sum to
+#' ar_coef); downstream column standardisation keeps the columns unit-variance.
 #'
 #' @param model List with optional numeric entries `ar` and `ma`.
 #' @param len   Length of the returned series.
@@ -596,7 +598,8 @@ dgp_arma_blocks_snr <- function(n, p = 500, snr, ar_coef = 0.8,
   models        <- list(
     list(ar = ar_coef),
     list(ma = ma_coefs),
-    list(ar = c(ar_coef, ar_coef / 5), ma = ma_coefs[1L]),
+    # ARMA(2,1): AR terms 5:1 summing to ar_coef, stationary for ar_coef in (0, 1)
+    list(ar = c(ar_coef * 5 / 6, ar_coef / 6), ma = ma_coefs[1L]),
     list(ar = ar_coef)
   )
   num_blocks    <- length(group_sizes)

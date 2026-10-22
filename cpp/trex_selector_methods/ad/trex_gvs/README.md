@@ -118,12 +118,18 @@ The same FDR and TPR definitions from the classical T-Rex demos apply here, with
 > null hypothesis. See [[3]](#references) for such a formulation in the knockoff setting. It is
 > *not* obtainable by reinterpreting the coordinate-level numbers.
 
-Demo 08 is the only demo that additionally reports block-level diagnostics: **block hit rate** (share of
- active blocks with at least one selected variable — a block-level TPR), **block FDR** (share of hit blocks that
- are actually null), **full-block rate** (share of active blocks recovered in their entirety), and a
- **block-purity** diagnostic (how consistently a true block maps to a single discovered group — always $1.0$ for
- oracle groups). These are descriptive only. The selector controls the coordinate-level FDR, and no guarantee
- attaches to any block-level rate.
+Demo 01 Part 4 and Demo 08 additionally report group-level rates. Demo 01 Part 4 compares clustering cuts and
+ gives the share of active groups hit, the share recovered in full, the group FDR (share of selected groups without
+ an active variable) and the number of groups formed. Demo 08 gives the **block hit rate** (share of active blocks
+ with at least one selected variable — a block-level TPR), **block FDR** (share of hit blocks that are actually
+ null), **full-block rate** (share of active blocks recovered in their entirety), and a **block-purity** diagnostic
+ (how consistently a true block maps to a single discovered group — always $1.0$ for oracle groups).
+
+> **T-Rex+GVS as implemented is not designed to control a group-level FDR.** It controls the FDR of the selected
+> variables, and $\mathrm{tFDR}$ bounds that rate only. The group- and block-level rates are descriptive, carry no
+> target and no guarantee, and a value above $\mathrm{tFDR}$ does not indicate a loss of FDR control. With many
+> singleton background groups next to a few active groups, the group FDR can be large (Demo 01 Part 4) while the
+> variable-level FDR stays below the target.
 
 ---
 
