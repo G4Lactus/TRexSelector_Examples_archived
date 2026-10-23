@@ -9,21 +9,23 @@
 #  cpp/trex_selector_methods/ad/trex_core/demo_trex_08_mc_sim_scalability.cpp.
 #
 # Two aims:
-#   (a) high-dimensionality  — sweep p up to 5,000,000;
+#   (a) high-dimensionality  — sweep p up to 1,000,000;
 #   (b) volumes beyond RAM   — the data one T-iteration touches (X plus the K
 #                              memory-mapped dummy files) grows past physical
 #                              RAM, feasible only because the pipeline is fully
 #                              out-of-core (memory-mapped).
 #
 # Design of the study, two blocks with separate outputs and trial caches:
-#   * base block     n in {300,500,1000,1500,2000,5000}
-#                    x p in {1k,5k,10k,20k,50k,100k,150k,200k},
-#                    max_dummy_multiplier = 10
-#   * large-p block  n in {300,500} x p in {1,000,000; 5,000,000},
-#                    max_dummy_multiplier = 5 (bounds the worst-case dummy disk
-#                    at n=500, p=5e6 to 2 TB)
-#   * per T-iteration volume X + K*L*X: 168 GB at n=5000, p=200k and 420 GB
-#     at n=500, p=5e6 (L = 1), yet resident RSS stays bounded by RAM.
+#   * base block     n in {300,1000,2000,5000} x p in {1k,10k,100k,150k},
+#                    max_dummy_multiplier = 10 (log-spaced p for the in-core
+#                    scaling, p = 150k for the step into out-of-core)
+#   * large-p block  n = 300 x p in {100,000; 1,000,000},
+#                    max_dummy_multiplier = 5 (p = 100,000 also runs in the
+#                    base block at cap 10, a direct cap comparison)
+#   * per T-iteration volume X + K*L*X: 126 GB at n=5000, p=150k and 50 GB at
+#     n=300, p=1e6 (L = 1, 242 GB at L = 5), yet resident RSS stays bounded.
+#   * A file named by TREX_STOP_FILE stops the run before the next trial
+#     (exit code 75); finished trials stay cached and the next run resumes.
 #   * SNR = 1 fixed (SNR is not a scaling axis; sweeping it only burns time),
 #     demo-03 DGP (variable support s=10 redrawn per trial, unit coefficients,
 #     Normal predictors/noise).
@@ -41,10 +43,11 @@
 #
 # Disk pre-flight: a point whose worst-case disk need (X, K dummy files at the
 # dummy cap, K checkpoints) does not fit the free temp-dir space is skipped
-# with a message. The library does not check free space, and a write into a
-# memory-mapped file on a full disk raises SIGBUS.
+# with a message. The library checks free space too (it throws before creating
+# memory-mapped files that may not fit), so the pre-flight is an early,
+# per-point check that keeps the run going.
 #
-# Per grid point we record: timing (DGP, select() median/min/max, per-T-iter),
+# Per grid point we record: timing (DGP, select() mean/median/min/max, per-T-iter),
 # memory (post-select RSS, physical footprint, process peak RSS, X+y bytes,
 # per T-iteration data volume at the realized L), and FDR / TPR / Avg L / Avg T.
 #
@@ -136,11 +139,12 @@ _NUM_THREADS = resolve_workers()  # OpenMP threads for select(), TREX_NUM_WORKER
 
 # Base block: full n x p cross. Points whose volume X + K*L*X passes physical
 # RAM are the out-of-core regime that only the memory-mapped pipeline reaches.
-_N_VALUES   = [300, 500, 1_000, 1_500, 2_000, 5_000]
-_P_VALUES   = [1_000, 5_000, 10_000, 20_000, 50_000, 100_000, 150_000, 200_000]
-# Large-p block: few observations, millions of predictors.
-_LARGE_P_N_VALUES = [300, 500]
-_LARGE_P_P_VALUES = [1_000_000, 5_000_000]
+_N_VALUES   = [300, 1_000, 2_000, 5_000]
+_P_VALUES   = [1_000, 10_000, 100_000, 150_000]
+# Large-p block: few observations, up to a million predictors.
+_LARGE_P_N_VALUES = [300]
+_LARGE_P_P_VALUES = [100_000, 1_000_000]
+_EXIT_STOPPED = 75   # exit code after a stop via TREX_STOP_FILE (EX_TEMPFAIL)
 _NUM_MC     = 10
 
 # Tiny end-to-end smoke grid (pipeline verification only); the second point
@@ -251,6 +255,21 @@ def _free_temp_disk_gib():
         return float("nan")
 
 
+_STOPPED = False
+
+
+def _stop_requested():
+    """True once the file named by TREX_STOP_FILE exists (sticky).
+
+    Checked before every trial, so a stop never cuts a trial short.
+    """
+    global _STOPPED
+    if not _STOPPED:
+        path = os.environ.get("TREX_STOP_FILE", "")
+        _STOPPED = bool(path) and os.path.exists(path)
+    return _STOPPED
+
+
 # ==============================================================================
 # Expandable per-trial cache (top-up num_MC / grid; trial-level resume)
 # ==============================================================================
@@ -321,6 +340,7 @@ def _aggregate_cell(cell_cache, n, p):
     total  = [d + s for d, s in zip(dgp, sel)]
     return dict(
         vol_gib      = _volume_gib(n, p, max(float(np.mean(L)), 1.0)),
+        sel_mean_s   = float(np.mean(sel)),
         sel_med_s    = float(np.median(sel)),
         sel_min_s    = float(np.min(sel)),
         sel_max_s    = float(np.max(sel)),
@@ -642,6 +662,10 @@ def run_scalability_grid_point(n, p, num_MC, dummy_mult, solver_desc, tFDR, snr,
           flush=True)
 
     for mc in todo:
+        if _stop_requested():
+            print("  [stop] TREX_STOP_FILE found, no new trial started",
+                  flush=True)
+            break
         trial_seed = _trial_seed(n, p, mc)
 
         # Variable support (demo 03 pattern; make_support_random adds the
@@ -679,7 +703,7 @@ def run_scalability_grid_point(n, p, num_MC, dummy_mult, solver_desc, tFDR, snr,
     agg = _aggregate_cell(cell_cache, n, p)
     print(f"  [{solver_desc['name']}] n={n}, p={p} done "
           f"({agg['num_mc']} trials). "
-          f"select median={agg['sel_med_s']:.2f}s "
+          f"select mean={agg['sel_mean_s']:.2f}s "
           f"[{agg['sel_min_s']:.2f}, {agg['sel_max_s']:.2f}]  "
           f"peakRSS={agg['peak_rss_mib']:.0f} MiB  "
           f"FDR={agg['avg_fdr']:.3f}  TPR={agg['avg_tpr']:.3f}\n", flush=True)
@@ -694,6 +718,7 @@ def run_scalability_grid_point(n, p, num_MC, dummy_mult, solver_desc, tFDR, snr,
 # (label, decimals, aggregate key)
 _METRICS = [
     ("VolGiB",     1, "vol_gib"),
+    ("SelMean_s",  3, "sel_mean_s"),
     ("SelMed_s",   3, "sel_med_s"),
     ("SelMin_s",   3, "sel_min_s"),
     ("SelMax_s",   3, "sel_max_s"),
@@ -822,7 +847,7 @@ def demo_trex_scalability(grid, file_stem, block_title, num_MC_target,
               f"{'   [out-of-core]' if vol1 > _RAM_GIB else ''}")
         print("=" * 50)
 
-        # Disk pre-flight: a full disk under a memory-mapped write is a SIGBUS.
+        # Disk pre-flight: skip a point early when its worst case cannot fit.
         need = _worst_case_disk_gib(n, p, dummy_mult)
         avail = _free_temp_disk_gib()
         disk_ok = np.isnan(avail) or need + _DISK_RESERVE_GIB <= avail
@@ -848,6 +873,11 @@ def demo_trex_scalability(grid, file_stem, block_title, num_MC_target,
         save_and_print_scalability_results(file_stem, block_title, _TFDR, _SNR,
                                            grid[:gi + 1], _SOLVERS, results,
                                            num_MC_target)
+        if _stop_requested():
+            print(f"\n[stop] Stopped on request after point n={n}, p={p}; "
+                  "finished trials are cached, the next run resumes.",
+                  flush=True)
+            return
 
 
 # ==============================================================================
@@ -885,10 +915,12 @@ if __name__ == "__main__":
                 _benchmark_grid(mc), "demo_trex_08_scalability_results",
                 f"Base block: n x p cross, max_dummy_multiplier = {_DUMMY_MULT}",
                 mc)
-        if _run_large:
+        if _run_large and not _stop_requested():
             demo_trex_scalability(
                 _large_p_grid(mc), "demo_trex_08_scalability_large_p",
-                "Large-p block: p in millions, max_dummy_multiplier = "
+                "Large-p block: n = 300, p up to 1e6, max_dummy_multiplier = "
                 f"{_LARGE_P_DUMMY_MULT}", mc)
 
+    if _stop_requested():
+        sys.exit(_EXIT_STOPPED)
     print("\ndemo_trex_08_mc_sim_scalability.py complete.")

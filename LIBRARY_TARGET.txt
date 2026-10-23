@@ -21,9 +21,10 @@ Validated R:    TRexSelectorNeo 2.0.0 reinstalled from 61fd84c (links R's own li
                 gvs suite with |z| > 3). The other results committed on 44cf1ab stand.
 Validated perf: the perf and tsolvers results committed on 44cf1ab stand (no T-solver code changed, the C++
                 demo_ts demos were not rerun).
-Pending:        trex_core 08 (redesigned grid and large-p block) in all three languages, run as a nightly
-                side job. Its C++ and Python results still come from the July 2026 library, and R has none
-                yet. The single runs demo_trex_01 and demo_trex_06 are validated in all three languages.
+Pending:        trex_core 08 in Python and R (redesigned grid and large-p block, nightly runner). The C++
+                run is done on 61fd84c (base and large-p block, 10 trials, 23.3 h). The Python results
+                still come from the July 2026 library, and R has only the smoke recording. The single runs
+                demo_trex_01 and demo_trex_06 are validated in all three languages.
 Previous pins:  44cf1ab (2026-09-28), b95b984 (2026-09-27), 8ad3376 (2026-09-26), f390bfc (2026-09-25),
                 d404033 (2026-09-25); what changed between pins is in the git log of this file and in the
                 library's HISTORY.md.

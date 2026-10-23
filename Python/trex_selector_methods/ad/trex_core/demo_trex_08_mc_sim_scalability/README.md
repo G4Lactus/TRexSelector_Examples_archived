@@ -58,12 +58,12 @@ Two blocks with separate output files and trial caches, `num_MC = 10` sequential
 $(n, p, \text{solver})$:
 
 - **Base block** with `max_dummy_multiplier = 10`, the full cross of
-  $n \in \lbrace300, 500, 1{,}000, 1{,}500, 2{,}000, 5{,}000\rbrace$ and
-  $p \in \lbrace1{,}000, 5{,}000, 10{,}000, 20{,}000, 50{,}000, 100{,}000, 150{,}000, 200{,}000\rbrace$
-- **Large-p block** with `max_dummy_multiplier = 5`, $n \in \lbrace300, 500\rbrace$ and
-  $p \in \lbrace1{,}000{,}000, 5{,}000{,}000\rbrace$
+  $n \in \lbrace300, 1{,}000, 2{,}000, 5{,}000\rbrace$ and $p \in \lbrace1{,}000, 10{,}000, 100{,}000, 150{,}000\rbrace$
+  (log-spaced $p$ for the in-memory scaling, $p = 150{,}000$ as the step into out-of-core)
+- **Large-p block** with `max_dummy_multiplier = 5`, $n = 300$ and $p \in \lbrace100{,}000, 1{,}000{,}000\rbrace$
+  ($p = 100{,}000$ also runs in the base block at the cap of 10, a direct comparison of the two caps)
 
-$\Rightarrow$ 48 + 4 grid points × 3 solvers. A point runs out-of-core when the data volume one T-iteration touches
+$\Rightarrow$ 16 + 2 grid points × 3 solvers. A point runs out-of-core when the data volume one T-iteration touches
 exceeds RAM. Each T-iteration runs all $K = 20$ random experiments, and each reads $\mathbf{X}$ and its own
 memory-mapped dummy file of $L \cdot p$ columns:
 
@@ -72,22 +72,27 @@ V = n \cdot p \cdot 8 \cdot (1 + K L) \ \text{bytes}.
 ```
 
 At $L = 1$ this gives the following volumes in GiB (**bold** = above the 64 GiB RAM of the reference machine,
-the columns $p \le 20{,}000$ stay below 16 GiB and are omitted):
+the columns $p \le 10{,}000$ stay below 8 GiB and are omitted, and — marks cells outside the grid):
 
-| $n$ \\ $p$ | 50,000 | 100,000 | 150,000 | 200,000 | 1,000,000 | 5,000,000 |
-| --- | --- | --- | --- | --- | --- | --- |
-| 300 | 2.3 | 4.7 | 7.0 | 9.4 | 46.9 | **234.7** |
-| 500 | 3.9 | 7.8 | 11.7 | 15.6 | **78.2** | **391.2** |
-| 1,000 | 7.8 | 15.6 | 23.5 | 31.3 | — | — |
-| 1,500 | 11.7 | 23.5 | 35.2 | 46.9 | — | — |
-| 2,000 | 15.6 | 31.3 | 46.9 | 62.6 | — | — |
-| 5,000 | 39.1 | **78.2** | **117.3** | **156.5** | — | — |
+| $n$ \\ $p$ | 100,000 | 150,000 | 1,000,000 |
+| --- | --- | --- | --- |
+| 300 | 4.7 | 7.0 | 46.9 |
+| 1,000 | 15.6 | 23.5 | — |
+| 2,000 | 31.3 | 46.9 | — |
+| 5,000 | **78.2** | **117.3** | — |
 
 The output tables report the volume at the realized mean $L$ (`VolGiB`) and mark points above physical RAM with
-`*`. The worst-case dummy disk at the cap reaches about 2 terabytes (TB) at $n = 500$, $p = 5{,}000{,}000$. Before
-each point the demo checks that this worst case plus a 50 GiB reserve fits the free space of the temp directory
-and skips the point with a message otherwise, because the library does not check free disk and a write into a
-memory-mapped file on a full disk ends the process with `SIGBUS`.
+`*`. A larger $L$ multiplies the dummy part, and $n = 300$, $p = 1{,}000{,}000$ reaches 225.8 GiB at its cap
+$L = 5$. The worst-case dummy disk at the cap reaches 1,124 GiB at $n = 5{,}000$, $p = 150{,}000$, and 229 GiB at
+$n = 300$, $p = 1{,}000{,}000$. A write into a memory-mapped file on a full disk would end the process with
+`SIGBUS`, so the library checks the free disk before it creates memory-mapped files (library commit `788cc46`).
+Before each point the demo also checks that this worst case plus a 50 GiB reserve fits the free space of the
+temp directory, and it skips the point with a message otherwise.
+
+A C++ calibration run at $p = 1{,}000{,}000$ (TLARS, one trial, cap 5) took 1,575 s at $n = 300$, where it reached the
+cap $L = 5$ and selected none of the 10 true variables, and 1,102 s at $n = 500$ with $L = 3$ and a TPR of $0.40$. The
+earlier grid with $p$ up to $5{,}000{,}000$ would have taken about three weeks of machine time, so the large-p block
+now stops at $n = 300$, $p = 1{,}000{,}000$.
 
 ---
 
@@ -138,6 +143,7 @@ Per $(n, p)$ × solver, averaged/aggregated over the `num_MC` sequential trials:
 | Column | Meaning |
 | --- | --- |
 | `VolGiB` | Data volume per T-iteration $V$ at the mean realized $L$ (GiB) |
+| `SelMean_s` | Mean `select()` wall-clock (s), the runtime of the figure |
 | `SelMed_s` / `SelMin_s` / `SelMax_s` | Median / min / max `select()` wall-clock (s) |
 | `DGP_s` | Data-generation wall-clock (s) |
 | `s/Titer` | `select()` time per T-loop iteration (s) |
@@ -151,10 +157,15 @@ RSS is read via `ps -o rss=` (macOS) / `/proc/self/statm` (Linux), the physical
 footprint via `task_info(TASK_VM_INFO).phys_footprint` through `ctypes` (macOS) /
 `VmRSS + VmSwap` (Linux), and peak RSS via `resource.getrusage`.
 
-The `SelMed`/`SelMin`/`SelMax` triple (rather than a single mean) is deliberate.
-Per-trial `select()` times span a wide range at the larger grid points, so the
-median is the robust summary and the min–max band shows the spread. `PeakRSS_MiB` is the running maximum of the
-whole process, so the two blocks are best run in separate invocations.
+The runtime is evaluated as the **mean** `select()` time, the expected cost of one trial, with the min–max
+range as its spread. The median stays as a table column. At $n = 300$ the per-trial time depends strongly on
+how far $L$ climbs, so in the C++ run mean and median differ there by up to a factor of 3.4, while they agree within
+0.86–1.15 for $n \ge 1{,}000$.
+
+`PeakRSS_MiB` is the running maximum of the whole process, so every point after the largest one so far repeats
+its value. The figure therefore shows the per-point resident memory and heap after `select()`, and the
+process peak only as one line for the whole run. Running the two blocks in separate invocations keeps the base
+block's peak out of the large-p table.
 
 ---
 
@@ -211,12 +222,15 @@ Demo 08's comma-separated values (CSV) files use the wider
 `scalability <csv> [<csv> …]`). The CSVs of both blocks are read by `read_scalability()`, concatenated, and
 rendered by `plot_scalability_dashboard()` as a 2×2 dashboard:
 
-1. **Runtime vs $p$** (colour = $n$ and linestyle = solver, with a median + min–max band).
-2. **Memory vs $p$** — peak RSS per $n$ against the $\mathbf{X}/\mathbf{y}$ backing
-   size, with the physical-RAM line.
-3. **Out-of-core money plot** — peak RSS against the volume per T-iteration (log–log), the
-   64 GiB RAM line drawn in, and the out-of-core points ringed.
+1. **Runtime vs $p$** (colour = $n$ and linestyle = solver, mean with a min–max band).
+2. **Memory vs $p$** — resident memory and heap after `select()` per $n$ against the
+   $\mathbf{X}/\mathbf{y}$ backing size, with the physical-RAM line.
+3. **Out-of-core plot** — the heap after `select()` against the volume per T-iteration (log–log), with the
+   64 GiB RAM line, the process peak of the run as one line, and the out-of-core points ringed.
 4. **FDR control at scale** — per solver, against the target FDR (tFDR) line.
+
+The $n = 300$ line runs from $p = 1{,}000$ to $1{,}000{,}000$. Points of the large-p block are white-filled, and its
+cap-5 point at $p = 100{,}000$ sits next to the base block's point, which shows the two caps side by side.
 
 `./generate_plots.sh` renders it into `simulation_results/plots/`.
 
@@ -240,7 +254,7 @@ check, not a scientific result.
 demo=Python/trex_selector_methods/ad/trex_core/demo_trex_08_mc_sim_scalability/demo_trex_08_mc_sim_scalability.py
 
 python "$demo" base      # base block, num_MC = 10 (long-running)
-python "$demo" large     # large-p block, num_MC = 10 (needs up to 2 TB free disk)
+python "$demo" large     # large-p block, num_MC = 10 (needs up to 230 GiB free disk)
 python "$demo" large 2   # large-p block, num_MC = 2 (first pass; top up later)
 python "$demo"           # both blocks in one process, base first
 python "$demo" smoke     # tiny end-to-end smoke check (num_MC = 2)
@@ -254,3 +268,9 @@ later point preserves everything finished so far. The benchmark installs cleanup
 handlers (`atexit` + `SIGINT`/`SIGTERM`) that sweep orphaned memory-mapped files
 (`demo08_scalability_*`, `trex_memmap_*`, `trex_warmstart_*`) on exit. `SIGKILL` and `SIGBUS` cannot be handled
 from Python, so the next startup sweep reclaims what they leave behind.
+
+The full benchmark in all three languages takes days, so
+[`run_demo08_nightly.sh`](../../../../../cpp/trex_selector_methods/run_demo08_nightly.sh) works it off in portions, C++
+first, then Python, then R (runner steps `py_base` and `py_large`). `start` runs or continues it in the background,
+`start py` restricts it to the two Python steps, and `stop` creates the file named by `TREX_STOP_FILE`, so the demo ends
+after its current trial with exit code 75. The next `start` resumes at the first missing trial.

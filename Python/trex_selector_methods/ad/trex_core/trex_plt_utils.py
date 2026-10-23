@@ -804,10 +804,12 @@ def scal_solver_label(solver: str) -> str:
     return solver if rho is None else f"{solver} (rho = {rho:g})"
 
 # Column labels as they appear in the CSV's 'metric' field (new n x p schema).
+M_SELMEAN = "SelMean_s"  # mean select() wall-clock across trials [s] (the runtime line)
 M_SELMED = "SelMed_s"    # median select() wall-clock across trials [s]
 M_SELMIN = "SelMin_s"    # min select() time across trials [s]
 M_SELMAX = "SelMax_s"    # max select() time across trials [s]
 M_RSS = "RSS_MiB"        # resident set size after select() (MiB) - tracks data
+M_FOOT = "Foot_MiB"      # physical footprint after select() (MiB) - the anonymous heap
 M_PEAKRSS = "PeakRSS_MiB"  # process peak RSS (MiB) - inflated by cold-heap footprint
 M_XY = "X+y_MiB"         # on-disk X/y mmap backing size (MiB)
 M_VOL = "VolGiB"         # per T-iteration volume X + K*L*X at mean L (GiB)
@@ -836,7 +838,8 @@ def _scal_ram_gib():
 
 def read_scalability(paths) -> pd.DataFrame:
     """Load one or more wide demo-08 CSVs (concatenated), normalising column
-    and metric whitespace."""
+    and metric whitespace. Each row is tagged with its block, "large_p" for a
+    file whose stem contains "large_p" and "base" otherwise."""
     if isinstance(paths, (str, Path)):
         paths = [paths]
     frames = []
@@ -846,7 +849,9 @@ def read_scalability(paths) -> pd.DataFrame:
                 f"Input file not found:\n  {path}\n"
                 "Pass the results CSV path(s) as the first argument(s)."
             )
-        frames.append(pd.read_csv(path))
+        frame = pd.read_csv(path)
+        frame["block"] = "large_p" if "large_p" in path.stem else "base"
+        frames.append(frame)
     df = pd.concat(frames, ignore_index=True)
     df.columns = df.columns.str.strip().str.lower()
 
@@ -868,19 +873,24 @@ def read_scalability(paths) -> pd.DataFrame:
 
 
 def scal_pivot(df: pd.DataFrame) -> pd.DataFrame:
-    """Wide table: one row per (n, p, solver) with a column per metric."""
-    w = df.pivot_table(index=["n", "p", "solver", "is_barrier"],
-                       columns="metric", values="value").reset_index()
+    """Wide table: one row per (n, p, solver, block) with a column per metric."""
+    index = ["n", "p", "solver", "is_barrier"] + (["block"] if "block" in df.columns else [])
+    w = df.pivot_table(index=index, columns="metric", values="value").reset_index()
     w.columns.name = None
     return w.sort_values(["solver", "n", "p"])
 
 
+SCAL_ORANGE = "#ff7f0e"  # replaces the yellow end of viridis (hard to read on white)
+
+
 def _scal_n_colors(n_values):
-    """Stable colour per sample size n (viridis over the sorted n grid)."""
+    """Stable colour per sample size n: viridis over the sorted n grid, with
+    orange instead of its yellow end."""
     import matplotlib.cm as cm
     import matplotlib.colors as mcolors
     norm = mcolors.Normalize(vmin=0, vmax=max(len(n_values) - 1, 1))
-    return {n: cm.viridis(norm(i)) for i, n in enumerate(sorted(n_values))}
+    return {n: (SCAL_ORANGE if norm(i) > 0.85 else cm.viridis(norm(i)))
+            for i, n in enumerate(sorted(n_values))}
 
 
 def _scal_p_axis(ax, p_values, xscale: str = SCAL_XSCALE) -> None:
@@ -911,6 +921,17 @@ def plot_scalability_dashboard(
     from matplotlib.lines import Line2D
 
     w = scal_pivot(df)
+    # Runtime line: the mean select() time (older CSVs only carry the median)
+    m_sel = M_SELMEAN if M_SELMEAN in w.columns else M_SELMED
+    # Large-p points at an (n, p) of the base block (the cap comparison) get
+    # their own markers, all other points join the lines
+    if "block" in w.columns:
+        base_np = set(zip(w.loc[w["block"] == "base", "n"], w.loc[w["block"] == "base", "p"]))
+        dup = (w["block"] != "base") & pd.Series(
+            [(n, p) in base_np for n, p in zip(w["n"], w["p"])], index=w.index)
+        w_dup, w = w[dup], w[~dup]
+    else:
+        w_dup = w.iloc[0:0]
     m_vol = M_VOL if M_VOL in w.columns else M_VOL_LEGACY
     solvers = [s for s in SCAL_SOLVERS if s in set(w["solver"])]
     n_values = sorted(w["n"].unique())
@@ -923,31 +944,53 @@ def plot_scalability_dashboard(
     ax_rt, ax_mem = axes[0]
     ax_oc, ax_fdr = axes[1]
 
+    def hollow(ax, sub, y, color, marker="o", size=5, only_large_p=True):
+        """White-filled markers on the large-p block's points (dummy cap 5)."""
+        if "block" not in sub.columns:
+            return
+        lp = sub[sub["block"] != "base"] if only_large_p else sub
+        if not lp.empty:
+            ax.plot(lp["p"], lp[y], linestyle="none", marker=marker, markersize=size,
+                    markerfacecolor="white", markeredgecolor=color, markeredgewidth=1.4,
+                    zorder=4)
+
     # --- (0,0) Runtime vs p: colour = n, line style = solver; median + band --
     for n in n_values:
         for solver in solvers:
             sub = w[(w["n"] == n) & (w["solver"] == solver)].sort_values("p")
             if sub.empty:
                 continue
-            ax_rt.plot(sub["p"], sub[M_SELMED], color=n_col[n],
+            ax_rt.plot(sub["p"], sub[m_sel], color=n_col[n],
                        linestyle=solver_ls.get(solver, "-"), linewidth=2.0,
                        marker="o", markersize=4)
+            hollow(ax_rt, sub, m_sel, n_col[n])
+            hollow(ax_rt, w_dup[(w_dup["n"] == n) & (w_dup["solver"] == solver)],
+                   m_sel, n_col[n], only_large_p=False)
             if solver == solvers[0] and M_SELMIN in sub and M_SELMAX in sub:
                 ax_rt.fill_between(sub["p"], sub[M_SELMIN], sub[M_SELMAX],
                                    color=n_col[n], alpha=0.12)
     ax_rt.set_yscale("log")
-    ax_rt.set_ylabel("select() per trial [s]  (median, band = min-max)",
+    ax_rt.set_ylabel(f"select() per trial [s]  ({'mean' if m_sel == M_SELMEAN else 'median'}, "
+                     "band = min-max)",
                      fontsize=11)
-    ax_rt.set_title("Runtime scaling  (colour = n, style = solver)",
+    ax_rt.set_title("Runtime scaling",
                     fontsize=13, fontweight="bold")
 
-    # --- (0,1) Memory vs p: process peak RSS per n + X/y backing reference ---
+    # --- (0,1) Memory vs p: per-point resident and heap per n + X/y backing --
+    # (PeakRSS is the running maximum of the whole process, so it is no
+    # per-point quantity; resident and heap after select() are)
     for n in n_values:
         sub = w[(w["n"] == n) & (w["solver"] == solvers[0])].sort_values("p")
         if sub.empty:
             continue
-        ax_mem.plot(sub["p"], sub[M_PEAKRSS], color=n_col[n], linewidth=2.2,
+        ax_mem.plot(sub["p"], sub[M_RSS], color=n_col[n], linewidth=2.2,
                     marker="o", markersize=5, label=f"n = {int(n):,}")
+        hollow(ax_mem, sub, M_RSS, n_col[n], size=6)
+        hollow(ax_mem, w_dup[(w_dup["n"] == n) & (w_dup["solver"] == solvers[0])],
+               M_RSS, n_col[n], size=6, only_large_p=False)
+        if M_FOOT in sub and sub[M_FOOT].notna().any():
+            ax_mem.plot(sub["p"], sub[M_FOOT], color=n_col[n], linewidth=1.4,
+                        linestyle=":", marker="s", markersize=3)
     ref = w.groupby("p")[M_XY].mean().sort_index()
     ax_mem.plot(ref.index, ref.values, color=SCAL_REF_COLOR, linestyle="--",
                 linewidth=1.8, marker="D", markersize=5, markerfacecolor="white",
@@ -956,36 +999,57 @@ def plot_scalability_dashboard(
         ax_mem.axhline(ram * 1024.0, color="crimson", linestyle="-.",
                        linewidth=1.6, label=f"physical RAM = {ram:.0f} GiB")
     ax_mem.set_yscale("log")
-    ax_mem.set_ylabel("Memory [MiB]", fontsize=11)
-    ax_mem.set_title("Memory scaling: peak RSS stays far below the design volume",
+    ax_mem.set_ylabel("Memory after select() [MiB]", fontsize=11)
+    ax_mem.set_title("Memory scaling: resident follows X/y, the heap stays small",
                      fontsize=12, fontweight="bold")
 
     # --- (1,0) Out-of-core money plot: resident peak vs per-T-iteration volume
+    # Heap (physical footprint) per point against the volume; the process peak
+    # of the whole run (page cache of the mapped files included) is one line
+    w_all = pd.concat([w, w_dup])
+    # The heap where it was measured (R on macOS records none), else the resident
+    has_col = lambda c: c in w_all.columns and w_all[c].notna().any()  # noqa: E731
+    m_oc = M_FOOT if has_col(M_FOOT) else (M_RSS if has_col(M_RSS) else M_PEAKRSS)
     for n in n_values:
         for solver in solvers:
-            sub = w[(w["n"] == n) & (w["solver"] == solver)]
+            sub = w_all[(w_all["n"] == n) & (w_all["solver"] == solver)]
             if sub.empty:
                 continue
-            ax_oc.scatter(sub[m_vol], sub[M_PEAKRSS] / 1024.0, color=n_col[n],
-                          marker=SCAL_SOLVER_MARKERS.get(solver, "o"), s=45,
-                          edgecolors="white", linewidths=0.6, zorder=3)
-    oc = w[w["is_barrier"] == 1]
+            lp = (sub["block"] != "base") if "block" in sub.columns else sub["n"] < 0
+            ax_oc.scatter(sub.loc[~lp, m_vol], sub.loc[~lp, m_oc] / 1024.0,
+                          color=n_col[n], marker=SCAL_SOLVER_MARKERS.get(solver, "o"),
+                          s=45, edgecolors="white", linewidths=0.6, zorder=3)
+            if lp.any():
+                ax_oc.scatter(sub.loc[lp, m_vol], sub.loc[lp, m_oc] / 1024.0,
+                              facecolors="white", edgecolors=n_col[n], linewidths=1.4,
+                              marker=SCAL_SOLVER_MARKERS.get(solver, "o"), s=45, zorder=3)
+    oc = w_all[w_all["is_barrier"] == 1]
     if not oc.empty:
-        ax_oc.scatter(oc[m_vol], oc[M_PEAKRSS] / 1024.0, s=190,
+        ax_oc.scatter(oc[m_vol], oc[m_oc] / 1024.0, s=190,
                       facecolors="none", edgecolors="crimson", linewidths=1.8,
                       zorder=2, label="out-of-core (volume $>$ RAM)")
+    if m_oc != M_PEAKRSS and M_PEAKRSS in w_all.columns:
+        peak = float(w_all[M_PEAKRSS].max()) / 1024.0
+        ax_oc.axhline(peak, color="0.25", linestyle="--", linewidth=1.6,
+                      label=f"process peak RSS of the run = {peak:.0f} GiB")
     if ram > 0:
         ax_oc.axvline(ram, color="crimson", linestyle="-.", linewidth=1.8,
                       label=f"physical RAM = {ram:.0f} GiB")
+        if m_oc != M_PEAKRSS:
+            ax_oc.axhline(ram, color="crimson", linestyle="-.", linewidth=1.8)
     ax_oc.set_xscale("log")
+    if m_oc != M_PEAKRSS:
+        ax_oc.set_yscale("log")
     if m_vol == M_VOL:
         ax_oc.set_xlabel("Volume per T-iteration $X + K L X$ [GiB]  (log)",
                          fontsize=11)
     else:
         ax_oc.set_xlabel("Total design volume $[X\\,|\\,D]$ [GiB]  (log)",
                          fontsize=11)
-    ax_oc.set_ylabel("Process peak RSS [GiB]", fontsize=11)
-    ax_oc.set_title("Out-of-core: volume crosses RAM, resident stays bounded",
+    ax_oc.set_ylabel({M_FOOT: "Heap after select() [GiB]",
+                      M_RSS: "Resident after select() [GiB]"}.get(m_oc, "Process peak RSS [GiB]"),
+                     fontsize=11)
+    ax_oc.set_title("Out-of-core: volume crosses RAM, memory stays bounded",
                     fontsize=12, fontweight="bold")
     ax_oc.grid(True, which="both", linestyle="--", linewidth=0.6, alpha=0.4)
 
@@ -1022,10 +1086,22 @@ def plot_scalability_dashboard(
             [0], [0], color="0.3", lw=2.0,
             linestyle=solver_ls.get(s, "-"),  # type: ignore[arg-type]
             label=scal_solver_label(s)))
+    if "block" in w_all.columns and (w_all["block"] != "base").any():
+        s_handles.append(Line2D([0], [0], linestyle="none", marker="o", markersize=6,
+                                markerfacecolor="white", markeredgecolor="0.3",
+                                markeredgewidth=1.4, label="hollow: large-p block"))
     ax_rt.legend(handles=n_handles + s_handles, fontsize=8, ncol=2,
                  loc="upper left", frameon=True, framealpha=1.0,
                  facecolor="white", edgecolor="0.7")
-    for ax in (ax_mem, ax_oc, ax_fdr):
+    # Memory legend: n colours plus a key for the resident / heap line styles
+    mem_handles, _ = ax_mem.get_legend_handles_labels()
+    if M_FOOT in w.columns and w[M_FOOT].notna().any():
+        mem_handles += [Line2D([0], [0], color="0.3", lw=2.2, label="resident after select()"),
+                        Line2D([0], [0], color="0.3", lw=1.4, linestyle=":", marker="s",
+                               markersize=3, label="heap after select()")]
+    ax_mem.legend(handles=mem_handles, fontsize=8, loc="best", frameon=True,
+                  framealpha=1.0, facecolor="white", edgecolor="0.7")
+    for ax in (ax_oc, ax_fdr):
         ax.legend(fontsize=8, loc="best", frameon=True, framealpha=1.0,
                   facecolor="white", edgecolor="0.7")
 

@@ -8,20 +8,20 @@
  *        as the problem scales, across three base solvers (TLARS, TOMP, TAFS).
  *
  * @details Two aims:
- *   (a) high-dimensionality — sweep p up to 5,000,000;
+ *   (a) high-dimensionality — sweep p up to 1,000,000;
  *   (b) volumes beyond RAM  — the data one T-iteration touches (X plus the K
  *       memory-mapped dummy files) grows past physical RAM, feasible only
  *       because the pipeline is fully out-of-core.
  *
  *  Design of the study, two blocks with separate outputs and trial caches:
- *   - base block    n in {300,500,1000,1500,2000,5000}
- *                   x p in {1k,5k,10k,20k,50k,100k,150k,200k},
- *                   max_dummy_multiplier = 10
- *   - large-p block n in {300,500} x p in {1,000,000; 5,000,000},
- *                   max_dummy_multiplier = 5 (bounds the worst-case dummy disk
- *                   at n=500, p=5e6 to 2 TB)
- *   - per T-iteration volume X + K*L*X: 168 GB at n=5000, p=200k and 420 GB
- *     at n=500, p=5e6 (L = 1), yet resident RSS stays bounded by RAM.
+ *   - base block    n in {300,1000,2000,5000} x p in {1k,10k,100k,150k},
+ *                   max_dummy_multiplier = 10 (log-spaced p for the in-core
+ *                   scaling, p = 150k for the step into out-of-core)
+ *   - large-p block n = 300 x p in {100,000; 1,000,000},
+ *                   max_dummy_multiplier = 5 (p = 100,000 also runs in the
+ *                   base block at cap 10, a direct cap comparison)
+ *   - per T-iteration volume X + K*L*X: 126 GB at n=5000, p=150k and 50 GB at
+ *     n=300, p=1e6 (L = 1, 242 GB at L = 5), yet resident RSS stays bounded.
  *   - SNR = 1 fixed (SNR is not a scaling axis; sweeping it only burns time),
  *     demo-03 DGP (variable support s=10 redrawn per trial, unit coefficients,
  *     Normal predictors/noise).
@@ -38,10 +38,11 @@
  *
  *  Disk pre-flight: a point whose worst-case disk need (X, y, K dummy files at
  *  the dummy cap, K checkpoints) does not fit the free temp-dir space is
- *  skipped with a message. The library does not check free space, and a write
- *  into a memory-mapped file on a full disk raises SIGBUS.
+ *  skipped with a message. The library checks free space too (it throws before
+ *  creating memory-mapped files that may not fit), so the pre-flight is an
+ *  early, per-point check that keeps the run going.
  *
- *  Per grid point we record: timing (DGP, select() median/min/max, per-T-iter),
+ *  Per grid point we record: timing (DGP, select() mean/median/min/max, per-T-iter),
  *  memory (post-select RSS, physical footprint, process peak RSS, X+y bytes,
  *  per T-iteration data volume at the realized L), and FDR / TPR / Avg L / Avg T.
  *
@@ -68,14 +69,15 @@
  *  Run:  ./demo_trex_08_mc_sim_scalability            (both blocks, num_MC=10)
  *        ./demo_trex_08_mc_sim_scalability base       (base block only)
  *        ./demo_trex_08_mc_sim_scalability large 2    (large-p block, num_MC=2)
- *        ./demo_trex_08_mc_sim_scalability calib      (large-p block at p=1e6, num_MC=1)
+ *        ./demo_trex_08_mc_sim_scalability calib      (large-p block at its smallest p, num_MC=1)
  *        ./demo_trex_08_mc_sim_scalability smoke      (tiny end-to-end check)
  *        ./demo_trex_08_mc_sim_scalability smoke 3    (smoke grid, num_MC=3)
  *        TREX_SOLVERS=TLARS limits the computed solvers (cached ones still count).
  *
- * @note This simulation takes a substantial amount of time (the large-p points
- *       are tens of minutes per trial) and needs up to 2 TB of free disk for
- *       the memory-mapped dummy backing.
+ * @note This simulation takes a substantial amount of time (the out-of-core
+ *       points take tens of minutes per trial) and needs up to about 1.2 TB of
+ *       free disk for the memory-mapped dummy backing (n=5000, p=150k at the
+ *       cap). A file named by TREX_STOP_FILE stops it before the next trial.
  */
 // ==============================================================================
 
@@ -149,12 +151,15 @@ using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex
 
 // Base block: full n x p cross
 static const std::vector<Eigen::Index> N_VALUES =
-    {300, 500, 1'000, 1'500, 2'000, 5'000};
+    {300, 1'000, 2'000, 5'000};
 static const std::vector<Eigen::Index> P_VALUES =
-    {1'000, 5'000, 10'000, 20'000, 50'000, 100'000, 150'000, 200'000};
-// Large-p block: few observations, millions of predictors
-static const std::vector<Eigen::Index> LARGE_P_N_VALUES = {300, 500};
-static const std::vector<Eigen::Index> LARGE_P_P_VALUES = {1'000'000, 5'000'000};
+    {1'000, 10'000, 100'000, 150'000};
+// Large-p block: few observations, up to a million predictors
+static const std::vector<Eigen::Index> LARGE_P_N_VALUES = {300};
+static const std::vector<Eigen::Index> LARGE_P_P_VALUES = {100'000, 1'000'000};
+
+// Exit code after a stop requested via TREX_STOP_FILE (sysexits EX_TEMPFAIL)
+static constexpr int EXIT_STOPPED = 75;
 
 static constexpr std::size_t NUM_MC      = 10;    // sequential trials per point
 static constexpr double      SNR         = 1.0;   // fixed; not a scaling axis
@@ -185,6 +190,17 @@ static double worst_case_disk_gib(Eigen::Index n, Eigen::Index p, int dummy_mult
     const double dummies     = K * nd * pd * static_cast<double>(dummy_mult) * 8.0;
     const double checkpoints = K * 32.0 * pd * (1.0 + dummy_mult);
     return (x_y + dummies + checkpoints) / BYTES_PER_GIB;
+}
+
+/** @brief True once the file named by TREX_STOP_FILE exists (sticky).
+ *         Checked before every trial, so a stop never cuts a trial short. */
+static bool stop_requested() {
+    static bool stopped = false;
+    if (!stopped) {
+        const char* path = std::getenv("TREX_STOP_FILE");
+        stopped = path != nullptr && *path != '\0' && std::filesystem::exists(path);
+    }
+    return stopped;
 }
 
 /** @brief Free space of the temp dir in GiB (NaN if unavailable). */
@@ -394,6 +410,7 @@ struct ScalabilityGridPointResult {
     double avg_T        = 0.0;   ///< Mean stopping time T_stop
     double avg_dgp_s    = 0.0;   ///< Mean data-generation time [s]
     double avg_titer_s  = 0.0;   ///< Mean select time per T-loop iteration [s]
+    double sel_mean_s   = 0.0;   ///< Mean select() time across trials [s]
     double sel_med_s    = 0.0;   ///< Median select() time across trials [s]
     double sel_min_s    = 0.0;   ///< Min select() time across trials [s]
     double sel_max_s    = 0.0;   ///< Max select() time across trials [s]
@@ -692,6 +709,7 @@ static ScalabilityGridPointResult aggregate_cell(
     agg.avg_T       /= k;
     agg.avg_dgp_s   /= k;
     agg.avg_titer_s /= k;
+    agg.sel_mean_s = std::accumulate(selects.begin(), selects.end(), 0.0) / k;
     agg.sel_med_s = vmedian(selects);
     agg.sel_min_s = *std::min_element(selects.begin(), selects.end());
     agg.sel_max_s = *std::max_element(selects.begin(), selects.end());
@@ -739,6 +757,11 @@ static ScalabilityGridPointResult run_scalability_grid_point(
 
     for (const std::size_t mc : todo) {
 
+        if (stop_requested()) {
+            std::cout << "  [stop] TREX_STOP_FILE found, no new trial started\n";
+            break;
+        }
+
         const unsigned seed = trial_seed(point.n, point.p, mc);
         const auto support = draw_support(seed, point.p,
                                           cardinality_true_support);
@@ -774,8 +797,8 @@ static ScalabilityGridPointResult run_scalability_grid_point(
     std::cout << "  [" << solver.solver_name << "] "
               << "n=" << point.n << ", p=" << point.p << " done ("
               << agg.num_mc << " trials). "
-              << "select median=" << std::fixed << std::setprecision(2)
-              << agg.sel_med_s << "s [" << agg.sel_min_s << ", "
+              << "select mean=" << std::fixed << std::setprecision(2)
+              << agg.sel_mean_s << "s [" << agg.sel_min_s << ", "
               << agg.sel_max_s << "]  peakRSS=" << std::setprecision(0)
               << agg.peak_rss_mib << " MiB  FDR=" << std::setprecision(3)
               << agg.avg_fdr << "  TPR=" << agg.avg_tpr << "\n\n" << std::flush;
@@ -799,6 +822,7 @@ struct ScalabilityMetricSpec {
 static const std::vector<ScalabilityMetricSpec>& scalability_metrics() {
     static const std::vector<ScalabilityMetricSpec> specs = {
         {"VolGiB",      1, [](const ScalabilityGridPointResult& r) { return r.vol_gib;      }},
+        {"SelMean_s",   3, [](const ScalabilityGridPointResult& r) { return r.sel_mean_s;    }},
         {"SelMed_s",    3, [](const ScalabilityGridPointResult& r) { return r.sel_med_s;     }},
         {"SelMin_s",    3, [](const ScalabilityGridPointResult& r) { return r.sel_min_s;     }},
         {"SelMax_s",    3, [](const ScalabilityGridPointResult& r) { return r.sel_max_s;     }},
@@ -1007,7 +1031,7 @@ void demo_TRexSelector_scalability(const std::vector<ScalabilityPoint>& grid,
             "Grid point: n=" + std::to_string(pt.n) + ", p=" +
             std::to_string(pt.p) + (vol1 > ram_gib ? "   [out-of-core]" : ""));
 
-        // Disk pre-flight: a full disk under a memory-mapped write is a SIGBUS
+        // Disk pre-flight: skip a point early when its worst case cannot fit
         const double need = worst_case_disk_gib(pt.n, pt.p, pt.dummy_mult);
         const double avail = free_temp_disk_gib();
         const bool disk_ok = std::isnan(avail) || need + DISK_RESERVE_GIB <= avail;
@@ -1047,6 +1071,12 @@ void demo_TRexSelector_scalability(const std::vector<ScalabilityPoint>& grid,
         save_and_print_scalability_results(file_stem, block_title, TFDR, SNR,
                                            ram_gib, num_MC_target, completed,
                                            solvers, results);
+        if (stop_requested()) {
+            std::cout << "\n[stop] Stopped on request after point n=" << pt.n
+                      << ", p=" << pt.p << "; finished trials are cached, the "
+                         "next run resumes.\n";
+            return;
+        }
     }
     std::cout << "\n\n";
 }
@@ -1099,7 +1129,7 @@ int main(int argc, char** argv) {
                                       "Smoke grid (L cap 10 and 5)",
                                       ram_gib, mc, /*rnd_coef=*/false,
                                       /*persist_cache=*/false);
-        return 0;
+        return stop_requested() ? EXIT_STOPPED : 0;
     }
 
     if (calib) {
@@ -1115,7 +1145,7 @@ int main(int argc, char** argv) {
                 std::to_string(LARGE_P_P_VALUES.front()) +
                 ", max_dummy_multiplier = " + std::to_string(LARGE_P_DUMMY_MULT),
             ram_gib, mc, /*rnd_coef=*/false);
-        return 0;
+        return stop_requested() ? EXIT_STOPPED : 0;
     }
 
     const std::size_t mc = num_MC ? num_MC : NUM_MC;
@@ -1125,12 +1155,13 @@ int main(int argc, char** argv) {
             "Base block: n x p cross, max_dummy_multiplier = " +
                 std::to_string(DUMMY_MULT),
             ram_gib, mc, /*rnd_coef=*/false);
+    if (stop_requested()) return EXIT_STOPPED;
     if (run_large)
         demo_TRexSelector_scalability(
             make_large_p_grid(mc), "demo_trex_08_scalability_large_p",
-            "Large-p block: p in millions, max_dummy_multiplier = " +
+            "Large-p block: n = 300, p up to 1e6, max_dummy_multiplier = " +
                 std::to_string(LARGE_P_DUMMY_MULT),
             ram_gib, mc, /*rnd_coef=*/false);
 
-    return 0;
+    return stop_requested() ? EXIT_STOPPED : 0;
 }

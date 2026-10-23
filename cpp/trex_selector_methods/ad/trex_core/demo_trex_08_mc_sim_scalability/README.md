@@ -28,13 +28,15 @@ Two blocks with separate output files and trial caches, `num_MC` sequential tria
 default 10 and settable through the command-line interface (CLI):
 
 - **Base block** with `max_dummy_multiplier = 10`, the full cross of
-  - $n \in \lbrace300, 500, 1{,}000, 1{,}500, 2{,}000, 5{,}000\rbrace$
-  - $p \in \lbrace1{,}000, 5{,}000, 10{,}000, 20{,}000, 50{,}000, 100{,}000, 150{,}000, 200{,}000\rbrace$
-- **Large-p block** with `max_dummy_multiplier = 5`, few observations and millions of predictors
-  - $n \in \lbrace300, 500\rbrace$
-  - $p \in \lbrace1{,}000{,}000, 5{,}000{,}000\rbrace$
+  - $n \in \lbrace300, 1{,}000, 2{,}000, 5{,}000\rbrace$
+  - $p \in \lbrace1{,}000, 10{,}000, 100{,}000, 150{,}000\rbrace$, log-spaced for the in-memory scaling, with
+    $p = 150{,}000$ as the step into out-of-core
+- **Large-p block** with `max_dummy_multiplier = 5`, few observations and up to a million predictors
+  - $n = 300$
+  - $p \in \lbrace100{,}000, 1{,}000{,}000\rbrace$, where $p = 100{,}000$ also runs in the base block at the cap of
+    10, a direct comparison of the two caps
 
-$\Rightarrow$ 48 + 4 grid points × 3 solvers. The quantity that decides whether a point runs in RAM or out-of-core
+$\Rightarrow$ 16 + 2 grid points × 3 solvers. The quantity that decides whether a point runs in RAM or out-of-core
 is the **data volume one T-iteration touches**. Each T-iteration runs all $K = 20$ random experiments, and each
 experiment reads $\mathbf{X}$ and its own memory-mapped dummy file of $L \cdot p$ columns, so
 
@@ -43,37 +45,32 @@ V = n \cdot p \cdot 8 \cdot (1 + K L) \ \text{bytes}.
 ```
 
 At $L = 1$ this gives the following volumes in GiB (**bold** = above the 64 GiB RAM of the reference machine,
-the columns $p \le 20{,}000$ stay below 16 GiB and are omitted):
+the columns $p \le 10{,}000$ stay below 8 GiB and are omitted):
 
-| $n$ \\ $p$ | 50,000 | 100,000 | 150,000 | 200,000 | 1,000,000 | 5,000,000 |
-| --- | --- | --- | --- | --- | --- | --- |
-| 300 | 2.3 | 4.7 | 7.0 | 9.4 | 46.9 | **234.7** |
-| 500 | 3.9 | 7.8 | 11.7 | 15.6 | **78.2** | **391.2** |
-| 1,000 | 7.8 | 15.6 | 23.5 | 31.3 | — | — |
-| 1,500 | 11.7 | 23.5 | 35.2 | 46.9 | — | — |
-| 2,000 | 15.6 | 31.3 | 46.9 | 62.6 | — | — |
-| 5,000 | 39.1 | **78.2** | **117.3** | **156.5** | — | — |
+| $n$ \\ $p$ | 100,000 | 150,000 | 1,000,000 |
+| --- | --- | --- | --- |
+| 300 | 4.7 | 7.0 | 46.9 |
+| 1,000 | 15.6 | 23.5 | — |
+| 2,000 | 31.3 | 46.9 | — |
+| 5,000 | **78.2** | **117.3** | — |
 
-A larger $L$ multiplies the dummy part, so a point with $L = 2$ already needs roughly twice the volume. The output
-tables report the volume at the realized mean $L$ (`VolGiB`) and mark points above physical RAM with `*`.
-
-The cells marked — are not part of the grid. At $p = 5{,}000{,}000$ every $n \ge 1{,}000$ needs at least
-8 terabytes (TB) of dummy disk at the cap, and at $p = 1{,}000{,}000$ the volume reaches 156 GiB or more.
+A larger $L$ multiplies the dummy part, so a point with $L = 2$ already needs roughly twice the volume, and the
+large-p point $n = 300$, $p = 1{,}000{,}000$ reaches 225.8 GiB at its cap $L = 5$. The output tables report the
+volume at the realized mean $L$ (`VolGiB`) and mark points above physical RAM with `*`. The cells marked — are not
+part of the grid.
 
 The **disk** the memory-mapped dummy files may occupy in the worst case (all $K$ files filled up to the cap,
 plus $\mathbf{X}$ and the solver checkpoints) is, in GiB,
 
-| $n$ \\ $p$ | 50,000 | 100,000 | 150,000 | 200,000 | 1,000,000 | 5,000,000 |
-| --- | --- | --- | --- | --- | --- | --- |
-| 300 | 23 | 46 | 68 | 91 | 229 | 1,147 |
-| 500 | 38 | 76 | 113 | 151 | 380 | **1,899** |
-| 1,000 | 75 | 150 | 226 | 301 | — | — |
-| 1,500 | 113 | 225 | 338 | 451 | — | — |
-| 2,000 | 150 | 300 | 450 | 600 | — | — |
-| 5,000 | 375 | 749 | 1,124 | 1,499 | — | — |
+| $n$ \\ $p$ | 1,000 | 10,000 | 100,000 | 150,000 | 1,000,000 |
+| --- | --- | --- | --- | --- | --- |
+| 300 | 0.5 | 5 | 46 (cap 10), 23 (cap 5) | 68 | 229 |
+| 1,000 | 2 | 15 | 150 | 226 | — |
+| 2,000 | 3 | 30 | 300 | 450 | — |
+| 5,000 | 7 | 75 | 749 | **1,124** | — |
 
-The cap of 5 in the large-p block keeps $n = 500$, $p = 5{,}000{,}000$ at about 2 TB. With the base cap of 10 the
-same point would need 4 TB, more than the free disk of the reference machine.
+The largest need is 1,124 GiB at $n = 5{,}000$, $p = 150{,}000$. The cap of 5 keeps the large-p point at
+$p = 1{,}000{,}000$ at 229 GiB, against 456 GiB at the base cap of 10.
 
 The signal-to-noise ratio (SNR) is fixed at $1.0$ — it is deliberately **not** a scaling axis here (sweeping
 it only burns time). That sweep belongs to Demos 02–07.
@@ -96,23 +93,26 @@ few $p \times T$ accumulators of the voting statistics. The `Foot_MiB` column tr
 
 The **resident** memory is mostly page cache of the mapped files. While the volume $V$ fits into the page cache,
 every T-iteration reads the dummy files from RAM. Once it does not, the dummy files are read back from the
-solid-state drive (SSD) on every T-iteration and `select()` slows down by a factor of 5–10. In the July first
-pass this began between about 35 and 47 GiB of volume at $L = 1$, below the 64 GiB of RAM, because the page cache
-shares RAM with the rest of the system and trials with $L = 2$ double the volume.
+solid-state drive (SSD) on every T-iteration and `select()` slows down several times (see the results). In the
+recorded run, $n = 2{,}000$, $p = 150{,}000$ (47–51 GiB) still ran at in-memory speed, while $n = 5{,}000$,
+$p = 100{,}000$ (78–86 GiB) did not. The page cache shares RAM with the rest of the system, and trials with
+$L = 2$ double the volume.
 
-The library does not check free disk before it creates the dummy files, and a write into a memory-mapped file on
-a full disk ends the process with `SIGBUS` instead of an error. The demo therefore checks every point before its
-trials. A point whose worst-case disk need plus a 50 GiB reserve does not fit the free space of the temp
-directory is skipped with a message.
+A write into a memory-mapped file on a full disk would end the process with `SIGBUS` instead of an error, so the
+library checks the free disk before it creates memory-mapped files and throws when they may not fit (library commit
+`788cc46`). The demo also checks every point before its trials. A point whose worst-case disk need plus a 50 GiB
+reserve does not fit the free space of the temp directory is skipped with a message, and the run goes on with the
+next point.
 
-### Expected cost of the large-p block
+### Calibration of the large-p block
 
-An estimate extrapolated from the July first pass (base grid only, older library), not a measurement. At
-$L = 1$ one `select()` should take about 2–6 min at $n = 300$, $p = 1{,}000{,}000$ and about 30–60 min at
-$n = 500$, $p = 5{,}000{,}000$, and a point with $L = 2$ costs about three times as much. The decisive unknown is
-$L$. With $n \le 500$ the true signals at SNR $= 1$ stand only slightly above the largest of millions of null
-correlations, and the smoke grid ($n \le 200$) already climbs to $L = 4$–10. A calibration run at
-$p = 1{,}000{,}000$ measures $L$ and $T$ before the $p = 5{,}000{,}000$ points are started.
+A calibration run measured $L$ and $T$ at $p = 1{,}000{,}000$ before the grid was fixed (TLARS, one trial per
+point, cap 5, library commit `788cc46`). At $n = 300$ one `select()` took 1,575 s, reached the cap $L = 5$ with
+$T = 2$ and selected none of the 10 true variables. At $n = 500$ it took 1,102 s with $L = 3$ and found 4 of them
+(TPR $0.40$). The process peak RSS was 45–49 GiB, mostly page cache of the mapped files. The earlier grid with
+$n \in \lbrace300, 500\rbrace$ and $p$ up to $5{,}000{,}000$ would have taken about three weeks of machine time, so
+the large-p block now stops at $n = 300$, $p = 1{,}000{,}000$. The calibration trial at $n = 300$ uses the seed of
+trial 1 and counts as that trial of the large-p block.
 
 ---
 
@@ -181,6 +181,7 @@ Per $(n, p)$ × solver, averaged/aggregated over the cached trials:
 | Column | Meaning |
 | --- | --- |
 | `VolGiB` | Data volume per T-iteration $V$ at the mean realized $L$ (GiB) |
+| `SelMean_s` | Mean `select()` wall-clock (s), the runtime of the figure |
 | `SelMed_s` / `SelMin_s` / `SelMax_s` | Median / min / max `select()` wall-clock (s) |
 | `DGP_s` | Data-generation wall-clock (s) |
 | `s/Titer` | `select()` time per T-loop iteration (s) |
@@ -192,12 +193,17 @@ Per $(n, p)$ × solver, averaged/aggregated over the cached trials:
 
 RSS is read via `mach task_info(MACH_TASK_BASIC_INFO)` (macOS) / `/proc/self/statm`
 (Linux), the physical footprint via `task_info(TASK_VM_INFO).phys_footprint`
-(macOS) / `VmRSS + VmSwap` (Linux), and peak RSS via `getrusage`. The
-`SelMed`/`SelMin`/`SelMax` triple (rather than a single mean) is deliberate,
-because per-trial `select()` times span a wide range at scale.
+(macOS) / `VmRSS + VmSwap` (Linux), and peak RSS via `getrusage`.
+
+The runtime is evaluated as the **mean** `select()` time, the expected cost of one trial, with the min–max
+range as its spread. The median stays as a table column. At $n = 300$ the per-trial time depends strongly on
+how far $L$ climbs, so mean and median differ there by up to a factor of 3.4, while they agree within
+0.86–1.15 for $n \ge 1{,}000$.
 
 `PeakRSS_MiB` is the running maximum of the whole process, so every point after the largest one so far repeats
-its value. Running the two blocks in separate invocations keeps the base block's peak out of the large-p table.
+its value. The figure therefore shows the per-point resident memory and heap after `select()`, and the
+process peak only as one line for the whole run. Running the two blocks in separate invocations keeps the base
+block's peak out of the large-p table.
 
 ---
 
@@ -248,19 +254,56 @@ rather than the suite's tidy `solver,metric,snr,value`, so the suite plotter
 handles them in a dedicated `scalability` mode
 ([`../trex_plt_utils.py`](../trex_plt_utils.py) `scalability <csv> [<csv> …]`). The CSVs of both blocks are read
 by `read_scalability()`, concatenated, and rendered by `plot_scalability_dashboard()`. The result is a 2×2
-dashboard (runtime vs $p$, memory vs $p$, peak RSS against the volume with the RAM line and the out-of-core
-points ringed, and FDR control at scale), in which the $n = 300$ and $n = 500$ lines run from
-$p = 1{,}000$ to $5{,}000{,}000$. Render it with `./generate_plots.sh`.
+dashboard (mean runtime vs $p$ with the min–max band, resident memory and heap after `select()` vs $p$, the heap
+against the volume with the RAM line, the run's process peak and the out-of-core points ringed, and FDR control at
+scale), in which the $n = 300$ line runs from $p = 1{,}000$ to $1{,}000{,}000$.
+Points of the large-p block are white-filled, and its cap-5 point at $p = 100{,}000$ sits next to the base block's
+point, which shows the two caps side by side. Render it with `./generate_plots.sh`.
 
 ---
 
-## Status of the Recorded Data
+## Simulation Results
 
-The committed `demo_trex_08_scalability_results.{txt,csv}` and the dashboard are a **first pass at
-`num_MC = 2`** from July on an older library commit, recorded before the $n = 300$ and $n = 500$ rows and the
-large-p block existed. They still carry the old `DesignGiB` column (logical $[\mathbf{X}\,|\,\mathbf{D}]$ at the
-cap), which the plotter reads as a fallback. A full run on the current library pin replaces them. The committed
-`demo_trex_08_scalability_smoke.{txt,csv}` is the end-to-end smoke recording on the current code.
+The recorded run uses library commit `61fd84c`, 10 trials per $(n, p, \text{solver})$ and 8 OpenMP threads on a
+machine with 64 GiB of RAM. It took 23.3 hours, 16.5 hours of trial time in the base block (480 trials) and
+7.1 hours in the large-p block (60 trials, one of them the calibration trial).
+
+- **The pipeline processes data far beyond RAM.** The largest base point, $n = 5{,}000$, $p = 150{,}000$, touches
+  117–129 GiB per T-iteration, twice the RAM, and every trial completes. The process peak RSS of the whole run is
+  about 51 GiB in both blocks, below the 64 GiB of RAM, and the heap after `select()` stays at most 1.0 GiB at
+  every point. The resident memory after `select()` follows the $\mathbf{X}/\mathbf{y}$ backing, up to 5.9 GiB at
+  $n = 5{,}000$, $p = 150{,}000$.
+- **Runtime grows about linearly in $p$ while the volume fits into RAM.** From $p = 10{,}000$ to $100{,}000$ the
+  mean `select()` time rises about tenfold for $n = 1{,}000$ (2.3–3.3 s to 24–33 s) and $n = 2{,}000$
+  (4.2–4.9 s to 43–83 s). At $n = 5{,}000$ it rises 40- to 50-fold (11–13 s to 510–571 s), because the
+  $p = 100{,}000$ point exceeds RAM (78–86 GiB per T-iteration) and the dummy files are read from the SSD. The
+  largest point takes 762–843 s per trial.
+- **FDR stays below the target.** Every cell has a mean FDR of at most $0.089$, except TLARS at $n = 300$,
+  $p = 150{,}000$ with $0.108$, a mean over only 10 trials. Averaged over $n$, the FDR per $p$ and solver is at most
+  $0.045$.
+- **Power is complete from $n = 1{,}000$ on and vanishes at $n = 300$ for large $p$.** Every point with
+  $n \ge 1{,}000$ has a true positive rate (TPR) of $1.00$ with $L$ at about 1. At $n = 300$ the TPR falls from
+  $0.71\text{–}0.83$ at $p = 1{,}000$ to $0.43\text{–}0.65$ at $p = 10{,}000$, $0.03\text{–}0.18$ at $p = 100{,}000$ and
+  $150{,}000$, and $0.00\text{–}0.01$ at $p = 1{,}000{,}000$, while $L$ climbs to 4–6. The ratio $n / (s \ln p)$ orders
+  these points, unlike $n / p$. The power is complete from about 8.4 on (every $n \ge 1{,}000$) and drops between
+  about 4.3 and 2.2 (the $n = 300$ row), while $n = 1{,}000$, $p = 150{,}000$ (with $n / p = 0.0067$) keeps full
+  power where $n = 300$, $p = 10{,}000$ (with $n / p = 0.03$) loses about half of it.
+- **The cap of 5 halves the cost at $n = 300$, $p = 100{,}000$.** The base block (cap 10) needs 73–96 s per trial
+  with $L = 4.4\text{–}5.1$ and a TPR of $0.03\text{–}0.06$, while the large-p block (cap 5) needs 43–45 s with
+  $L = 3.6\text{–}3.8$ and a TPR of $0.00\text{–}0.03$. The power is already gone at this point, so the lower cap costs
+  little.
+- **$p = 1{,}000{,}000$ at $n = 300$** takes 669–1,050 s per trial (mean), touches 123–127 GiB per T-iteration at
+  the realized $L$ of 2.7–2.8, and selects almost nothing (TPR at most $0.01$, FDR $0$).
+- Mean and median `select()` time agree within a factor of 0.86–1.15 for $n \ge 1{,}000$. At $n = 300$ they
+  differ by up to 3.4, because a trial with a high $L$ takes many times longer than one with $L = 1$–2.
+
+Mean runtime (top left), resident memory and heap after `select()` (top right), the heap against the volume per
+T-iteration with the RAM line and the run's process peak (bottom left), and FDR per solver averaged over $n$
+(bottom right). White-filled points belong to the large-p block.
+
+![Demo 08 scalability dashboard](simulation_results/plots/demo_trex_08_scalability.png)
+
+The committed `demo_trex_08_scalability_smoke.{txt,csv}` is the end-to-end smoke recording.
 
 ---
 
@@ -274,17 +317,17 @@ cmake --build build/release --target demo_trex_08_mc_sim_scalability
 
 bin=build/release/bin/trex_selector_methods/ad/trex_core/demo_trex_08_mc_sim_scalability/demo_trex_08_mc_sim_scalability
 "$bin" base      # base block, num_MC = 10 (long-running)
-"$bin" large     # large-p block, num_MC = 10 (needs up to 2 TB free disk)
+"$bin" large     # large-p block, num_MC = 10 (needs up to 230 GiB free disk)
 "$bin" large 2   # large-p block, num_MC = 2 (first pass; top up later)
 "$bin"           # both blocks in one process, base first
 "$bin" smoke     # tiny end-to-end smoke check (num_MC = 2)
 "$bin" smoke 3   # smoke grid, num_MC = 3
 
-TREX_SOLVERS=TLARS "$bin" calib   # calibration: large-p block at p = 1,000,000, TLARS, num_MC = 1
+TREX_SOLVERS=TLARS "$bin" calib   # calibration: large-p block at its smallest p, TLARS, num_MC = 1
 ```
 
 The optional integer argument sets `num_MC`, and re-running with a larger value tops
-up the trial cache rather than recomputing. `calib` runs only the $p = 1{,}000{,}000$ points of the large-p block
+up the trial cache rather than recomputing. `calib` runs only the smallest $p$ of the large-p block
 (default `num_MC = 1`), and its trials stay in the large-p cache as regular trials. `TREX_SOLVERS` (comma
 separated) limits which solvers compute new trials, while the cached trials of the other solvers still enter the
 tables. Grid points run smallest-first and the
@@ -293,3 +336,18 @@ own memory-mapped orphans (`demo08_scalability_*`, `trex_memmap_*`, `trex_warmst
 on exit / `SIGINT` / `SIGTERM` / `SIGBUS` (`SIGKILL` cannot be trapped, so the next startup sweep
 reclaims it). The memory-mapped files go to the temp directory (`TMPDIR`), which must sit on the volume with the
 free disk shown in the console header.
+
+### Nightly runner
+
+The full benchmark in all three languages takes days, so
+[`../../../run_demo08_nightly.sh`](../../../run_demo08_nightly.sh) works it off in portions, the C++ base and
+large-p blocks first, then Python and R. `start` runs or continues it in the background (one instance only, the
+Mac stays awake), and `start cpp` restricts it to the two C++ steps. `stop` creates the file named by
+`TREX_STOP_FILE`, so the demo ends after its current trial with exit code 75 and the runner ends with it. The
+next `start` resumes at the first missing trial. Logs go to `cpp/trex_selector_methods/logs/demo08_nightly/`.
+
+```bash
+cpp/trex_selector_methods/run_demo08_nightly.sh start cpp   # run or continue the C++ steps
+cpp/trex_selector_methods/run_demo08_nightly.sh stop        # end after the current trial
+cpp/trex_selector_methods/run_demo08_nightly.sh steps       # list the steps, runs nothing
+```

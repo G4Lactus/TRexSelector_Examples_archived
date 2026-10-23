@@ -45,10 +45,10 @@ $(n, p, \text{solver})$, three solvers (**TLARS**, **TOMP**, **TAFS** with `rho_
 everywhere):
 
 - **Base block** with `max_dummy_multiplier = 10`, the full cross of
-  $n \in \lbrace300, 500, 1{,}000, 1{,}500, 2{,}000, 5{,}000\rbrace$ and
-  $p \in \lbrace1{,}000, 5{,}000, 10{,}000, 20{,}000, 50{,}000, 100{,}000, 150{,}000, 200{,}000\rbrace$
-- **Large-p block** with `max_dummy_multiplier = 5`, $n \in \lbrace300, 500\rbrace$ and
-  $p \in \lbrace1{,}000{,}000, 5{,}000{,}000\rbrace$
+  $n \in \lbrace300, 1{,}000, 2{,}000, 5{,}000\rbrace$ and $p \in \lbrace1{,}000, 10{,}000, 100{,}000, 150{,}000\rbrace$
+  (log-spaced $p$ for the in-memory scaling, $p = 150{,}000$ as the step into out-of-core)
+- **Large-p block** with `max_dummy_multiplier = 5`, $n = 300$ and $p \in \lbrace100{,}000, 1{,}000{,}000\rbrace$
+  ($p = 100{,}000$ also runs in the base block at the cap of 10, a direct comparison of the two caps)
 
 A point runs out-of-core when the data volume one T-iteration touches exceeds RAM. Each T-iteration runs all
 $K = 20$ random experiments, and each reads $\mathbf{X}$ and its own memory-mapped dummy file of $L \cdot p$
@@ -59,22 +59,27 @@ V = n \cdot p \cdot 8 \cdot (1 + K L) \ \text{bytes}.
 ```
 
 At $L = 1$ this gives the following volumes in GiB (**bold** = above the 64 GiB RAM of the reference machine,
-the columns $p \le 20{,}000$ stay below 16 GiB and are omitted):
+the columns $p \le 10{,}000$ stay below 8 GiB and are omitted, and — marks cells outside the grid):
 
-| $n$ \\ $p$ | 50,000 | 100,000 | 150,000 | 200,000 | 1,000,000 | 5,000,000 |
-| --- | --- | --- | --- | --- | --- | --- |
-| 300 | 2.3 | 4.7 | 7.0 | 9.4 | 46.9 | **234.7** |
-| 500 | 3.9 | 7.8 | 11.7 | 15.6 | **78.2** | **391.2** |
-| 1,000 | 7.8 | 15.6 | 23.5 | 31.3 | — | — |
-| 1,500 | 11.7 | 23.5 | 35.2 | 46.9 | — | — |
-| 2,000 | 15.6 | 31.3 | 46.9 | 62.6 | — | — |
-| 5,000 | 39.1 | **78.2** | **117.3** | **156.5** | — | — |
+| $n$ \\ $p$ | 100,000 | 150,000 | 1,000,000 |
+| --- | --- | --- | --- |
+| 300 | 4.7 | 7.0 | 46.9 |
+| 1,000 | 15.6 | 23.5 | — |
+| 2,000 | 31.3 | 46.9 | — |
+| 5,000 | **78.2** | **117.3** | — |
 
-The output tables report the volume at the realized mean $L$ (`VolGiB`) and mark points above physical RAM with
-`*`. The worst-case dummy disk at the cap reaches about 2 terabytes (TB) at $n = 500$, $p = 5{,}000{,}000$. Before
-each point the demo checks (via `df -Pk`) that this worst case plus a 50 GiB reserve fits the free space of the
-temp directory and skips the point with a message otherwise, because the library does not check free disk and a
-write into a memory-mapped file on a full disk ends the process with `SIGBUS`.
+The output tables report the volume at the realized mean $L$ (`VolGiB`) and mark points above physical RAM with `*`. A
+larger $L$ multiplies the dummy part, and $n = 300$, $p = 1{,}000{,}000$ reaches 225.8 GiB at its cap $L = 5$. The
+worst-case dummy disk at the cap reaches 1,124 GiB at $n = 5{,}000$, $p = 150{,}000$, and 229 GiB at $n = 300$,
+$p = 1{,}000{,}000$. A write into a memory-mapped file on a full disk would end the process with `SIGBUS`, so the
+library checks the free disk before it creates memory-mapped files (library commit `788cc46`). Before each point the
+demo also checks (via `df -Pk`) that this worst case plus a 50 GiB reserve fits the free space of the temp directory,
+and it skips the point with a message otherwise.
+
+A C++ calibration run at $p = 1{,}000{,}000$ (TLARS, one trial, cap 5) took 1,575 s at $n = 300$, where it reached the
+cap $L = 5$ and selected none of the 10 true variables, and 1,102 s at $n = 500$ with $L = 3$ and a true positive rate
+(TPR) of $0.40$. The earlier grid with $p$ up to $5{,}000{,}000$ would have taken about three weeks of machine time, so
+the large-p block now stops at $n = 300$, $p = 1{,}000{,}000$.
 
 ## Control
 
@@ -89,9 +94,16 @@ in RAM at a time, essential out-of-core),
 ## Measurements
 
 Per $(n, p)$ x solver, aggregated over the cached trials: `VolGiB` (data volume per T-iteration at the mean
-realized $L$), `SelMed_s`/`SelMin_s`/`SelMax_s` (median/min/max `select()` wall-clock), `DGP_s`,
+realized $L$), `SelMean_s` (mean `select()` wall-clock, the runtime of the figure),
+`SelMed_s`/`SelMin_s`/`SelMax_s` (median/min/max `select()` wall-clock), `DGP_s`,
 `s/Titer`, `PeakRSS_MiB`, `RSS_MiB`, `Foot_MiB`, `X+y_MiB`, and
 `FDR`/`TPR`/`Avg_L`/`Avg_T` as selection-quality sanity checks.
+
+The runtime is evaluated as the **mean** `select()` time, the expected cost of one trial, with the min–max
+range as its spread. The median stays as a table column. At $n = 300$ the per-trial time depends strongly on
+how far $L$ climbs, so in the C++ run mean and median differ there by up to a factor of 3.4, while they agree within
+0.86–1.15 for $n \ge 1{,}000$. The figure shows the per-point resident memory (and the heap where it is measured)
+instead of `PeakRSS_MiB`, which is a running maximum of the whole process.
 
 Memory metrics in R (documented divergences from the Python/C++ instrumentation):
 
@@ -131,7 +143,7 @@ sweep reclaims what they leave behind.
 demo=R/trex_selector_methods/ad/trex_core/demo_trex_08_mc_sim_scalability/demo_trex_08_mc_sim_scalability.R
 
 Rscript "$demo" base       # base block, num_MC = 10 (long-running)
-Rscript "$demo" large      # large-p block, num_MC = 10 (needs up to 2 TB free disk)
+Rscript "$demo" large      # large-p block, num_MC = 10 (needs up to 230 GiB free disk)
 Rscript "$demo" large 2    # large-p block, num_MC = 2 (first pass; top up later)
 Rscript "$demo"            # both blocks in one process, base first
 Rscript "$demo" smoke      # tiny end-to-end smoke check (num_MC = 2)
@@ -142,8 +154,12 @@ The block, `smoke` and integer arguments are order-independent, and the smoke gr
 $(n, p) \in \lbrace(150, 500), (200, 1{,}000)\rbrace$ with dummy caps 10 and 5. The script sources
 `../../../support_generators.R` and `../trex_sim_utils.R`.
 
-Unlike the other demos in this suite, this one is **run manually** (it is not part
-of the overnight runner), and so far only the smoke recording is committed. Run the script
-first, then `./generate_plots.sh` to render the scalability dashboard of runtime, memory and false discovery rate
-(FDR) versus problem size from the wide summary comma-separated values (CSV) files of both blocks via the shared
-[`../trex_plt_utils.R`](../trex_plt_utils.R) into `simulation_results/plots/`.
+The full benchmark in all three languages takes days, so
+[`run_demo08_nightly.sh`](../../../../../cpp/trex_selector_methods/run_demo08_nightly.sh) works it off in portions, C++
+first, then Python, then R (runner steps `r_base` and `r_large`). `start` runs or continues it in the background,
+`start r` restricts it to the two R steps, and `stop` creates the file named by `TREX_STOP_FILE`, so the demo ends after
+its current trial with exit code 75. The next `start` resumes at the first missing trial. So far only the smoke
+recording is committed. Run the script first, then `./generate_plots.sh` to render the scalability dashboard of runtime,
+memory and false discovery rate (FDR) versus problem size from the wide summary comma-separated values (CSV) files of
+both blocks via the shared [`../trex_plt_utils.R`](../trex_plt_utils.R) into `simulation_results/plots/`. Points of the
+large-p block are white-filled, and its cap-5 point at $p = 100{,}000$ sits next to the base block's point.

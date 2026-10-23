@@ -10,7 +10,8 @@
 # value) than the rest of the suite; the shared module reads them via
 # read_scalability() and renders them with plot_scalability_dashboard(). The
 # base block and the large-p block are concatenated into one dashboard, so the
-# n = 300 / 500 lines run from p = 1,000 to 5,000,000.
+# n = 300 line runs from p = 1,000 to 1,000,000. Large-p points are drawn
+# white-filled, and its cap-5 point at p = 100,000 sits next to the base one.
 #
 # Usage:
 #   ./generate_plots.sh                          # this demo's default CSVs

@@ -9,7 +9,8 @@
 # handles them in a dedicated 'scalability' mode: a 2x2 dashboard of runtime,
 # memory, the out-of-core money plot and FDR control vs problem size. The base
 # block and the large-p block are concatenated into one dashboard, so the
-# n = 300 / 500 lines run from p = 1,000 to 5,000,000.
+# n = 300 line runs from p = 1,000 to 1,000,000. Large-p points are drawn
+# white-filled, and its cap-5 point at p = 100,000 sits next to the base one.
 #
 # Usage:
 #   ./generate_plots.sh                          # this demo's default CSVs

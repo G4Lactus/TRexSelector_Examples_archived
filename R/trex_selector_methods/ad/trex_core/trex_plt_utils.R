@@ -509,10 +509,13 @@ scal_solver_label <- function(solver) {
 }
 
 # Column labels as they appear in the CSV's 'metric' field.
+M_SELMEAN <- "SelMean_s"  # the runtime line (older CSVs only carry the median)
 M_SELMED <- "SelMed_s"
 M_SELMIN <- "SelMin_s"
 M_SELMAX <- "SelMax_s"
 M_PEAKRSS <- "PeakRSS_MiB"
+M_RSS <- "RSS_MiB"     # resident set size after select() (MiB), per point
+M_FOOT <- "Foot_MiB"   # physical footprint after select() (MiB), the anonymous heap
 M_XY <- "X+y_MiB"
 M_VOL <- "VolGiB"             # per T-iteration volume X + K*L*X at mean L (GiB)
 M_VOL_LEGACY <- "DesignGiB"   # older CSVs: logical [X|D] at the dummy cap (GiB)
@@ -531,7 +534,8 @@ M_FDR <- "FDR"
 }
 
 #' Load one or more wide demo-08 CSVs (concatenated), normalising column and
-#' metric whitespace.
+#' metric whitespace. Each row is tagged with its block, "large_p" for a file
+#' whose stem contains "large_p" and "base" otherwise.
 read_scalability <- function(paths) {
   frames <- lapply(paths, function(path) {
     if (!file.exists(path))
@@ -540,6 +544,7 @@ read_scalability <- function(paths) {
            call. = FALSE)
     f <- utils::read.csv(path, strip.white = TRUE, stringsAsFactors = FALSE)
     names(f) <- tolower(trimws(names(f)))
+    f$block <- if (grepl("large_p", tools::file_path_sans_ext(basename(path)), fixed = TRUE)) "large_p" else "base"
     f
   })
   df <- do.call(rbind, frames)
@@ -558,12 +563,11 @@ read_scalability <- function(paths) {
   df
 }
 
-#' Wide table: one row per (n, p, solver, is_barrier), a column per metric.
+#' Wide table: one row per (n, p, solver, is_barrier, block), a column per metric.
 scal_pivot <- function(df) {
-  w <- stats::reshape(df[, c("n", "p", "solver", "is_barrier",
-                             "metric", "value")],
-                      idvar = c("n", "p", "solver", "is_barrier"),
-                      timevar = "metric", direction = "wide")
+  ids <- c("n", "p", "solver", "is_barrier", if ("block" %in% names(df)) "block")
+  w <- stats::reshape(df[, c(ids, "metric", "value")],
+                      idvar = ids, timevar = "metric", direction = "wide")
   names(w) <- sub("^value\\.", "", names(w))
   w[order(w$solver, w$n, w$p), ]
 }
@@ -595,18 +599,37 @@ scal_pivot <- function(df) {
 plot_scalability_dashboard <- function(df, title, tfdr = DEFAULT_TFDR,
                                        xscale = SCAL_XSCALE) {
   w <- scal_pivot(df)
+  # Large-p points at an (n, p) of the base block (the cap comparison) get their
+  # own markers, all other points join the lines
+  w_dup <- w[0L, ]
+  if ("block" %in% names(w)) {
+    dup <- w$block != "base" &
+      paste(w$n, w$p) %in% paste(w$n[w$block == "base"], w$p[w$block == "base"])
+    w_dup <- w[dup, ]
+    w <- w[!dup, ]
+  }
   m_vol <- if (M_VOL %in% names(w)) M_VOL else M_VOL_LEGACY
   solvers <- SCAL_SOLVERS[SCAL_SOLVERS %in% unique(w$solver)]
   n_values <- sort(unique(w$n))
   p_values <- sort(unique(w$p))
   n_labels <- sprintf("n = %s", format(n_values, big.mark = ",", trim = TRUE))
   w$n_f <- factor(w$n, levels = n_values, labels = n_labels)
-  n_cols <- setNames(viridisLite::viridis(length(n_values)), n_labels)
+  # viridis per n, with orange instead of its yellow end (hard to read on white)
+  n_cols <- viridisLite::viridis(length(n_values))
+  n_pos <- if (length(n_values) > 1L) seq(0, 1, length.out = length(n_values)) else 0
+  n_cols[n_pos > 0.85] <- "#FF7F0E"
+  n_cols <- setNames(n_cols, n_labels)
   ram <- .scal_ram_gib()
   slv_lines <- SCAL_SOLVER_LINES[solvers]
   names(slv_lines) <- scal_solver_label(solvers)
   w$solver_lbl <- factor(scal_solver_label(w$solver),
                          levels = scal_solver_label(solvers))
+  w_dup$n_f <- factor(w_dup$n, levels = n_values, labels = n_labels)
+  w_dup$solver_lbl <- factor(scal_solver_label(w_dup$solver),
+                             levels = scal_solver_label(solvers))
+  # Points of the large-p block, drawn with white-filled markers
+  large_p <- function(d) rbind(d[d$block != "base", ], w_dup[w_dup$solver %in% unique(d$solver), ])
+  has_large_p <- "block" %in% names(w) && (any(w$block != "base") || nrow(w_dup) > 0)
 
   dash_theme <- .panel_theme() +
     theme(plot.title = element_text(size = 11, face = "bold", hjust = 0.5),
@@ -614,10 +637,11 @@ plot_scalability_dashboard <- function(df, title, tfdr = DEFAULT_TFDR,
           axis.text = element_text(size = 8))
 
   # --- (0,0) Runtime vs p: colour = n, linetype = solver; median + band ------
-  rt <- w[!is.na(w[[M_SELMED]]), ]
+  m_sel <- if (M_SELMEAN %in% names(w)) M_SELMEAN else M_SELMED
+  rt <- w[!is.na(w[[m_sel]]), ]
   band <- rt[rt$solver == solvers[1L] &
                !is.na(rt[[M_SELMIN]]) & !is.na(rt[[M_SELMAX]]), ]
-  p_rt <- ggplot(rt, aes(x = p, y = .data[[M_SELMED]], color = n_f,
+  p_rt <- ggplot(rt, aes(x = p, y = .data[[m_sel]], color = n_f,
                          linetype = solver_lbl,
                          group = interaction(n_f, solver_lbl)))
   if (nrow(band) > 0)
@@ -629,28 +653,53 @@ plot_scalability_dashboard <- function(df, title, tfdr = DEFAULT_TFDR,
     )
   p_rt <- p_rt +
     geom_line(linewidth = 0.7) +
-    geom_point(size = 1.4, shape = 16, show.legend = FALSE) +
+    geom_point(size = 1.4, shape = 16, show.legend = FALSE)
+  if (has_large_p) {
+    lp_rt <- large_p(rt)
+    lp_rt <- lp_rt[!is.na(lp_rt[[m_sel]]), ]
+    p_rt <- p_rt + geom_point(data = lp_rt, aes(x = p, y = .data[[m_sel]], color = n_f),
+                              shape = 21, fill = "white", size = 1.8, stroke = 0.8,
+                              inherit.aes = FALSE, show.legend = FALSE)
+  }
+  p_rt <- p_rt +
     scale_color_manual(name = NULL, values = n_cols) +
     scale_fill_manual(values = n_cols, guide = "none") +
     scale_linetype_manual(name = NULL, values = slv_lines) +
     scale_y_log10() +
     .scal_p_scale(p_values, xscale) +
-    labs(title = "Runtime scaling  (colour = n, linetype = solver)",
+    labs(title = "Runtime scaling",
+         subtitle = if (has_large_p) "white-filled points = large-p block" else NULL,
          x = "Number of features p",
-         y = "select() per trial [s]  (median, band = min-max)") +
+         y = sprintf("select() per trial [s]  (%s, band = min-max)",
+                     if (m_sel == M_SELMEAN) "mean" else "median")) +
     dash_theme + .legend_inside(0.03, 0.97) +
+    theme(plot.subtitle = element_text(size = 8, hjust = 0.5)) +
     guides(color = guide_legend(order = 1, ncol = 2),
            linetype = guide_legend(order = 2))
 
-  # --- (0,1) Memory vs p: peak RSS per n + X/y backing reference + RAM ------
-  mem <- w[w$solver == solvers[1L] & !is.na(w[[M_PEAKRSS]]), ]
+  # --- (0,1) Memory vs p: per-point resident and heap per n + X/y + RAM -----
+  # (PeakRSS is the running maximum of the whole process, no per-point value)
+  mem <- w[w$solver == solvers[1L] & !is.na(w[[M_RSS]]), ]
   ref <- stats::aggregate(w[[M_XY]], by = list(p = w$p),
                           FUN = mean, na.rm = TRUE)
   names(ref)[2L] <- "xy"
   ref <- ref[!is.na(ref$xy), ]
-  lt_vals <- c("X/y mmap backing" = "dashed")
-  p_mem <- ggplot(mem, aes(x = p, y = .data[[M_PEAKRSS]], color = n_f)) +
-    geom_line(linewidth = 0.8) + geom_point(size = 1.8, shape = 16)
+  lt_vals <- c("resident after select()" = "solid", "heap after select()" = "dotted",
+               "X/y mmap backing" = "dashed")
+  p_mem <- ggplot(mem, aes(x = p, y = .data[[M_RSS]], color = n_f)) +
+    geom_line(aes(linetype = "resident after select()"), linewidth = 0.8) +
+    geom_point(size = 1.8, shape = 16)
+  if (M_FOOT %in% names(mem) && any(!is.na(mem[[M_FOOT]])))
+    p_mem <- p_mem +
+      geom_line(aes(y = .data[[M_FOOT]], linetype = "heap after select()"), linewidth = 0.5) +
+      geom_point(aes(y = .data[[M_FOOT]]), size = 1.0, shape = 15)
+  if (has_large_p) {
+    lp_mem <- large_p(mem)
+    lp_mem <- lp_mem[!is.na(lp_mem[[M_RSS]]), ]
+    p_mem <- p_mem + geom_point(data = lp_mem, aes(x = p, y = .data[[M_RSS]], color = n_f),
+                                shape = 21, fill = "white", size = 2.2, stroke = 0.9,
+                                inherit.aes = FALSE, show.legend = FALSE)
+  }
   if (nrow(ref) > 0)
     p_mem <- p_mem +
       geom_line(data = ref, aes(x = p, y = xy, linetype = "X/y mmap backing"),
@@ -669,34 +718,48 @@ plot_scalability_dashboard <- function(df, title, tfdr = DEFAULT_TFDR,
     scale_linetype_manual(name = NULL, values = lt_vals) +
     scale_y_log10() +
     .scal_p_scale(p_values, xscale) +
-    labs(title = "Memory scaling: peak RSS stays far below the design volume",
-         x = "Number of features p", y = "Memory [MiB]") +
+    labs(title = "Memory scaling: resident follows X/y, the heap stays small",
+         x = "Number of features p", y = "Memory after select() [MiB]") +
     dash_theme + .legend_inside(0.03, 0.97) +
     guides(color = guide_legend(order = 1), linetype = guide_legend(order = 2))
 
-  # --- (1,0) Out-of-core money plot: resident peak vs per-T-iteration volume
-  oc_df <- w[!is.na(w[[m_vol]]) & !is.na(w[[M_PEAKRSS]]), ]
+  # --- (1,0) Out-of-core: heap per point vs volume, the run's peak as a line
+  oc_df <- rbind(w, w_dup)
+  # The heap where it was measured (none from R on macOS), else the resident
+  has_col <- function(col) col %in% names(oc_df) && any(!is.na(oc_df[[col]]))
+  m_oc <- if (has_col(M_FOOT)) M_FOOT else if (has_col(M_RSS)) M_RSS else M_PEAKRSS
+  oc_df <- oc_df[!is.na(oc_df[[m_vol]]) & !is.na(oc_df[[m_oc]]), ]
   barrier <- oc_df[oc_df$is_barrier == 1, ]
   slv_shapes <- SCAL_SOLVER_SHAPES[solvers]
   names(slv_shapes) <- scal_solver_label(solvers)
   p_oc <- ggplot(oc_df, aes(x = .data[[m_vol]],
-                            y = .data[[M_PEAKRSS]] / 1024.0,
+                            y = .data[[m_oc]] / 1024.0,
                             color = n_f, shape = solver_lbl)) +
     geom_point(size = 2.2, stroke = 0.8, fill = NA)
   if (nrow(barrier) > 0)
     p_oc <- p_oc + geom_point(
       data = barrier,
-      aes(x = .data[[m_vol]], y = .data[[M_PEAKRSS]] / 1024.0),
+      aes(x = .data[[m_vol]], y = .data[[m_oc]] / 1024.0),
       shape = 21, size = 5.5, color = "#DC143C", fill = NA, stroke = 1.0,
       inherit.aes = FALSE, show.legend = FALSE
     )
   oc_lt <- character(0)
+  if (m_oc != M_PEAKRSS && M_PEAKRSS %in% names(oc_df)) {
+    peak <- max(oc_df[[M_PEAKRSS]], na.rm = TRUE) / 1024.0
+    peak_lbl <- sprintf("process peak RSS of the run = %.0f GiB", peak)
+    p_oc <- p_oc + geom_hline(aes(yintercept = peak, linetype = peak_lbl),
+                              color = "grey25", linewidth = 0.6)
+    oc_lt <- setNames("dashed", peak_lbl)
+  }
   if (is.finite(ram) && ram > 0) {
     ram_lbl <- sprintf("physical RAM = %.0f GiB", ram)
     p_oc <- p_oc +
       geom_vline(aes(xintercept = ram, linetype = ram_lbl),
                  color = "#DC143C", linewidth = 0.7)
-    oc_lt <- setNames("dotdash", ram_lbl)
+    if (m_oc != M_PEAKRSS)
+      p_oc <- p_oc + geom_hline(yintercept = ram, color = "#DC143C",
+                                linewidth = 0.7, linetype = "dotdash")
+    oc_lt <- c(oc_lt, setNames("dotdash", ram_lbl))
   }
   if (length(oc_lt) > 0)
     p_oc <- p_oc + scale_linetype_manual(name = NULL, values = oc_lt)
@@ -708,17 +771,20 @@ plot_scalability_dashboard <- function(df, title, tfdr = DEFAULT_TFDR,
              scientific = FALSE,
              drop0trailing = TRUE)
     }) +
-    labs(title = "Out-of-core: volume crosses RAM, resident stays bounded",
+    labs(title = "Out-of-core: volume crosses RAM, memory stays bounded",
          subtitle = if (nrow(barrier) > 0)
            "ringed = out-of-core point (volume > RAM)" else NULL,
          x = if (m_vol == M_VOL) "Volume per T-iteration X + K L X [GiB]  (log)"
          else "Total design volume [X|D] [GiB]  (log)",
-         y = "Process peak RSS [GiB]") +
+         y = switch(m_oc, Foot_MiB = "Heap after select() [GiB]",
+                    RSS_MiB = "Resident after select() [GiB]", "Process peak RSS [GiB]")) +
     dash_theme + .legend_inside(0.03, 0.97) +
     theme(plot.subtitle = element_text(size = 8, hjust = 0.5,
                                        colour = "#DC143C")) +
     guides(color = guide_legend(order = 1), shape = guide_legend(order = 2),
            linetype = guide_legend(order = 3))
+
+  if (m_oc != M_PEAKRSS) p_oc <- p_oc + scale_y_log10()
 
   # --- (1,1) FDR control at scale: per solver, mean over n ------------------
   fdr <- w[!is.na(w[[M_FDR]]), ]
