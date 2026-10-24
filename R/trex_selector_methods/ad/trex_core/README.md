@@ -35,7 +35,9 @@ trex_core/
   │   └── simulation_results/
   ├── demo_trex_02_mc_sim_fixed_support/
   │   └── ...
-  └── demo_trex_08_mc_sim_scalability/
+  ├── demo_trex_08_mc_sim_scalability/
+  ├── demo_trex_09_mc_sim_target_fdr/
+  └── demo_trex_10_mc_sim_dt_ratio/
 ```
 
 ---
@@ -52,6 +54,8 @@ trex_core/
 | 06 | [demo_trex_06_mmap](demo_trex_06_mmap/) | Memory-mapped usage patterns. Part A: in-memory X + `use_memory_mapping = TRUE` (internal D-mmap + solver serialization). Part B: fully memory-mapped X via `mem_matrix_from()` / `mem_matrix()` | `demo_trex_06_mmap` |
 | 07 | [demo_trex_07_mc_sim_mmap](demo_trex_07_mc_sim_mmap/) | MC verification of the D-mmap + solver-serialization pipeline (TLARS only, fixed support seed 24, SNR {0.1, 0.5, 1.0, 2.0, 5.0}, `tloop_max_stagnant_steps = 7`, `opt_threshold = 0.75`). Part A: in-memory X. Part B: per-trial temporary mmap-backed X/y with exception-safe cleanup | `demo_trex_07_mc_sim_mmap` |
 | 08 | [demo_trex_08_mc_sim_scalability](demo_trex_08_mc_sim_scalability/) | Scalability benchmark on the fully memory-mapped pipeline in two blocks. The base block crosses n in {300, 1,000, 2,000, 5,000} with p in {1,000, 10,000, 100,000, 150,000} (dummy cap 10), and the large-p block runs n = 300 with p in {100,000, 1,000,000} (dummy cap 5). It runs 3 base solvers (TLARS/TOMP/TAFS rho_afs=0.3) with num_MC=10 sequential trials per cell, a resumable per-trial cache and a disk pre-flight per point, and it records timing, memory, and FDR/TPR | `demo_trex_08_mc_sim_scalability` |
+| 09 | [demo_trex_09_mc_sim_target_fdr](demo_trex_09_mc_sim_target_fdr/) | Achieved FDR and TPR vs. the target FDR for 3 base solvers (TLARS/TOMP/TAFS rho_afs=0.3) on the demo-03 data (n = 300, p = 1,000, s = 10), SNR in {0.5, 1, 2, 5} x tFDR in {0.01, ..., 0.5} (11 levels), num_MC=200 and a seeded selector (`seeded_selector = TRUE`). | `demo_trex_09_mc_sim_target_fdr` |
+| 10 | [demo_trex_10_mc_sim_dt_ratio](demo_trex_10_mc_sim_dt_ratio/) | FDR and TPR at tFDR = 0.1 vs. the sample-size ratio c = n / (s ln p) for 3 base solvers, p in {1,000, 10,000} x c in {1, ..., 10} (10 values) x SNR in {0.5, 1, 2}, num_MC=200 and a seeded selector. | `demo_trex_10_mc_sim_dt_ratio` |
 
 Each demo folder has its own `README.md`.
 

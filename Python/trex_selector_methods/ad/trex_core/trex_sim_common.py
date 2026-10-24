@@ -429,7 +429,7 @@ def _trial_worker(args):
 
     args keys (all plain Python scalars, lists, or None):
         n, p, s, snr, amplitude, fixed_support (list or None), rnd_coef,
-        mc, trial_seed, tFDR, track_L_T,
+        mc, trial_seed, tFDR, track_L_T, seeded_selector,
         solver_name, lambda2, rho_afs, ncgmp_variant,
         K, max_dummy_multiplier, use_max_T_stop, opt_threshold,
         tloop_stagnation_stop, tloop_max_stagnant_steps, lloop_strategy,
@@ -443,6 +443,7 @@ def _trial_worker(args):
     rnd_coef   = args.get("rnd_coef", False)
     tFDR       = args["tFDR"]
     track_L_T  = args.get("track_L_T", False)
+    seeded     = args.get("seeded_selector", False)
 
     import trex_selector_neo as trex
 
@@ -470,9 +471,11 @@ def _trial_worker(args):
         dat["y"],
         tFDR=tFDR,
         trex_control=ctrl,
-        seed=-1,       # hardware entropy per trial — required for valid MC FDR estimates;
-                       # a fixed integer seed produces structurally correlated dummies
-                       # across trials (mirrors R's seed=-1L convention).
+        # Hardware entropy per trial by default; a fixed integer seed shared by all
+        # trials would correlate the dummies across trials (mirrors R's seed=-1L).
+        # seeded_selector uses the trial seed instead, distinct per trial and
+        # reproducible (mirrors the C++ seeded_selector flag).
+        seed=int(trial_seed) if seeded else -1,
         verbose=False,
     )
     sel.select()
@@ -508,6 +511,7 @@ def run_mc_trex(
     rnd_coef=False,
     track_L_T=False,
     label="",
+    seeded_selector=False,
 ):
     """
     Parallel MC runner for classical T-Rex (ProcessPoolExecutor).
@@ -515,7 +519,8 @@ def run_mc_trex(
     Runs `num_MC` independent trials. Each trial:
       1. Draws support (fixed_support, or per-trial via make_support_random).
       2. Generates data via dgp_gauss_snr.
-      3. Runs TRexSelector with seed=-1 (hardware entropy per trial).
+      3. Runs TRexSelector with seed=-1 (hardware entropy per trial), or with
+         the trial seed when seeded_selector is True.
 
     Parameters
     ----------
@@ -536,6 +541,8 @@ def run_mc_trex(
     rnd_coef       : bool   If True, draw per-trial coefficients from N(0,1).
     track_L_T      : bool   If True, also record L and T_stop per trial.
     label          : str    Progress label printed to console.
+    seeded_selector: bool   If True, seed the selector with the trial seed
+                            (reproducible cells; mirrors the C++ flag).
 
     Returns
     -------
@@ -563,6 +570,8 @@ def run_mc_trex(
             # TRex
             "tFDR":          tFDR,
             "track_L_T":     track_L_T,
+            # Only when set, so the cache keys of the unseeded demos stay unchanged
+            **({"seeded_selector": True} if seeded_selector else {}),
             # Solver-specific params (from solver_desc)
             "solver_name":   solver_desc["solver_name"],
             # Defaults match the C++ DemoSolverInfo struct (0.0 / 0.0 / 0).

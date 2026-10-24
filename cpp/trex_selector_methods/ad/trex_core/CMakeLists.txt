@@ -42,3 +42,13 @@ add_demo_target(demo_trex_08_mc_sim_scalability
     demo_trex_08_mc_sim_scalability/demo_trex_08_mc_sim_scalability.cpp
     T_REX_SELECTOR_LIBS
 )
+
+add_demo_target(demo_trex_09_mc_sim_target_fdr
+    demo_trex_09_mc_sim_target_fdr/demo_trex_09_mc_sim_target_fdr.cpp
+    T_REX_SELECTOR_LIBS
+)
+
+add_demo_target(demo_trex_10_mc_sim_dt_ratio
+    demo_trex_10_mc_sim_dt_ratio/demo_trex_10_mc_sim_dt_ratio.cpp
+    T_REX_SELECTOR_LIBS
+)

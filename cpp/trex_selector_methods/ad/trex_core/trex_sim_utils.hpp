@@ -725,7 +725,8 @@ inline TrexGridPointResult run_mc_trials_trex_impl(
     const TrexDGPFactory&        make_data,
     double                       tFDR,
     const TRexControlParameter&  trex_ctrl,
-    unsigned                     base_seed_offset)
+    unsigned                     base_seed_offset,
+    bool                         seeded_selector = false)
 {
     const int iMC = static_cast<int>(num_MC);
 
@@ -745,8 +746,9 @@ inline TrexGridPointResult run_mc_trials_trex_impl(
         Eigen::Map<Eigen::MatrixXd> X_map(dat.X.data(), dat.X.rows(), dat.X.cols());
         Eigen::Map<Eigen::VectorXd> y_map(dat.y.data(), dat.y.rows());
 
+        // Selector seed: the trial seed when seeded, else hardware entropy (-1)
         TRexSelector selector(X_map, y_map, tFDR, trex_ctrl,
-                              -1, false);
+                              seeded_selector ? static_cast<int>(trial_seed) : -1, false);
         selector.select();
 
         const auto sel  = selector.getSelectedIndices();
@@ -796,6 +798,8 @@ inline TrexGridPointResult run_mc_trials_trex_impl(
  * @param trex_ctrl         T-Rex control parameters (read-only; TRexSelector copies
  *                          by value so multiple threads are safe).
  * @param base_seed_offset  Base RNG seed offset; trial mc uses base_seed_offset + mc.
+ * @param seeded_selector   true: the selector is seeded with the trial seed, so a cell
+ *                          is reproducible; false (default): hardware entropy (-1).
  *
  * @return TrexGridPointResult with avg/sd FDR, TPR and avg L, T.
  */
@@ -805,12 +809,15 @@ inline TrexGridPointResult run_mc_trials_trex(
     const TrexDGPFactory&        make_data,
     double                       tFDR,
     const TRexControlParameter&  trex_ctrl,
-    unsigned                     base_seed_offset)
+    unsigned                     base_seed_offset,
+    bool                         seeded_selector = false)
 {
     return detail::from_cell(TREX_CELL_CACHED(
-        detail::cell_key("trex", progress_label, num_MC, base_seed_offset, tFDR, trex_ctrl), [&] {
+        detail::cell_key(seeded_selector ? "trex_seeded" : "trex", progress_label, num_MC,
+                         base_seed_offset, tFDR, trex_ctrl), [&] {
             return detail::to_cell(run_mc_trials_trex_impl(num_MC, progress_label, make_data,
-                                                           tFDR, trex_ctrl, base_seed_offset));
+                                                           tFDR, trex_ctrl, base_seed_offset,
+                                                           seeded_selector));
         }));
 }
 

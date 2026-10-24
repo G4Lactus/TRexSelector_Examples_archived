@@ -69,6 +69,10 @@ add_demo_target(demo_ts_perf_04_recovery_vs_dt_ratio
     ad/demo_ts_perf_04_recovery_vs_dt_ratio/demo_ts_perf_04_recovery_vs_dt_ratio.cpp
     T_ALGORITHM_LIBS
 )
+add_demo_target(demo_ts_perf_05_null_counts_vs_nhg
+    ad/demo_ts_perf_05_null_counts_vs_nhg/demo_ts_perf_05_null_counts_vs_nhg.cpp
+    T_ALGORITHM_LIBS
+)
 
 # Cross-language validation programs moved to the TRexSelector library test suite
 # (TRexSelector/cpp/tests/validation/); see that folder's CMakeLists.txt.

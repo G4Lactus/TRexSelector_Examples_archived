@@ -30,6 +30,10 @@
 #                                      size (its own wider CSV schema,
 #                                      n,p,is_barrier,solver,num_mc,snr,metric,
 #                                      value — read via read_scalability()).
+#     plot_sweep_grid()              — demos 09 / 10 FDR / TPR grid against a
+#                                      swept column (tfdr, c), one line per value
+#                                      of another (snr, p); long schema
+#                                      solver,<grid columns>,metric,mean,sd.
 #
 # CLI modes (all typically driven from a demo's generate_plots.sh):
 #     # default — per-CSV overview + grouped figure
@@ -45,6 +49,9 @@
 #     # demo-08 scalability dashboard from one or more wide CSVs (concatenated)
 #     Rscript trex_plt_utils.R scalability <wide_csv> [<wide_csv> ...] \
 #         --stem my_dash --outdir <plots>
+#     # demo-09 / demo-10 sweep grid from one long CSV
+#     Rscript trex_plt_utils.R sweep <csv> --x tfdr --lines snr --diagonal \
+#         --stem my_sweep [--filter snr=1] [--outdir <plots>]
 #
 # Flags: --title T, --legend-title T, --tfdr F, --xscale {linear,sqrt,log},
 #        --outdir DIR, --stem S, --formats png,pdf, --groups N, --no-grouped,
@@ -484,6 +491,99 @@ plot_comparison_grid <- function(frames, title,
 
 
 # ------------------------------------------------------------------------------
+# Pattern 5 — sweep grid (demos 09 and 10, long schema with a mean column)
+# ------------------------------------------------------------------------------
+# Demos 09 and 10 write the long schema
+#     solver,<grid columns>,metric,mean,sd
+# (grid columns snr,tfdr for demo 09 and snr,p,n,c for demo 10).
+
+SWEEP_X_LABELS <- c(tfdr = "Target FDR (tFDR)", c = "n / (s \u00b7 ln p)")
+SWEEP_LINE_LABELS <- c(snr = "SNR", p = "p", n = "n")
+
+#' Load a long sweep CSV (solver, <grid columns>, metric, mean, sd).
+read_sweep <- function(path) {
+  df <- utils::read.csv(path, stringsAsFactors = FALSE, strip.white = TRUE)
+  names(df) <- tolower(trimws(names(df)))
+  missing <- setdiff(c("solver", "metric", "mean"), names(df))
+  if (length(missing) > 0L)
+    stop(sprintf("Sweep CSV is missing columns %s: %s",
+                 paste(missing, collapse = ", "), path), call. = FALSE)
+  df$solver <- trimws(as.character(df$solver))
+  df$metric <- trimws(as.character(df$metric))
+  df
+}
+
+#' 2 x N grid: FDR (top) and TPR (bottom) against `x`, one column per solver
+#' and one line per value of `lines` (mean over the trials). The FDR panels
+#' carry the diagonal FDR = tFDR when `diagonal` is set, else the target line
+#' at `tfdr`. Mirrors plot_sweep_grid() of the Python plotter.
+plot_sweep_grid <- function(df, x, lines, title, diagonal = FALSE,
+                            tfdr = DEFAULT_TFDR, xscale = DEFAULT_XSCALE) {
+  solvers <- unique(df$solver)
+  line_vals <- sort(unique(df[[lines]]))
+  line_name <- if (lines %in% names(SWEEP_LINE_LABELS)) SWEEP_LINE_LABELS[[lines]] else lines
+  line_lbls <- sprintf("%s = %s", line_name, format(line_vals, big.mark = ",", trim = TRUE,
+                                                    drop0trailing = TRUE))
+  # viridis per line value, with orange instead of its yellow end
+  cols <- viridisLite::viridis(length(line_vals))
+  pos <- if (length(line_vals) > 1L) seq(0, 1, length.out = length(line_vals)) else 0
+  cols[pos > 0.85] <- "#FF7F0E"
+  cols <- setNames(cols, line_lbls)
+  shapes <- setNames(ROW_SHAPES[seq_along(line_vals)], line_lbls)
+  x_vals <- sort(unique(df[[x]]))
+  x_label <- if (x %in% names(SWEEP_X_LABELS)) SWEEP_X_LABELS[[x]] else x
+
+  fdr_vals <- df$mean[df$metric == "FDR"]
+  fdr_top <- max(max(fdr_vals) * 1.1, (if (diagonal) max(x_vals) else tfdr) * 1.1)
+  df$line_f <- factor(line_lbls[match(df[[lines]], line_vals)], levels = line_lbls)
+  df$x_val <- df[[x]]
+
+  panels <- list()
+  for (metric in METRICS) {
+    for (ci in seq_along(solvers)) {
+      sub <- df[df$solver == solvers[[ci]] & df$metric == metric, ]
+      sub <- sub[order(sub$line_f, sub$x_val), ]
+      p <- ggplot(sub, aes(x = x_val, y = mean, color = line_f, shape = line_f))
+      if (metric == "FDR") {
+        if (diagonal) {
+          ref <- data.frame(x0 = 0, y0 = 0, x1 = max(x_vals), y1 = max(x_vals), lbl = "FDR = tFDR")
+          p <- p +
+            geom_segment(data = ref, inherit.aes = FALSE,
+                         aes(x = x0, y = y0, xend = x1, yend = y1, linetype = lbl),
+                         color = "black", linewidth = 0.8) +
+            scale_linetype_manual(name = NULL, values = c("FDR = tFDR" = "dotted"),
+                                  guide = guide_legend(order = 1))
+        } else {
+          p <- p + .tfdr_layers(tfdr)
+        }
+      }
+      p <- p +
+        geom_line(linewidth = 0.9) +
+        geom_point(size = 2.2, fill = NA, stroke = 0.9) +
+        scale_color_manual(name = NULL, values = cols, drop = FALSE) +
+        scale_shape_manual(name = NULL, values = shapes, drop = FALSE) +
+        guides(color = guide_legend(order = 2), shape = guide_legend(order = 2)) +
+        labs(title = if (metric == "FDR") solvers[[ci]] else NULL,
+             x = if (metric == "TPR") x_label else NULL,
+             y = if (ci == 1L) sprintf("%s (%s)", metric, tolower(METRIC_LABELS[[metric]])) else NULL) +
+        .sweep_x_scale(x_vals, xscale) +
+        .rate_y_scale(metric, fdr_top) +
+        .panel_theme() +
+        coord_cartesian(ylim = if (metric == "FDR") c(0.0, fdr_top) else c(0.0, 1.05))
+      panels[[length(panels) + 1L]] <- p
+    }
+  }
+
+  wrap_plots(panels, nrow = length(METRICS), byrow = TRUE) +
+    plot_layout(guides = "collect") +
+    plot_annotation(title = title,
+                    theme = theme(plot.title = element_text(
+                      size = 14, face = "bold", hjust = 0.5
+                    )))
+}
+
+
+# ------------------------------------------------------------------------------
 # Demo 08 — scalability dashboard (wider CSV schema than the rest)
 # ------------------------------------------------------------------------------
 # Demo 08's CSVs (base block plus large-p block, one CSV each) use the wide
@@ -774,7 +874,7 @@ plot_scalability_dashboard <- function(df, title, tfdr = DEFAULT_TFDR,
     labs(title = "Out-of-core: volume crosses RAM, memory stays bounded",
          subtitle = if (nrow(barrier) > 0)
            "ringed = out-of-core point (volume > RAM)" else NULL,
-         x = if (m_vol == M_VOL) "Volume per T-iteration X + K L X [GiB]  (log)"
+         x = if (m_vol == M_VOL) "Volume per T-iteration X + K · L · X [GiB]  (log)"
          else "Total design volume [X|D] [GiB]  (log)",
          y = switch(m_oc, Foot_MiB = "Heap after select() [GiB]",
                     RSS_MiB = "Resident after select() [GiB]", "Process peak RSS [GiB]")) +
@@ -1084,14 +1184,85 @@ main_scalability <- function(argv) {
   invisible(0L)
 }
 
-#' Dispatch on the first token: `grid` / `scalability` sub-modes, else the
-#' default per-CSV FDR/TPR mode.
+#' `sweep` mode: FDR / TPR grid of a long sweep CSV (demos 09 and 10).
+main_sweep <- function(argv) {
+  args <- list(csv = character(0), x = NULL, lines = NULL, diagonal = FALSE,
+               filter = character(0), title = "T-Rex sweep", stem = NULL, outdir = NULL,
+               formats = c("png", "pdf"), tfdr = DEFAULT_TFDR, xscale = DEFAULT_XSCALE)
+  i <- 1L
+  while (i <= length(argv)) {
+    a <- argv[[i]]
+    flag <- function() {
+      i <<- i + 1L
+      argv[[i]]
+    }
+    switch(a,
+           "--x"        = {
+             args$x <- flag()
+           },
+           "--lines"    = {
+             args$lines <- flag()
+           },
+           "--diagonal" = {
+             args$diagonal <- TRUE
+           },
+           "--filter"   = {
+             r <- .consume_multi(argv, i)
+             args$filter <- c(args$filter, r$values)
+             i <- r$i
+           },
+           "--title"    = {
+             args$title <- flag()
+           },
+           "--stem"     = {
+             args$stem <- flag()
+           },
+           "--outdir"   = {
+             args$outdir <- flag()
+           },
+           "--formats"  = {
+             args$formats <- .split_formats(flag())
+           },
+           "--tfdr"     = {
+             args$tfdr <- as.numeric(flag())
+           },
+           "--xscale"   = {
+             args$xscale <- match.arg(flag(), XSCALES)
+           },
+           {
+             if (!startsWith(a, "--")) args$csv <- c(args$csv, a)
+           })  # unknown flags meant for other modes are ignored
+    i <- i + 1L
+  }
+  if (length(args$csv) != 1L || is.null(args$x) || is.null(args$lines) || is.null(args$stem))
+    stop("Usage: trex_plt_utils.R sweep <csv> --x COL --lines COL --stem S ",
+         "[--diagonal] [--filter col=val ...] [--title T] [--outdir DIR] [--tfdr F] ",
+         "[--formats png,pdf] [--xscale linear|sqrt|log]", call. = FALSE)
+
+  csv <- normalizePath(args$csv)
+  df <- read_sweep(csv)
+  for (f in args$filter) {
+    kv <- strsplit(f, "=", fixed = TRUE)[[1L]]
+    df <- df[abs(suppressWarnings(as.numeric(df[[kv[[1L]]]])) - as.numeric(kv[[2L]])) < 1e-9, ]
+  }
+  fig <- plot_sweep_grid(df, args$x, args$lines, args$title, diagonal = args$diagonal,
+                         tfdr = args$tfdr, xscale = args$xscale)
+  outdir <- if (is.null(args$outdir)) default_plots_dir(csv) else args$outdir
+  save_figure(fig, outdir, args$stem, args$formats,
+              width = 5.0 * length(unique(df$solver)) + 2.4, height = 8.6)
+  invisible(0L)
+}
+
+#' Dispatch on the first token: `grid` / `scalability` / `sweep` sub-modes,
+#' else the default per-CSV FDR/TPR mode.
 main <- function() {
   argv <- commandArgs(trailingOnly = TRUE)
   if (length(argv) > 0 && argv[[1L]] == "grid") {
     main_grid(argv[-1L])
   } else if (length(argv) > 0 && argv[[1L]] == "scalability") {
     main_scalability(argv[-1L])
+  } else if (length(argv) > 0 && argv[[1L]] == "sweep") {
+    main_sweep(argv[-1L])
   } else {
     main_fdr_tpr(argv)
   }

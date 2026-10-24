@@ -9,6 +9,9 @@ Validated C++:  SDK installed from 61fd84c; the Examples targets built clean wit
                 block) and demo 01 Part 4 (clustering cut) are run on 61fd84c with their figures and READMEs.
                 The 0.98 column of Part 4 reproduces the committed 44cf1ab Part 3 single-linkage cells exactly
                 (means and standard deviations), so the other Monte Carlo results committed on 44cf1ab stand.
+                The new trex_core demos 09 (target FDR sweep) and 10 (n / (s ln p) sweep) and tsolvers
+                demo_ts_perf_05 (null counts vs. the negative hypergeometric law) are run on 61fd84c; demo 09
+                at tFDR 0.1 matches the demo 05 Normal-dummy row within Monte Carlo noise.
 Validated Py:   TRexSelectorNeo 1.0.0 reinstalled from 61fd84c (repo .venv and conda trex-dev-beyond); the
                 Part 5 path data of the 12 T-solver demos reproduce their committed files byte for byte and
                 the memory_mapping demos pass. trex_gvs demo 07 and demo 01 Part 4 are run on 61fd84c, the
@@ -24,7 +27,9 @@ Validated perf: the perf and tsolvers results committed on 44cf1ab stand (no T-s
 Pending:        trex_core 08 in Python and R (redesigned grid and large-p block, nightly runner). The C++
                 run is done on 61fd84c (base and large-p block, 10 trials, 23.3 h). The Python results
                 still come from the July 2026 library, and R has only the smoke recording. The single runs
-                demo_trex_01 and demo_trex_06 are validated in all three languages.
+                demo_trex_01 and demo_trex_06 are validated in all three languages. trex_core 09 and 10 in
+                Python and R (code tested on reduced grids, full runs pending) and Python and R ports of
+                demo_ts_perf_05.
 Previous pins:  44cf1ab (2026-09-28), b95b984 (2026-09-27), 8ad3376 (2026-09-26), f390bfc (2026-09-25),
                 d404033 (2026-09-25); what changed between pins is in the git log of this file and in the
                 library's HISTORY.md.

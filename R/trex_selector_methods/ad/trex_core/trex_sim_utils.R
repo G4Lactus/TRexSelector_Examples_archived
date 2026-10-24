@@ -588,6 +588,8 @@ execute_with_temp_mmap <- function(X_matrix, expr_func) {
 #' @param num_cores     Number of parallel worker cores.
 #' @param track_L_T     If TRUE, also record L and T_stop per trial.
 #' @param label         Progress label printed before / after the run.
+#' @param seeded_selector If TRUE, seed the selector with the trial seed
+#'                      (reproducible cells; mirrors the C++ flag).
 #'
 #' @return Named list: mean_FDR, mean_TPR, sd_FDR, sd_TPR, and (if track_L_T) mean_L, mean_T.
 .run_mc_trex <- function(make_data_fn,
@@ -597,7 +599,8 @@ execute_with_temp_mmap <- function(X_matrix, expr_func) {
                          num_MC,
                          num_cores,
                          track_L_T = FALSE,
-                         label     = "") {
+                         label     = "",
+                         seeded_selector = FALSE) {
 
   one_trial <- function(mc) {
     trial_seed <- base_seed + mc - 1L
@@ -606,7 +609,9 @@ execute_with_temp_mmap <- function(X_matrix, expr_func) {
       X       = dat$X,
       y       = dat$y,
       tFDR    = tFDR,
-      seed    = -1L,  # hardware entropy per trial (indepedent random experiments)
+      # Hardware entropy per trial (independent random experiments), or the
+      # trial seed (distinct per trial and reproducible) for seeded_selector
+      seed    = if (seeded_selector) as.integer(trial_seed) else -1L,
       verbose = FALSE,
       control = ctrl
     )
@@ -620,7 +625,10 @@ execute_with_temp_mmap <- function(X_matrix, expr_func) {
   }
 
   # One resumable grid cell: restored from the cell cache after a restart.
-  key <- paste0("trex|", label, "|", cell_digest(ctrl, tFDR, base_seed, num_MC, track_L_T))
+  # The seeded flag joins the key only when set, so the keys of the other demos stay unchanged
+  digest_args <- list(ctrl, tFDR, base_seed, num_MC, track_L_T)
+  if (seeded_selector) digest_args <- c(digest_args, list("seeded_selector"))
+  key <- paste0("trex|", label, "|", do.call(cell_digest, digest_args))
   out <- cell_cached(key, function() {
     if (nchar(label) > 0L)
       cat(sprintf("  %s \u2014 Running %d MC trials ...\n", label, num_MC))

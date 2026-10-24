@@ -54,7 +54,7 @@ suite_demos() {
     case "$1" in
         trex_screening) ls -d "$BIN"/trex_screening/demo_trex_scr_0[1-6]_* ;;
         trex_spca)      ls -d "$BIN"/trex_spca/demo_trex_spca_0[12]_* ;;
-        trex_core)      ls -d "$BIN"/trex_core/demo_trex_0[2-57]_* ;;
+        trex_core)      ls -d "$BIN"/trex_core/demo_trex_0[2-579]_* "$BIN"/trex_core/demo_trex_10_* ;;
         trex_da)        ls -d "$BIN"/trex_da/demo_trex_da_0[1-8]_* ;;
         trex_gvs)       ls -d "$BIN"/trex_gvs/demo_trex_gvs_0[1-8]_* ;;
         *)              echo "unknown suite: $1" >&2 ;;

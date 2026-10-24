@@ -25,6 +25,10 @@ Plot patterns hosted here:
     plot_scalability_dashboard()   — demo 08 runtime / memory / FDR / TPR vs
                                      problem size (its own wider CSV schema,
                                      read via read_scalability()).
+    plot_sweep_grid()              — demos 09 / 10: FDR and TPR against a swept
+                                     quantity (tFDR, n / (s ln p)), one column
+                                     per solver, one line per SNR or p (long CSV
+                                     solver,<grid>,metric,mean,sd via read_sweep()).
 
 Three CLI modes (all typically driven from a demo's generate_plots.sh):
     # default -- per-CSV overview + grouped (--plotly adds the interactive html)
@@ -36,6 +40,8 @@ Three CLI modes (all typically driven from a demo's generate_plots.sh):
     # demo-08 scalability dashboard from one or more wide CSVs (concatenated)
     python trex_plt_utils.py scalability <wide_csv> [<wide_csv> ...] \
         --stem my_dash --outdir <plots>
+    # demos 09 / 10: FDR / TPR against a swept column, one line per SNR or p
+    python trex_plt_utils.py sweep <csv> --x tfdr --lines snr --diagonal --stem my_sweep
 
 Output location: figures default to the simulation_results/plots/ sibling when
 the CSV lives in simulation_results/data/ (the suite convention); otherwise
@@ -1041,7 +1047,7 @@ def plot_scalability_dashboard(
     if m_oc != M_PEAKRSS:
         ax_oc.set_yscale("log")
     if m_vol == M_VOL:
-        ax_oc.set_xlabel("Volume per T-iteration $X + K L X$ [GiB]  (log)",
+        ax_oc.set_xlabel(r"Volume per T-iteration $X + K \cdot L \cdot X$ [GiB]  (log)",
                          fontsize=11)
     else:
         ax_oc.set_xlabel("Total design volume $[X\\,|\\,D]$ [GiB]  (log)",
@@ -1108,6 +1114,95 @@ def plot_scalability_dashboard(
     fig.suptitle(title, fontsize=15, fontweight="bold", y=0.99)
     fig.subplots_adjust(left=0.07, right=0.98, bottom=0.10, top=0.91,
                         wspace=0.18, hspace=0.38)
+    return fig
+
+
+# ---------------------------------------------------------------------------
+# Sweep grid (demos 09 / 10): FDR and TPR against a swept quantity
+# ---------------------------------------------------------------------------
+SWEEP_X_LABELS = {"tfdr": "Target FDR (tFDR)", "c": r"$n \,/\, (s \cdot \ln p)$"}
+SWEEP_LINE_LABELS = {"snr": "SNR", "p": "$p$", "n": "$n$"}
+
+
+def read_sweep(path: Path) -> pd.DataFrame:
+    """Load a long sweep CSV (solver, <grid columns>, metric, mean, sd)."""
+    df = pd.read_csv(path)
+    df.columns = df.columns.str.strip().str.lower()
+    missing = {"solver", "metric", "mean"} - set(df.columns)
+    if missing:
+        raise ValueError(f"Sweep CSV is missing columns {sorted(missing)}: {path}")
+    df["solver"] = df["solver"].astype(str).str.strip()
+    df["metric"] = df["metric"].astype(str).str.strip()
+    return df
+
+
+def plot_sweep_grid(
+    df: pd.DataFrame,
+    x: str,
+    lines: str,
+    title: str,
+    diagonal: bool = False,
+    tfdr: float = DEFAULT_TFDR,
+    xscale: str = DEFAULT_XSCALE,
+) -> plt.Figure:
+    """2 x N grid: FDR (top) and TPR (bottom) against ``x``, one column per
+    solver and one line per value of ``lines`` (mean over the trials). The FDR
+    panels carry the diagonal FDR = tFDR when ``diagonal`` is set, else the
+    target line at ``tfdr``."""
+    solvers = list(dict.fromkeys(df["solver"]))
+    line_vals = sorted(df[lines].unique())
+    colors = _scal_n_colors(line_vals)
+    x_vals = sorted(df[x].unique())
+    line_label = SWEEP_LINE_LABELS.get(lines, lines)
+
+    fdr = df[df["metric"] == "FDR"]
+    fdr_top = max(float(fdr["mean"].max()) * 1.1, (max(x_vals) if diagonal else tfdr) * 1.1)
+
+    fig, axes = plt.subplots(2, len(solvers), figsize=(5.0 * len(solvers) + 2.4, 8.6),
+                             sharex=True, squeeze=False)
+    handles: list = []
+    labels: list[str] = []
+    for ci, solver in enumerate(solvers):
+        for ri, (metric, mlabel) in enumerate((("FDR", "FDR (false discovery rate)"),
+                                                ("TPR", "TPR (true positive rate)"))):
+            ax = axes[ri][ci]
+            sub = df[(df["solver"] == solver) & (df["metric"] == metric)]
+            for i, v in enumerate(line_vals):
+                d = sub[sub[lines] == v].sort_values(x)
+                line, = ax.plot(d[x], d["mean"], color=colors[v], linewidth=2.0,
+                                marker=MARKERS[i % len(MARKERS)], markersize=5)
+                if ri == 0 and ci == 0:
+                    handles.append(line)
+                    labels.append(f"{line_label} = {v:g}")
+            if metric == "FDR":
+                if diagonal:
+                    ref, = ax.plot([0.0, max(x_vals)], [0.0, max(x_vals)], color="black",
+                                   linestyle=":", linewidth=2.0)
+                    ref_label = "FDR = tFDR"
+                else:
+                    ref = ax.axhline(tfdr, color="black", linestyle=":", linewidth=2.0)
+                    ref_label = f"tFDR = {tfdr:g}"
+                if ci == 0:
+                    handles.insert(0, ref)
+                    labels.insert(0, ref_label)
+                ax.set_ylim(0.0, fdr_top)
+            else:
+                ax.set_ylim(0.0, 1.05)
+            apply_sweep_xaxis(ax, x_vals, xscale)
+            ax.grid(True, which="both", linestyle="--", linewidth=0.6, alpha=0.4)
+            if ri == 0:
+                ax.set_title(solver, fontsize=13, fontweight="bold")
+            else:
+                ax.set_xlabel(SWEEP_X_LABELS.get(x, x), fontsize=12)
+            if ci == 0:
+                ax.set_ylabel(mlabel, fontsize=12)
+
+    fig.suptitle(title, fontsize=15, fontweight="bold", y=0.98)
+    legend = fig.legend(handles, labels, loc="center left", bbox_to_anchor=(0.845, 0.5),
+                        frameon=True, framealpha=1.0, facecolor="white", edgecolor="0.7",
+                        fontsize=10, ncol=1)
+    legend.get_frame().set_linewidth(0.8)
+    fig.subplots_adjust(left=0.07, right=0.83, bottom=0.08, top=0.90, wspace=0.18, hspace=0.12)
     return fig
 
 
@@ -1360,6 +1455,36 @@ def main_scalability(argv: list) -> None:
     plt.close(fig)
 
 
+def main_sweep(argv: list) -> None:
+    """`sweep` mode: FDR / TPR grid of a long sweep CSV (demos 09 and 10)."""
+    parser = argparse.ArgumentParser(prog="trex_plt_utils.py sweep",
+                                     description="FDR/TPR sweep grid.")
+    parser.add_argument("csv", type=Path, help="Long sweep CSV.")
+    parser.add_argument("--x", required=True, help="Swept column on the x-axis (tfdr, c, ...).")
+    parser.add_argument("--lines", required=True, help="Column with one line per value.")
+    parser.add_argument("--diagonal", action="store_true",
+                        help="Draw FDR = tFDR in the FDR panels (x = tfdr).")
+    parser.add_argument("--filter", nargs="*", default=[],
+                        help="Keep rows with column=value, e.g. snr=1.")
+    parser.add_argument("--title", default="T-Rex sweep")
+    parser.add_argument("--stem", required=True, help="Output filename stem.")
+    parser.add_argument("--outdir", type=Path, default=None)
+    parser.add_argument("--formats", nargs="+", default=["png", "pdf"])
+    parser.add_argument("--tfdr", type=float, default=DEFAULT_TFDR)
+    parser.add_argument("--xscale", choices=XSCALES, default=DEFAULT_XSCALE)
+    args, _ignored = parser.parse_known_args(argv)
+
+    df = read_sweep(args.csv.resolve())
+    for f in args.filter:
+        col, _, val = f.partition("=")
+        df = df[pd.to_numeric(df[col], errors="coerce").sub(float(val)).abs() < 1e-9]
+    fig = plot_sweep_grid(df, args.x, args.lines, args.title, diagonal=args.diagonal,
+                          tfdr=args.tfdr, xscale=args.xscale)
+    outdir = (args.outdir or default_plots_dir(args.csv.resolve())).resolve()
+    save_figure(fig, outdir, args.stem, args.formats)
+    plt.close(fig)
+
+
 def main() -> None:
     """Dispatch on the first token: `grid` / `scalability` sub-modes, else the
     default per-CSV FDR/TPR mode (so bare `trex_plt_utils.py <csv> ...` still
@@ -1369,6 +1494,8 @@ def main() -> None:
         main_grid(argv[1:])
     elif argv and argv[0] == "scalability":
         main_scalability(argv[1:])
+    elif argv and argv[0] == "sweep":
+        main_sweep(argv[1:])
     else:
         main_fdr_tpr()
 

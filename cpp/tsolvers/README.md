@@ -44,6 +44,7 @@ positive rate (TPR), with figures drawn by `ts_plt_utils.py`:
 | P2 | [demo_ts_perf_02_runtime_vs_dummies/](ad/demo_ts_perf_02_runtime_vs_dummies/README.md) | Run time, steps and time per step vs. the number of dummies $L$, and the gain of the warm start |
 | P3 | [demo_ts_perf_03_memory_vs_np/](ad/demo_ts_perf_03_memory_vs_np/README.md) | Solver memory vs. the ratio $n/p$, and its share of the data |
 | P4 | [demo_ts_perf_04_recovery_vs_dt_ratio/](ad/demo_ts_perf_04_recovery_vs_dt_ratio/README.md) | Exact support recovery, TPR and FDR at the first dummy vs. $n/(s \log p)$, and the Donoho–Tanner diagram |
+| P5 | [demo_ts_perf_05_null_counts_vs_nhg/](ad/demo_ts_perf_05_null_counts_vs_nhg/README.md) | Included and selected null variables vs. the negative hypergeometric distribution of the T-Rex theory |
 
 ---
 
@@ -159,7 +160,8 @@ tsolvers/
   │   ├── demo_ts_perf_01_fdr_tpr_vs_T/
   │   ├── demo_ts_perf_02_runtime_vs_dummies/
   │   ├── demo_ts_perf_03_memory_vs_np/
-  │   └── demo_ts_perf_04_recovery_vs_dt_ratio/
+  │   ├── demo_ts_perf_04_recovery_vs_dt_ratio/
+  │   └── demo_ts_perf_05_null_counts_vs_nhg/
   ├── sd/                    # sparse dummies (SD), README only
   └── vd/                    # virtual dummies (VD), README only
 ```

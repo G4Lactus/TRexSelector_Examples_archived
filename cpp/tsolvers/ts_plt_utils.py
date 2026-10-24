@@ -33,6 +33,12 @@ Plot patterns hosted here:
     plot_phase_transition()  — exact recovery over n/p and s/n, one heatmap
                                per solver, with the l1 phase transition and
                                the LARS s-step bound (demo_ts_perf_04, Part 2).
+    plot_null_pmf()          — histogram of the included null variables at T
+                               with the negative hypergeometric (NHG) PMF,
+                               one panel per solver (demo_ts_perf_05).
+    plot_null_qq()           — Q-Q plot of the same counts against the NHG.
+    plot_selected_ecdf()     — ECDFs of the selected null variables V(v) at
+                               the voting levels, with the NHG CDF.
 
 CLI modes (typically driven from a demo's generate_plots.sh):
     python ts_plt_utils.py paths <stem>_path.csv --solver T-LARS --title "..."
@@ -43,6 +49,7 @@ CLI modes (typically driven from a demo's generate_plots.sh):
     python ts_plt_utils.py memory memory_vs_np_mc500.csv --title "..."
     python ts_plt_utils.py recovery recovery_vs_dt_ratio_mc500.csv \
         --phase phase_transition_mc500.csv --title "..."
+    python ts_plt_utils.py nhg null_counts_vs_nhg_mc500.csv --title "..."
 
 The path mode reads <stem>_path.csv (T_stop,step,index,is_dummy,beta) and the
 sibling <stem>_actions.csv (T_stop,step,index,is_dummy,added) written by
@@ -703,6 +710,158 @@ def plot_phase_transition(df: pd.DataFrame, title: str) -> plt.Figure:
 
 
 # ==============================================================================
+# Null counts vs. the negative hypergeometric distribution (demo_ts_perf_05)
+# ==============================================================================
+
+SELECTED_LEVELS = [("selected_v1", "$v \\to 1$", "#1b9e77"), ("selected_v0.75", "$v = 0.75$", "#ff7f0e"),
+                   ("selected_v0.5", "$v = 0.5$", "#7570b3")]
+
+
+def nhg_pmf(p0: int, L: int, T: int) -> list[float]:
+    """PMF of the number of nulls drawn before the T-th dummy, NHG(p0 + L, p0, T), for 0, ..., p0."""
+    total = math.comb(p0 + L, p0)
+    return [math.comb(v + T - 1, v) * math.comb(p0 + L - v - T, p0 - v) / total for v in range(p0 + 1)]
+
+
+def _counts_setup(df: pd.DataFrame) -> tuple[int, int, int, int]:
+    """p0, L, T and K of the demo, constant over the CSV."""
+    return tuple(int(df[c].iloc[0]) for c in ("p0", "L", "T", "K"))
+
+
+def _frequencies(df: pd.DataFrame, solver: str, statistic: str, size: int) -> list[float]:
+    """Frequencies of the counts 0, ..., size - 1 of one solver and statistic."""
+    sub = df[(df["solver"] == solver) & (df["statistic"] == statistic)]
+    freq = [0.0] * size
+    for count, frequency in zip(sub["count"], sub["frequency"]):
+        freq[int(count)] += float(frequency)
+    return freq
+
+
+def _cumulative(weights: list[float]) -> list[float]:
+    total = sum(weights)
+    out, running = [], 0.0
+    for w in weights:
+        running += w
+        out.append(running / total if total > 0 else float("nan"))
+    return out
+
+
+def _quantile(cdf: list[float], prob: float) -> int:
+    """Smallest count whose CDF reaches prob."""
+    return next((v for v, c in enumerate(cdf) if c >= prob - 1e-12), len(cdf) - 1)
+
+
+def _solver_grid(df: pd.DataFrame) -> tuple[plt.Figure, list[list[str]], object]:
+    """One panel per solver, one row per family; unused panels hidden."""
+    per_family = [list(dict.fromkeys(df.loc[df["family"] == f, "solver"])) for f in FAMILIES]
+    cols = max(len(names) for names in per_family)
+    fig, axes = plt.subplots(len(FAMILIES), cols, figsize=(3.1 * cols, 3.0 * len(FAMILIES)), sharex=True,
+                             sharey=True, squeeze=False)
+    for row, names in enumerate(per_family):
+        for col in range(len(names), cols):
+            axes[row, col].set_visible(False)
+    return fig, per_family, axes
+
+
+def _grid_labels(axes, per_family: list[list[str]], row: int, col: int, xlabel: str, ylabel: str) -> None:
+    """Panel title, the y label in the first column and the x label at the bottom of every column."""
+    ax = axes[row, col]
+    ax.set_title(display_name(per_family[row][col]), fontsize=10)
+    ax.grid(linestyle="--", alpha=0.4)
+    if col == 0:
+        ax.set_ylabel(f"{FAMILIES[row]}\n{ylabel}", fontsize=9)
+    if row == len(FAMILIES) - 1 or col >= len(per_family[row + 1]):
+        ax.set_xlabel(xlabel, fontsize=9)
+        ax.xaxis.set_tick_params(labelbottom=True)
+
+
+def _grid_legend(fig: plt.Figure, handles: list, title: str | None = None) -> None:
+    fig.legend(handles=handles, loc="lower right", bbox_to_anchor=(0.98, 0.06), fontsize=10, frameon=True,
+               facecolor="white", edgecolor="0.7", title=title)
+
+
+def plot_null_pmf(df: pd.DataFrame, title: str) -> plt.Figure:
+    """Histogram of the included null variables at T per solver, with the NHG PMF and both means."""
+    p0, L, T, _ = _counts_setup(df)
+    pmf = nhg_pmf(p0, L, T)
+    nhg_mean = T * p0 / (L + 1)
+    x_max = _quantile(_cumulative(pmf), 0.9999) + 2
+    fig, per_family, axes = _solver_grid(df)
+    for row, names in enumerate(per_family):
+        for col, name in enumerate(names):
+            ax = axes[row, col]
+            freq = _frequencies(df, name, "included", p0 + 1)
+            total = sum(freq)
+            density = [f / total for f in freq]
+            mean = sum(v * d for v, d in enumerate(density))
+            ax.bar(range(x_max + 1), density[:x_max + 1], width=1.0, color="#fde0b8", edgecolor="0.25",
+                   linewidth=0.4)
+            ax.scatter(range(x_max + 1), pmf[:x_max + 1], s=6, color="black", zorder=3)
+            ax.axvline(nhg_mean, color="black", linewidth=1.4)
+            ax.axvline(mean, color="#d62728", linestyle="--", linewidth=1.4)
+            ax.set_xlim(-0.5, x_max + 0.5)
+            _grid_labels(axes, per_family, row, col, "Included null variables", "Density")
+    handles = [Line2D([], [], color="black", marker="o", markersize=3, linestyle="", label="NHG PMF"),
+               Line2D([], [], color="black", linewidth=1.4, label=f"NHG mean $T p_0/(L+1) = {nhg_mean:.2f}$"),
+               Line2D([], [], color="#d62728", linestyle="--", linewidth=1.4, label="Mean of the histogram")]
+    _grid_legend(fig, handles)
+    fig.suptitle(f"{title}: included null variables at $T = {T}$ vs. NHG($p_0 + L$, $p_0$, $T$)", fontsize=13)
+    fig.tight_layout()
+    return fig
+
+
+def plot_null_qq(df: pd.DataFrame, title: str) -> plt.Figure:
+    """Q-Q plot of the included null variables at T against the NHG, one panel per solver."""
+    p0, L, T, _ = _counts_setup(df)
+    nhg_cdf = _cumulative(nhg_pmf(p0, L, T))
+    probs = [(i - 0.5) / 200 for i in range(1, 201)]
+    theory = [_quantile(nhg_cdf, q) for q in probs]
+    fig, per_family, axes = _solver_grid(df)
+    upper = 0
+    for row, names in enumerate(per_family):
+        for col, name in enumerate(names):
+            ax = axes[row, col]
+            cdf = _cumulative(_frequencies(df, name, "included", p0 + 1))
+            sample = [_quantile(cdf, q) for q in probs]
+            upper = max(upper, max(sample), max(theory))
+            ax.scatter(theory, sample, s=12, facecolors="white", edgecolors="black", linewidths=0.7, zorder=3)
+            _grid_labels(axes, per_family, row, col, "NHG quantiles", "Sample quantiles")
+    for row, names in enumerate(per_family):
+        for col in range(len(names)):
+            axes[row, col].plot([0, upper + 2], [0, upper + 2], color="0.4", linewidth=1.0)
+    axes[0, 0].set_xlim(0, upper + 2)
+    axes[0, 0].set_ylim(0, upper + 2)
+    fig.suptitle(f"{title}: Q-Q plot of the included null variables at $T = {T}$", fontsize=13)
+    fig.tight_layout()
+    return fig
+
+
+def plot_selected_ecdf(df: pd.DataFrame, title: str) -> plt.Figure:
+    """ECDFs of the selected null variables V(v) at the voting levels, with the NHG CDF, one panel per solver."""
+    p0, L, T, K = _counts_setup(df)
+    nhg_cdf = _cumulative(nhg_pmf(p0, L, T))
+    x_max = _quantile(nhg_cdf, 0.9999) + 2
+    xs = list(range(x_max + 1))
+    fig, per_family, axes = _solver_grid(df)
+    for row, names in enumerate(per_family):
+        for col, name in enumerate(names):
+            ax = axes[row, col]
+            for statistic, _, color in SELECTED_LEVELS:
+                cdf = _cumulative(_frequencies(df, name, statistic, p0 + 1))
+                ax.step(xs, cdf[:x_max + 1], where="post", color=color, linewidth=1.3)
+            ax.step(xs, nhg_cdf[:x_max + 1], where="post", color="black", linewidth=1.3)
+            ax.set_xlim(0, x_max)
+            ax.set_ylim(-0.02, 1.02)
+            _grid_labels(axes, per_family, row, col, "Selected null variables", "Empirical CDF")
+    handles = [Line2D([], [], color=color, linewidth=1.3, label=label) for _, label, color in SELECTED_LEVELS]
+    handles.append(Line2D([], [], color="black", linewidth=1.3, label="NHG"))
+    _grid_legend(fig, handles, title=f"$K = {K}$, $T = {T}$")
+    fig.suptitle(f"{title}: selected null variables $V_{{T,L}}(v)$ vs. NHG", fontsize=13)
+    fig.tight_layout()
+    return fig
+
+
+# ==============================================================================
 # CLI
 # ==============================================================================
 
@@ -755,6 +914,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     rec.add_argument("--title", required=True, help="base title; each figure adds its subject")
     rec.add_argument("--outdir", type=Path, default=None, help="output folder")
     rec.add_argument("--formats", nargs="+", default=["png", "pdf"], help="output formats")
+
+    nhg = sub.add_parser("nhg", help="null counts vs. the negative hypergeometric distribution (demo_ts_perf_05)")
+    nhg.add_argument("csv", type=Path, help="null_counts_vs_nhg_mc<N>.csv")
+    nhg.add_argument("--title", required=True, help="base title; each figure adds its subject")
+    nhg.add_argument("--outdir", type=Path, default=None, help="output folder")
+    nhg.add_argument("--formats", nargs="+", default=["png", "pdf"], help="output formats")
 
     args = parser.parse_args(argv)
     if args.mode == "recovery" and args.csv is None and args.phase is None:
@@ -809,6 +974,13 @@ def main(argv: list[str] | None = None) -> None:
         if args.phase is not None:
             fig = plot_phase_transition(pd.read_csv(args.phase), args.title)
             save_figure(fig, args.outdir or default_plots_dir(args.phase), args.phase.stem, args.formats)
+            plt.close(fig)
+    elif args.mode == "nhg":
+        df = pd.read_csv(args.csv)
+        outdir = args.outdir or default_plots_dir(args.csv)
+        for fig, suffix in ((plot_null_pmf(df, args.title), "pmf"), (plot_null_qq(df, args.title), "qq"),
+                            (plot_selected_ecdf(df, args.title), "ecdf")):
+            save_figure(fig, outdir, f"{args.csv.stem}_{suffix}", args.formats)
             plt.close(fig)
 
 

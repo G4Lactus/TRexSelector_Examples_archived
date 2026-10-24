@@ -174,6 +174,8 @@ each demo self-contained and easier to inspect independently.
 | **06** | Memory-Mapped Single Run | Demonstrates memory-mapped (mmap) workflows | Larger data and reduced RAM usage | Two scenarios ($n=5{,}000,p=1{,}000$ and $n=1{,}000,p=5{,}000$): in-memory X + D mmap, and full X+D mmap pipeline |
 | **07** | MC: Memory-Mapped | Studies FDR/TPR under memory-mapped execution (TLARS) | Moderate dimension, mmap pipeline | $n = 300$, $p = 1{,}000$, $s = 10$, SNR $\in \lbrace0.1,0.5,1,2,5\rbrace$, MC = 200 (Demo C and Demo D), mmap storage on disk |
 | **08** | MC: Scalability | Measures runtime and memory as $n$ and $p$ grow, up to designs larger than RAM (TLARS/TOMP/TAFS) | Fully memory-mapped pipeline, out-of-core | Base block $n \in \lbrace300, \ldots, 5{,}000\rbrace$, $p \in \lbrace1{,}000, \ldots, 150{,}000\rbrace$ (dummy cap 10) and large-p block $n = 300$, $p \in \lbrace100{,}000, 1{,}000{,}000\rbrace$ (dummy cap 5), $s = 10$, SNR = 1, tFDR = 0.1, MC = 10 sequential trials per grid point |
+| **09** | MC: Target FDR | Measures the achieved FDR and TPR as the target FDR is swept (TLARS/TOMP/TAFS) | Moderate dimension, variable support indices, paired data along tFDR | $n = 300$, $p = 1{,}000$, $s = 10$, SNR $\in \lbrace0.5, 1, 2, 5\rbrace$, tFDR $\in \lbrace0.01, \ldots, 0.5\rbrace$ (11 values), MC = 200 |
+| **10** | MC: Sample-Size Ratio | Measures FDR and TPR against $n / (s \ln p)$ at tFDR = 0.1 (TLARS/TOMP/TAFS) | Varying $n$ for two $p$, variable support indices | $p \in \lbrace1{,}000, 10{,}000\rbrace$, $n = \operatorname{round}(c \, s \ln p)$ with $c \in \lbrace1, \ldots, 10\rbrace$ (10 values), $s = 10$, SNR $\in \lbrace0.5, 1, 2\rbrace$, MC = 200 |
 
 ---
 
@@ -235,8 +237,20 @@ trex_core/
   │   ├── README.md
   │   └── simulation_results/          <- data/ + plots/
   │
-  └── demo_trex_08_mc_sim_scalability/
-      ├── demo_trex_08_mc_sim_scalability.cpp
+  ├── demo_trex_08_mc_sim_scalability/
+  │   ├── demo_trex_08_mc_sim_scalability.cpp
+  │   ├── README.md
+  │   ├── generate_plots.sh
+  │   └── simulation_results/          <- data/ + plots/
+  │
+  ├── demo_trex_09_mc_sim_target_fdr/
+  │   ├── demo_trex_09_mc_sim_target_fdr.cpp
+  │   ├── README.md
+  │   ├── generate_plots.sh
+  │   └── simulation_results/          <- data/ + plots/
+  │
+  └── demo_trex_10_mc_sim_dt_ratio/
+      ├── demo_trex_10_mc_sim_dt_ratio.cpp
       ├── README.md
       ├── generate_plots.sh
       └── simulation_results/          <- data/ + plots/
