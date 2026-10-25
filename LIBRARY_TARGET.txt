@@ -11,6 +11,9 @@ Validated C++:  SDK installed from 415484d; the Examples targets built clean wit
                 most 0.010, and every cell up to tFDR 0.1 (L-loop included) is unchanged to the last digit.
                 trex_core demos 03 and 05 (tFDR 0.1, unseeded) are rerun and match their 61fd84c results
                 within Monte Carlo noise (no cell with |z| > 3, no shift in Avg L); the reruns are committed.
+                The TLARS block of trex_core demo 04 is rerun on 415484d: the adaptive L-loop strategies are
+                unchanged within noise, SKIPL_10p falls from 0.115 to the target (0.100), and the SKIPL_20p
+                overshoot stays (0.137 at SNR 5, T ~ 145); TLARS_STAG, TOMP and TAFS stand from 61fd84c.
                 trex_core demo 10 (tFDR 0.1, seeded) and demo_ts_perf_05 (no Phi_prime) stand from 61fd84c.
                 The other suites (trex_da, trex_gvs, trex_screening, trex_spca) were not rerun; their results
                 come from 44cf1ab and 61fd84c and can differ only where a selected variable had Phi_prime < 0.

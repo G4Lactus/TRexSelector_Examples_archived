@@ -104,10 +104,10 @@ PERMUTATION_SEEDED, SEEDED, SKIPL_5p, SKIPL_10p, SKIPL_20p):
 -----------------------------------------------------------...
 
 STANDARD
-  FDR                        0.0175    0.0000    0.0189  ...
-  TPR                        0.0030    0.0195    0.0530  ...
-  Avg L                      2.5400    4.2350    5.5800  ...
-  Avg T                      4.7400    4.7100    3.7750  ...
+  FDR                        0.0125    0.0167    0.0148  ...
+  TPR                        0.0020    0.0200    0.0600  ...
+  Avg L                      2.4400    4.2850    5.6250  ...
+  Avg T                      4.6350    4.5200    4.9600  ...
 
 HCONCAT
 ...
@@ -155,20 +155,28 @@ Carlo noise), the adaptive strategies (STANDARD, HCONCAT, PERMUTATION,
 PERMUTATION_SEEDED, SEEDED) hold FDR near or below target — STANDARD even
 trends *down* to ≈0.031 at SNR 5 — while the fixed-budget `SKIPL` levels break FDR
 control in ascending order of budget. `SKIPL_5p` stays under target (max FDR
-≈0.078), `SKIPL_10p` crosses only at the very top of the grid (max ≈0.115), and
-`SKIPL_20p` climbs steadily past the line from SNR ≈1.8 to **≈0.135** at SNR 5 — a
-~3.5 pp overshoot. The overshoot is **monotone in the dummy budget** and tracks a
-runaway stopping time `T`, and at SNR 5 the `Avg T` rows read `SKIPL_5p` `T ≈ 25`,
-`SKIPL_10p` `T ≈ 89`, `SKIPL_20p` `T ≈ 144` — versus the true support size
+≈0.078), `SKIPL_10p` reaches the line at the very top of the grid (max ≈0.100), and
+`SKIPL_20p` climbs steadily past the line from SNR ≈1.8 to **≈0.137** at SNR 5 — a
+~3.7 pp overshoot. The overshoot is **monotone in the dummy budget** and tracks a
+runaway stopping time `T`, and at SNR 5 the `Avg T` rows read `SKIPL_5p` `T ≈ 21`,
+`SKIPL_10p` `T ≈ 73`, `SKIPL_20p` `T ≈ 145` — versus the true support size
 `s = 10`.
 
-**Mechanism.** `SKIPL` disables the L-loop and freezes the dummy multiplier at
-`L = {5, 10, 20}·p`, so the calibration that the adaptive strategies use to *pick*
-`L` (and thereby place the relative-occurrences threshold and the T-loop stop) is
-gone. A larger fixed pool of null dummies dilutes each dummy's relative occurrence,
-which pushes the calibrated threshold down and lets the T-loop run much further
-before it trips — so many more original variables are admitted past the true
-support, and the dummy-based estimate of the false discovery proportion (FDP) no longer matches the realized FDP.
+The TLARS column comes from library 415484d and the other three from 61fd84c. Library 415484d removed a lower clamp
+of the calibrated occurrences in the FDP estimate, which had made the estimate too small in long T-loops. The
+rerun brought `SKIPL_10p` down from 0.115 to the target and shortened its T-loop from `T ≈ 89` to `T ≈ 73`, while
+`SKIPL_20p` stayed where it was (0.135 before).
+
+**Mechanism.** `SKIPL` disables the L-loop and freezes the dummy multiplier at `L = {5, 10, 20}·p`. With
+`L = 20`, about one null variable enters per 20 T-steps. The estimate of the false discovery proportion (FDP) adds
+the expected null inflow of a step, $(p - \sum_j \Phi_t(j)) / (Lp - t + 1)$, only when the variables with
+$\Phi > 0.5$ gain occurrence in that same step. In most steps they gain nothing, and the inflow of those steps is
+lost, so the estimate falls behind the realized FDP and the T-loop rarely trips. A diagnostic with 200 seeded trials
+(TLARS, `SKIPL_20p`, SNR 5) measured an estimate 30 % to 50 % below the realized FDP at every voting level from
+`T = 5` on (0.180 against 0.264 at `T = 100` and $v = 0.5$). The T-loop reached its cap `T = n/2 = 150` in 95 % of
+the trials, and the selected point had an estimate of 0.075 and a realized FDR of 0.136. The adaptive strategies
+calibrate `L ≈ 1` at high SNR, so nearly every step brings new entries and no inflow is lost. The estimate follows
+the T-Rex paper, and the library keeps it.
 
 **Original working hypothesis (refuted by the TLARS_STAG column).** The overshoot is **LARS-specific**. Once the 10
 true variables are in
@@ -189,12 +197,15 @@ check to the fixed-budget SKIPL regime.)
 > FDR over all eight strategies and 21 SNR values is 0.037, and under TAFS it is 0.051 (`SKIPL_5p` at SNR 2). Both
 > run with the stagnation stop, which the AUTO setting of `tloop_stagnation_stop` enables for the greedy solvers
 > only. The fourth column settles the cause. TLARS_STAG is the same LARS path with the stop on, and there the
-> overshoot vanishes. `SKIPL_20p` ends at an FDR of 0.027 at SNR 5 instead of 0.135 (at most 0.058 over all SNR
-> values), `SKIPL_10p` peaks at 0.071 instead of 0.115, no cell exceeds the target, and the T-loop stops at
-> `T ≈ 7` instead of `T ≈ 144`.
+> overshoot vanishes. `SKIPL_20p` ends at an FDR of 0.027 at SNR 5 instead of 0.137 (at most 0.058 over all SNR
+> values), `SKIPL_10p` peaks at 0.071 instead of 0.100, no cell exceeds the target, and the T-loop stops at
+> `T ≈ 7` instead of `T ≈ 145`.
+>
+> The stop does not repair the estimate (under TLARS_STAG the selected `SKIPL_20p` point at SNR 5 has an estimate of
+> 0.013 and a realized FDR of 0.023), but it ends the T-loop before much inflow is lost.
 >
 > An over-large fixed dummy budget therefore only harms FDR control when nothing stops the T-loop. The price of the
-> stop is a little power for `SKIPL_20p` at moderate SNR (TPR 0.78 instead of 0.85 at SNR 1), which closes again at
+> stop is a little power for `SKIPL_20p` at moderate SNR (TPR 0.78 instead of 0.84 at SNR 1), which closes again at
 > high SNR. The adaptive strategies give the same FDR and TPR with and without the stop.
 
 ### Per-solver figure sets
@@ -244,8 +255,9 @@ per-solver sets plus the comparison grid:
 It writes one `.txt` + `.csv` pair per base solver into `simulation_results/data/`
 (`..._tlars_...`, `..._tomp_...`, `..._tafs_...`, `..._tlars_stag_...`), re-saving after each solver
 finishes. The full run is long (the fixed-budget `SKIPL_20p`/`SKIPL_10p` points of TLARS at
-high SNR dominate, where the T-loop runs to `T ≈ 90–150`), so expect an
-overnight run (the first three solvers took about 15.5 hours on 6 threads, TLARS_STAG 3.7 hours on 8). With
+high SNR dominate, where the T-loop runs to `T ≈ 70–150`), so expect an
+overnight run (the first three solvers took about 15.5 hours on 6 threads, TLARS_STAG 3.7 hours on 8 and the
+TLARS rerun on library 415484d 7 hours on 8). With
 `TREX_SOLVERS=TLARS_STAG` the demo runs that solver alone. Once the CSVs exist, render every figure with
 `./generate_plots.sh`.
 
@@ -255,8 +267,8 @@ overnight run (the first three solvers took about 15.5 hours on 6 threads, TLARS
 
 1. **Do all L-loop strategies maintain FDR control?**
    - Expected: FDR $\leq$ tFDR across strategies.
-   - The adaptive strategies keep it under all four solvers (at most $0.056$), while `SKIPL_10p` and `SKIPL_20p`
-     exceed it under TLARS at high SNR, and only there.
+   - The adaptive strategies keep it under all four solvers (at most $0.054$), while `SKIPL_20p` exceeds it under
+     TLARS at high SNR, and only there (`SKIPL_10p` reaches it at SNR 5).
 
 2. **How does the calibrated $L$ differ between adaptive strategies and the SKIPL levels?**
    - The Avg L rows show the adaptive strategies' calibrated $L$ versus SKIPL's fixed 5p/10p/20p. At SNR 5 the
@@ -264,8 +276,8 @@ overnight run (the first three solvers took about 15.5 hours on 6 threads, TLARS
 
 3. **Is TPR comparable across strategies at matched SNR?**
    - Expected: broadly comparable power, with strategy-specific variation.
-   - At SNR 1 the adaptive strategies reach a TPR of $0.74\text{–}0.75$ under TLARS and $0.87\text{–}0.88$ under
-     TOMP and TAFS. Under TLARS the SKIPL levels buy extra power ($0.80\text{–}0.85$) with their extra false
+   - At SNR 1 the adaptive strategies reach a TPR of $0.74\text{–}0.76$ under TLARS and $0.87\text{–}0.88$ under
+     TOMP and TAFS. Under TLARS the SKIPL levels buy extra power ($0.79\text{–}0.84$) with their extra false
      discoveries.
 
 4. **Is the `SKIPL` FDR overshoot specific to the LARS path?**
@@ -281,9 +293,9 @@ overnight run (the first three solvers took about 15.5 hours on 6 threads, TLARS
 **What to look for:**
 
 - **FDR control**: the adaptive strategies keep FDR $\leq$ tFDR, while the fixed-budget SKIPL levels do **not**
-  when the T-loop runs without the stagnation stop — `SKIPL_10p` and `SKIPL_20p` overshoot at high SNR under TLARS
-  (see the discussion above). At `num_MC = 200` these curves are stable, so the overshoot is a real property of that
-  regime, not sampling noise.
+  when the T-loop runs without the stagnation stop — `SKIPL_20p` overshoots and `SKIPL_10p` reaches the target at
+  high SNR under TLARS (see the discussion above). At `num_MC = 200` these curves are stable, so the overshoot is a
+  real property of that regime, not sampling noise.
 - **Cross-solver**: whether that overshoot survives under the TOMP / TAFS columns and under TLARS with the stagnation
   stop. In the committed run it survives under none of them.
 - **Avg L / Avg T**: how each strategy calibrates the dummy structure and when the T-loop stops. Note the runaway
