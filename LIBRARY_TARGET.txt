@@ -1,38 +1,32 @@
 Library line:   TRexSelector dev_beyond (a sibling checkout TRexSelector-beyond next to this repository)
-Pinned commit:  61fd84c (2026-10-21; C++ 1.0.0 / R 2.0.0 / Python 1.0.0): a free-space check before
-                memory-mapped files are created (788cc46), a settable support cap cv_dfmax_ratio for the
-                IEN-geometry lambda2 tuners with the cap in their diagnostics (61fd84c, default 0.8 unchanged),
-                and references in the class documentation. No solver result changes.
-Validated C++:  SDK installed from 61fd84c; the Examples targets built clean without warnings;
-                demo_trex_01_single_run reproduces its committed files byte for byte, the memory_mapping log
-                is identical and the ml_methods short demos pass. trex_gvs demo 07 (stationary ARMA(2,1)
-                block) and demo 01 Part 4 (clustering cut) are run on 61fd84c with their figures and READMEs.
-                The 0.98 column of Part 4 reproduces the committed 44cf1ab Part 3 single-linkage cells exactly
-                (means and standard deviations), so the other Monte Carlo results committed on 44cf1ab stand.
-                The new trex_core demos 09 (target FDR sweep) and 10 (n / (s ln p) sweep) and tsolvers
-                demo_ts_perf_05 (null counts vs. the negative hypergeometric law) are run on 61fd84c; demo 09
-                at tFDR 0.1 matches the demo 05 Normal-dummy row within Monte Carlo noise.
-Validated Py:   TRexSelectorNeo 1.0.0 reinstalled from 61fd84c (repo .venv and conda trex-dev-beyond); the
-                Part 5 path data of the 12 T-solver demos reproduce their committed files byte for byte and
-                the memory_mapping demos pass. trex_gvs demo 07 and demo 01 Part 4 are run on 61fd84c, the
-                Part 4 0.98 column equals the 44cf1ab Part 3 cells exactly, and both match C++ within Monte
-                Carlo noise. The other results committed on 44cf1ab stand.
-Validated R:    TRexSelectorNeo 2.0.0 reinstalled from 61fd84c (links R's own libomp only); the Part 5 path
-                data of the 12 T-solver demos reproduce byte for byte and the memory_mapping demos pass.
-                trex_gvs demo 07 and demo 01 Part 4 are run on 61fd84c, the Part 4 0.98 column equals the
-                44cf1ab Part 3 cells exactly, and both match C++ within Monte Carlo noise (no cell of the
-                gvs suite with |z| > 3). The other results committed on 44cf1ab stand.
-Validated perf: the perf and tsolvers results committed on 44cf1ab stand (no T-solver code changed, the C++
-                demo_ts demos were not rerun).
-Pending:        trex_core 08 in Python and R (redesigned grid and large-p block, nightly runner). The C++
-                run is done on 61fd84c (base and large-p block, 10 trials, 23.3 h). The Python results
-                still come from the July 2026 library, and R has only the smoke recording. The single runs
-                demo_trex_01 and demo_trex_06 are validated in all three languages. trex_core 09 and 10 in
-                Python and R (code tested on reduced grids, full runs pending) and Python and R ports of
-                demo_ts_perf_05.
-Previous pins:  44cf1ab (2026-09-28), b95b984 (2026-09-27), 8ad3376 (2026-09-26), f390bfc (2026-09-25),
-                d404033 (2026-09-25); what changed between pins is in the git log of this file and in the
-                library's HISTORY.md.
+Pinned commit:  415484d (2026-10-24; C++ 1.0.0 / R 2.0.0 / Python 1.0.0): the FDP estimate keeps negative
+                calibrated occurrences Phi_prime (the lower clamp at 0 is removed, the upper clamp at 1 stays).
+                The clamp made FDP_hat anti-conservative in long T-loops (TLARS in trex_core demo 09 at
+                tFDR >= 0.4 exceeded the target). FDP_hat can only rise, so selections can only shrink.
+Validated C++:  SDK installed from 415484d; the Examples targets built clean without warnings;
+                demo_trex_01_single_run reproduces its committed files byte for byte, and the memory_mapping
+                and ml_methods short-demo logs are identical (the demo_ts demos were skipped, the T-solvers do
+                not compute Phi_prime). trex_core demo 09 is rerun on 415484d with the same seeds: the FDR stays
+                below the target in all 132 cells, 53 cells at tFDR >= 0.15 drop by up to 0.077, the TPR by at
+                most 0.010, and every cell up to tFDR 0.1 (L-loop included) is unchanged to the last digit.
+                trex_core demos 03 and 05 (tFDR 0.1, unseeded) are rerun and match their 61fd84c results
+                within Monte Carlo noise (no cell with |z| > 3, no shift in Avg L); the reruns are committed.
+                trex_core demo 10 (tFDR 0.1, seeded) and demo_ts_perf_05 (no Phi_prime) stand from 61fd84c.
+                The other suites (trex_da, trex_gvs, trex_screening, trex_spca) were not rerun; their results
+                come from 44cf1ab and 61fd84c and can differ only where a selected variable had Phi_prime < 0.
+Validated Py:   pending; TRexSelectorNeo in the repo .venv and conda trex-dev-beyond is still installed from
+                61fd84c (the library's own Python selector tests, 172, pass on 415484d).
+Validated R:    pending; TRexSelectorNeo in R's default library is still installed from 61fd84c (the library's
+                R selector, DA, GVS, screening and scaling testthat files pass on 415484d).
+Validated perf: the perf and tsolvers results committed on 44cf1ab and 61fd84c stand (no T-solver code changed).
+Pending:        Python and R reinstall from 415484d with the pin check. trex_core 08 in Python and R
+                (redesigned grid and large-p block, nightly runner); the C++ run is done on 61fd84c (base and
+                large-p block, 10 trials, 23.3 h, tFDR 0.1). trex_core 09 and 10 in Python and R (code tested on
+                reduced grids, full runs pending) and Python and R ports of demo_ts_perf_05. A check of the
+                trex_da, trex_gvs, trex_screening and trex_spca results on 415484d.
+Previous pins:  61fd84c (2026-10-21), 44cf1ab (2026-09-28), b95b984 (2026-09-27), 8ad3376 (2026-09-26),
+                f390bfc (2026-09-25), d404033 (2026-09-25); what changed between pins is in the git log of this
+                file and in the library's HISTORY.md.
 
 Install:        cpp    -> in <library>/cpp: cmake --preset local-install && cmake --build --preset local-install-build
                           && cmake --install build/release-portable

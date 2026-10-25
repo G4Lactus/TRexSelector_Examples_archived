@@ -563,7 +563,7 @@ plot_sweep_grid <- function(df, x, lines, title, diagonal = FALSE,
         scale_color_manual(name = NULL, values = cols, drop = FALSE) +
         scale_shape_manual(name = NULL, values = shapes, drop = FALSE) +
         guides(color = guide_legend(order = 2), shape = guide_legend(order = 2)) +
-        labs(title = if (metric == "FDR") solvers[[ci]] else NULL,
+        labs(title = if (metric == "FDR") scal_solver_label(solvers[[ci]]) else NULL,
              x = if (metric == "TPR") x_label else NULL,
              y = if (ci == 1L) sprintf("%s (%s)", metric, tolower(METRIC_LABELS[[metric]])) else NULL) +
         .sweep_x_scale(x_vals, xscale) +

@@ -105,10 +105,10 @@ distribution across the 7 SNR columns. The row label is the distribution name (N
 -----------------------------------------------------------------------------------------------
 
 Normal
-  FDR                        0.0175    0.0132    0.0357    0.0492    0.0457    0.0379    0.0212
-  TPR                        0.0030    0.0200    0.2445    0.3545    0.7555    0.9775    1.0000
-  Avg L                      2.5300    4.4000    5.9900    5.2950    3.2200    1.7600    1.1550
-  Avg T                      4.6150    5.9000    5.4500    5.1250    6.0350    6.1250    5.0550
+  FDR                        0.0125    0.0013    0.0415    0.0411    0.0457    0.0350    0.0234
+  TPR                        0.0010    0.0205    0.2550    0.3475    0.7395    0.9780    1.0000
+  Avg L                      2.4750    4.2150    5.9850    5.3300    2.9950    1.8250    1.1350
+  Avg T                      3.9750    5.3800    5.3000    5.2300    5.9400    5.3250    5.1150
 
 Uniform
 ...
@@ -236,10 +236,11 @@ The sweep runs 3 solvers × 12 distributions × 7 SNR values × 200 trials. The 
 
 **Recorded results** (`simulation_results/`, `num_MC = 200`, TLARS + TOMP + TAFS). The FDR-equivalence pattern
 replicates across all three solver families. For every solver, all twelve distribution rows behave equivalently. The
-per-distribution mean FDR spans only 0.028–0.033 under TLARS, 0.017–0.021 under TOMP and 0.023–0.026 under TAFS, no
-row exceeds an FDR of 0.055 at any SNR, and the TPR curves are indistinguishable and reach 1.0 at SNR 5.0. Even the
-dependent UnifSphere_d5 rows show no systematic deviation. They have the highest mean FDR under TLARS (0.033 against
-0.031 over all rows) but sit mid-field under TOMP and TAFS, and their Avg L matches the i.i.d. rows. At this ($n$, $p$,
-dim) the within-group sphere dependence is too weak to break the calibration after L2 normalization. The greedy TOMP
-and TAFS runs (stagnation stop enabled) are more conservative than TLARS (mean FDR ≈ 0.019 and ≈ 0.025 against
-≈ 0.031), while the stopping times are similar (Avg T within 4.0–6.6 for TLARS, 4.8–6.3 for TOMP and 3.7–6.1 for TAFS).
+per-distribution mean FDR spans only 0.028–0.032 under TLARS, 0.017–0.020 under TOMP and 0.023–0.026 under TAFS, no
+row exceeds an FDR of 0.056 at any SNR, and the TPR curves are indistinguishable and reach 1.0 at SNR 5.0. Even the
+dependent UnifSphere_d5 rows show no systematic deviation. They have the highest mean FDR under TAFS (0.026 against
+0.024 over all rows) but sit in the lower half under TLARS and TOMP, and their Avg L matches the i.i.d. rows. At this
+($n$, $p$, dim) the within-group sphere dependence is too weak to break the calibration after L2 normalization. The
+greedy TOMP and TAFS runs (stagnation stop enabled) are more conservative than TLARS (mean FDR ≈ 0.019 and ≈ 0.024
+against ≈ 0.030), while the stopping times are similar (Avg T within 3.8–6.3 for TLARS, 4.9–6.2 for TOMP and 3.7–6.1
+for TAFS).

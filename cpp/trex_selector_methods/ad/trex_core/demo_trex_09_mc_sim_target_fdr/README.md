@@ -86,7 +86,7 @@ hours on 8 threads.
 
 ## Simulation Results
 
-The full run with 200 trials per cell took 2 h 54 min on 8 threads against library 61fd84c.
+The full run with 200 trials per cell took 2 h 43 min on 8 threads against library 415484d.
 
 ```text
 ==============================================================================
@@ -96,35 +96,35 @@ The full run with 200 trials per cell took 2 h 54 min on 8 threads against libra
 
 TLARS
   tFDR             0.010   0.025   0.050   0.075   0.100   0.150   0.200   0.250   0.300   0.400   0.500
-  FDR SNR 0.5      0.000   0.000   0.021   0.038   0.046   0.079   0.115   0.149   0.200   0.310   0.417
-  TPR SNR 0.5      0.000   0.007   0.095   0.185   0.236   0.335   0.401   0.446   0.509   0.622   0.709
-  FDR SNR 1        0.000   0.004   0.019   0.033   0.044   0.070   0.109   0.171   0.232   0.355   0.475
-  TPR SNR 1        0.000   0.324   0.589   0.678   0.722   0.793   0.849   0.899   0.932   0.967   0.986
-  FDR SNR 2        0.001   0.004   0.012   0.024   0.035   0.062   0.129   0.197   0.266   0.392   0.508
+  FDR SNR 0.5      0.000   0.000   0.021   0.038   0.046   0.079   0.115   0.149   0.200   0.309   0.401
+  TPR SNR 0.5      0.000   0.007   0.095   0.185   0.236   0.335   0.401   0.446   0.509   0.620   0.702
+  FDR SNR 1        0.000   0.004   0.019   0.033   0.044   0.070   0.109   0.171   0.223   0.331   0.430
+  TPR SNR 1        0.000   0.324   0.589   0.678   0.722   0.793   0.849   0.897   0.930   0.962   0.983
+  FDR SNR 2        0.001   0.004   0.012   0.024   0.035   0.062   0.117   0.174   0.236   0.338   0.431
   TPR SNR 2        0.032   0.855   0.938   0.966   0.983   0.988   0.998   1.000   1.000   1.000   1.000
-  FDR SNR 5        0.001   0.007   0.013   0.030   0.031   0.083   0.164   0.234   0.287   0.415   0.530
+  FDR SNR 5        0.001   0.007   0.013   0.030   0.031   0.083   0.142   0.198   0.256   0.357   0.455
   TPR SNR 5        0.738   1.000   1.000   1.000   1.000   1.000   1.000   1.000   1.000   1.000   1.000
 
 TOMP
   tFDR             0.010   0.025   0.050   0.075   0.100   0.150   0.200   0.250   0.300   0.400   0.500
-  FDR SNR 0.5      0.000   0.000   0.008   0.015   0.027   0.031   0.052   0.083   0.110   0.173   0.217
-  TPR SNR 0.5      0.000   0.017   0.098   0.146   0.192   0.282   0.348   0.411   0.459   0.541   0.594
-  FDR SNR 1        0.000   0.003   0.011   0.016   0.024   0.047   0.084   0.127   0.156   0.196   0.206
-  TPR SNR 1        0.008   0.570   0.744   0.818   0.876   0.925   0.948   0.961   0.971   0.979   0.983
-  FDR SNR 2        0.000   0.002   0.007   0.017   0.021   0.063   0.115   0.159   0.177   0.197   0.197
+  FDR SNR 0.5      0.000   0.000   0.008   0.015   0.027   0.031   0.052   0.083   0.109   0.164   0.194
+  TPR SNR 0.5      0.000   0.017   0.098   0.146   0.192   0.282   0.348   0.411   0.459   0.537   0.584
+  FDR SNR 1        0.000   0.003   0.011   0.016   0.024   0.047   0.075   0.105   0.129   0.161   0.188
+  TPR SNR 1        0.008   0.570   0.744   0.818   0.876   0.925   0.947   0.960   0.967   0.976   0.980
+  FDR SNR 2        0.000   0.002   0.007   0.017   0.021   0.062   0.088   0.114   0.135   0.167   0.194
   TPR SNR 2        0.802   1.000   1.000   1.000   1.000   1.000   1.000   1.000   1.000   1.000   1.000
-  FDR SNR 5        0.000   0.002   0.006   0.019   0.025   0.067   0.124   0.165   0.182   0.195   0.195
+  FDR SNR 5        0.000   0.002   0.006   0.019   0.025   0.067   0.090   0.121   0.140   0.168   0.191
   TPR SNR 5        1.000   1.000   1.000   1.000   1.000   1.000   1.000   1.000   1.000   1.000   1.000
 
 TAFS
   tFDR             0.010   0.025   0.050   0.075   0.100   0.150   0.200   0.250   0.300   0.400   0.500
-  FDR SNR 0.5      0.000   0.000   0.020   0.027   0.029   0.050   0.075   0.096   0.142   0.209   0.263
-  TPR SNR 0.5      0.000   0.021   0.108   0.177   0.235   0.322   0.398   0.463   0.515   0.595   0.653
-  FDR SNR 1        0.000   0.006   0.013   0.021   0.036   0.056   0.101   0.147   0.191   0.245   0.261
-  TPR SNR 1        0.004   0.574   0.757   0.827   0.879   0.912   0.949   0.967   0.976   0.984   0.986
-  FDR SNR 2        0.001   0.004   0.008   0.022   0.025   0.064   0.135   0.186   0.216   0.250   0.252
+  FDR SNR 0.5      0.000   0.000   0.020   0.027   0.029   0.050   0.075   0.096   0.140   0.199   0.241
+  TPR SNR 0.5      0.000   0.021   0.108   0.177   0.235   0.322   0.398   0.463   0.516   0.593   0.644
+  FDR SNR 1        0.000   0.006   0.013   0.021   0.036   0.056   0.094   0.131   0.158   0.209   0.236
+  TPR SNR 1        0.004   0.574   0.757   0.827   0.879   0.912   0.948   0.967   0.974   0.980   0.984
+  FDR SNR 2        0.001   0.004   0.008   0.022   0.025   0.064   0.108   0.141   0.175   0.214   0.241
   TPR SNR 2        0.675   0.995   0.998   0.998   1.000   1.000   1.000   1.000   1.000   1.000   1.000
-  FDR SNR 5        0.001   0.005   0.011   0.024   0.025   0.063   0.135   0.189   0.218   0.253   0.254
+  FDR SNR 5        0.001   0.005   0.011   0.024   0.025   0.063   0.105   0.145   0.174   0.219   0.245
   TPR SNR 5        1.000   1.000   1.000   1.000   1.000   1.000   1.000   1.000   1.000   1.000   1.000
 ```
 
@@ -132,17 +132,19 @@ TAFS
 
 ### FDR control
 
-The achieved FDR stays at or below the target in 129 of the 132 cells. The three exceptions are TLARS cells with
-$\mathrm{tFDR} \ge 0.4$ at an SNR of 2 or 5, where the calibrated dummy multiplier has reached its minimum $L = 1$.
-Only one of them lies beyond Monte Carlo noise. At SNR 5 and tFDR 0.5, TLARS reaches an FDR of 0.530 with a standard
-error of 0.005 ($z = 5.8$). The cells at SNR 5 and tFDR 0.4 (0.415, $z = 2.6$) and at SNR 2 and tFDR 0.5 (0.508,
-$z = 1.4$) lie within noise.
+The achieved FDR stays below the target in all 132 cells. TLARS follows the diagonal most closely, because its T-loop
+runs without a stagnation stop and ends only when the estimated false discovery proportion would exceed the target
+(mean stopping time 21 to 24 at tFDR 0.5 for SNR $\ge 1$). It reaches an FDR of 0.43 to 0.46 at tFDR 0.5 for
+SNR $\ge 1$. TOMP and TAFS leave the diagonal from tFDR 0.15 on and level off at an FDR of about 0.19 and 0.24. Their
+stagnation stop ends the T-loop once the selected set has not changed for five steps (mean stopping time 7 to 8),
+which protects these greedy solvers from the noise trap and leaves part of a large budget unused.
 
-TLARS follows the diagonal and spends almost the whole budget, because its T-loop runs without a stagnation stop and
-stops only when the estimated false discovery proportion would exceed the target (mean stopping time 30 to 38 at
-tFDR 0.5 for SNR $\ge 1$). TOMP and TAFS leave the diagonal from tFDR 0.15 on and level off at an FDR of about 0.20
-and 0.25. Their stagnation stop ends the T-loop once the selected set has not changed for five steps (mean stopping
-time 7 to 9), which protects these greedy solvers from the noise trap and leaves part of a large budget unused.
+A first run against library 61fd84c exceeded the target with TLARS at SNR 5 (0.530 at tFDR 0.5 and 0.415 at 0.4). The
+library clamped the calibrated occurrences $\Phi'$, which enter the estimated false discovery proportion, at zero.
+That capped the false-discovery mass of a variable at one and made the estimate too small in long T-loops. Library
+415484d removes that lower clamp, as in the T-Rex paper. On the same seeds the fix lowers the FDR in 53 cells, all at
+$\mathrm{tFDR} \ge 0.15$, by up to 0.077, costs at most 0.010 in TPR, and leaves every cell up to tFDR 0.1 unchanged
+to the last digit.
 
 ### Power
 
@@ -150,12 +152,13 @@ The TPR shows what each level of control costs. A target of 0.01 calibrates $L$ 
 the selector then finds the true variables only at SNR 5 (TPR 0.74 to 1.00). From tFDR 0.025 on, the power at SNR 5
 is complete, and at SNR 2 TOMP and TAFS reach 0.995 or more while TLARS needs tFDR 0.1 for 0.98. At SNR 1 the TPR
 rises from 0.32 to 0.57 at tFDR 0.025 to 0.72 to 0.88 at 0.1 and 0.85 to 0.95 at 0.2, and TOMP and TAFS lead TLARS
-at every target up to 0.4, mostly at a lower FDR.
-At SNR 0.5 the power grows slowly and almost linearly, from about 0.1 at tFDR 0.05 to 0.59 to 0.71 at 0.5.
+at every target up to 0.4, mostly at a lower FDR. At SNR 0.5 the power grows slowly and almost linearly, from about
+0.1 at tFDR 0.05 to 0.58 to 0.70 at 0.5.
 
 ### Consistency with demo 05
 
 At tFDR 0.1 the cells repeat the Normal-dummy row of
 [demo 05](../demo_trex_05_mc_sim_dummy_distributions/README.md), which draws different data sets and runs the
-selector unseeded. All 24 FDR and TPR differences stay below $|z| = 3$ (standard error from the demo 09 standard
-deviations), and the largest is the TOMP TPR at SNR 0.5 (0.192 against 0.238, $z = -2.8$).
+selector unseeded. All 20 FDR and TPR differences with a nonzero standard deviation stay below $|z| = 1.5$
+(standard error from the demo 09 standard deviations), and the largest is the TLARS FDR at SNR 5 (0.031 against
+0.023).

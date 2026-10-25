@@ -1191,7 +1191,7 @@ def plot_sweep_grid(
             apply_sweep_xaxis(ax, x_vals, xscale)
             ax.grid(True, which="both", linestyle="--", linewidth=0.6, alpha=0.4)
             if ri == 0:
-                ax.set_title(solver, fontsize=13, fontweight="bold")
+                ax.set_title(scal_solver_label(solver), fontsize=13, fontweight="bold")
             else:
                 ax.set_xlabel(SWEEP_X_LABELS.get(x, x), fontsize=12)
             if ci == 0:
