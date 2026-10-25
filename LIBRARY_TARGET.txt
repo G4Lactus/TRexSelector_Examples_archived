@@ -17,16 +17,19 @@ Validated C++:  SDK installed from 415484d; the Examples targets built clean wit
                 trex_core demo 10 (tFDR 0.1, seeded) and demo_ts_perf_05 (no Phi_prime) stand from 61fd84c.
                 The other suites (trex_da, trex_gvs, trex_screening, trex_spca) were not rerun; their results
                 come from 44cf1ab and 61fd84c and can differ only where a selected variable had Phi_prime < 0.
-Validated Py:   pending; TRexSelectorNeo in the repo .venv and conda trex-dev-beyond is still installed from
-                61fd84c (the library's own Python selector tests, 172, pass on 415484d).
-Validated R:    pending; TRexSelectorNeo in R's default library is still installed from 61fd84c (the library's
-                R selector, DA, GVS, screening and scaling testthat files pass on 415484d).
+Validated Py:   TRexSelectorNeo 1.0.0 reinstalled from 415484d (repo .venv and conda trex-dev-beyond);
+                demo_trex_01_single_run keeps its selections, FDP and TPP (its Phi_prime and FDP_hat dumps now
+                show the negative Phi_prime entries and are recorded anew), and the memory_mapping demo passes.
+                The 12 T-solver demos were not rerun (the T-solvers do not compute Phi_prime).
+Validated R:    TRexSelectorNeo 2.0.0 reinstalled from 415484d (links R's own libomp only); the same checks as
+                for Python pass (demo_trex_01 selections unchanged, dumps recorded anew, memory_mapping passes).
 Validated perf: the perf and tsolvers results committed on 44cf1ab and 61fd84c stand (no T-solver code changed).
-Pending:        Python and R reinstall from 415484d with the pin check. trex_core 08 in Python and R
-                (redesigned grid and large-p block, nightly runner); the C++ run is done on 61fd84c (base and
-                large-p block, 10 trials, 23.3 h, tFDR 0.1). trex_core 09 and 10 in Python and R (code tested on
-                reduced grids, full runs pending) and Python and R ports of demo_ts_perf_05. A check of the
-                trex_da, trex_gvs, trex_screening and trex_spca results on 415484d.
+Pending:        trex_core 08 in Python and R (redesigned grid and large-p block, nightly runner); the C++
+                run is done on 61fd84c (base and large-p block, 10 trials, 23.3 h, tFDR 0.1). trex_core 09
+                and 10 in Python and R (code tested on reduced grids, full runs pending) and Python and R
+                ports of demo_ts_perf_05. trex_da runs at tFDR 0.2 with long T-loops (mean T 6-34) and needs
+                a rerun on 415484d; trex_gvs and trex_spca run at tFDR 0.1 with short T-loops and are
+                expected to stand; trex_screening does not use the FDP estimate.
 Previous pins:  61fd84c (2026-10-21), 44cf1ab (2026-09-28), b95b984 (2026-09-27), 8ad3376 (2026-09-26),
                 f390bfc (2026-09-25), d404033 (2026-09-25); what changed between pins is in the git log of this
                 file and in the library's HISTORY.md.
