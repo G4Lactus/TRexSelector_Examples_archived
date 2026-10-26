@@ -20,13 +20,15 @@ Validated C++:  SDK installed from 415484d; the Examples targets built clean wit
 Validated Py:   TRexSelectorNeo 1.0.0 reinstalled from 415484d (repo .venv and conda trex-dev-beyond);
                 demo_trex_01_single_run keeps its selections, FDP and TPP (its Phi_prime and FDP_hat dumps now
                 show the negative Phi_prime entries and are recorded anew), and the memory_mapping demo passes.
-                The 12 T-solver demos were not rerun (the T-solvers do not compute Phi_prime).
+                The 12 T-solver demos were not rerun (the T-solvers do not compute Phi_prime). trex_core 09
+                (2 h 43 min) and 10 (16 h 58 min) are run on 415484d and match C++ within Monte Carlo noise
+                (one cell with |z| > 3 in each, out of 264 and 326).
 Validated R:    TRexSelectorNeo 2.0.0 reinstalled from 415484d (links R's own libomp only); the same checks as
                 for Python pass (demo_trex_01 selections unchanged, dumps recorded anew, memory_mapping passes).
 Validated perf: the perf and tsolvers results committed on 44cf1ab and 61fd84c stand (no T-solver code changed).
 Pending:        trex_core 08 in Python and R (redesigned grid and large-p block, nightly runner); the C++
                 run is done on 61fd84c (base and large-p block, 10 trials, 23.3 h, tFDR 0.1). trex_core 09
-                and 10 in Python and R (code tested on reduced grids, full runs pending) and Python and R
+                and 10 in R (code tested on reduced grids, full runs pending) and Python and R
                 ports of demo_ts_perf_05. trex_da runs at tFDR 0.2 with long T-loops (mean T 6-34) and needs
                 a rerun on 415484d; trex_gvs and trex_spca run at tFDR 0.1 with short T-loops and are
                 expected to stand; trex_screening does not use the FDP estimate.

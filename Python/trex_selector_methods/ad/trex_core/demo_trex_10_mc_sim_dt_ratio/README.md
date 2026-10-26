@@ -101,4 +101,41 @@ smoke run. The MC loop is parallelized with `ProcessPoolExecutor`, with `TREX_NU
 
 ## Simulation Results
 
-The full run is pending.
+The full run with 200 trials per cell took 16 h 58 min on 8 workers against library 415484d. The text file holds
+the nine tables of FDR and TPR per solver and SNR.
+
+The ratios $c$ at which the TPR crosses 0.5 and 0.9, interpolated linearly between the grid points:
+
+| Solver | SNR | $c$ at TPR 0.5, $p = 1{,}000$ | $c$ at TPR 0.5, $p = 10{,}000$ | $c$ at TPR 0.9, $p = 1{,}000$ | $c$ at TPR 0.9, $p = 10{,}000$ |
+| --- | --- | --- | --- | --- | --- |
+| TLARS | 0.5 | 5.59 | 5.64 | 8.94 | 8.57 |
+| TLARS | 1 | 3.63 | 3.58 | 5.39 | 5.25 |
+| TLARS | 2 | 2.56 | 2.58 | 3.78 | 3.72 |
+| TOMP | 0.5 | 5.59 | 5.41 | 7.91 | 7.75 |
+| TOMP | 1 | 3.54 | 3.40 | 4.74 | 4.35 |
+| TOMP | 2 | 2.40 | 2.36 | 2.94 | 2.88 |
+| TAFS | 0.5 | 5.40 | 5.31 | 7.95 | 7.73 |
+| TAFS | 1 | 3.43 | 3.33 | 4.72 | 4.40 |
+| TAFS | 2 | 2.32 | 2.30 | 2.95 | 2.87 |
+
+![FDR and TPR vs. n / (s ln p) at SNR 0.5](simulation_results/plots/demo_trex_10_mc_sim_dt_ratio_snr0.5.png)
+
+![FDR and TPR vs. n / (s ln p) at SNR 1](simulation_results/plots/demo_trex_10_mc_sim_dt_ratio_snr1.png)
+
+![FDR and TPR vs. n / (s ln p) at SNR 2](simulation_results/plots/demo_trex_10_mc_sim_dt_ratio_snr2.png)
+
+The TPR curves of the two $p$ fall onto each other on the $c$ axis, and the TPR crosses 0.5 at the same $c$ within
+0.15 for every solver and SNR. Above 0.5 the curve of $p = 10{,}000$ runs slightly ahead, as in C++, and 12 of the 76
+cells in which the TPR varies differ between the two $p$ by more than three standard errors, 9 of them in favour of
+$p = 10{,}000$. The SNR shifts the transition from $c \approx 5.3\text{–}5.6$ (SNR 0.5) over $3.3\text{–}3.6$ (SNR 1)
+to $2.3\text{–}2.6$ (SNR 2), and TOMP and TAFS reach 0.9 earlier than TLARS. The FDR stays below the target in all
+180 cells, with a largest value of 0.054 (TLARS, SNR 0.5, $p = 1{,}000$, $c = 6$).
+
+### Agreement with C++
+
+The [C++ results](../../../../../cpp/trex_selector_methods/ad/trex_core/demo_trex_10_mc_sim_dt_ratio/README.md) come
+from library 61fd84c, which differs from 415484d only in the estimated false discovery proportion of long
+T-loops. Of the 326 FDR and TPR cells with a nonzero standard deviation, 17 differ by more than two standard errors
+and one by more than three (TLARS, SNR 2, $p = 10{,}000$, $c = 4$, TPR 0.968 against 0.985), as expected by chance.
+The crossings at TPR 0.5 and 0.9 agree within 0.07 on the $c$ axis, with one exception of 0.22 (TLARS, SNR 1,
+$p = 10{,}000$, TPR 0.9).
