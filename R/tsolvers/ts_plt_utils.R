@@ -36,6 +36,12 @@
 #     plot_phase_transition()  — exact recovery over n/p and s/n, one heatmap
 #                                per solver, with the l1 phase transition and
 #                                the LARS s-step bound (demo_ts_perf_04, Part 2).
+#     plot_null_pmf()          — histogram of the included null variables at T
+#                                per solver with the negative hypergeometric
+#                                (NHG) PMF and both means (demo_ts_perf_05).
+#     plot_null_qq()           — Q-Q plot of the same counts against the NHG.
+#     plot_selected_ecdf()     — ECDFs of the selected null variables V(v) at
+#                                the voting levels, with the NHG CDF.
 #
 # CLI modes (typically driven from a demo's generate_plots.sh):
 #     Rscript ts_plt_utils.R paths <stem>_path.csv --solver T-LARS --title "..."
@@ -47,6 +53,7 @@
 #     Rscript ts_plt_utils.R memory memory_vs_np_mc500.csv --title "..."
 #     Rscript ts_plt_utils.R recovery recovery_vs_dt_ratio_mc500.csv \
 #         --phase phase_transition_mc500.csv --title "..."
+#     Rscript ts_plt_utils.R nhg null_counts_vs_nhg_mc500.csv --title "..."
 #
 # Flags: --title T, --stem S, --outdir DIR, --formats png pdf (or png,pdf).
 # Titles and labels take the $...$ math of the Python plotter, translated to
@@ -56,7 +63,7 @@
 # The path modes read <stem>_path.csv (T_stop,step,index,is_dummy,beta) and
 # the sibling <stem>_actions.csv (T_stop,step,index,is_dummy,added) written by
 # path_recorder() of ts_demo_utils.R, with 1-based indices. The performance
-# modes read the result CSVs of demo_ts_perf_01 to _04, whose columns match the
+# modes read the result CSVs of demo_ts_perf_01 to _05, whose columns match the
 # C++ and Python demos, and write <csv stem>_<figure> (the phase CSV stem for
 # the heatmaps). Figures default to the simulation_results/plots/ sibling of
 # the data folder; override with --outdir. PDFs carry no creation date, so an
@@ -322,7 +329,7 @@ plot_path_comparison <- function(variants, title) {
 
 
 # ==============================================================================
-# Solver styles, matplotlib markers and legends (demo_ts_perf_01 to _04)
+# Solver styles, matplotlib markers and legends (demo_ts_perf_01 to _05)
 # ==============================================================================
 
 FAMILIES <- c("LARS-based", "OMP-based", "AFS-based")
@@ -936,17 +943,11 @@ RECOVERY_METRICS <- list(
 #' Colours of matplotlib's 256-entry viridis map at positions v in [0, 1].
 .viridis <- function(v) viridisLite::viridis(256L)[pmin(floor(v * 256), 255) + 1L]
 
-#' One metric in % vs. n/(s log p): a panel per solver (rows = families), a curve per p.
-plot_recovery <- function(df, metric, title) {
-  label <- latex_title(RECOVERY_METRICS[[metric]][1L])
-  ratios <- sort(unique(df$ratio))
-  p_values <- sort(unique(as.integer(df$p)))
-  colours <- .viridis(0.9 * (seq_along(p_values) - 1) / max(1L, length(p_values) - 1L))
+#' One panel per solver from panel(name, row, col, bottom), a row per family, spacers in the unused slots.
+#' The legend grob goes to the lower right, into the empty slot there if the last family has fewer solvers.
+.solver_grid <- function(df, panel, legend = NULL) {
   per_family <- lapply(FAMILIES, function(f) unique(df$solver[df$family == f]))
   cols <- max(lengths(per_family))
-  x_axis <- .axis(.auto_limits(ratios, log = TRUE), ratios, sprintf("%g", ratios), log = TRUE)
-  y_axis <- .linear_axis(c(-3, 103))
-  x_title <- latex_title("$n/(s \\log p)$")
   panels <- list()
   for (row in seq_along(FAMILIES)) {
     names <- per_family[[row]]
@@ -955,44 +956,69 @@ plot_recovery <- function(df, metric, title) {
         panels[[length(panels) + 1L]] <- plot_spacer()
         next
       }
-      sub <- df[df$solver == names[col], , drop = FALSE]
-      curves <- do.call(rbind, lapply(seq_along(p_values), function(k) {
-        curve <- sub[sub$p == p_values[k], , drop = FALSE]
-        curve <- curve[order(curve$ratio), , drop = FALSE]
-        data.frame(solver = p_values[k], x = curve$ratio, y = 100 * curve[[metric]], filled = curve$reached >= 0.99,
-                   colour = colours[k], marker = "o")
-      }))
       bottom <- row == length(FAMILIES) || col > length(per_family[[row + 1L]])
-      panels[[length(panels) + 1L]] <- ggplot() +
-        .curve_layers(curves, "reached", linewidth = 1.5, size = sqrt(22), stroke = 1.1) +
-        .axis_scale(x_axis, "x") + .axis_scale(y_axis, "y") +
-        labs(
-          title = display_name(names[col]), x = if (bottom) x_title,
-          y = if (col == 1L) call("atop", FAMILIES[row], label)
-        ) +
-        .series_theme(show_x_text = bottom, show_y_text = col == 1L) +
-        theme(
-          plot.title = element_text(size = 10, hjust = 0.5), axis.title = element_text(size = 9),
-          axis.text.x.bottom = if (bottom) element_text(size = 8, colour = "black") else element_blank()
-        )
+      panels[[length(panels) + 1L]] <- panel(names[col], row, col, bottom)
     }
   }
+  if (!is.null(legend)) {
+    last <- length(panels)
+    panels[[last]] <- if (length(per_family[[length(FAMILIES)]]) < cols) {
+      wrap_elements(panel = legend)
+    } else {
+      panels[[last]] + panel_grob(legend)
+    }
+  }
+  list(panels = panels, cols = cols)
+}
 
-  # Figure legend at the lower right, in the empty slot there if the last family has fewer solvers
+#' Title, axis labels and theme of a solver panel: the family and y title in the first column, the x title
+#' and tick labels at the bottom of every column.
+.grid_labels <- function(name, row, col, bottom, x_title, y_title, x_text_size = 10) {
+  list(
+    labs(
+      title = display_name(name), x = if (bottom) x_title,
+      y = if (col == 1L) call("atop", FAMILIES[row], y_title)
+    ),
+    .series_theme(show_x_text = bottom, show_y_text = col == 1L),
+    theme(
+      plot.title = element_text(size = 10, hjust = 0.5), axis.title = element_text(size = 9),
+      axis.text.x.bottom = if (bottom) element_text(size = x_text_size, colour = "black") else element_blank()
+    )
+  )
+}
+
+#' One metric in % vs. n/(s log p): a panel per solver (rows = families), a curve per p.
+plot_recovery <- function(df, metric, title) {
+  label <- latex_title(RECOVERY_METRICS[[metric]][1L])
+  ratios <- sort(unique(df$ratio))
+  p_values <- sort(unique(as.integer(df$p)))
+  colours <- .viridis(0.9 * (seq_along(p_values) - 1) / max(1L, length(p_values) - 1L))
+  x_axis <- .axis(.auto_limits(ratios, log = TRUE), ratios, sprintf("%g", ratios), log = TRUE)
+  y_axis <- .linear_axis(c(-3, 103))
+  x_title <- latex_title("$n/(s \\log p)$")
+  panel <- function(name, row, col, bottom) {
+    sub <- df[df$solver == name, , drop = FALSE]
+    curves <- do.call(rbind, lapply(seq_along(p_values), function(k) {
+      curve <- sub[sub$p == p_values[k], , drop = FALSE]
+      curve <- curve[order(curve$ratio), , drop = FALSE]
+      data.frame(solver = p_values[k], x = curve$ratio, y = 100 * curve[[metric]], filled = curve$reached >= 0.99,
+                 colour = colours[k], marker = "o")
+    }))
+    ggplot() +
+      .curve_layers(curves, "reached", linewidth = 1.5, size = sqrt(22), stroke = 1.1) +
+      .axis_scale(x_axis, "x") + .axis_scale(y_axis, "y") +
+      .grid_labels(name, row, col, bottom, x_title, label, x_text_size = 8)
+  }
+
   entries <- Map(function(p, colour) {
     .entry(latex_title(sprintf("$p = %s$", formatC(p, format = "d", big.mark = "{,}"))), colour, linewidth = 1.5,
            marker = "o", size = 5)
   }, p_values, colours)
   legend <- .legend_grob(unname(entries), "lower right", fontsize = 10, title = latex_title("$L = p$, $s = 10$"))
-  last <- length(panels)
-  panels[[last]] <- if (length(per_family[[length(FAMILIES)]]) < cols) {
-    wrap_elements(panel = legend)
-  } else {
-    panels[[last]] + panel_grob(legend)
-  }
+  grid <- .solver_grid(df, panel, legend)
   .assemble(
-    panels, cols, sprintf("%s: %s vs. $n/(s \\log p)$", title, RECOVERY_METRICS[[metric]][2L]),
-    c(3.1 * cols, 3.0 * length(FAMILIES)), note = any(df$reached < 0.99)
+    grid$panels, grid$cols, sprintf("%s: %s vs. $n/(s \\log p)$", title, RECOVERY_METRICS[[metric]][2L]),
+    c(3.1 * grid$cols, 3.0 * length(FAMILIES)), note = any(df$reached < 0.99)
   )
 }
 
@@ -1080,6 +1106,135 @@ plot_phase_transition <- function(df, title) {
 
 
 # ==============================================================================
+# Null counts vs. the negative hypergeometric distribution (demo_ts_perf_05)
+# ==============================================================================
+
+SELECTED_LEVELS <- list(
+  list(statistic = "selected_v1", label = "$v \\to 1$", colour = "#1b9e77"),
+  list(statistic = "selected_v0.75", label = "$v = 0.75$", colour = "#ff7f0e"),
+  list(statistic = "selected_v0.5", label = "$v = 0.5$", colour = "#7570b3")
+)
+
+#' PMF of the number of nulls drawn before the T-th dummy, NHG(p0 + L, p0, T), for 0, ..., p0.
+nhg_pmf <- function(p0, L, T_stop) {
+  v <- 0:p0
+  exp(lchoose(v + T_stop - 1, v) + lchoose(p0 + L - v - T_stop, p0 - v) - lchoose(p0 + L, p0))
+}
+
+#' p0, L, T and K of the demo, constant over the CSV.
+.counts_setup <- function(df) lapply(df[1L, c("p0", "L", "T", "K")], as.integer)
+
+#' Frequencies of the counts 0, ..., size - 1 of one solver and statistic.
+.frequencies <- function(df, solver, statistic, size) {
+  sub <- df[df$solver == solver & df$statistic == statistic, , drop = FALSE]
+  freq <- numeric(size)
+  freq[sub$count + 1L] <- sub$frequency
+  freq
+}
+
+#' CDF of weights over 0, ..., size - 1.
+.cumulative <- function(weights) cumsum(weights) / sum(weights)
+
+#' Smallest count whose CDF reaches prob.
+.count_quantile <- function(cdf, prob) {
+  hit <- which(cdf >= prob - 1e-12)
+  if (length(hit) == 0L) length(cdf) - 1L else hit[1L] - 1L
+}
+
+#' Histogram of the included null variables at T per solver, with the NHG PMF and both means.
+plot_null_pmf <- function(df, title) {
+  setup <- .counts_setup(df)
+  pmf <- nhg_pmf(setup$p0, setup$L, setup$T)
+  nhg_mean <- setup$T * setup$p0 / (setup$L + 1)
+  xs <- 0:(.count_quantile(.cumulative(pmf), 0.9999) + 2L)
+  densities <- lapply(unique(df$solver), function(name) {
+    freq <- .frequencies(df, name, "included", setup$p0 + 1L)
+    freq / sum(freq)
+  })
+  names(densities) <- unique(df$solver)
+  y_top <- 1.05 * max(pmf[xs + 1L], unlist(lapply(densities, `[`, xs + 1L)))
+  y_ticks <- .linear_ticks(c(0, y_top), 5L)
+  x_axis <- .linear_axis(c(-0.5, max(xs) + 0.5))
+  y_axis <- .axis(c(0, y_top), y_ticks, format(y_ticks, trim = TRUE))
+  panel <- function(name, row, col, bottom) {
+    density <- densities[[name]]
+    ggplot() +
+      geom_col(data = data.frame(x = xs, y = density[xs + 1L]), aes(x, y), width = 1, fill = "#fde0b8",
+               colour = "grey25", linewidth = .lw(0.4)) +
+      geom_vline(xintercept = nhg_mean, colour = "black", linewidth = .lw(1.4)) +
+      geom_vline(xintercept = sum((seq_along(density) - 1) * density), colour = COLOR_DUMMY, linetype = DASHED,
+                 linewidth = .lw(1.4)) +
+      geom_marker(data.frame(x = xs, y = pmf[xs + 1L]), colour = "black", fill = "black", size = sqrt(6)) +
+      .axis_scale(x_axis, "x") + .axis_scale(y_axis, "y") +
+      .grid_labels(name, row, col, bottom, "Included null variables", "Density")
+  }
+  entries <- list(
+    .entry("NHG PMF", "black", linetype = "blank", marker = "o", size = 3),
+    .entry(latex_title(sprintf("NHG mean $T p_0/(L+1) = %.2f$", nhg_mean)), "black", linewidth = 1.4),
+    .entry("Mean of the histogram", COLOR_DUMMY, DASHED, linewidth = 1.4)
+  )
+  grid <- .solver_grid(df, panel, .legend_grob(entries, "lower right", fontsize = 10))
+  title <- sprintf("%s: included null variables at $T = %d$ vs. NHG($p_0 + L$, $p_0$, $T$)", title, setup$T)
+  .assemble(grid$panels, grid$cols, title, c(3.1 * grid$cols, 3.0 * length(FAMILIES)))
+}
+
+#' Q-Q plot of the included null variables at T against the NHG, one panel per solver.
+plot_null_qq <- function(df, title) {
+  setup <- .counts_setup(df)
+  nhg_cdf <- .cumulative(nhg_pmf(setup$p0, setup$L, setup$T))
+  probs <- (seq_len(200L) - 0.5) / 200
+  theory <- vapply(probs, .count_quantile, integer(1L), cdf = nhg_cdf)
+  samples <- lapply(unique(df$solver), function(name) {
+    cdf <- .cumulative(.frequencies(df, name, "included", setup$p0 + 1L))
+    vapply(probs, .count_quantile, integer(1L), cdf = cdf)
+  })
+  names(samples) <- unique(df$solver)
+  axis <- .linear_axis(c(0, max(theory, unlist(samples)) + 2))
+  panel <- function(name, row, col, bottom) {
+    ggplot() +
+      geom_abline(slope = 1, intercept = 0, colour = "#666666", linewidth = .lw(1.0)) +
+      geom_marker(data.frame(x = theory, y = samples[[name]]), colour = "black", fill = "white", size = sqrt(12),
+                  stroke = 0.7) +
+      .axis_scale(axis, "x") + .axis_scale(axis, "y") +
+      .grid_labels(name, row, col, bottom, "NHG quantiles", "Sample quantiles")
+  }
+  grid <- .solver_grid(df, panel)
+  title <- sprintf("%s: Q-Q plot of the included null variables at $T = %d$", title, setup$T)
+  .assemble(grid$panels, grid$cols, title, c(3.1 * grid$cols, 3.0 * length(FAMILIES)))
+}
+
+#' ECDFs of the selected null variables V(v) at the voting levels, with the NHG CDF, one panel per solver.
+plot_selected_ecdf <- function(df, title) {
+  setup <- .counts_setup(df)
+  nhg_cdf <- .cumulative(nhg_pmf(setup$p0, setup$L, setup$T))
+  xs <- 0:(.count_quantile(nhg_cdf, 0.9999) + 2L)
+  x_axis <- .linear_axis(c(0, max(xs)))
+  y_axis <- .linear_axis(c(-0.02, 1.02))
+  step <- function(cdf, colour) {
+    geom_step(data = data.frame(x = xs, y = cdf[xs + 1L]), aes(x, y), direction = "hv", colour = colour,
+              linewidth = .lw(1.3))
+  }
+  panel <- function(name, row, col, bottom) {
+    levels <- lapply(SELECTED_LEVELS, function(level) {
+      step(.cumulative(.frequencies(df, name, level$statistic, setup$p0 + 1L)), level$colour)
+    })
+    ggplot() + levels + step(nhg_cdf, "black") +
+      .axis_scale(x_axis, "x") + .axis_scale(y_axis, "y") +
+      .grid_labels(name, row, col, bottom, "Selected null variables", "Empirical CDF")
+  }
+  entries <- c(
+    lapply(SELECTED_LEVELS, function(level) .entry(latex_title(level$label), level$colour, linewidth = 1.3)),
+    list(.entry("NHG", "black", linewidth = 1.3))
+  )
+  legend <- .legend_grob(entries, "lower right", fontsize = 10,
+                         title = latex_title(sprintf("$K = %d$, $T = %d$", setup$K, setup$T)))
+  grid <- .solver_grid(df, panel, legend)
+  title <- paste0(title, ": selected null variables $V_{T,L}(v)$ vs. NHG")
+  .assemble(grid$panels, grid$cols, title, c(3.1 * grid$cols, 3.0 * length(FAMILIES)))
+}
+
+
+# ==============================================================================
 # CLI
 # ==============================================================================
 
@@ -1152,12 +1307,12 @@ main <- function(argv = commandArgs(trailingOnly = TRUE)) {
                  "| compare --csvs A B --labels LA LB --title T --stem S",
                  "| fdr-tpr <csv> --title T [--rank R --p P --L L --s S]",
                  "| runtime <csv> --title T --p P | memory <csv> --title T",
-                 "| recovery [<csv>] [--phase <csv>] --title T",
+                 "| recovery [<csv>] [--phase <csv>] --title T | nhg <csv> --title T",
                  "[--outdir DIR] [--formats png pdf]")
   if (length(argv) == 0L) stop(usage)
   mode <- argv[[1L]]
   args <- parse_args(argv[-1L])
-  perf_modes <- c("fdr-tpr", "runtime", "memory")
+  perf_modes <- c("fdr-tpr", "runtime", "memory", "nhg")
   if (mode %in% perf_modes) {
     if (length(args$csv) != 1L || is.null(args$title)) stop(usage)
     df <- utils::read.csv(args$csv, check.names = FALSE)
@@ -1213,6 +1368,11 @@ main <- function(argv = commandArgs(trailingOnly = TRUE)) {
       outdir <- if (is.null(args$outdir)) default_plots_dir(args$phase) else args$outdir
       save_figure(fig, outdir, .csv_stem(args$phase), args$formats, width = size[1L], height = size[2L])
     }
+  } else if (mode == "nhg") {
+    figs <- list(
+      pmf = plot_null_pmf(df, args$title), qq = plot_null_qq(df, args$title), ecdf = plot_selected_ecdf(df, args$title)
+    )
+    .save_figures(figs, outdir, .csv_stem(args$csv), args$formats)
   } else {
     stop(usage)
   }

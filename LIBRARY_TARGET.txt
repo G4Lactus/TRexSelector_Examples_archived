@@ -26,12 +26,14 @@ Validated Py:   TRexSelectorNeo 1.0.0 reinstalled from 415484d (repo .venv and c
 Validated R:    TRexSelectorNeo 2.0.0 reinstalled from 415484d (links R's own libomp only); the same checks as
                 for Python pass (demo_trex_01 selections unchanged, dumps recorded anew, memory_mapping passes).
 Validated perf: the perf and tsolvers results committed on 44cf1ab and 61fd84c stand (no T-solver code changed).
+                The Python and R ports of demo_ts_perf_05 are run on 415484d (24.0 s and 34.3 s) and agree
+                with C++ within Monte Carlo noise; on identical data they select the same variables.
 Pending:        trex_core 08 in Python and R (redesigned grid and large-p block, nightly runner); the C++
                 run is done on 61fd84c (base and large-p block, 10 trials, 23.3 h, tFDR 0.1). trex_core 09
-                and 10 in R (code tested on reduced grids, full runs pending) and Python and R
-                ports of demo_ts_perf_05. trex_da runs at tFDR 0.2 with long T-loops (mean T 6-34) and needs
-                a rerun on 415484d; trex_gvs and trex_spca run at tFDR 0.1 with short T-loops and are
-                expected to stand; trex_screening does not use the FDP estimate.
+                and 10 in R (code tested on reduced grids, full runs pending). trex_da runs at tFDR 0.2 with
+                long T-loops (mean T 6-34) and needs a rerun on 415484d; trex_gvs and trex_spca run at
+                tFDR 0.1 with short T-loops and are expected to stand; trex_screening does not use the FDP
+                estimate.
 Previous pins:  61fd84c (2026-10-21), 44cf1ab (2026-09-28), b95b984 (2026-09-27), 8ad3376 (2026-09-26),
                 f390bfc (2026-09-25), d404033 (2026-09-25); what changed between pins is in the git log of this
                 file and in the library's HISTORY.md.

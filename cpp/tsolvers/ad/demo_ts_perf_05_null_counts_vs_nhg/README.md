@@ -162,7 +162,12 @@ T-AFS, and small for the least-angle regression (LARS) family (0.008 for T-LARS 
 0.030 for T-Stagewise). These excesses sit in the lower tail, at 4 to 14 selected null variables, which matches the
 supplement, where the NHG CDF lies slightly above the empirical CDF for $v = 0.5$ between 6 and 12. With 500 runs the
 standard error of an empirical CDF value near 0.1 is about 0.013, so all of them lie within about two standard
-errors.
+errors. The [Python](../../../../Python/tsolvers/ad/demo_ts_perf_05_null_counts_vs_nhg/README.md) and
+[R](../../../../R/tsolvers/ad/demo_ts_perf_05_null_counts_vs_nhg/README.md) ports show the excess of T-ENET and
+T-Stagewise at the same place, though. Pooled over the 1,500 runs of the three languages it reaches 0.033 for T-ENET
+(4.1 standard errors) and 0.026 for T-Stagewise (3.2) at 12. Their $V_{T,L}(0.5)$ is more concentrated than the NHG,
+with standard deviations of 4.3 and 4.5 against 6.01, so the two miss strict stochastic dominance by about 0.03 in the
+lower tail, while their mean and upper tail stay below the NHG.
 
 The solver families differ in how close they come to the bound. The LARS family selects 17.2 to 18.4 null variables
 at $v = 0.5$, close to the NHG mean of 19.60, because its candidate sets repeat from one experiment to the next, and
