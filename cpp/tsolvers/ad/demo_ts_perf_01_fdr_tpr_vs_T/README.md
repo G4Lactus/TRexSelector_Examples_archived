@@ -233,6 +233,16 @@ re-entries for 774 steps on average. T-LASSO shows the same effect more mildly, 
 about 99 for T-LARS. The times at $T = 50$ and 100 therefore describe the saturated regime rather than the solvers.
 They are measured inside the parallel loop and serve for comparison only.
 
+The OMP family shows how the cost of a step depends on the length of the path. Up to $T = 10$ T-OMP is as fast as
+gradient pursuit (T-GP) and approximate conjugate gradient pursuit (T-ACGP) or faster (0.17 against 0.19 ms at
+$T = 1$), the three meet around $T = 20$, and on the long paths to $T = 50$ and 100, about 99 steps, T-GP needs
+1.59 ms and T-ACGP 1.71 ms against 1.95 ms for T-OMP. The correlation scan over all $p + L = 600$ columns costs every
+solver the same, while the incremental Cholesky update of T-OMP grows with the number $k$ of active columns. The
+gradient pursuits save that update and pay with about one extra step, so they gain only once $k$ approaches $n$. That
+is the regime in which Blumensath and Davies (2008) introduced them as faster alternatives to OMP, the full solution
+path, while T-Rex stops its paths early. Matching pursuit, which skips the refit altogether, is cheaper still on the
+long paths (T-MP 1.61 ms and T-NCGMP 1.40 ms at $T = 50$).
+
 ### Least-squares refit on the selected variables
 
 After each $T$, the demo drops the dummies from the selection, fits least squares with an intercept on the selected
@@ -343,3 +353,5 @@ selections past $n$.
   outside it, so this demo selects by nonzero coefficient, as the T-Rex selector does.
 - T-Stepwise gives the same tables as T-OMP, and T-NCGMP in its line-search variant the same as T-MP, as the full-path
   identities in the [T-solver README](../../README.md) state.
+- Reference: T. Blumensath and M. E. Davies, *Gradient Pursuits*, IEEE Transactions on Signal Processing 56(6),
+  2008, pp. 2370-2382.

@@ -134,6 +134,18 @@ needs about twice as long per step as the other solvers. More dummies therefore 
 they keep out, but every step gets dearer, and in total a path to $T = 10$ at $L = 20p$ costs about 7.5 times a
 path at $L = p$.
 
+Gradient pursuit (T-GP) and approximate conjugate gradient pursuit (T-ACGP) were proposed by Blumensath and Davies
+(2008) as cheaper alternatives to OMP, and these short paths show no such saving. Every greedy step scans the
+correlations of all $p + L$ columns, which costs $O(n(p + L))$. T-OMP adds an incremental Cholesky update for its
+least-squares refit, which costs $O(nk + k^2)$ for $k$ active columns and stays small while the path holds 20 to 30
+variables. The gradient pursuits replace that update by one gradient step, but their residual is no longer orthogonal
+to the active columns, and T-GP needs one step more than T-OMP at every $L$ (21 instead of 20 at $L = 20p$). With
+the same time per step (4.06, 4.11 and 4.09 ms at $L = 20p$), T-GP and T-ACGP finish within a few percent of T-OMP,
+mostly a little later (87.6 and 85.9 ms against 83.4 ms at $L = 20p$), which lies inside the run-to-run noise of the
+medians noted below. Their saving appears only on long paths, where
+$k$ approaches $n$ and the Cholesky update dominates, as
+[demo_ts_perf_01](../demo_ts_perf_01_fdr_tpr_vs_T/README.md) shows along $T$.
+
 ### Warm start
 
 ```text
@@ -207,3 +219,5 @@ The second figure shows the ratio of a fresh run to $T + 1$ over the warm start 
   and their times differ by up to 7%, which marks the run-to-run noise of the medians.
 - The nested dummy sets keep the comparison across $L$ tight, because a larger $L$ adds dummies to the same data
   instead of drawing new ones.
+- Reference: T. Blumensath and M. E. Davies, *Gradient Pursuits*, IEEE Transactions on Signal Processing 56(6),
+  2008, pp. 2370-2382.
