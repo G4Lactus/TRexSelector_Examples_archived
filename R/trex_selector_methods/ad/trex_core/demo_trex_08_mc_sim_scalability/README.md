@@ -87,7 +87,7 @@ Every option explicit, identical to the C++ reference: `K = 20`,
 `max_dummy_multiplier = 10` (base block) or `5` (large-p block), `use_max_T_stop = TRUE`, `opt_threshold = 0.75`,
 `dummy_distribution = Normal`, `lloop_strategy = "STANDARD"`,
 `tloop_stagnation_stop = TRUE`, `tloop_max_stagnant_steps = 5`,
-`use_openmp = FALSE` (sequential random experiments — one experiment working set
+`parallel_rnd_experiments = FALSE` (sequential random experiments — one experiment working set
 in RAM at a time, essential out-of-core),
 `use_memory_mapping = TRUE`.
 

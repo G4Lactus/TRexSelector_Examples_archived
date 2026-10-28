@@ -27,7 +27,7 @@ structure — the empirical column-correlation matrix is essentially the identit
 
 `trex_control(solver = "TLARS", K = 20, max_dummy_multiplier = 10,
 use_max_T_stop = TRUE, opt_threshold = 0.75, lloop_strategy = "STANDARD",
-tloop_stagnation_stop = FALSE, tloop_max_stagnant_steps = 5, use_openmp = FALSE,
+tloop_stagnation_stop = FALSE, tloop_max_stagnant_steps = 5, parallel_rnd_experiments = FALSE,
 use_memory_mapping = FALSE, lambda2 = 0.1, rho_afs = 0, ncgmp_variant = 0)` —
 every option explicit, taken from the C++ reference.
 

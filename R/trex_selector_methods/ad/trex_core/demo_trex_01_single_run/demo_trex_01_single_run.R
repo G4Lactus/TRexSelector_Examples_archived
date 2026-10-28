@@ -83,7 +83,7 @@ trx_01_part_01 <- function() {
     lloop_strategy           = "STANDARD",
     tloop_stagnation_stop    = FALSE,
     tloop_max_stagnant_steps = 5L,
-    use_openmp               = FALSE,
+    parallel_rnd_experiments = FALSE,
     use_memory_mapping       = FALSE,
     lambda2                  = 0.1,
     rho_afs                  = 0.0,   # non-TAFS solver; rho_afs is unused

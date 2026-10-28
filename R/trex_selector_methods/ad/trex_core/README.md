@@ -109,7 +109,7 @@ across these demos include:
 - `use_max_T_stop`, `tloop_stagnation_stop`, `tloop_max_stagnant_steps`,
   `opt_threshold`,
 - `use_memory_mapping` (activates D-mmap + solver serialization),
-- `use_openmp`, `seed`.
+- `parallel_rnd_experiments`, `seed`.
 
 The target FDR is not part of the control object and is passed as `tFDR` to
 `TRexSelector$new()` instead.

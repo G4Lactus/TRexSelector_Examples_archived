@@ -95,7 +95,7 @@ trex_06_part_a <- function(num_MC = NUM_MC, high_dim = TRUE) {
   ctrl <- make_mmap_trex_ctrl(
     solver                   = "TLARS",
     tloop_max_stagnant_steps = 7L,
-    use_openmp               = FALSE,
+    parallel_rnd_experiments = FALSE,
     opt_threshold            = 0.75
   )
 
@@ -177,7 +177,7 @@ trex_06_part_b <- function(num_MC = NUM_MC, high_dim = TRUE) {
   ctrl <- make_mmap_trex_ctrl(
     solver                   = "TLARS",
     tloop_max_stagnant_steps = 7L,
-    use_openmp               = FALSE,
+    parallel_rnd_experiments = FALSE,
     opt_threshold            = 0.75
   )
 

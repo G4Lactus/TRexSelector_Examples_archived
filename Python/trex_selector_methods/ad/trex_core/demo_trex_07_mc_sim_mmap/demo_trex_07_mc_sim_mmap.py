@@ -91,7 +91,7 @@ _MMAP_BASE_CTRL = dict(
     tloop_max_stagnant_steps = 7,
     opt_threshold            = 0.75,
     use_memory_mapping       = True,    # D-mmap + solver serialization
-    parallel_rnd_experiments = False,   # mirrors R use_openmp=FALSE
+    parallel_rnd_experiments = False,   # mirrors R parallel_rnd_experiments = FALSE
 )
 
 

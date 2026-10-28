@@ -300,12 +300,12 @@ Cleaned up mmap file: <tmp>/trex_mlm_demo_ms01_svd_mmap_c91366a5db7.bin
 
 - `MLRidgeCV` runs the compiled `ridge_cv_svd`, which uses `Eigen::JacobiSVD` rather than `BDCSVD`, because the
   latter can silently return wrong results under aggressive optimization flags.
-- The demo calls `MLRidgeCV$new()` and `$fit(X, y, num_folds = ..., n_lambda = 100L, lambda_ratio = ..., seed = ...)`
+- The demo calls `MLRidgeCV$new()` and `$fit(X, y, n_folds = ..., n_lambda = 100L, lambda_ratio = ..., seed = ...)`
   and reads the results with `$cv_min()`, `$cv_1se()`, `$index_min()`, `$index_1se()`, `$get_lambdas()`,
-  `$get_cv_errors()` and `$get_cv_std()`. The fold count is `num_folds` here, while `MLElasticNetCV` and the Python
-  `RidgeCV` call it `n_folds`.
-- The grid settings are the `$fit()` arguments `n_lambda` (100, which is also the default of the R package, while the
-  library and the Python package default to 1,000) and `lambda_ratio` (1,000, Scenario 4: 100,000).
+  `$get_cv_errors()` and `$get_cv_std()`. The fold count is `n_folds` on every surface, as in `MLElasticNetCV` and
+  the Python `RidgeCV`.
+- The grid settings are the `$fit()` arguments `n_lambda` (100, the default of the library, the R package and the
+  Python package) and `lambda_ratio` (1,000, Scenario 4: 100,000).
 - `$index_min()` and `$index_1se()` return 1-based indices into the ascending grid, the R convention, because the
   binding adds 1 to the library's 0-based index. The C++ and Python accessors are 0-based.
 - The fold permutation takes the data seed of each scenario (`seed = 111L`, `222L`, `333L` and `444L`), as in the

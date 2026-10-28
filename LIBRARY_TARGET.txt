@@ -1,54 +1,51 @@
 Library line:   TRexSelector dev_beyond (a sibling checkout TRexSelector-beyond next to this repository)
-Pinned commit:  415484d (2026-10-24; C++ 1.0.0 / R 2.0.0 / Python 1.0.0): the FDP estimate keeps negative
-                calibrated occurrences Phi_prime (the lower clamp at 0 is removed, the upper clamp at 1 stays).
-                The clamp made FDP_hat anti-conservative in long T-loops (TLARS in trex_core demo 09 at
-                tFDR >= 0.4 exceeded the target). FDP_hat can only rise, so selections can only shrink.
-Validated C++:  SDK installed from 415484d; the Examples targets built clean without warnings;
-                demo_trex_01_single_run reproduces its committed files byte for byte, and the memory_mapping
-                and ml_methods short-demo logs are identical (the demo_ts demos were skipped, the T-solvers do
-                not compute Phi_prime). trex_core demo 09 is rerun on 415484d with the same seeds: the FDR stays
-                below the target in all 132 cells, 53 cells at tFDR >= 0.15 drop by up to 0.077, the TPR by at
-                most 0.010, and every cell up to tFDR 0.1 (L-loop included) is unchanged to the last digit.
-                trex_core demos 03 and 05 (tFDR 0.1, unseeded) are rerun and match their 61fd84c results
-                within Monte Carlo noise (no cell with |z| > 3, no shift in Avg L); the reruns are committed.
-                The TLARS block of trex_core demo 04 is rerun on 415484d: the adaptive L-loop strategies are
-                unchanged within noise, SKIPL_10p falls from 0.115 to the target (0.100), and the SKIPL_20p
-                overshoot stays (0.137 at SNR 5, T ~ 145); TLARS_STAG, TOMP and TAFS stand from 61fd84c.
-                trex_core demo 10 (tFDR 0.1, seeded) and demo_ts_perf_05 (no Phi_prime) stand from 61fd84c.
-                The other suites (trex_da, trex_gvs, trex_screening, trex_spca) were not rerun; their results
-                come from 44cf1ab and 61fd84c and can differ only where a selected variable had Phi_prime < 0.
-Validated Py:   TRexSelectorNeo 1.0.0 reinstalled from 415484d (repo .venv and conda trex-dev-beyond);
-                demo_trex_01_single_run keeps its selections, FDP and TPP (its Phi_prime and FDP_hat dumps now
-                show the negative Phi_prime entries and are recorded anew), and the memory_mapping demo passes.
-                The 12 T-solver demos were not rerun (the T-solvers do not compute Phi_prime). trex_core 09
-                (2 h 43 min) and 10 (16 h 58 min) are run on 415484d and match C++ within Monte Carlo noise
-                (one cell with |z| > 3 in each, out of 264 and 326).
-Validated R:    TRexSelectorNeo 2.0.0 reinstalled from 415484d (links R's own libomp only); the same checks as
-                for Python pass (demo_trex_01 selections unchanged, dumps recorded anew, memory_mapping passes).
-Validated perf: the perf and tsolvers results committed on 44cf1ab and 61fd84c stand (no T-solver code changed).
-                The Python and R ports of demo_ts_perf_05 are run on 415484d (24.0 s and 34.3 s) and agree
-                with C++ within Monte Carlo noise; on identical data they select the same variables.
-Pending:        trex_core 08 in Python and R (redesigned grid and large-p block, nightly runner); the C++
-                run is done on 61fd84c (base and large-p block, 10 trials, 23.3 h, tFDR 0.1). trex_core 09
-                and 10 in R (code tested on reduced grids, full runs pending). trex_da runs at tFDR 0.2 with
-                long T-loops (mean T 6-34) and needs a rerun on 415484d; trex_gvs and trex_spca run at
-                tFDR 0.1 with short T-loops and are expected to stand; trex_screening does not use the FDP
-                estimate.
-Previous pins:  61fd84c (2026-10-21), 44cf1ab (2026-09-28), b95b984 (2026-09-27), 8ad3376 (2026-09-26),
-                f390bfc (2026-09-25), d404033 (2026-09-25); what changed between pins is in the git log of this
-                file and in the library's HISTORY.md.
+Pinned commit:  09debc6 (2026-10-27; C++ 1.0.0 / R 2.0.0 / Python 1.0.0): the Phase 3 batch of the library's
+                dev_beyond stage, 22 commits since 415484d. Results move where a demo runs T-Stagewise (a
+                variable removed within a step is no candidate for that step's move, and the dummies of the
+                support count toward T, so paths stop earlier while supports below saturation are unchanged),
+                where an R demo relied on trex_control() defaults (lloop_strategy is STANDARD on every surface,
+                TIENET and TIENET_AUG no longer stop their T-loops on stagnation by default, cd_lambda_rel_tol
+                is 1e-6), and in the SEEDED rows of demo 04 (SEEDED is the storage-free twin of STANDARD, keyed
+                on the L step). Renames the demos follow: trex_control(use_openmp) is parallel_rnd_experiments,
+                MLRidgeCV$fit(num_folds) is n_folds in R. TIKOMP is removed (no demo used it). The clustering
+                refuses RAM buffers beyond the physical memory, the ridge CV grid defaults to 100 on every
+                surface (the demos pass 100 explicitly), the selectors run serial by default (the demos set
+                the thread counts they need), and the library tree keeps a 120-character line ruler.
+Validated C++:  SDK installed from 09debc6 (the previous install removed first, so no stale header remains);
+                the Examples targets built clean without warnings; demo_trex_01_single_run reproduces its
+                committed files byte for byte; the memory_mapping demo and the model_selection demos (ridge CV
+                38 s, elastic-net CV) complete. The Monte Carlo demos the batch moves are not rerun yet (list
+                under Pending).
+Validated Py:   TRexSelectorNeo 1.0.0 reinstalled from 09debc6 (repo .venv from source, conda trex-dev and
+                trex-dev-beyond from one cp312 wheel); demo_trex_01_single_run keeps its committed files.
+Validated R:    TRexSelectorNeo 2.0.0 reinstalled from 09debc6 (links R's own libomp only);
+                demo_trex_01_single_run keeps its committed files with parallel_rnd_experiments = FALSE, and
+                demo_mlm_ms_01 passes both of its checks with n_folds.
+Validated perf: not yet; the T-Stagewise rows of demo_ts_05 and of the perf demos move (step counts, null
+                counts) and rerun under Pending. The other T-solvers are unchanged.
+Pending:        reruns on 09debc6 that the batch moves: trex_core 02 and 03 in C++, Python and R (the
+                T-Stagewise rows), trex_core 04 in C++, Python and R (the SEEDED rows), demo_ts_05 and the
+                tsolvers perf demos 01-05 (the T-Stagewise rows), the R trex_gvs demos 01-08 where they run
+                TIENET (the stagnation-stop default). Still pending from 415484d: trex_core 08 in Python and R
+                (nightly runner), trex_core 09 and 10 in R, trex_da (tFDR 0.2, long T-loops), the trex_gvs and
+                trex_spca spot checks.
+Previous pins:  415484d (2026-10-24), 61fd84c (2026-10-21), 44cf1ab (2026-09-28), b95b984 (2026-09-27), 8ad3376
+                (2026-09-26), f390bfc (2026-09-25), d404033 (2026-09-25); what changed between pins is in the
+                git log of this file and in the library's HISTORY.md.
 
 Install:        cpp    -> in <library>/cpp: cmake --preset local-install && cmake --build --preset local-install-build
                           && cmake --install build/release-portable
                           (headers under cpp/install/include/TRexSelector/; the Examples presets point at
-                          ../../TRexSelector-beyond/cpp/install)
+                          ../../TRexSelector-beyond/cpp/install; move the old cpp/install away first, an install
+                          does not remove headers of deleted sources)
                 R      -> R CMD INSTALL --preclean <library>/R/TRexSelectorNeo
                           (into R's default library; demos: Rscript <demo>.R, no R_LIBS)
                 Python -> at the Examples root: python3 -m venv .venv
                           && .venv/bin/pip install <library>/Python/TRexSelectorNeo pandas matplotlib plotly
                           -r requirements-dev.txt
                           (a regular install, so rebuild the wheel on every pin bump; the overnight runners and
-                          generate_plots.sh use .venv/bin/python)
+                          generate_plots.sh use .venv/bin/python; the conda envs trex-dev and trex-dev-beyond
+                          take one cp312 wheel built with pip wheel --no-deps)
 
 Rule:           Bump this pin whenever demos are rebuilt against a new library commit and their results are
                 committed, in the same or a preceding commit. Validate the C++ short demos first, Python and

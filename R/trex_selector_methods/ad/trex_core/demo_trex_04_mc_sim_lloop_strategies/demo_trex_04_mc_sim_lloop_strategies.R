@@ -179,7 +179,7 @@ trx_04_lloop_strategies <- function(num_MC = NUM_MC, rnd_coef = FALSE,
         lloop_strategy           = strat$strategy,
         tloop_stagnation_stop    = solver_entry$stagnation_stop,
         tloop_max_stagnant_steps = 5L,
-        use_openmp               = FALSE,
+        parallel_rnd_experiments = FALSE,
         use_memory_mapping       = FALSE
       )
 

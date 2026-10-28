@@ -16,7 +16,7 @@ support is drawn once and shared across all trials via
 `make_support_random(s, p, seed = 24)`, and the coefficients are fixed at `beta_j = 1`. SNR sweep
 `{0.1, 0.5, 1.0, 2.0, 5.0}`, TLARS only. `num_MC = 200` for both parts. Control via
 `make_mmap_trex_ctrl(solver = "TLARS", tloop_max_stagnant_steps = 7,
-use_openmp = FALSE, opt_threshold = 0.75)`.
+parallel_rnd_experiments = FALSE, opt_threshold = 0.75)`.
 
 Both parts draw from the suite's shared i.i.d. Gaussian family — independent
 columns, so the empirical column-correlation matrix is essentially the identity, and

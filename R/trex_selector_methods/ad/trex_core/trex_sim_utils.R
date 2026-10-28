@@ -465,7 +465,7 @@ make_mmap_trex_ctrl <- function(...) {
     lambda2                  = 0.1,
     rho_afs                  = 0.0,   # non-TAFS solver; rho_afs is unused
     ncgmp_variant            = 0L,
-    use_openmp               = FALSE
+    parallel_rnd_experiments = FALSE
   )
 
   overrides <- list(...)

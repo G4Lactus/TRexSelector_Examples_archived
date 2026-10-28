@@ -106,12 +106,12 @@ print_cv_summary <- function(cv, step_size = 10L) {
 # Fit RidgeCV, print the summary, and run the two checks: the ordering
 # lambda.1se >= lambda.min (the 1se rule always regularizes at least as
 # strongly as the pure minimizer), and both picks inside the grid.
-fit_and_report <- function(X, y, num_folds, seed, lambda_ratio = 1000) {
+fit_and_report <- function(X, y, n_folds, seed, lambda_ratio = 1000) {
   # Grid parameters mirror the C++ fit(): a 100-lambda grid anchored at the
   # largest useful penalty, spanning [lambda_max / lambda_ratio, lambda_max];
   # `seed` fixes the fold assignment.
   cv <- MLRidgeCV$new()
-  cv$fit(X, y, num_folds = num_folds, n_lambda = 100L,
+  cv$fit(X, y, n_folds = n_folds, n_lambda = 100L,
          lambda_ratio = lambda_ratio, seed = seed)
 
   print_cv_summary(cv, step_size = 10L)

@@ -210,7 +210,7 @@ trx_10_dt_ratio <- function(num_MC = NUM_MC) {
       lloop_strategy           = "STANDARD",
       dummy_distribution       = trex_dummy_distribution("Normal"),
       tloop_max_stagnant_steps = 5L,
-      use_openmp               = FALSE,
+      parallel_rnd_experiments = FALSE,
       use_memory_mapping       = FALSE
     )
 

@@ -196,7 +196,7 @@ trx_05_dummy_distributions <- function(num_MC = NUM_MC, rnd_coef = FALSE,
         lloop_strategy           = "STANDARD",
         dummy_distribution       = dist_entry$dist,
         tloop_max_stagnant_steps = 5L,
-        use_openmp               = FALSE,
+        parallel_rnd_experiments = FALSE,
         use_memory_mapping       = FALSE
       )
 

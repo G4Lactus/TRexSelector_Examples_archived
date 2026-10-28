@@ -218,7 +218,7 @@ def _make_scalability_ctrl_dict(solver_desc, dummy_mult):
         lloop_strategy           = "STANDARD",
         tloop_stagnation_stop    = True,
         tloop_max_stagnant_steps = 5,
-        # Sequential random experiments (mirrors C++ + R use_openmp=FALSE): one
+        # Sequential random experiments (mirrors C++ + R parallel_rnd_experiments = FALSE): one
         # experiment working set in RAM at a time (OpenMP threads parallelize
         # the column loops inside it), not K concurrent ones — essential
         # out-of-core, and the setting the other trex demos use. Python's

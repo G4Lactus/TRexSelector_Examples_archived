@@ -47,7 +47,7 @@ R demos all use the current names.)
 The solver sweep (`SOLVERS`) is the outer loop, and one `.txt` + `.csv` file pair is
 written per solver. Shared control per solver x strategy: `K = 20`,
 `use_max_T_stop = TRUE`, `opt_threshold = 0.75`, `tloop_max_stagnant_steps = 5`,
-`use_openmp = FALSE`, `use_memory_mapping = FALSE`, `lloop_strategy` and
+`parallel_rnd_experiments = FALSE`, `use_memory_mapping = FALSE`, `lloop_strategy` and
 `max_dummy_multiplier` swept. The `tloop_stagnation_stop` option is left unset (AUTO — the
 per-solver-family default, off for TLARS and on for TOMP and TAFS), except for TLARS_STAG, which sets it to `TRUE`
 with the same window of 5. Reports averaged FDR, TPR, Avg L, Avg T per strategy

@@ -83,7 +83,7 @@ trx_02_mc_sim_fixed_support <- function(num_MC = NUM_MC, high_dim = TRUE) {
     lloop_strategy           = "STANDARD",
     tloop_stagnation_stop    = TRUE,
     tloop_max_stagnant_steps = stagnant_sw,
-    use_openmp               = FALSE,
+    parallel_rnd_experiments = FALSE,
     opt_threshold            = 0.75,
     use_memory_mapping       = FALSE
   )

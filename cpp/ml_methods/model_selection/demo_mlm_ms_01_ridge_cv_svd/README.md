@@ -279,8 +279,8 @@ Cleaned up mmap file: .../cpp/ml_methods/model_selection/demo_mlm_ms_01_ridge_cv
 ## Technical notes
 
 - `ridge_cv_svd` uses `Eigen::JacobiSVD` rather than `BDCSVD` for numerical safety under `-O3 -march=native`.
-- The grid settings are the `fit()` arguments `n_lambda` (100 here, while the library default is 1,000) and
-  `lambda_ratio` (1,000, Scenario 4: 100,000). The fold permutation uses the default seed 0.
+- The grid settings are the `fit()` arguments `n_lambda` (100, the default of the library, the R package and the
+  Python package) and `lambda_ratio` (1,000, Scenario 4: 100,000). The fold permutation uses the default seed 0.
 - For $p \ge n_{\mathrm{train}}$, `interpolates()` reports that the low end of the grid is an interpolation regime,
   and together with `selection_at_grid_edge()` it tells whether $\lambda_{\min}$ is a real minimum.
 - The backing file path is injected through `TREX_DEMO_MMAP_PATH` when the build defines it, with a file name in the

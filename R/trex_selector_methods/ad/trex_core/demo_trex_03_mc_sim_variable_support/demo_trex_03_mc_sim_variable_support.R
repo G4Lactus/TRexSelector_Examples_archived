@@ -82,7 +82,7 @@ trx_03_mc_sim_variable_support <- function(num_MC = NUM_MC, high_dim = TRUE, rnd
     lloop_strategy           = "HCONCAT",
     tloop_stagnation_stop    = TRUE,
     tloop_max_stagnant_steps = stagnant_sw,
-    use_openmp               = FALSE,
+    parallel_rnd_experiments = FALSE,
     use_memory_mapping       = FALSE
   )
 

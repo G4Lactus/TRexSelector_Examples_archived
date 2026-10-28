@@ -56,7 +56,7 @@ hence `dim = 5`.
 
 Shared control per solver x distribution: `K = 20`, `max_dummy_multiplier = 10`,
 `use_max_T_stop = TRUE`, `opt_threshold = 0.75`, `lloop_strategy = "STANDARD"`,
-`tloop_max_stagnant_steps = 5`, `use_openmp = FALSE`, `use_memory_mapping = FALSE`,
+`tloop_max_stagnant_steps = 5`, `parallel_rnd_experiments = FALSE`, `use_memory_mapping = FALSE`,
 `dummy_distribution` swept. The `tloop_stagnation_stop` option is left unset (AUTO — the
 per-solver-family default). Reports averaged FDR, TPR, Avg L, Avg T per distribution x
 SNR (`track_L_T = TRUE`). Monte Carlo (MC) trials run in parallel over `num_cores`

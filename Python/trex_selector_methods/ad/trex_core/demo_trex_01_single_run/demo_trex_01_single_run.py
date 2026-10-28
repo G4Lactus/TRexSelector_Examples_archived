@@ -77,7 +77,7 @@ def part_1_single_run():
         lloop_strategy            = "STANDARD",
         tloop_stagnation_stop     = False,
         tloop_max_stagnant_steps  = 5,
-        parallel_rnd_experiments  = False,   # mirrors C++ / R use_openmp=FALSE
+        parallel_rnd_experiments  = False,   # mirrors C++ / R parallel_rnd_experiments = FALSE
         use_memory_mapping        = False,
         lambda2                   = 0.1,
         rho_afs                   = 0.0,   # non-TAFS solver; rho_afs is unused

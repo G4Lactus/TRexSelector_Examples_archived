@@ -241,7 +241,7 @@ RAM_GIB <- .physical_ram_gib()
     lloop_strategy           = "STANDARD",
     tloop_stagnation_stop    = TRUE,
     tloop_max_stagnant_steps = 5L,
-    use_openmp               = FALSE,          # sequential random experiments
+    parallel_rnd_experiments = FALSE,          # sequential random experiments
     use_memory_mapping       = TRUE            # X mmap + D mmap + solver serialization
   )
 }

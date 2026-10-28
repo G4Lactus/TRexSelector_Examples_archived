@@ -477,7 +477,7 @@ static TRexControlParameter make_scalability_trex_ctrl(const DemoSolverInfo& sol
     ctrl.lloop_strategy           = LLoopStrategy::STANDARD;
     ctrl.tloop_stagnation_stop    = true;
     ctrl.tloop_max_stagnant_steps = 5;
-    // Sequential random experiments (mirrors R use_openmp=FALSE, as in demos
+    // Sequential random experiments (mirrors R parallel_rnd_experiments = FALSE, as in demos
     // 02/03/07): one experiment working set in RAM at a time (OpenMP threads
     // parallelize the column loops inside it), not K concurrent ones — essential
     // out-of-core. This is the C++ struct default, pinned here to be explicit.

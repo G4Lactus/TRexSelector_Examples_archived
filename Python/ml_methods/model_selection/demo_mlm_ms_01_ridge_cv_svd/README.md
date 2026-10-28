@@ -297,8 +297,8 @@ Cleaned up mmap file: <tmp>/trex_mlm_demo_ms01_svd_mmap_83vn1k38.bin
   under `-O3 -march=native`.
 - The demo calls `RidgeCV().fit(X, y, n_folds=..., n_lambda=100, lambda_ratio=..., seed=...)`. The binding accepts
   only `float64` arrays in Fortran (column-major) order, which `np.asfortranarray()` provides.
-- The grid settings are the `fit()` arguments `n_lambda` (100 here, while the package default is 1,000) and
-  `lambda_ratio` (1,000, Scenario 4: 100,000).
+- The grid settings are the `fit()` arguments `n_lambda` (100, the default of the package, the library and the R
+  package) and `lambda_ratio` (1,000, Scenario 4: 100,000).
 - The fold permutation takes the data seed of each scenario (`seed=111`, `222`, `333` and `444`), while the C++ demo
   keeps the default fold seed 0. So the Python run differs from the C++ one in the folds as well as in the data.
 - For $p \ge n_{\mathrm{train}}$, `interpolates()` reports that the low end of the grid is an interpolation regime,
