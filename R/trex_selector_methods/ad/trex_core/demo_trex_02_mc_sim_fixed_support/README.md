@@ -55,9 +55,9 @@ essentially zero at SNR 0.1 (0.0025 at best) to full recovery (1.0000) at SNR 5.
 split at intermediate SNR is the usual one. At SNR 0.5 the LARS-path solvers
 (TLARS/TLASSO/TENET/TSTAGEWISE, 0.230–0.245) lead the greedy family
 (0.1805–0.1990, with TAFS_rho_0.3 level with TENET at 0.2300), and the ordering reverses
-by SNR 1.0, where the greedy solvers reach 0.836–0.862 against 0.710–0.726 for
+by SNR 1.0, where the greedy solvers reach 0.836–0.862 against 0.710–0.729 for
 the LARS path. At SNR 2.0 every greedy solver is already at 1.0000 while the
-LARS-path solvers sit at 0.974–0.982.
+LARS-path solvers sit at 0.974–0.983.
 
 ### Grouped 2x2 view (de-cluttered)
 

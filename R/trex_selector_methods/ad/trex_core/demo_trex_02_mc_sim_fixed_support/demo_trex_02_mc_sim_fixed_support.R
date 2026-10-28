@@ -52,7 +52,7 @@ num_cores <- local({
   if (is.na(a)) a <- suppressWarnings(as.integer(Sys.getenv("TREX_NUM_WORKERS", "8")))
   if (is.na(a)) 8L else if (a < 1L) parallel::detectCores() else a
 })
-NUM_MC <- 200L
+NUM_MC <- .resolve_num_mc(200L)  # TREX_NUM_MC for smoke runs
 
 # Run flag
 run_trex_02 <- TRUE
@@ -93,22 +93,26 @@ trx_02_mc_sim_fixed_support <- function(num_MC = NUM_MC, high_dim = TRUE) {
               s, paste(true_support, collapse = ", ")))
   true_coefs <- rep(1.0, s)
 
-  n_sol <- length(SOLVERS_DEFAULT)
+  # TREX_SOLVERS selects a subset (mc_runtime.R), its tables get a suffix
+  solvers <- .selected_solvers(SOLVERS_DEFAULT)
+
+  n_sol <- length(solvers)
   n_snr <- length(snr_values)
   fdr_mat <- matrix(0.0, nrow = n_sol, ncol = n_snr)
   tpr_mat <- matrix(0.0, nrow = n_sol, ncol = n_snr)
 
-  rownames(fdr_mat) <- rownames(tpr_mat) <- vapply(SOLVERS_DEFAULT, `[[`, "", "name")
+  rownames(fdr_mat) <- rownames(tpr_mat) <- vapply(solvers, `[[`, "", "name")
   colnames(fdr_mat) <- colnames(tpr_mat) <- as.character(snr_values)
 
   stem <- sprintf("demo_trex_02_mc_sim_fixed_support_trex_results_n%d_p%d_stagnation_window_%d",
                   n, p, stagnant_sw)
+  stem <- paste0(stem, solver_file_suffix())
 
   # Simulation loop: iterate over solvers, then SNR values.
   # Results are re-saved after each solver (growing file).
   # An abort mid-run keeps the solvers already finished.
-  for (si in seq_along(SOLVERS_DEFAULT)) {
-    solver <- SOLVERS_DEFAULT[[si]]
+  for (si in seq_along(solvers)) {
+    solver <- solvers[[si]]
     ctrl   <- .make_trex_ctrl(solver, base_ctrl)
     cat(sprintf("Solver: %s\n", solver$name))
     for (snr_idx in seq_along(snr_values)) {

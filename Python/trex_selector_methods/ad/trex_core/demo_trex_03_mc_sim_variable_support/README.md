@@ -104,7 +104,7 @@ solvers on one pair of panels, with the legend just right of the TPR panel:
 *Left:* even with the support indices redrawn every trial, FDR stays well below
 the target `tFDR = 0.1` (black dotted line) for every solver across the whole SNR
 grid — FDR control is robust to the location of the active set (the maximum over
-the entire table is $\approx 0.058$). *Right:* with `num_MC = 200` the fine grid
+the entire table is $\approx 0.054$). *Right:* with `num_MC = 200` the fine grid
 gives a smooth power curve — TLARS TPR climbs from near-zero at SNR 0.1
 ($\approx 0.001$) to near-perfect recovery by SNR $\approx 2$ ($\approx 0.975$)
 and full recovery at SNR 5.0 ($1.000$).

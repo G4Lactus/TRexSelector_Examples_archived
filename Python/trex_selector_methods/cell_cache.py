@@ -14,9 +14,9 @@
 # The fingerprint hashes the demo script and the shared modules of its suite
 # and family (plotting modules excluded), and holds the run tag TREX_RUN_TAG
 # (the library pin, set by the runners) and the other TREX_* variables that can
-# change results (not the worker count, TREX_FRESH or a *_PARTS selection). A
-# cache with another fingerprint, or any cache under TREX_FRESH=1,
-# is set aside as cells.tsv.stale. A line without the closing "." marker (cut
+# change results (not the worker count, TREX_FRESH, TREX_SOLVERS or a *_PARTS
+# selection). A cache with another fingerprint, or any cache under
+# TREX_FRESH=1, is set aside as cells.tsv.stale. A line without the closing "." marker (cut
 # off by a hard stop) is recomputed. The cache is removed when the demo exits
 # normally, i.e. once all results are written; an uncaught exception or a kill
 # leaves it for the restart. Keys combine a readable label with digest() of the
@@ -43,8 +43,8 @@ def _demo_dir():
 
 def _counts(name):
     """True for a TREX_* variable that can change results (not the worker
-    count, the fresh switch or a part selection)."""
-    return (name.startswith("TREX_") and name not in ("TREX_FRESH", "TREX_NUM_WORKERS")
+    count, the fresh switch, a solver or a part selection)."""
+    return (name.startswith("TREX_") and name not in ("TREX_FRESH", "TREX_NUM_WORKERS", "TREX_SOLVERS")
             and not name.endswith("_PARTS"))
 
 

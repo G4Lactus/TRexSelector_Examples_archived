@@ -92,7 +92,8 @@ void demo_TRexSelector_MonteCarlo(std::size_t num_MC, bool high_dim, bool rnd_co
     // Define solvers to test & T-Rex control parameters
     // ===================================================================
 
-    const std::vector<DemoSolverInfo> solvers_to_test = make_default_solvers_to_test();
+    // TREX_SOLVERS selects a subset (solver_filter.hpp), its tables get a suffix
+    const std::vector<DemoSolverInfo> solvers_to_test = selected_solvers(make_default_solvers_to_test());
 
     // Results: dim = solver x SNR
     std::map<std::string, Eigen::VectorXd> fdr_results_map;
@@ -229,7 +230,7 @@ int main() {
     // Monte Carlo simulation: fixed active support
     // ============================================================
     if (true)
-        demo_TRexSelector_MonteCarlo(/*num_MC=*/200, /*high_dim=*/true, /*rnd_coef=*/false);
+        demo_TRexSelector_MonteCarlo(/*num_MC=*/num_mc(200), /*high_dim=*/true, /*rnd_coef=*/false);
 
     if (false)
         demo_TRexSelector_MonteCarlo(/*num_MC=*/200, /*high_dim=*/false, /*rnd_coef=*/false);

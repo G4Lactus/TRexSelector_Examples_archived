@@ -24,6 +24,8 @@
 #   Section 4 — MC infrastructure
 #     SOLVERS_DEFAULT            — List of 14 solver descriptors (mirrors
 #                                  make_default_solvers_to_test() in C++).
+#     .selected_solvers()        — The solvers TREX_SOLVERS selects.
+#     .resolve_num_mc()          — Trial count, TREX_NUM_MC for smoke runs.
 #     make_mmap_trex_ctrl()      — Build trex_control for memory-mapped scenarios.
 #     execute_with_temp_mmap()   — RAII-like lifecycle manager for temp mmap files.
 #     .print_demo_header()       — Standardised demo section headers.
@@ -437,6 +439,21 @@ SOLVERS_DEFAULT <- list(
   list(solver = "TOOLS",      name = "TOOLS",        lambda2 = 0.0, rho_afs = 0.0,
        ncgmp_variant = 0L)
 )
+
+#' The solvers of `solvers` that TREX_SOLVERS selects (all without a selection).
+#' Mirrors selected_solvers() in trex_sim_utils.hpp. A selection run writes its
+#' tables with the suffix solver_file_suffix() (mc_runtime.R).
+.selected_solvers <- function(solvers) {
+  Filter(function(s) solver_selected(s$name), solvers)
+}
+
+#' Monte Carlo trials of a demo: TREX_NUM_MC when set (smoke runs), else `default`.
+#' Mirrors num_mc() in trex_sim_utils.hpp. TREX_NUM_MC enters the cell-cache
+#' fingerprint, so a smoke run never restores the cells of a full run.
+.resolve_num_mc <- function(default) {
+  n <- suppressWarnings(as.integer(Sys.getenv("TREX_NUM_MC", "")))
+  if (is.na(n) || n < 1L) default else n
+}
 
 
 # ==============================================================================

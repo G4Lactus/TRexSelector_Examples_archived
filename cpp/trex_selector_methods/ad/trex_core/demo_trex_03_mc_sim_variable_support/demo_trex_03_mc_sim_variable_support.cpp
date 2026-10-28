@@ -94,7 +94,8 @@ void demo_TRexSelector_varMonteCarlo(std::size_t num_MC, bool high_dim, bool rnd
     // Target FDR level
     const double tFDR = 0.1;
 
-    const std::vector<DemoSolverInfo> solvers_to_test = make_default_solvers_to_test();
+    // TREX_SOLVERS selects a subset (solver_filter.hpp), its tables get a suffix
+    const std::vector<DemoSolverInfo> solvers_to_test = selected_solvers(make_default_solvers_to_test());
 
     // Results: solver x SNR
     std::map<std::string, Eigen::VectorXd> fdr_results_map;
@@ -210,7 +211,7 @@ int main() {
     // Monte Carlo simulation: variable active support
     // ============================================================
     if (true)
-        demo_TRexSelector_varMonteCarlo(/*num_MC=*/200, /*high_dim=*/true, /*rnd_coef=*/false);
+        demo_TRexSelector_varMonteCarlo(/*num_MC=*/num_mc(200), /*high_dim=*/true, /*rnd_coef=*/false);
 
     return 0;
 }

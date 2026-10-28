@@ -3,19 +3,21 @@ Pinned commit:  09debc6 (2026-10-27; C++ 1.0.0 / R 2.0.0 / Python 1.0.0): the Ph
                 dev_beyond stage, 22 commits since 415484d. Results move where a demo runs T-Stagewise (a
                 variable removed within a step is no candidate for that step's move, and the dummies of the
                 support count toward T, so paths stop earlier while supports below saturation are unchanged),
-                where an R demo relied on trex_control() defaults (lloop_strategy is STANDARD on every surface,
-                TIENET and TIENET_AUG no longer stop their T-loops on stagnation by default, cd_lambda_rel_tol
-                is 1e-6), and in the SEEDED rows of demo 04 (SEEDED is the storage-free twin of STANDARD, keyed
-                on the L step). Renames the demos follow: trex_control(use_openmp) is parallel_rnd_experiments,
-                MLRidgeCV$fit(num_folds) is n_folds in R. TIKOMP is removed (no demo used it). The clustering
-                refuses RAM buffers beyond the physical memory, the ridge CV grid defaults to 100 on every
-                surface (the demos pass 100 explicitly), the selectors run serial by default (the demos set
-                the thread counts they need), and the library tree keeps a 120-character line ruler.
+                in the SEEDED rows of demo 04 (SEEDED is the storage-free twin of STANDARD, keyed on the L
+                step), and in the TIENET_AUG rows of trex_gvs 01-07 (the GVS constructor runs CV_1SE_IEN_CCD
+                wherever the IEN track asks for CV_1SE_CCD). The aligned R trex_control() defaults
+                (lloop_strategy STANDARD, the stagnation stop left to the C++ rule, cd_lambda_rel_tol 1e-6)
+                move no demo, because the R demos pass every field. Renames the demos follow:
+                trex_control(use_openmp) is parallel_rnd_experiments, MLRidgeCV$fit(num_folds) is n_folds in R.
+                TIKOMP is removed (no demo used it). The clustering refuses RAM buffers beyond the physical
+                memory, the ridge CV grid defaults to 100 on every surface (the demos pass 100 explicitly),
+                the selectors run serial by default (the demos set the thread counts they need), and the
+                library tree keeps a 120-character line ruler.
 Validated C++:  SDK installed from 09debc6 (the previous install removed first, so no stale header remains);
                 the Examples targets built clean without warnings; demo_trex_01_single_run reproduces its
                 committed files byte for byte; the memory_mapping demo and the model_selection demos (ridge CV
-                38 s, elastic-net CV) complete. The Monte Carlo demos the batch moves are not rerun yet (list
-                under Pending).
+                38 s, elastic-net CV) complete. The Monte Carlo demos the batch moves are listed under Rerun and
+                Pending.
 Validated Py:   TRexSelectorNeo 1.0.0 reinstalled from 09debc6 (repo .venv from source, conda trex-dev and
                 trex-dev-beyond from one cp312 wheel); demo_trex_01_single_run keeps its committed files.
 Validated R:    TRexSelectorNeo 2.0.0 reinstalled from 09debc6 (links R's own libomp only);
@@ -23,10 +25,13 @@ Validated R:    TRexSelectorNeo 2.0.0 reinstalled from 09debc6 (links R's own li
                 demo_mlm_ms_01 passes both of its checks with n_folds.
 Validated perf: not yet; the T-Stagewise rows of demo_ts_05 and of the perf demos move (step counts, null
                 counts) and rerun under Pending. The other T-solvers are unchanged.
-Pending:        reruns on 09debc6 that the batch moves: trex_core 02 and 03 in C++, Python and R (the
-                T-Stagewise rows), trex_core 04 in C++, Python and R (the SEEDED rows), demo_ts_05 and the
-                tsolvers perf demos 01-05 (the T-Stagewise rows), the R trex_gvs demos 01-08 where they run
-                TIENET (the stagnation-stop default). Still pending from 415484d: trex_core 08 in Python and R
+Rerun:          trex_core 02 and 03, the TSTAGEWISE rows in C++, Python and R (TREX_SOLVERS, merged into the
+                committed tables). The rows move within Monte Carlo noise, and Python and R stay as close to
+                C++ as the 13 unchanged solvers do.
+Pending:        reruns on 09debc6 that the batch moves: demo_ts_05 and the tsolvers perf demos 01-05 (the
+                T-Stagewise rows), trex_gvs 01-07 in C++, Python and R (the TIENET_AUG rows on CV_1SE_IEN_CCD,
+                demo 01 Part 2 compares it with CV_1SE_TIK_SVD), trex_core 04 in C++, Python and R (in full,
+                only the SEEDED rows move). Still pending from 415484d: trex_core 08 in Python and R
                 (nightly runner), trex_core 09 and 10 in R, trex_da (tFDR 0.2, long T-loops), the trex_gvs and
                 trex_spca spot checks.
 Previous pins:  415484d (2026-10-24), 61fd84c (2026-10-21), 44cf1ab (2026-09-28), b95b984 (2026-09-27), 8ad3376

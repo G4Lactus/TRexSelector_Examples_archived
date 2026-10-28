@@ -7,6 +7,8 @@
 #
 # Contents:
 #   SOLVERS_DEFAULT              — List of 14 solver descriptors.
+#   selected_solvers()           — The solvers TREX_SOLVERS selects.
+#   resolve_num_mc()             — Trial count, TREX_NUM_MC for smoke runs.
 #   compute_fdp()                — False discovery proportion.
 #   compute_tpp()                — True positive proportion.
 #   _make_trex_ctrl_from_dict()  — Build TRexControlParameter from flat dict.
@@ -42,12 +44,14 @@ from concurrent.futures import ProcessPoolExecutor
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
     sys.path.insert(0, _THIS_DIR)
-# Family folder: cell_cache.py (resumable grid cells).
+# Family folder: cell_cache.py (resumable grid cells), solver_filter.py
+# (TREX_SOLVERS).
 _FAMILY_DIR = os.path.dirname(os.path.dirname(_THIS_DIR))
 if _FAMILY_DIR not in sys.path:
     sys.path.insert(0, _FAMILY_DIR)
 
 import cell_cache
+import solver_filter
 
 from dgp_gauss_snr import dgp_gauss_snr          # noqa: E402 (after sys.path setup)
 from support_generators import make_support_random  # noqa: E402
@@ -221,6 +225,28 @@ SOLVERS_DEFAULT = [
     dict(solver_name="TNCGMP",     name="TNCGMP_v0",    lambda2=0.0, rho_afs=0.0, ncgmp_variant=0),
     dict(solver_name="TOOLS",      name="TOOLS",        lambda2=0.0, rho_afs=0.0, ncgmp_variant=0),
 ]
+
+
+def selected_solvers(solvers):
+    """The solvers that TREX_SOLVERS selects (all without a selection).
+
+    Mirrors selected_solvers() in trex_sim_utils.hpp. A selection run writes
+    its tables with the suffix solver_filter.file_suffix().
+    """
+    return [s for s in solvers if solver_filter.selected(s["name"])]
+
+
+def resolve_num_mc(default):
+    """Monte Carlo trials of a demo: TREX_NUM_MC when set (smoke runs), else default.
+
+    Mirrors num_mc() in trex_sim_utils.hpp. TREX_NUM_MC enters the cell-cache
+    fingerprint, so a smoke run never restores the cells of a full run.
+    """
+    try:
+        n = int(os.environ.get("TREX_NUM_MC", ""))
+    except ValueError:
+        return default
+    return n if n > 0 else default
 
 
 # ==============================================================================

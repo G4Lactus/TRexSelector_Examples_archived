@@ -20,7 +20,9 @@
  *
  *  Output functions:
  *    - make_default_solvers_to_test() — canonical list of 14 T-Rex base solvers
- *    - save_selection_csv()           — writes a per-variable tidy CSV
+ *    - selected_solvers()             — the solvers TREX_SOLVERS selects
+ *    - num_mc()                       — trial count, TREX_NUM_MC for smoke runs
+ *    - save_selection_csv()          — writes a per-variable tidy CSV
  *    - print_results()                — formats a single-run selection result block
  *    - save_and_print_results()       — MC summary table + tidy CSV (DemoSolverInfo API)
  *    - save_and_print_mc_results()    — MC summary table + tidy CSV (string-name API)
@@ -53,6 +55,7 @@
 // std includes
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <functional>
@@ -202,6 +205,32 @@ inline std::vector<DemoSolverInfo> make_default_solvers_to_test() {
             0.0, 0.0, 0},
         {SolverTypeForTRex::TOOLS,      "TOOLS"}
     };
+}
+
+/**
+ * @brief The solvers of @p solvers that TREX_SOLVERS selects (all without a selection).
+ *
+ * A selection run writes its tables with the suffix trex_solver_filter::file_suffix(),
+ * and merge_result_files.py adds them to the full tables.
+ */
+inline std::vector<DemoSolverInfo> selected_solvers(const std::vector<DemoSolverInfo>& solvers) {
+    std::vector<DemoSolverInfo> out;
+    for (const auto& solver : solvers)
+        if (trex_solver_filter::selected(solver.solver_name)) out.push_back(solver);
+    return out;
+}
+
+/**
+ * @brief Monte Carlo trials of a demo: TREX_NUM_MC when set, else @p value.
+ *
+ * For short smoke runs. TREX_NUM_MC enters the cell-cache fingerprint, so a
+ * smoke run never restores the cells of a full run.
+ */
+inline std::size_t num_mc(std::size_t value) {
+    const char* env = std::getenv("TREX_NUM_MC");
+    if (env == nullptr || *env == '\0') return value;
+    const long n = std::strtol(env, nullptr, 10);
+    return n > 0 ? static_cast<std::size_t>(n) : value;
 }
 
 
@@ -432,11 +461,13 @@ inline void save_and_print_results(
 {
     // 1. Setup File Output
     // -----------------------------------
+    // A TREX_SOLVERS selection writes to suffixed files (solver_filter.hpp)
     std::string folder = DEMO_OUTPUT_DIR;
     std::filesystem::create_directories(folder);
-    std::string filename = file_prefix + "trex_results_n" + std::to_string(n) + "_p" +
-                           std::to_string(p) + "_stagnation_window_" +
-                           std::to_string(stagnation_window) + ".txt";
+    const std::string stem = file_prefix + "trex_results_n" + std::to_string(n) + "_p" +
+                             std::to_string(p) + "_stagnation_window_" +
+                             std::to_string(stagnation_window) + trex_solver_filter::file_suffix();
+    std::string filename = stem + ".txt";
 
     std::ofstream out_file(folder + filename);
 
@@ -513,9 +544,7 @@ inline void save_and_print_results(
 
     // 6. Write tidy CSV (long/stacked format) for plotting
     // -----------------------------------
-    std::string csv_filename = file_prefix + "trex_results_n" + std::to_string(n) + "_p" +
-                               std::to_string(p) + "_stagnation_window_" +
-                               std::to_string(stagnation_window) + ".csv";
+    std::string csv_filename = stem + ".csv";
     std::ofstream csv_file(folder + csv_filename);
     if (csv_file.is_open()) {
         csv_file << "solver,metric,snr,value\n";

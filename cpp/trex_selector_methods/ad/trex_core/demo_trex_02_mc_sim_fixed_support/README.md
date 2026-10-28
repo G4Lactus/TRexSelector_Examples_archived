@@ -214,7 +214,7 @@ count.
 
 - The 14 solvers do **not** produce identical selections, so FDR/TPR curves differ between them.
 - **Two groups separate at moderate SNR.** At SNR 1.0 the four LARS-path solvers (TLARS, TLASSO, TENET,
-  TSTAGEWISE) reach a TPR of $0.71\text{–}0.73$ at an FDR of $0.037\text{–}0.041$, while the ten pursuit and
+  TSTAGEWISE) reach a TPR of $0.71\text{–}0.73$ at an FDR of $0.037\text{–}0.043$, while the ten pursuit and
   forward-selection solvers reach $0.85\text{–}0.87$ at $0.021\text{–}0.030$. By SNR 2.0 every solver recovers
   at least $97\%$ of the support.
 - This lets you compare the statistical behaviour of the different base solvers under a shared DGP and FDR target.

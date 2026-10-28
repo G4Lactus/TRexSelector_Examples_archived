@@ -11,8 +11,10 @@
  * or empty selects every solver.
  *
  * A selection run writes its tables to extra files (file_suffix()), so the
- * committed results of the full solver pool stay untouched. The trex_da
- * merge_result_files.py adds such extra files to the full tables.
+ * committed results of the full solver pool stay untouched. The
+ * merge_result_files.py of trex_core, trex_da and trex_gvs adds such extra
+ * files to the full tables. Python (solver_filter.py) and R (mc_runtime.R)
+ * read TREX_SOLVERS the same way.
  */
 // ==============================================================================
 #ifndef DEMOS_TREX_SELECTOR_METHODS_SOLVER_FILTER_HPP

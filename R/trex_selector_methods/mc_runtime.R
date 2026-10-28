@@ -13,6 +13,10 @@
 #   cell_cached()      — resumable grid cells: every finished cell (method x
 #   cell_digest()        grid point) is appended to a cache file, and a
 #   cell_cache_done()    restarted demo reads it back instead of recomputing.
+#   solver_selected()  — optional solver selection TREX_SOLVERS (mirrors
+#   solver_file_suffix() cpp/trex_selector_methods/solver_filter.hpp): a
+#                        selection run computes only the named solvers and
+#                        writes its tables to files with a suffix.
 #
 # The cluster is created on the first mc_map() call and receives the globals
 # of the demo script at that moment, so the demo sources its helpers and
@@ -23,11 +27,12 @@
 # fingerprint: a hash of the demo script and the R files of its suite and
 # family (plotting excluded), the run tag TREX_RUN_TAG (set by the overnight
 # runners to the library pin) and the other TREX_* variables that can change
-# results (not the worker count, TREX_FRESH or a *_PARTS selection). A cache with
-# another fingerprint, or any cache under TREX_FRESH=1, is set aside as
-# cells.tsv.stale. Keys combine a readable label with cell_digest() of the
-# cell's inputs, so two cells with different inputs never share a result. A
-# demo that finishes calls cell_cache_done(), which removes the cache.
+# results (not the worker count, TREX_FRESH, TREX_SOLVERS or a *_PARTS
+# selection). A cache with another fingerprint, or any cache under
+# TREX_FRESH=1, is set aside as cells.tsv.stale. Keys combine a readable label
+# with cell_digest() of the cell's inputs, so two cells with different inputs
+# never share a result. A demo that finishes calls cell_cache_done(), which
+# removes the cache.
 # ==============================================================================
 
 .mc_rt <- new.env(parent = emptyenv())
@@ -113,7 +118,7 @@ mc_map <- function(tasks, fun, workers = 1L) {
 
 #' Fingerprint: source hash of demo + suite + family files (plotting excluded) and
 #' the TREX_* settings that can change results (not the worker count, the fresh
-#' switch or a *_PARTS selection).
+#' switch, a solver or a *_PARTS selection).
 .cache_fingerprint <- function(script) {
   demo_dir <- dirname(script)
   suite_dir <- dirname(demo_dir)
@@ -125,7 +130,7 @@ mc_map <- function(tasks, fun, workers = 1L) {
   src <- substr(.digest_md5(files), 1L, 16L)
   env <- Sys.getenv()
   keep <- startsWith(names(env), "TREX_") & !endsWith(names(env), "_PARTS") &
-    !names(env) %in% c("TREX_FRESH", "TREX_NUM_WORKERS")
+    !names(env) %in% c("TREX_FRESH", "TREX_NUM_WORKERS", "TREX_SOLVERS")
   paste(c(paste0("src=", src), sort(paste0(names(env)[keep], "=", env[keep]))), collapse = " ")
 }
 
@@ -222,4 +227,29 @@ cell_cache_done <- function() {
   path <- .mc_rt$cache_path
   if (!is.null(path) && file.exists(path)) unlink(path)
   invisible(NULL)
+}
+
+
+# ==============================================================================
+# Solver selection (TREX_SOLVERS)
+# ==============================================================================
+
+#' Solver names listed in TREX_SOLVERS (comma separated; empty: no selection).
+solver_selection <- function() {
+  items <- trimws(strsplit(Sys.getenv("TREX_SOLVERS", ""), ",", fixed = TRUE)[[1L]])
+  items[nzchar(items)]
+}
+
+#' TRUE when a row label's solver is selected (always TRUE without a selection).
+#' The name is matched against the part after ": " of the label.
+solver_selected <- function(label) {
+  wanted <- solver_selection()
+  if (length(wanted) == 0L) return(TRUE)
+  sub("^.*?: ", "", label, perl = TRUE) %in% wanted
+}
+
+#' File-name suffix of a selection run, e.g. "_tstagewise" ("" without a selection).
+solver_file_suffix <- function() {
+  names <- solver_selection()
+  if (length(names) == 0L) "" else paste0("_", tolower(names), collapse = "")
 }
