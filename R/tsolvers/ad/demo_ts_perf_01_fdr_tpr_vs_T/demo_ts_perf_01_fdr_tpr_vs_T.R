@@ -86,6 +86,7 @@ run_solver <- function(spec, data, raw, test, seed) {
     r <- matrix(NA_real_, nrow = length(T_grid), ncol = length(FIELDS), dimnames = list(NULL, FIELDS))
     selections <- vector("list", length(T_grid))
     t0 <- now()
+    untimed <- 0  # reached count, kept out of the times
     solver <- spec$make(data$X, data$D, data$y)
     solver$set_tie_seed(seed)
     for (k in seq_along(T_grid)) {
@@ -95,8 +96,10 @@ run_solver <- function(spec, data, raw, test, seed) {
       r[k, "tpp"] <- trex_tpp(selected, SUPPORT)
       r[k, "selected"] <- length(selected)
       r[k, "steps"] <- solver$get_num_steps()
-      r[k, "reached"] <- as.numeric(length(solver$get_active_dummy_indices()) >= T_grid[k])
-      r[k, "ms"] <- 1e3 * (now() - t0)
+      c0 <- now()
+      r[k, "reached"] <- as.numeric(included_dummies(solver) >= T_grid[k])
+      untimed <- untimed + now() - c0
+      r[k, "ms"] <- 1e3 * (now() - t0 - untimed)
       selections[[k]] <- selected
     }
     # Refits after the timed path, so they stay out of the solver times
@@ -182,7 +185,8 @@ out <- c(out,
 text <- paste0(paste(out, collapse = "\n"), "\n")
 cat(text)
 
-stem <- sprintf("fdr_tpr_vs_T_mc%d", num_MC)
+# Suffixed for a TREX_SOLVERS selection
+stem <- paste0(sprintf("fdr_tpr_vs_T_mc%d", num_MC), solver_file_suffix())
 data_dir <- output_dir(this_dir_)
 csv_path <- file.path(data_dir, paste0(stem, ".csv"))
 lines <- paste0("solver,family,T,FDR,FDR_se,TPR,TPR_se,avg_selected,avg_steps,reached,avg_ms,",

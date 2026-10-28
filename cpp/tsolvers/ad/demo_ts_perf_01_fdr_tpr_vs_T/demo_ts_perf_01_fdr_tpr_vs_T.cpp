@@ -252,6 +252,7 @@ int main(int argc, char** argv) {
             for (std::size_t s = 0; s < S; ++s) {
                 RunResult& r = results[s][static_cast<std::size_t>(mc)];
                 const auto t0 = std::chrono::steady_clock::now();
+                std::chrono::duration<double, std::milli> untimed{0.0};  // reached count, kept out of the times
                 std::vector<std::vector<std::size_t>> selections;
                 try {
                     auto solver = solvers[s].make(X_map, D_map, y_map);
@@ -264,9 +265,11 @@ int main(int argc, char** argv) {
                         r.tpp.push_back(rates::compute_tpp(selected, support));
                         r.selected.push_back(static_cast<double>(selected.size()));
                         r.steps.push_back(static_cast<double>(solver->getNumSteps()));
-                        r.reached.push_back(solver->getActiveDummyIndices().size() >= T ? 1.0 : 0.0);
-                        r.ms.push_back(std::chrono::duration<double, std::milli>(
-                            std::chrono::steady_clock::now() - t0).count());
+                        const auto c0 = std::chrono::steady_clock::now();
+                        r.reached.push_back(ts_perf::included_dummies(*solver) >= T ? 1.0 : 0.0);
+                        untimed += std::chrono::steady_clock::now() - c0;
+                        r.ms.push_back((std::chrono::duration<double, std::milli>(
+                            std::chrono::steady_clock::now() - t0) - untimed).count());
                         selections.push_back(selected);
                     }
                     // Refits after the timed path, so they stay out of the solver times
@@ -320,8 +323,8 @@ int main(int argc, char** argv) {
         out << "Wall time: " << std::setprecision(1) << wall << " s\n";
         std::cout << out.str();
 
-        // Result files
-        const std::string stem = "fdr_tpr_vs_T_mc" + std::to_string(num_MC);
+        // Result files, with a suffix for a TREX_SOLVERS selection
+        const std::string stem = "fdr_tpr_vs_T_mc" + std::to_string(num_MC) + ts_perf::file_suffix();
         const auto csv_path = ts_perf::output_dir() / (stem + ".csv");
         std::ofstream csv(csv_path);
         csv << "solver,family,T,FDR,FDR_se,TPR,TPR_se,avg_selected,avg_steps,reached,avg_ms,"

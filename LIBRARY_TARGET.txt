@@ -23,16 +23,19 @@ Validated Py:   TRexSelectorNeo 1.0.0 reinstalled from 09debc6 (repo .venv from 
 Validated R:    TRexSelectorNeo 2.0.0 reinstalled from 09debc6 (links R's own libomp only);
                 demo_trex_01_single_run keeps its committed files with parallel_rnd_experiments = FALSE, and
                 demo_mlm_ms_01 passes both of its checks with n_folds.
-Validated perf: not yet; the T-Stagewise rows of demo_ts_05 and of the perf demos move (step counts, null
-                counts) and rerun under Pending. The other T-solvers are unchanged.
+Validated perf: demo_ts_05 reproduces its committed files byte for byte in C++, Python and R. The perf demos
+                01-05 reran their T-Stagewise rows (TREX_SOLVERS, merged): its paths stop earlier, its FDR runs
+                with T-LARS, and its null counts follow the NHG again. perf 04 does not move. "Reached T dummies"
+                now counts the dummies of the support, as the stop and the T-Rex selector do. The other T-solvers
+                are unchanged.
 Rerun:          trex_core 02 and 03, the TSTAGEWISE rows in C++, Python and R (TREX_SOLVERS, merged into the
                 committed tables). The rows move within Monte Carlo noise, and Python and R stay as close to
-                C++ as the 13 unchanged solvers do.
-Pending:        reruns on 09debc6 that the batch moves: demo_ts_05 and the tsolvers perf demos 01-05 (the
-                T-Stagewise rows), trex_gvs 01-07 in C++, Python and R (the TIENET_AUG rows on CV_1SE_IEN_CCD,
-                demo 01 Part 2 compares it with CV_1SE_TIK_SVD), trex_core 04 in C++, Python and R (in full,
-                only the SEEDED rows move). Still pending from 415484d: trex_core 08 in Python and R
-                (nightly runner), trex_core 09 and 10 in R, trex_da (tFDR 0.2, long T-loops), the trex_gvs and
+                C++ as the 13 unchanged solvers do. demo_ts_05 and the tsolvers perf demos 01-05 in C++, Python
+                and R (see Validated perf).
+Pending:        reruns on 09debc6 that the batch moves: trex_gvs 01-07 in C++, Python and R (the TIENET_AUG rows
+                on CV_1SE_IEN_CCD, demo 01 Part 2 compares it with CV_1SE_TIK_SVD), trex_core 04 in C++, Python
+                and R (in full, only the SEEDED rows move). Still pending from 415484d: trex_core 08 in Python and
+                R (nightly runner), trex_core 09 and 10 in R, trex_da (tFDR 0.2, long T-loops), the trex_gvs and
                 trex_spca spot checks.
 Previous pins:  415484d (2026-10-24), 61fd84c (2026-10-21), 44cf1ab (2026-09-28), b95b984 (2026-09-27), 8ad3376
                 (2026-09-26), f390bfc (2026-09-25), d404033 (2026-09-25); what changed between pins is in the

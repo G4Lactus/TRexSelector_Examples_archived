@@ -38,7 +38,9 @@ The two optional arguments are the number of runs and of threads. The runs are s
 solver runs single-threaded inside its run, so the times show the cost of the algorithms rather than their parallel
 speed. The 500 runs take about 9 minutes on an Apple Silicon machine with 6 threads. The result files carry the number
 of runs in their name (`runtime_vs_dummies_mc500.csv` and `.txt`), so a short test run does not overwrite the full
-one. The output below is a run against library b95b984.
+one. The output below is a run against library b95b984. Two fixes in library 09debc6 change the paths of T-Stagewise,
+so its rows come from a rerun of the 500 runs on that library in a session of their own, with the same seeds and
+threads. The wall time in the output is that of the first run.
 
 ---
 
@@ -57,7 +59,7 @@ T-LARS                    11.81    13.84    26.55    47.23    88.59
 T-LASSO                   10.59    13.59    27.63    46.39    90.58
 T-Stepwise                 9.75    13.38    25.67    44.58    86.24
 T-ENET (lambda2 0.5)      17.87    27.36    50.16    87.99   166.05
-T-Stagewise                9.95    14.45    26.69    47.04    89.07
+T-Stagewise                6.93    10.08    17.98    31.35    59.13
 T-OMP                      9.08    14.21    26.28    44.27    83.42
 T-GP                       9.29    14.26    27.27    47.77    87.59
 T-ACGP                     8.38    14.66    26.07    45.99    85.92
@@ -113,7 +115,7 @@ T-LARS                    403.3    560.9   1223.8   2255.6   4316.3
 T-LASSO                   374.8    554.2   1250.8   2167.6   4433.7
 T-Stepwise                329.3    537.1   1185.8   2145.7   4212.7
 T-ENET (lambda2 0.5)      607.3   1128.7   2293.0   4188.4   8127.5
-T-Stagewise               335.4    576.8   1232.6   2268.2   4339.4
+T-Stagewise               233.8    411.5    844.6   1517.8   2869.0
 T-OMP                     308.9    575.1   1193.9   2137.5   4064.0
 T-GP                      295.4    556.8   1192.9   2175.6   4106.0
 T-ACGP                    270.2    581.3   1169.0   2135.6   4094.2
@@ -129,10 +131,15 @@ T-AFS (rho 1)             302.0    537.5   1189.3   2118.7   3929.0
 The time per step grows with the number of columns $p + L$, since every step scans the correlations of all columns.
 T-LARS needs 0.40 ms per step at $L = p$ and 4.3 ms at $L = 20p$, 10.7 times as much for 10.5 times as many columns.
 The orthogonal matching pursuit (OMP) family starts lower, at about 0.3 ms, and grows 12 to 16 times, so at
-$L = 20p$ all solvers except T-ENET need about 4 to 5 ms per step, where the scan over the columns dominates. T-ENET
-needs about twice as long per step as the other solvers. More dummies therefore cut the path by the null variables
-they keep out, but every step gets dearer, and in total a path to $T = 10$ at $L = 20p$ costs about 7.5 times a
-path at $L = p$.
+$L = 20p$ all solvers except T-ENET and T-Stagewise need about 4 to 5 ms per step, where the scan over the columns
+dominates. T-ENET needs about twice as long per step as the other solvers. More dummies therefore cut the path by the
+null variables they keep out, but every step gets dearer, and in total a path to $T = 10$ at $L = 20p$ costs about
+7.5 times a path at $L = p$.
+
+T-Stagewise needs the least time per step at every $L$, 0.23 ms at $L = p$ and 2.9 ms at $L = 20p$. With the same
+steps as T-LARS it reaches $T = 10$ first at every $L$, about 30% below the typical solver, in 59 ms at $L = 20p$
+against 89 ms for T-LARS. Its rows come from a rerun in a session of their own, so part of this lead may come from the
+timing of that session rather than from the solver.
 
 Gradient pursuit (T-GP) and approximate conjugate gradient pursuit (T-ACGP) were proposed by Blumensath and Davies
 (2008) as cheaper alternatives to OMP, and these short paths show no such saving. Every greedy step scans the
@@ -156,7 +163,7 @@ T-LARS                    0.516    0.752    1.172    2.110    4.010
 T-LASSO                   0.513    0.760    1.182    2.108    4.038
 T-Stepwise                0.499    0.748    1.206    2.091    4.022
 T-ENET (lambda2 0.5)      1.002    1.498    2.313    4.223    8.021
-T-Stagewise               0.509    0.762    1.178    2.124    4.035
+T-Stagewise               0.380    0.458    0.787    1.430    2.722
 T-OMP                     0.458    0.693    1.241    2.100    3.997
 T-GP                      0.410    0.751    1.197    2.169    3.972
 T-ACGP                    0.422    0.751    1.168    2.107    3.993
@@ -175,7 +182,7 @@ T-LARS                     22.5     24.8     23.8     23.6     23.7
 T-LASSO                    23.3     24.9     24.0     23.1     22.7
 T-Stepwise                 21.3     24.1     22.9     22.0     21.9
 T-ENET (lambda2 0.5)       22.1     22.8     22.5     21.5     21.5
-T-Stagewise                22.5     24.8     23.9     23.2     22.9
+T-Stagewise                22.6     25.1     23.9     23.6     23.5
 T-OMP                      21.3     24.7     22.6     22.4     22.0
 T-GP                       24.6     24.7     23.6     23.0     23.3
 T-ACGP                     23.0     24.5     23.6     23.0     22.5

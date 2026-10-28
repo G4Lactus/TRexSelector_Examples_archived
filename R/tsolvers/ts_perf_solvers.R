@@ -11,6 +11,11 @@
 # row-bounded active sets stop at the rank n - 1 of the centered design
 # (T-ENET with lambda2 > 0 has no such cap). T-AFS appears once per rho.
 #
+# TREX_SOLVERS (comma separated labels, e.g. "T-Stagewise") restricts
+# demo_solvers() to those solvers, and a selection run writes its tables with
+# solver_file_suffix(), next to the committed ones of the full list.
+# cpp/tsolvers/merge_result_files.py splices them into the full tables.
+#
 # ==============================================================================
 
 #' Name, family and factory of one compared solver; make(X, D, y) builds it as a reader.
@@ -23,12 +28,33 @@
   list(name = name, family = family, make = make)
 }
 
-#' The 12 demo solvers with their demo settings, T-AFS for rho in {0.1, 0.3, 0.5, 1}.
+#' Solver labels listed in TREX_SOLVERS (comma separated; empty: no selection).
+solver_selection <- function() {
+  items <- trimws(strsplit(Sys.getenv("TREX_SOLVERS", ""), ",", fixed = TRUE)[[1L]])
+  items[nzchar(items)]
+}
+
+#' TRUE when TREX_SOLVERS selects the label `name` (always TRUE without a selection).
+solver_selected <- function(name) {
+  wanted <- solver_selection()
+  length(wanted) == 0L || name %in% wanted
+}
+
+#' File-name suffix of a selection run, e.g. "_t_stagewise" ("" without a selection).
+#' Lower case, every run of other characters than letters and digits becomes "_".
+solver_file_suffix <- function() {
+  names <- solver_selection()
+  if (length(names) == 0L) return("")
+  paste0("_", gsub("^_+|_+$", "", gsub("[^a-z0-9]+", "_", tolower(names))), collapse = "")
+}
+
+#' The 12 demo solvers with their demo settings, T-AFS for rho in {0.1, 0.3, 0.5, 1}; only those TREX_SOLVERS
+#' selects.
 demo_solvers <- function() {
   lars <- "LARS-based"
   omp <- "OMP-based"
   afs <- "AFS-based"
-  list(
+  specs <- list(
     .solver_spec(TLARS_Solver, "T-LARS", lars),
     .solver_spec(TLASSO_Solver, "T-LASSO", lars),
     .solver_spec(TSTEPWISE_Solver, "T-Stepwise", lars),
@@ -45,4 +71,5 @@ demo_solvers <- function() {
     .solver_spec(TAFS_Solver, "T-AFS (rho 0.5)", afs, rho_afs = 0.5),
     .solver_spec(TAFS_Solver, "T-AFS (rho 1)", afs, rho_afs = 1.0)
   )
+  Filter(function(spec) solver_selected(spec$name), specs)
 }

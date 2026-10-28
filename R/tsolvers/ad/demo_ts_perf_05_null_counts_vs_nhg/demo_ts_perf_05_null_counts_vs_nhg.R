@@ -80,7 +80,7 @@ run_solver <- function(spec, data, seed) {
       selected <- selected_predictors(solver)
       occurrences[selected] <- occurrences[selected] + 1L
       included[k] <- sum(!selected %in% SUPPORT)
-      reached <- reached + as.numeric(length(solver$get_active_dummy_indices()) >= T_stop)
+      reached <- reached + as.numeric(included_dummies(solver) >= T_stop)
     }
     selected_nulls <- vapply(LEVEL_MIN_COUNTS, function(count) sum(occurrences[NULLS] >= count), integer(1L))
     list(included = included, selected = selected_nulls, reached = reached / K)
@@ -179,7 +179,8 @@ text <- paste0(paste(out, collapse = "\n"), "\n")
 cat(text)
 
 # Result files: frequencies of the counts, the NHG reference is computed by the plotter
-stem <- sprintf("null_counts_vs_nhg_mc%d", num_MC)
+# Suffixed for a TREX_SOLVERS selection
+stem <- paste0(sprintf("null_counts_vs_nhg_mc%d", num_MC), solver_file_suffix())
 data_dir <- output_dir(this_dir_)
 csv_path <- file.path(data_dir, paste0(stem, ".csv"))
 lines <- "solver,family,p0,L,T,K,statistic,count,frequency"

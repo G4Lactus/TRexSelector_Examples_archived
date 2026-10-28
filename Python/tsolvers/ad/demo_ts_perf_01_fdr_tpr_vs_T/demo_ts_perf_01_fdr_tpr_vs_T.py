@@ -38,11 +38,12 @@ from ts_demo_utils import (
     output_dir,
     print_section_header,
 )
-from ts_perf_solvers import demo_solvers
+from ts_perf_solvers import demo_solvers, file_suffix
 from ts_perf_utils import (
     draw_support,
     parse_positive,
     run_parallel,
+    included_dummies,
     selected_predictors,
 )
 
@@ -102,6 +103,7 @@ def run_one(mc):
         r = {f: [] for f in FIELDS}
         try:
             t0 = time.perf_counter()
+            untimed = 0.0  # reached count, kept out of the times
             solver = spec.make(X, D, y)
             solver.setTieSeed(data_seed_offset + mc)
             selections = []
@@ -112,8 +114,10 @@ def run_one(mc):
                 r["tpp"].append(compute_tpp(selected, SUPPORT))
                 r["selected"].append(float(len(selected)))
                 r["steps"].append(float(solver.getNumSteps()))
-                r["reached"].append(1.0 if len(solver.getActiveDummyIndices()) >= T else 0.0)
-                r["ms"].append(1e3 * (time.perf_counter() - t0))
+                c0 = time.perf_counter()
+                r["reached"].append(1.0 if included_dummies(solver, p) >= T else 0.0)
+                untimed += time.perf_counter() - c0
+                r["ms"].append(1e3 * (time.perf_counter() - t0 - untimed))
                 selections.append(selected)
             # Refits after the timed path, so they stay out of the solver times
             for selected in selections:
@@ -183,7 +187,7 @@ def main():
     text = "\n".join(out) + "\n"
     print(text, end="")
 
-    stem = f"fdr_tpr_vs_T_mc{num_MC}"
+    stem = f"fdr_tpr_vs_T_mc{num_MC}{file_suffix()}"  # suffixed for a TREX_SOLVERS selection
     data_dir = output_dir(_THIS_DIR)
     csv_path = os.path.join(data_dir, stem + ".csv")
     with open(csv_path, "w") as f:

@@ -30,7 +30,7 @@ if _PARENT_DIR not in sys.path:
     sys.path.insert(0, _PARENT_DIR)
 
 from ts_demo_utils import display_path, output_dir, print_section_header
-from ts_perf_solvers import demo_solvers
+from ts_perf_solvers import demo_solvers, file_suffix
 from ts_perf_utils import (
     draw_support,
     parse_positive,
@@ -136,7 +136,7 @@ def main():
     text = "\n".join(out) + "\n"
     print(text, end="")
 
-    stem = f"runtime_vs_dummies_mc{num_MC}"
+    stem = f"runtime_vs_dummies_mc{num_MC}{file_suffix()}"  # suffixed for a TREX_SOLVERS selection
     data_dir = output_dir(_THIS_DIR)
     csv_path = os.path.join(data_dir, stem + ".csv")
     with open(csv_path, "w") as f:

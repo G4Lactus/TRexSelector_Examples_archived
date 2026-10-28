@@ -250,8 +250,8 @@ int main(int argc, char** argv) {
         out << "Wall time: " << std::setprecision(1) << wall << " s\n";
         std::cout << out.str();
 
-        // Result files
-        const std::string stem = "runtime_vs_dummies_mc" + std::to_string(num_MC);
+        // Result files, with a suffix for a TREX_SOLVERS selection
+        const std::string stem = "runtime_vs_dummies_mc" + std::to_string(num_MC) + ts_perf::file_suffix();
         const auto csv_path = ts_perf::output_dir() / (stem + ".csv");
         std::ofstream csv(csv_path);
         csv << "solver,family,L_factor,L,ms,steps,us_per_step,warm_ms,fresh_ms,fresh_over_warm\n"

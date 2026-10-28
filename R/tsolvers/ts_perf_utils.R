@@ -41,6 +41,15 @@ reader_data <- function(n, p, num_dummies, support, coefs, snr, seed) {
 #' it removes from the active set, so the active set can be smaller).
 selected_predictors <- function(solver) which(solver$get_beta() != 0)
 
+#' Included dummies: nonzero coefficients beyond the first p, the count that stops a T-solver at T (the dummies
+#' of the support, as the T-Rex selector counts them). The active set can hold fewer: T-Stagewise keeps the
+#' coefficient of a dummy it drops.
+included_dummies <- function(solver) {
+  path <- solver$get_beta_path()
+  if (ncol(path) == 0L) return(0L)
+  sum(path[solver$get_dummy_start_index():nrow(path), ncol(path)] != 0)
+}
+
 #' Wall-clock time in seconds, resolved to about a microsecond.
 now <- function() as.numeric(Sys.time())
 

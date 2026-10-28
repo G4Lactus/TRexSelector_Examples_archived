@@ -124,6 +124,27 @@ inline std::vector<std::size_t> selected_predictors(const trex::tsolvers::ad::TS
 }
 
 /**
+ * @brief Included dummies: nonzero coefficients beyond the first p.
+ *
+ * @details The count that stops a T-solver at T, the dummies of the support,
+ *          as the T-Rex selector counts them. The active set can hold fewer:
+ *          T-Stagewise keeps the coefficient of a dummy it drops.
+ *
+ * @param solver Solver after executeStep().
+ * @return Number of dummies with a nonzero coefficient.
+ */
+inline std::size_t included_dummies(const trex::tsolvers::ad::TSolver_Base& solver) {
+    const auto path = solver.getBetaPathSparse();
+    if (path.steps.empty()) return 0;
+    const auto& last = path.steps.back();
+    const std::size_t p = solver.getDummyStartIndex();
+    std::size_t count = 0;
+    for (std::size_t k = 0; k < last.idx.size(); ++k)
+        if (last.idx[k] >= p && last.val[k] != 0.0) ++count;
+    return count;
+}
+
+/**
  * @brief Parts of a demo selected on the command line.
  *
  * @details `demo_ts_01_tlars 5` runs Part 5 only, `demo_ts_01_tlars 1 3`

@@ -51,7 +51,8 @@ ratio_grid <- c(0.25, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0)
 # Part 2
 p_phase <- 400L
 phase_steps <- 20L  # n/p and s/n in {1, ..., 20} / 20
-phase_solvers <- c("T-LARS", "T-OMP", "T-AFS (rho 0.3)")
+# Only the ones TREX_SOLVERS selects (all without a selection)
+phase_solvers <- Filter(solver_selected, c("T-LARS", "T-OMP", "T-AFS (rho 0.3)"))
 
 
 #' Number of observations for p and the ratio n/(s log p), natural log.
@@ -82,7 +83,7 @@ run_problem <- function(n, p, support, seed, specs) {
       solver$execute_step(1L, early_stop = TRUE)
       selected <- selected_predictors(solver)
       c(as.numeric(first_entries_exact(solver, support)), trex_tpp(selected, support),
-        trex_fdp(selected, support), as.numeric(length(solver$get_active_dummy_indices()) > 0L), 1)
+        trex_fdp(selected, support), as.numeric(included_dummies(solver) > 0L), 1)
     }, error = function(e) c(0, 0, 0, 0, 0))
   })
   do.call(rbind, rows)
@@ -152,7 +153,8 @@ run_part1 <- function(num_MC, workers) {
   text <- paste0(paste(out, collapse = "\n"), "\n")
   cat(text)
 
-  stem <- sprintf("recovery_vs_dt_ratio_mc%d", num_MC)
+  # Suffixed for a TREX_SOLVERS selection
+  stem <- paste0(sprintf("recovery_vs_dt_ratio_mc%d", num_MC), solver_file_suffix())
   data_dir <- output_dir(this_dir_)
   csv_path <- file.path(data_dir, paste0(stem, ".csv"))
   lines <- "solver,family,p,s,n,ratio,exact,exact_se,TPR,TPR_se,FDR,FDR_se,reached"
@@ -204,6 +206,10 @@ part2_task <- function(t) {
 
 run_part2 <- function(num_MC, workers) {
   print_section_header("Part 2: Donoho-Tanner phase transition")
+  if (length(phase_solvers) == 0L) {
+    cat("TREX_SOLVERS selects none of its solvers, Part 2 skipped\n\n")
+    return(invisible(NULL))
+  }
   S <- length(phase_solvers)
   G <- phase_steps
   cat(sprintf("p = %d, L = p, n/p and s/n in {0.05, 0.10, ..., 1}, T = 1\n", p_phase))
@@ -236,7 +242,8 @@ run_part2 <- function(num_MC, workers) {
 
   families <- vapply(demo_solvers(), `[[`, character(1), "family")
   names(families) <- vapply(demo_solvers(), `[[`, character(1), "name")
-  stem <- sprintf("phase_transition_mc%d", num_MC)
+  # Suffixed for a TREX_SOLVERS selection
+  stem <- paste0(sprintf("phase_transition_mc%d", num_MC), solver_file_suffix())
   data_dir <- output_dir(this_dir_)
   csv_path <- file.path(data_dir, paste0(stem, ".csv"))
   lines <- "solver,family,p,n,s,n_over_p,s_over_n,exact,exact_se"

@@ -166,7 +166,7 @@ std::vector<Outcome> run_problem(std::size_t n, std::size_t p, const std::vector
             const auto selected = ts_perf::selected_predictors(*solver);
             outcomes[k] = {first_entries_exact(*solver, support) ? 1.0 : 0.0, rates::compute_tpp(selected, support),
                            rates::compute_fdp(selected, support),
-                           solver->getActiveDummyIndices().empty() ? 0.0 : 1.0, true};
+                           ts_perf::included_dummies(*solver) == 0 ? 0.0 : 1.0, true};
         } catch (const std::exception&) {
             outcomes[k] = Outcome{};
         }
@@ -263,7 +263,8 @@ int run_part1(std::size_t num_MC) {
     out << "Wall time: " << std::setprecision(1) << wall << " s\n";
     std::cout << out.str();
 
-    const std::string stem = "recovery_vs_dt_ratio_mc" + std::to_string(num_MC);
+    // A TREX_SOLVERS selection writes suffixed tables
+    const std::string stem = "recovery_vs_dt_ratio_mc" + std::to_string(num_MC) + ts_perf::file_suffix();
     const auto csv_path = ts_perf::output_dir() / (stem + ".csv");
     std::ofstream csv(csv_path);
     csv << "solver,family,p,s,n,ratio,exact,exact_se,TPR,TPR_se,FDR,FDR_se,reached\n" << std::setprecision(6);
@@ -297,9 +298,14 @@ int run_part2(std::size_t num_MC) {
     const auto solvers = ts_perf::demo_solvers();
     std::vector<const ts_perf::SolverSpec*> specs;
     for (const auto& name : phase_solvers) {
+        if (!ts_perf::selected(name)) continue;
         const auto it = std::find_if(solvers.begin(), solvers.end(), [&](const auto& spec) { return spec.name == name; });
         if (it == solvers.end()) throw std::runtime_error("unknown solver: " + name);
         specs.push_back(&*it);
+    }
+    if (specs.empty()) {
+        std::cout << "TREX_SOLVERS selects none of its solvers, Part 2 skipped\n\n";
+        return 0;
     }
     const std::size_t S = specs.size(), G = phase_steps, cells = G * G;
 
@@ -356,7 +362,8 @@ int run_part2(std::size_t num_MC) {
     out << "Wall time: " << std::setprecision(1) << wall << " s\n";
     std::cout << out.str();
 
-    const std::string stem = "phase_transition_mc" + std::to_string(num_MC);
+    // A TREX_SOLVERS selection writes suffixed tables
+    const std::string stem = "phase_transition_mc" + std::to_string(num_MC) + ts_perf::file_suffix();
     const auto csv_path = ts_perf::output_dir() / (stem + ".csv");
     std::ofstream csv(csv_path);
     csv << "solver,family,p,n,s,n_over_p,s_over_n,exact,exact_se\n" << std::setprecision(6);

@@ -46,7 +46,9 @@ minutes, on an Apple Silicon machine with 6 workers, against 545.8 s for the C++
 result files carry the number of runs in their name (`runtime_vs_dummies_mc500.csv` and `.txt`), so a short test run
 does not overwrite the full one. `generate_plots.sh` draws the figures with `Python/tsolvers/ts_plt_utils.py`, a
 byte-identical copy of the C++ plotting module, into `simulation_results/plots/`. The output below is a run against
-library b95b984 (TRexSelectorNeo 1.0.0).
+library b95b984 (TRexSelectorNeo 1.0.0). Two fixes in library 09debc6 change the paths of T-Stagewise, so its rows
+come from a rerun of the 500 runs on that library in a session of their own, with the same seeds and workers. The wall
+times quoted here are those of the first runs.
 
 ---
 
@@ -65,7 +67,7 @@ T-LARS                    12.32    15.82    28.38    48.51    89.75
 T-LASSO                   11.62    15.02    27.44    49.59    90.80
 T-Stepwise                11.50    14.60    26.07    46.44    86.00
 T-ENET (lambda2 0.5)      21.20    28.90    51.71    90.82   169.18
-T-Stagewise               11.81    14.92    27.50    49.54    91.91
+T-Stagewise               11.18    14.32    25.40    44.74    82.88
 T-OMP                     11.16    15.32    25.87    46.65    86.74
 T-GP                      11.60    15.35    27.12    48.49    90.40
 T-ACGP                    12.17    15.42    27.26    47.60    87.17
@@ -121,7 +123,7 @@ T-LARS                    423.4    652.8   1287.9   2315.6   4357.5
 T-LASSO                   404.8    615.3   1257.7   2377.6   4419.8
 T-Stepwise                392.7    598.6   1195.3   2230.5   4238.9
 T-ENET (lambda2 0.5)      733.5   1157.5   2354.7   4360.1   8242.5
-T-Stagewise               403.1    604.1   1263.6   2362.4   4500.6
+T-Stagewise               390.9    583.5   1167.7   2136.0   4098.4
 T-OMP                     384.9    610.4   1195.3   2222.7   4234.1
 T-GP                      384.0    599.7   1183.9   2240.2   4224.8
 T-ACGP                    390.6    596.0   1202.5   2189.7   4159.8
@@ -137,7 +139,7 @@ T-AFS (rho 1)             388.8    613.3   1205.9   2239.8   4242.3
 The time per step grows with the number of columns $p + L$, since every step scans the correlations of all columns.
 T-LARS needs 0.42 ms per step at $L = p$ and 4.4 ms at $L = 20p$, 10.3 times as much for 10.5 times as many columns. The
 orthogonal matching pursuit (OMP) family starts slightly lower, at about 0.38 ms (T-OLS at 0.46 ms), and grows 10.7 to
-11.0 times, so at $L = 20p$ all solvers except T-ENET need about 4.2 to 5.0 ms per step, where the scan over the columns
+11.0 times, so at $L = 20p$ all solvers except T-ENET need about 4.1 to 5.0 ms per step, where the scan over the columns
 dominates. T-ENET needs about twice as long per step as the other solvers. More dummies therefore cut the path by the
 null variables they keep out, but every step gets dearer, and in total a path to $T = 10$ at $L = 20p$ costs 7.2 to 8.0
 times a path at $L = p$.
@@ -152,7 +154,7 @@ T-LARS                    0.521    0.762    1.256    2.176    4.040
 T-LASSO                   0.525    0.764    1.227    2.230    4.061
 T-Stepwise                0.521    0.756    1.164    2.116    4.081
 T-ENET (lambda2 0.5)      1.026    1.469    2.535    4.348    8.631
-T-Stagewise               0.527    0.769    1.189    2.203    4.125
+T-Stagewise               0.514    0.609    1.168    2.070    4.033
 T-OMP                     0.521    0.770    1.185    2.195    4.084
 T-GP                      0.516    0.757    1.185    2.177    4.133
 T-ACGP                    0.520    0.760    1.296    2.139    4.021
@@ -171,7 +173,7 @@ T-LARS                     20.4     24.0     23.7     23.1     23.1
 T-LASSO                    20.0     24.5     23.6     23.1     22.6
 T-Stepwise                 21.0     23.3     23.1     22.7     21.8
 T-ENET (lambda2 0.5)       21.9     23.9     22.3     21.9     20.9
-T-Stagewise                19.7     24.5     24.0     23.3     22.9
+T-Stagewise                20.5     24.2     23.7     23.5     22.4
 T-OMP                      21.5     23.2     23.0     21.9     22.0
 T-GP                       21.0     24.9     23.8     23.2     22.7
 T-ACGP                     20.8     24.2     23.8     23.0     22.7
@@ -197,12 +199,18 @@ ratios at $L = p$, 18.7 to 22.2 for most solvers.
 
 Both demos run the same C++ solvers on data with the same distribution, and their wall times of 545.5 s and 545.8 s
 agree within 0.1%. The median steps to $T = 10$ agree within one step at every $L$. From $L = 5p$ on, the median times
-to $T = 10$ lie between 2% below and 8% above the C++ medians, with a typical excess of 2% to 3% over the solvers. At
+to $T = 10$ of the solvers apart from T-Stagewise lie between 2% below and 8% above the C++ medians, with a typical
+excess of 2% to 3% over the solvers. At
 $L = p$ the Python medians are higher by 0.5 to 4.4 ms, or 4% to 46% and 19% for the typical solver, which also lifts
 the time per step of the OMP family apart from T-OLS at $L = p$ to about 0.38 ms against 0.26 to 0.31 ms in the C++
 run. This extra of
 a few milliseconds weighs most on the short paths at small $L$. Since the solvers and their step counts are the same,
 it points to the Python side of the runs, such as the calls through the binding, rather than to the algorithms.
+
+T-Stagewise is left out of these ranges, because its rows in both demos come from reruns in sessions of their own.
+With the same steps, its Python medians lie 40% to 43% above the C++ ones from $L = 2p$ on and 61% at $L = p$. The
+Python rerun puts T-Stagewise 5% to 7% below the typical Python solver, while the C++ rerun puts it about 30% below the
+typical C++ solver, so this gap reflects the two sessions rather than the binding.
 
 ---
 

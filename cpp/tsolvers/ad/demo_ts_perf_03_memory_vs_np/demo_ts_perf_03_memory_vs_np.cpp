@@ -234,8 +234,8 @@ int main(int argc, char** argv) {
         out << "Wall time: " << std::setprecision(1) << wall << " s\n";
         std::cout << out.str();
 
-        // Result files
-        const std::string stem = "memory_vs_np_mc" + std::to_string(num_MC);
+        // Result files, with a suffix for a TREX_SOLVERS selection
+        const std::string stem = "memory_vs_np_mc" + std::to_string(num_MC) + ts_perf::file_suffix();
         const auto csv_path = ts_perf::output_dir() / (stem + ".csv");
         std::ofstream csv(csv_path);
         csv << "solver,family,n,n_over_p,data_mib,solver_mib,solver_max_mib,steps\n" << std::setprecision(6);

@@ -54,7 +54,9 @@ demo and 545.5 s for the Python one. The result files carry the number of runs i
 (`runtime_vs_dummies_mc500.csv` and `.txt`), so a short test run does not overwrite the full one. `generate_plots.sh`
 draws the figures with the ggplot2 module [`ts_plt_utils.R`](../../ts_plt_utils.R) into `simulation_results/plots/`, and
 its `.pdf` files carry no creation date (`pdf(timestamp = FALSE)`), so a redraw of the same results gives the same
-bytes. The output below is a run against library b95b984 (TRexSelectorNeo 2.0.0).
+bytes. The output below is a run against library b95b984 (TRexSelectorNeo 2.0.0). Two fixes in library 09debc6 change
+the paths of T-Stagewise, so its rows come from a rerun of the 500 runs on that library in a session of their own, with
+the same seeds and workers. The wall times quoted here are those of the first runs.
 
 ---
 
@@ -73,7 +75,7 @@ T-LARS                    12.55    15.73    27.43    48.97    91.65
 T-LASSO                   12.15    15.78    28.00    49.11    91.41
 T-Stepwise                11.73    15.08    26.85    45.83    86.26
 T-ENET (lambda2 0.5)      22.62    29.15    51.77    90.55   170.28
-T-Stagewise               12.31    15.73    28.46    49.37    91.82
+T-Stagewise                8.50    10.93    19.53    33.34    64.45
 T-OMP                     11.87    15.20    26.90    46.08    86.75
 T-GP                      11.78    15.50    28.07    48.54    90.29
 T-ACGP                    11.65    15.78    27.58    48.68    89.25
@@ -122,7 +124,7 @@ The time to $T = 10$ grows about linearly with $L$ once $L \ge 2p$, as in C++. A
 times a path at $L = p$ for 10.5 times as many columns, against 7.5 to 11.1 times in C++ and 7.2 to 8.0 times in
 Python. T-LARS needs 12.6 ms at $L = p$, 1.06 times the 11.8 ms of C++, and 91.7 ms at $L = 20p$, 1.03 times the
 88.6 ms of C++. Over all solvers the median factor over C++ falls from 1.27 at $L = p$ to 1.10 at $2p$ and stays at
-1.03 from $5p$ on.
+1.03 to 1.04 from $5p$ on.
 
 ### Time per step
 
@@ -134,7 +136,7 @@ T-LARS                    423.6    645.7   1269.3   2330.7   4487.5
 T-LASSO                   421.5    641.3   1279.0   2351.3   4453.2
 T-Stepwise                404.1    621.6   1230.1   2187.9   4251.5
 T-ENET (lambda2 0.5)      770.8   1184.9   2378.8   4335.6   8368.3
-T-Stagewise               424.5    644.4   1308.1   2382.5   4489.6
+T-Stagewise               274.0    438.5    872.0   1590.2   3104.1
 T-OMP                     411.9    616.9   1244.6   2213.1   4242.2
 T-GP                      398.3    611.9   1235.2   2244.6   4253.3
 T-ACGP                    396.9    620.3   1230.8   2261.0   4265.7
@@ -149,11 +151,15 @@ T-AFS (rho 1)             403.9    617.1   1202.1   2195.1   4160.6
 
 The time per step grows with the number of columns $p + L$, since every step scans the correlations of all columns.
 T-LARS needs 0.42 ms per step at $L = p$ and 4.5 ms at $L = 20p$, 10.6 times as much for 10.5 times as many columns.
-Every solver grows 10.1 to 10.9 times, against 10.7 to 15.6 times in C++ and 10.3 to 11.2 times in Python. The
+Every solver grows 10.1 to 11.3 times, against 10.7 to 15.6 times in C++ and 10.3 to 11.2 times in Python. The
 orthogonal matching pursuit (OMP) family starts at 0.39 to 0.41 ms (T-OLS at 0.53 ms), above the 0.26 to 0.31 ms of
-the C++ run, and at $L = 20p$ all solvers except T-ENET need 4.1 to 5.5 ms per step, where the scan over the columns
-dominates. T-ENET needs about twice as long per step as the other solvers, 8.4 ms at $L = 20p$. More dummies therefore
-cut the path by the null variables they keep out, but every step gets dearer.
+the C++ run, and at $L = 20p$ all solvers except T-ENET and T-Stagewise need 4.1 to 5.5 ms per step, where the scan
+over the columns dominates. T-ENET needs about twice as long per step as the other solvers, 8.4 ms at $L = 20p$. More
+dummies therefore cut the path by the null variables they keep out, but every step gets dearer.
+
+T-Stagewise needs the least time per step at every $L$, 0.27 ms at $L = p$ and 3.1 ms at $L = 20p$, and it reaches
+$T = 10$ first at every $L$, about 30% below the typical solver, as in the C++ run. Its rows come from a rerun in a
+session of their own, so part of this lead may come from the timing of that session rather than from the solver.
 
 ### Warm start
 
@@ -165,7 +171,7 @@ T-LARS                    0.560    0.742    1.230    2.174    3.981
 T-LASSO                   0.555    0.736    1.251    2.182    4.103
 T-Stepwise                0.530    0.700    1.199    2.128    4.078
 T-ENET (lambda2 0.5)      1.070    1.424    2.540    4.277    8.554
-T-Stagewise               0.564    0.710    1.269    2.183    4.140
+T-Stagewise               0.464    0.483    0.813    1.468    2.792
 T-OMP                     0.537    0.715    1.257    2.147    4.095
 T-GP                      0.536    0.692    1.286    2.149    4.156
 T-ACGP                    0.543    0.747    1.259    2.228    4.169
@@ -184,7 +190,7 @@ T-LARS                     20.7     23.1     23.3     23.0     23.7
 T-LASSO                    20.4     23.6     23.2     23.6     22.7
 T-Stepwise                 22.7     23.3     22.3     22.6     21.7
 T-ENET (lambda2 0.5)       19.6     22.5     21.8     21.4     20.8
-T-Stagewise                21.0     23.8     23.2     23.1     23.2
+T-Stagewise                20.7     25.3     23.8     23.7     23.7
 T-OMP                      22.8     23.3     22.4     22.2     22.1
 T-GP                       23.0     24.5     22.8     23.2     22.6
 T-ACGP                     22.4     23.4     23.2     22.6     22.0
@@ -200,8 +206,9 @@ Failed solver runs: 0
 Wall time: 578.6 s
 ```
 
-A warm start from $T = 10$ to 11 takes 0.51 to 0.60 ms at $L = p$ (T-ENET 1.07 ms), against 0.40 to 0.56 ms in C++
-(T-ENET 1.00 ms), and 3.98 to 5.06 ms at $L = 20p$ (T-ENET 8.55 ms), against 3.90 to 4.25 ms (T-ENET 8.02 ms). It
+A warm start from $T = 10$ to 11 takes 0.51 to 0.60 ms at $L = p$ (T-ENET 1.07 ms and T-Stagewise 0.46 ms), against
+0.40 to 0.56 ms in C++ (T-ENET 1.00 ms and T-Stagewise 0.38 ms), and 3.98 to 5.06 ms at $L = 20p$ (T-ENET 8.55 ms and
+T-Stagewise 2.79 ms), against 3.90 to 4.25 ms (T-ENET 8.02 ms and T-Stagewise 2.72 ms). It
 costs about 1/22 of a fresh run to 11 for most solvers over the whole range of $L$, with ratios of 19.6 to 25.6 at
 $L = p$ and 20.8 to 23.7 at $L = 20p$, and about 1/28 for T-MP and T-NCGMP, whose paths are longer. The C++ ratios are
 about 23 for most solvers and 27 to 31 for T-MP and T-NCGMP. A fresh run repeats the whole path of about 21 to 38
@@ -212,25 +219,30 @@ $1 + (p - s)/(L + 1)$, about two at $L = p$ and one at $L = 20p$.
 
 Both demos run the same C++ solvers on data with the same distribution, and their wall times of 578.6 s and 545.8 s
 differ by 6%. The medians of the solvers, summed over all solvers and $L$ for the path to $T = 10$, the warm start and
-the fresh run, come to 6.61 s per run in R against 6.26 s in C++ and 6.52 s in Python. From $L = 5p$ on, the R medians
-to $T = 10$ lie between 1% below and 15% above the C++ medians, with a typical excess of 3%. At $L = p$ they are higher
-by 0.7 to 4.8 ms, or 6% to 46% and 27% for the typical solver. This extra also lifts the time per step at $L = p$,
-since the time per step divides the whole time to $T$, construction included, by the steps. Against Python the R
-medians lie between 4% below and 12% above at every $L$, with a typical factor of 1.00 to 1.03. The R demo thus runs
-the solvers as fast as the Python one, and since the solvers and their step counts are the same as in C++, the extra
-of a few milliseconds at small $L$ points to the R side of the runs, such as the calls through the binding, rather
-than to the algorithms.
+the fresh run, come to 6.49 s per run in R against 6.14 s in C++ and 6.49 s in Python. From $L = 5p$ on, the R medians
+to $T = 10$ lie between 1% below and 15% above the C++ medians, with a typical excess of 3% to 4%. At $L = p$ they are
+higher by 0.7 to 4.8 ms, or 6% to 46% and 27% for the typical solver. This extra also lifts the time per step at
+$L = p$, since the time per step divides the whole time to $T$, construction included, by the steps. Against Python the
+R medians of the solvers apart from T-Stagewise lie between 4% below and 12% above at every $L$, with a typical factor
+of 1.00 to 1.02. The R demo thus runs the solvers as fast as the Python one, and since the solvers and their step
+counts are the same as in C++, the extra of a few milliseconds at small $L$ points to the R side of the runs, such as
+the calls through the binding, rather than to the algorithms.
+
+The T-Stagewise rows of all three demos come from reruns in sessions of their own. The R rerun lies 6% to 9% above the
+C++ one from $L = 2p$ on and 23% at $L = p$, within the range of the other solvers, while it runs 22% to 25% faster
+than the Python rerun with the same steps. This gap reflects the sessions of the reruns rather than the bindings.
 
 ---
 
 ## Figures
 
 The first figure shows the time to $T$, the steps and the time per step against $L$ on log axes, one column per
-library family. The top row shows the time to $T$ rising with $L$ for every solver, with T-ENET above the other solvers
-of its family and T-MP, T-NCGMP and T-OLS above the other OMP solvers. The middle row shows the steps falling with
-$L$, with T-MP and T-NCGMP above the rest of the OMP family. The dashed line in the bottom row grows in proportion to
-$p + L$ from the median of the family at $L = p$. It lies under the curves of most solvers, which therefore follow it,
-while T-ENET and T-OLS run parallel to it a nearly constant factor above their families.
+library family. The top row shows the time to $T$ rising with $L$ for every solver, with T-ENET above and T-Stagewise
+below the rest of their family, and T-MP, T-NCGMP and T-OLS above the other OMP solvers. The middle row shows the
+steps falling with $L$, with T-MP and T-NCGMP above the rest of the OMP family. The dashed line in the bottom row grows
+in proportion to $p + L$ from the median of the family at $L = p$. It lies under the curves of most solvers, which
+therefore follow it, while T-ENET and T-OLS run parallel to it a nearly constant factor above their families and
+T-Stagewise runs parallel to it about a third below.
 
 ![Runtime vs. the number of dummies for all T-solvers](simulation_results/plots/runtime_vs_dummies_mc500_runtime.png)
 

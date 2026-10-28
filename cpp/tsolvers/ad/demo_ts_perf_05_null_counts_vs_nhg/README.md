@@ -87,7 +87,8 @@ the NHG reference itself.
 
 ## Simulation Results
 
-The output below is the full run with 500 runs on 6 threads against library 61fd84c (wall time 29 s).
+The output below is the full run with 500 runs on 6 threads against library 61fd84c (wall time 29 s). The T-Stagewise
+rows come from a rerun of that solver alone on library 09debc6, with the same seeds.
 
 ### Included null variables (Corollary 2 and A-I)
 
@@ -100,7 +101,7 @@ T-LARS                   19.77    6.15   0.012   100.0 %
 T-LASSO                  19.75    6.13   0.011   100.0 %
 T-Stepwise               19.48    6.03   0.013   100.0 %
 T-ENET (lambda2 0.5)     19.75    6.11   0.014   100.0 %
-T-Stagewise              21.35    7.00   0.104   100.0 %
+T-Stagewise              19.76    6.15   0.010   100.0 %
 T-OMP                    19.48    6.03   0.013   100.0 %
 T-GP                     19.56    5.99   0.006   100.0 %
 T-ACGP                   19.58    5.99   0.004   100.0 %
@@ -113,7 +114,7 @@ T-AFS (rho 0.5)          19.58    6.00   0.004   100.0 %
 T-AFS (rho 1)            19.48    6.03   0.013   100.0 %
 ```
 
-Every experiment reached $T = 20$ dummies, and 14 of the 15 configurations follow the NHG. Their means lie between
+Every experiment reached $T = 20$ dummies, and all 15 configurations follow the NHG. Their means lie between
 19.48 and 19.77 against 19.60, their standard deviations between 5.94 and 6.15 against 6.01, and their Kolmogorov
 distances are at most 0.014. The 5 % critical value of the Kolmogorov test is 0.061 for 500 independent counts and
 0.014 for 10,000, so the distances pass even the stricter reference. The solvers build their paths in very different
@@ -121,11 +122,12 @@ ways, yet the count matches the NHG for all of them. The null variables and the 
 normal columns that are independent of $\mathbf{y}$, so a solver that treats all columns alike admits them in random
 order relative to each other, as assumption A-I requires.
 
-T-Stagewise is the one exception, with a mean of 21.35, a standard deviation of 7.00 and a distance of 0.104. Its
-non-negative least squares (NNLS) step removes variables from the active set and keeps their coefficients frozen, so
-they stay in the selection. A removed dummy no longer counts toward $T$, and the path runs on until 20 dummies are
-active again, while the removed null variables stay counted. The count then exceeds the number of null variables that
-are active when the path stops.
+T-Stagewise follows the NHG since library 09debc6, with a mean of 19.76, a standard deviation of 6.15 and a distance of
+0.010. Its non-negative least squares (NNLS) step removes variables from the active set and keeps their coefficients
+frozen, so they stay in the selection. A frozen dummy now counts toward $T$ like an active one, just as the frozen null
+variables count in the selection, so the path stops at 20 dummies of the support. Before, a removed dummy no longer
+counted, the path ran on until 20 dummies were active again, and the count of included null variables rose to a mean
+of 21.35 (distance 0.104).
 
 T-Stepwise and T-AFS ($\rho = 1$) repeat the rows of T-OMP, and T-NCGMP repeats T-MP, as the identities in the
 [folder README](../../README.md) predict.
@@ -140,7 +142,7 @@ T-LARS                         6.47        12.04        17.23        0.000      
 T-LASSO                        6.19        11.95        17.18        0.000        0.000        0.008
 T-Stepwise                     0.31         1.21         3.42        0.000        0.000        0.000
 T-ENET (lambda2 0.5)           9.67        14.57        18.37        0.000        0.001        0.023
-T-Stagewise                    6.70        12.58        18.40        0.000        0.000        0.030
+T-Stagewise                    6.46        12.03        17.21        0.000        0.000        0.008
 T-OMP                          0.31         1.21         3.42        0.000        0.000        0.000
 T-GP                           0.34         1.34         3.66        0.000        0.000        0.000
 T-ACGP                         0.33         1.26         3.56        0.000        0.000        0.000
@@ -158,16 +160,17 @@ Wall time: 29.0 s
 
 The NHG dominates the number of selected null variables at $v \to 1$ and $v = 0.75$ in every configuration (an excess
 of at most 0.001). At $v = 0.5$ the excess is zero for the orthogonal matching pursuit (OMP) family, T-Stepwise and
-T-AFS, and small for the least-angle regression (LARS) family (0.008 for T-LARS and T-LASSO, 0.023 for T-ENET,
-0.030 for T-Stagewise). These excesses sit in the lower tail, at 4 to 14 selected null variables, which matches the
+T-AFS, and small for the least-angle regression (LARS) family (0.008 for T-LARS, T-LASSO and T-Stagewise, 0.023 for
+T-ENET). These excesses sit in the lower tail, at 4 to 14 selected null variables, which matches the
 supplement, where the NHG CDF lies slightly above the empirical CDF for $v = 0.5$ between 6 and 12. With 500 runs the
 standard error of an empirical CDF value near 0.1 is about 0.013, so all of them lie within about two standard
 errors. The [Python](../../../../Python/tsolvers/ad/demo_ts_perf_05_null_counts_vs_nhg/README.md) and
-[R](../../../../R/tsolvers/ad/demo_ts_perf_05_null_counts_vs_nhg/README.md) ports show the excess of T-ENET and
-T-Stagewise at the same place, though. Pooled over the 1,500 runs of the three languages it reaches 0.033 for T-ENET
-(4.1 standard errors) and 0.026 for T-Stagewise (3.2) at 12. Their $V_{T,L}(0.5)$ is more concentrated than the NHG,
-with standard deviations of 4.3 and 4.5 against 6.01, so the two miss strict stochastic dominance by about 0.03 in the
-lower tail, while their mean and upper tail stay below the NHG.
+[R](../../../../R/tsolvers/ad/demo_ts_perf_05_null_counts_vs_nhg/README.md) ports show the excess of T-ENET at the
+same place, though. Pooled over the 1,500 runs of the three languages it reaches 0.033 (4.1 standard errors) at 12.
+Its $V_{T,L}(0.5)$ is more concentrated than the NHG, with a standard deviation of 4.3 against 6.01, so T-ENET misses
+strict stochastic dominance by about 0.03 in the lower tail, while its mean and upper tail stay below the NHG.
+T-Stagewise missed it by the same margin before library 09debc6 (0.026, 3.2 standard errors). Pooled over the new
+runs it stays at 0.006 (1.9 standard errors), with a mean of 17.2 and a standard deviation of 4.1 as for T-LARS.
 
 The solver families differ in how close they come to the bound. The LARS family selects 17.2 to 18.4 null variables
 at $v = 0.5$, close to the NHG mean of 19.60, because its candidate sets repeat from one experiment to the next, and

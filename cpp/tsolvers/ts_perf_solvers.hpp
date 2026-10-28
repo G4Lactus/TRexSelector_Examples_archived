@@ -13,6 +13,11 @@
  *          are marked precentered, so the row-bounded active sets stop at the
  *          rank n - 1 of the centered design (T-ENET with lambda2 > 0 has no
  *          such cap). T-AFS appears once per rho.
+ *
+ *          TREX_SOLVERS (comma separated labels, e.g. "T-Stagewise") restricts
+ *          demo_solvers() to those solvers, and a selection run writes its
+ *          tables with file_suffix(), next to the committed ones of the full
+ *          list. merge_result_files.py splices them into the full tables.
  */
 // ============================================================================
 
@@ -20,7 +25,11 @@
 #define TS_PERF_SOLVERS_HPP
 
 // std includes
+#include <algorithm>
+#include <cctype>
+#include <cstdlib>
 #include <functional>
+#include <sstream>
 #include <memory>
 #include <string>
 #include <utility>
@@ -72,9 +81,48 @@ SolverSpec make_spec(std::string name, std::string family, trex::tsolvers::ad::S
             }};
 }
 
+/** @brief Solver labels listed in TREX_SOLVERS (empty: no selection). */
+inline std::vector<std::string> selection() {
+    std::vector<std::string> out;
+    const char* env = std::getenv("TREX_SOLVERS");
+    if (env == nullptr) return out;
+    std::stringstream ss(env);
+    std::string item;
+    while (std::getline(ss, item, ',')) {
+        // Labels hold inner blanks ("T-AFS (rho 0.3)"), so only the ends are trimmed
+        const auto first = item.find_first_not_of(" \t");
+        if (first == std::string::npos) continue;
+        out.push_back(item.substr(first, item.find_last_not_of(" \t") - first + 1));
+    }
+    return out;
+}
+
+/** @brief True when TREX_SOLVERS selects the label @p name (always true without a selection). */
+inline bool selected(const std::string& name) {
+    const auto wanted = selection();
+    return wanted.empty() || std::find(wanted.begin(), wanted.end(), name) != wanted.end();
+}
+
+/**
+ * @brief File-name suffix of a selection run, e.g. "_t_stagewise" ("" without a selection).
+ * @details Lower case, every run of other characters than letters and digits becomes "_".
+ */
+inline std::string file_suffix() {
+    std::string out;
+    for (const auto& name : selection()) {
+        out += '_';
+        for (const unsigned char c : name) {
+            if (std::isalnum(c) != 0) out += static_cast<char>(std::tolower(c));
+            else if (out.back() != '_') out += '_';
+        }
+        while (out.back() == '_' && out.size() > 1) out.pop_back();
+    }
+    return out;
+}
+
 /**
  * @brief The compared solvers: the 12 demo solvers with their demo settings,
- *        T-AFS for rho in {0.1, 0.3, 0.5, 1}.
+ *        T-AFS for rho in {0.1, 0.3, 0.5, 1}; only those TREX_SOLVERS selects.
  */
 inline std::vector<SolverSpec> demo_solvers() {
     namespace lars = trex::tsolvers::ad::linear_model::lars_based;
@@ -83,7 +131,7 @@ inline std::vector<SolverSpec> demo_solvers() {
     using Options = trex::tsolvers::ad::SolverOptions;
 
     const std::string LARS = "LARS-based", OMP = "OMP-based", AFS = "AFS-based";
-    return {
+    std::vector<SolverSpec> all = {
         make_spec<lars::TLARS_Solver>("T-LARS", LARS, Options{.normalize = false, .intercept = false, .precentered = true}),
         make_spec<lars::TLASSO_Solver>("T-LASSO", LARS, Options{.normalize = false, .intercept = false, .precentered = true}),
         make_spec<lars::TSTEPWISE_Solver>("T-Stepwise", LARS, Options{.normalize = false, .intercept = false, .precentered = true}),
@@ -107,6 +155,10 @@ inline std::vector<SolverSpec> demo_solvers() {
         make_spec<afs::TAFS_Solver>("T-AFS (rho 1)", AFS,
                                     Options{.normalize = false, .intercept = false, .precentered = true, .rho_afs = 1.0}),
     };
+    std::vector<SolverSpec> out;
+    for (auto& spec : all)
+        if (selected(spec.name)) out.push_back(std::move(spec));
+    return out;
 }
 
 } // namespace ts_perf

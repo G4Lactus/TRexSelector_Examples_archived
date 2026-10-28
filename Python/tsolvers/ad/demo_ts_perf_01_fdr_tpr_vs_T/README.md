@@ -64,9 +64,10 @@ in place of the OpenMP threads of the C++ demo. The 500 runs take 7.4 s on an Ap
 close to the 7.3 s of the C++ run. The result files carry the number of runs in their name
 (`fdr_tpr_vs_T_mc500.csv` and `.txt`), so a short test run does not overwrite the full one. `generate_plots.sh` draws
 the figures with `Python/tsolvers/ts_plt_utils.py`, a byte-identical copy of the C++ plotting module, into
-`simulation_results/plots/`. The output below is a run against library b95b984 (TRexSelectorNeo 1.0.0). Run $k$ draws
-its data with the seed `1000 + k` and its test set with the seed `2000000 + k`, so the results do not depend on the
-number of workers.
+`simulation_results/plots/`. The output below is a run against library b95b984 (TRexSelectorNeo 1.0.0), and its
+T-Stagewise rows come from a rerun of that solver alone against library 09debc6 with the same seeds. Run $k$ draws its
+data with the seed `1000 + k` and its test set with the seed `2000000 + k`, so the results do not depend on the number
+of workers.
 
 ---
 
@@ -87,7 +88,7 @@ T-LARS                     9.1    14.8    30.2    46.1    64.4    81.1    81.3
 T-LASSO                    8.8    14.5    30.1    46.3    64.3    81.0    81.2
 T-Stepwise                 7.8    14.1    29.6    45.8    64.0    81.1    81.2
 T-ENET (lambda2 0.5)       9.8    16.1    30.7    46.9    63.9    82.3    90.5
-T-Stagewise                9.1    16.3    33.9    50.1    69.8    90.2    90.3
+T-Stagewise                9.1    14.7    30.4    46.3    64.0    82.3    90.5
 T-OMP                      7.8    14.1    29.6    45.8    64.0    81.1    81.2
 T-GP                       7.7    13.9    29.8    46.7    64.3    81.2    81.3
 T-ACGP                     7.3    13.8    28.9    46.1    63.9    81.1    81.2
@@ -106,7 +107,7 @@ T-LARS                    77.5    92.7    99.9   100.0   100.0   100.0   100.0
 T-LASSO                   77.5    92.7    99.9   100.0   100.0   100.0   100.0
 T-Stepwise                96.8    99.5    99.9    99.9    99.9    99.9    99.9
 T-ENET (lambda2 0.5)      67.7    82.7    94.8    98.6    99.7    99.9    99.9
-T-Stagewise               77.5    93.0    99.9   100.0   100.0   100.0   100.0
+T-Stagewise               77.5    92.7    99.9   100.0   100.0   100.0   100.0
 T-OMP                     96.8    99.5    99.9    99.9    99.9    99.9    99.9
 T-GP                      96.4    99.4    99.9    99.9    99.9    99.9    99.9
 T-ACGP                    96.5    99.4    99.9    99.9    99.9    99.9    99.9
@@ -125,7 +126,7 @@ $\rho \ge 0.3$) find 95.1% to 96.8% of the true variables. T-LARS, T-LASSO and T
 T-AFS at $\rho = 0.1$ sits close to its least-angle regression (LARS) end at 80.8%. The C++ run gives the same picture
 within about two percentage points.
 
-As $T$ grows, the FDR rises alike for all solvers except T-Stagewise, to about 30% at $T = 5$, 46% at $T = 10$ and 64%
+As $T$ grows, the FDR rises alike for all solvers, to about 30% at $T = 5$, 46% at $T = 10$ and 64%
 at $T = 20$. This follows from the exchangeability of null variables and dummies. The 290 null variables and the 300
 dummies are independent standard normal columns that carry no information about $\mathbf{y}$, so a solver cannot tell
 them apart, and every order in which they enter the path is equally likely. When the $T$-th dummy enters, the number
@@ -136,12 +137,11 @@ $V_T$ of null variables that entered before it follows a negative hypergeometric
 ```
 
 With $s = 10$ true variables that are nearly always found, a path holds about $10 + 0.96\,T$ variables, which matches
-the tables. At $T = 20$, for example, the paths of all solvers except T-Stagewise hold 28.8 to 29.3 variables, and 18.8
-to 19.3 of them are null against the expected 19.3. This is the idea behind the T-Rex selector. The included dummies
-count the null variables that entered, so they estimate the false discoveries of a path. The TPR reaches at least 99.8%
-by $T = 5$ for every solver except T-ENET, which needs $T = 20$ for 99.7%. A single terminated path therefore trades
-FDR against TPR through $T$, and the T-Rex selector controls the FDR by averaging many such paths with a calibrated $T$
-and $L$.
+the tables. At $T = 20$, for example, the paths of all solvers hold 28.8 to 29.3 variables, and 18.8 to 19.3 of them
+are null against the expected 19.3. This is the idea behind the T-Rex selector. The included dummies count the null
+variables that entered, so they estimate the false discoveries of a path. The TPR reaches at least 99.8% by $T = 5$ for
+every solver except T-ENET, which needs $T = 20$ for 99.7%. A single terminated path therefore trades FDR against TPR
+through $T$, and the T-Rex selector controls the FDR by averaging many such paths with a calibrated $T$ and $L$.
 
 ### Paths that end early
 
@@ -153,7 +153,7 @@ T-LARS                     100     100     100     100     100      17       0
 T-LASSO                    100     100     100     100     100      20       0
 T-Stepwise                 100     100     100     100     100      19       0
 T-ENET (lambda2 0.5)       100     100     100     100     100     100     100
-T-Stagewise                100     100     100     100     100      13       0
+T-Stagewise                100     100     100     100     100     100     100
 T-OMP                      100     100     100     100     100      19       0
 T-GP                       100     100     100     100     100      15       0
 T-ACGP                     100     100     100     100     100      16       0
@@ -172,7 +172,7 @@ T-LARS                     8.8    11.2    14.9    19.5    29.3    53.4    53.7
 T-LASSO                    8.8    11.2    14.9    19.6    29.2    53.2    53.7
 T-Stepwise                10.6    11.8    14.7    19.3    28.8    53.3    53.6
 T-ENET (lambda2 0.5)       7.8    10.2    14.3    19.5    28.8    57.8   106.0
-T-Stagewise                8.8    11.5    15.8    21.2    35.0   103.2   104.4
+T-Stagewise                8.8    11.2    15.0    19.6    29.1    57.8   106.3
 T-OMP                     10.6    11.8    14.7    19.3    28.8    53.3    53.6
 T-GP                      10.6    11.8    14.7    19.6    29.1    53.5    53.7
 T-ACGP                    10.5    11.8    14.5    19.4    28.8    53.3    53.6
@@ -186,16 +186,20 @@ T-AFS (rho 1)             10.6    11.8    14.7    19.3    28.8    53.3    53.6
 ```
 
 The readers are precentered, so the active set of most solvers is capped at the rank $n - 1 = 99$ of the centered
-design, dummies included. At $T = 50$ only 13% to 20% of the runs reach 50 dummies before the cap, and no run reaches
+design, dummies included. At $T = 50$ only 15% to 20% of the runs reach 50 dummies before the cap, and no run reaches
 100. The paths then end with about 54 original variables and 45 dummies, and the FDR stays at about 81%. The open
 markers in the figures show these $T$ values. T-NCGMP stops by the rules of T-MP and ends exactly like it.
 
 Two solvers go further. T-ENET reaches 100 dummies in every run, because an elastic-net path with $\lambda_2 > 0$ may
 hold more than $n$ variables, as in the algorithm of Zou and Hastie (2005). It ends at an FDR of 90.5% with about 106
 selected variables. T-Stagewise freezes the variables it drops from the active set, and a frozen variable keeps its
-coefficient, so its selection grows to more than 100 variables at $T = 50$ while its active set stays at the cap. It
-also cycles through drops and re-entries and needs 84 steps to reach $T = 20$, against 49 to 57 for the other solvers.
-At $T = 100$ it ends at its step limit of $8 \cdot 99 = 792$.
+coefficient, so its support grows past the cap while its active set stays at the cap. The dummies of the support count
+toward $T$, so T-Stagewise reaches 50 and 100 dummies in every run. Its selection matches the expected $10 + 0.96\,T$
+with 57.8 variables at $T = 50$ and 106.3 at $T = 100$, more than $n$, and like T-ENET it ends at an FDR of 90.5%. The
+cap still costs it steps, because its path cycles through drops and re-entries once the active set is full. It needs
+55.1 steps to reach $T = 20$, close to the 49 to 57 of the other solvers, but 168.6 to reach $T = 50$ and 513.6 to
+reach $T = 100$, against 107.9 and 206.3 for T-ENET. On average it stays well below its step limit of
+$8 \cdot 99 = 792$. The step counts of the C++ run differ from these by at most 1.3.
 
 ### Steps and run time
 
@@ -207,7 +211,7 @@ T-LARS                     9.8    13.2    19.9    29.5    49.3    98.4    99.0
 T-LASSO                    9.8    13.4    20.5    30.6    52.1   149.8   153.8
 T-Stepwise                11.6    13.8    19.7    29.3    48.8    98.3    99.0
 T-ENET (lambda2 0.5)       8.8    12.2    19.3    29.5    48.8   107.9   206.3
-T-Stagewise                9.9    14.1    23.2    37.2    84.4   771.3   792.0
+T-Stagewise                9.8    13.2    20.2    30.7    55.1   168.6   513.6
 T-OMP                     11.6    13.8    19.7    29.3    48.8    98.3    99.0
 T-GP                      12.8    15.0    21.0    30.9    50.4    99.7   100.2
 T-ACGP                    12.2    14.5    20.3    30.1    49.5    99.2    99.7
@@ -226,7 +230,7 @@ T-LARS                    0.19    0.25    0.37    0.53    0.90    2.01    2.04
 T-LASSO                   0.20    0.26    0.39    0.56    0.97    3.33    3.45
 T-Stepwise                0.21    0.24    0.33    0.47    0.78    1.76    1.79
 T-ENET (lambda2 0.5)      0.27    0.36    0.54    0.81    1.33    3.25    8.09
-T-Stagewise               0.21    0.28    0.44    0.69    1.70   25.51   26.37
+T-Stagewise               0.18    0.24    0.36    0.54    1.01    3.73   13.79
 T-OMP                     0.27    0.31    0.40    0.54    0.87    1.95    1.98
 T-GP                      0.22    0.26    0.34    0.49    0.77    1.60    1.62
 T-ACGP                    0.22    0.26    0.35    0.50    0.81    1.73    1.75
@@ -239,15 +243,15 @@ T-AFS (rho 0.5)           0.20    0.24    0.33    0.47    0.81    1.90    1.93
 T-AFS (rho 1)             0.20    0.24    0.33    0.48    0.80    1.90    1.93
 ```
 
-Up to $T = 20$, where every path still reaches its $T$, a whole warm-started path takes 0.8 to 1.3 ms for every solver
-except T-Stagewise, and T-OMP needs about 0.9 ms. T-OLS belongs to this group, because the library scores its
-candidates in one pass per step, and needs about 1.3 ms to $T = 20$ and 2.9 ms to $T = 100$. T-Stagewise stays fast up
-to $T = 20$ with about 1.7 ms, and its time jumps to 25.5 ms at $T = 50$, where the capped paths cycle through drops
-and re-entries for 771 steps on average. T-LASSO shows the same effect more mildly, with 150 steps at $T = 50$ against
-about 98 for T-LARS. The times at $T = 50$ and 100 therefore describe the saturated regime rather than the solvers.
-They are measured inside the parallel workers and serve for comparison only. Both demos run the same C++ solvers, and
-up to $T = 20$ the Python times lie within about 0.1 ms of the C++ ones for every solver except T-Stagewise, whose
-time follows how often its path cycles.
+Up to $T = 20$, where every path still reaches its $T$, a whole warm-started path takes 0.8 to 1.3 ms for every
+solver, and T-OMP needs about 0.9 ms. T-OLS belongs to this group, because the library scores its candidates in one
+pass per step, and needs about 1.3 ms to $T = 20$ and 2.9 ms to $T = 100$. T-Stagewise needs about 1.0 ms to $T = 20$,
+and its time grows to 3.7 ms at $T = 50$ and 13.8 ms at $T = 100$, the most of all solvers, while its path cycles
+through drops and re-entries at the cap for 168.6 and 513.6 steps on average. T-LASSO shows the same effect more
+mildly, with 150 steps at $T = 50$ against about 98 for T-LARS. The times at $T = 50$ and 100 therefore describe the
+saturated regime rather than the solvers. They are measured inside the parallel workers and serve for comparison only.
+Both demos run the same C++ solvers, and up to $T = 20$ the Python times lie within about 0.1 ms of the C++ ones for
+every solver.
 
 ### Least-squares refit on the selected variables
 
@@ -264,7 +268,7 @@ T-LARS                    3.87    2.19    1.19    1.24    1.35    1.52    1.53
 T-LASSO                   3.87    2.19    1.19    1.24    1.35    1.53    1.53
 T-Stepwise                1.40    1.19    1.23    1.29    1.35    1.50    1.50
 T-ENET (lambda2 0.5)      5.21    3.76    2.15    1.48    1.32    1.69    7.32
-T-Stagewise               3.87    2.14    1.19    1.26    1.40    4.60    4.69
+T-Stagewise               3.87    2.20    1.18    1.24    1.35    1.58    4.77
 T-OMP                     1.40    1.19    1.23    1.29    1.35    1.50    1.50
 T-GP                      1.44    1.20    1.23    1.30    1.36    1.53    1.53
 T-ACGP                    1.44    1.20    1.22    1.29    1.36    1.52    1.52
@@ -283,7 +287,7 @@ T-LARS                    3.51    1.67    0.59    0.71    0.90    1.14    1.14
 T-LASSO                   3.51    1.67    0.60    0.72    0.90    1.14    1.15
 T-Stepwise                0.77    0.57    0.68    0.79    0.88    1.10    1.10
 T-ENET (lambda2 0.5)      5.01    3.45    1.66    0.93    0.80    1.33    7.19
-T-Stagewise               3.51    1.61    0.60    0.75    0.96    4.44    4.53
+T-Stagewise               3.51    1.68    0.59    0.71    0.89    1.21    4.62
 T-OMP                     0.77    0.57    0.68    0.79    0.88    1.10    1.10
 T-GP                      0.81    0.58    0.68    0.80    0.90    1.14    1.14
 T-ACGP                    0.80    0.59    0.67    0.79    0.89    1.13    1.13
@@ -303,24 +307,25 @@ Wall time: 7.4 s
 
 Every solver has a sweet spot at a small $T$. The least-squares refit solvers reach a prediction RMSE of 1.13 to 1.21
 already at $T = 2$, where they have found 99.3% to 99.9% of the true variables with few false ones. T-LARS, T-LASSO
-and T-Stagewise miss more than a fifth of the true variables at $T = 1$ (RMSE 3.87) and are best at $T = 5$ (1.19),
-and T-ENET only at $T = 20$ (1.32). T-AFS at $\rho = 0.1$ reaches the smallest prediction error of all, 1.128 at
-$T = 5$ in `fdr_tpr_vs_T_mc500.csv`, just ahead of T-AFS at $\rho = 0.3$ with 1.135 at $T = 2$. The coefficient error
-has its minimum of 0.47 for $\rho = 0.3$ at $T = 2$, just below the 0.49 of $\rho = 0.1$ at $T = 5$. Beyond the sweet
-spot the errors grow slowly, because every further null variable in the refit adds estimation noise, to about 1.5 at
-the cap. The refit does not blow up there, because the dummies are dropped and about 54 variables remain for 100 rows.
+and T-Stagewise miss more than a fifth of the true variables at $T = 1$ (RMSE 3.87) and are best at $T = 5$ (1.19 and
+1.18), and T-ENET only at $T = 20$ (1.32). T-AFS at $\rho = 0.1$ reaches the smallest prediction error of all, 1.128
+at $T = 5$ in `fdr_tpr_vs_T_mc500.csv`, just ahead of T-AFS at $\rho = 0.3$ with 1.135 at $T = 2$. The coefficient
+error has its minimum of 0.47 for $\rho = 0.3$ at $T = 2$, just below the 0.49 of $\rho = 0.1$ at $T = 5$. Beyond the
+sweet spot the errors grow slowly, because every further null variable in the refit adds estimation noise, to about
+1.5 at the cap. The refit does not blow up there, because the dummies are dropped and about 54 variables remain for
+100 rows.
 
-Only T-Stagewise and T-ENET, whose selections grow past $n$, end with a minimum-norm refit that interpolates the
-training data, with a prediction RMSE of 4.7 and 7.3 at $T = 100$. The C++ run ends T-Stagewise near 10 instead, but
-its standard error there is 5.1, so a few extreme runs set that mean, while the Python mean has a standard error of
-0.15.
+Only T-Stagewise and T-ENET, whose selections grow past $n$ at $T = 100$, end with a minimum-norm refit that
+interpolates the training data, with a prediction RMSE of 4.8 and 7.3 there. The C++ run ends T-Stagewise at 5.7, with
+a standard error of 0.60 against 0.16 here, so the gap of 0.9 amounts to 1.5 combined standard errors.
 
 ---
 
 ## Figures
 
 The first figure shows FDR (top row) and TPR (bottom row) against $T$, one column per library family. Solvers with
-equal or nearly equal results overlap within a panel. T-LARS lies under T-LASSO, and T-MP under T-NCGMP.
+equal or nearly equal results overlap within a panel. T-LARS lies under T-LASSO, and T-MP under T-NCGMP. T-Stagewise
+lies on T-LARS in TPR, and its FDR follows T-LARS up to $T = 20$ and T-ENET at $T = 50$ and 100.
 
 ![FDR and TPR vs. T for all T-solvers](simulation_results/plots/fdr_tpr_vs_T_mc500_fdr_tpr_vs_T.png)
 
@@ -332,18 +337,19 @@ $\rho = 0.1$ need a larger $T$ and a higher FDR for the same TPR.
 
 The third figure shows the remaining tables against $T$ on log axes. The dashed line in the top row is the expected
 selection $10 + 0.96\,T$ derived above. The OMP family and T-AFS for $\rho \ge 0.3$ follow it until the active-set cap
-stops their paths after $T = 20$. T-ENET, which has no cap at $n - 1$, stays on it up to $T = 100$ with about 106
-variables. T-LARS, T-LASSO, T-ENET, T-Stagewise and T-AFS at $\rho = 0.1$ start below the line because they find fewer
-true variables at $T = 1$, and T-Stagewise rises above it as its frozen variables pile up. The middle row shows
-T-Stagewise reaching the step limit of 792 and T-LASSO climbing at saturation. The bottom row shows the jump of
-T-Stagewise at $T = 50$ and the rise of T-LASSO and T-ENET at saturation, while the other solvers, T-OLS included, stay
-within a factor of two of each other.
+stops their paths after $T = 20$. T-ENET, which has no cap at $n - 1$, and T-Stagewise, whose frozen coefficients
+carry its selection past the cap, stay on it up to $T = 100$ with about 106 variables. T-LARS, T-LASSO, T-ENET,
+T-Stagewise and T-AFS at $\rho = 0.1$ start below the line because they find fewer true variables at $T = 1$. The
+middle row shows T-Stagewise climbing to 513.6 steps at $T = 100$, below the dotted step limit of 792, and T-LASSO
+climbing at saturation. The bottom row shows the rise of T-Stagewise, T-LASSO and T-ENET at saturation, with
+T-Stagewise the slowest solver at $T = 50$ and 100, while the other solvers, T-OLS included, stay within a factor of
+two of each other.
 
 ![Selected variables, steps and time vs. T](simulation_results/plots/fdr_tpr_vs_T_mc500_path_stats.png)
 
 The fourth figure shows both errors of the refit against $T$ on log axes, with the refit on the true support as the
-dashed reference. The U shape of every solver marks its sweet spot, and the jumps of T-Stagewise and T-ENET mark their
-selections past $n$.
+dashed reference. The U shape of every solver marks its sweet spot, and the jumps of T-Stagewise and T-ENET at
+$T = 100$ mark their selections past $n$.
 
 ![Least-squares refit errors vs. T](simulation_results/plots/fdr_tpr_vs_T_mc500_refit_errors.png)
 
@@ -362,7 +368,8 @@ selections past $n$.
   unseeded `sample()`.
 - The active set is not the selection for every solver. T-Stagewise keeps frozen variables with their coefficients
   outside it, so `selected_predictors()` of [`ts_perf_utils.py`](../../ts_perf_utils.py) selects by nonzero coefficient,
-  as the T-Rex selector does.
+  as the T-Rex selector does. For the same reason, `included_dummies()` lets a run reach $T$ when $T$ dummies carry a
+  nonzero coefficient, the count at which the library stops the path.
 - T-Stepwise and T-AFS at $\rho = 1$ give the same tables as T-OMP apart from the times, and T-NCGMP in its line-search
   variant the same as T-MP, as in the shared paths of the [T-solver README](../../README.md).
 - The timed window runs from the construction of the solver to each $T$ and includes the Python calls that read the

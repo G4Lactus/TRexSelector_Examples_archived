@@ -63,7 +63,8 @@ the threads, and each solver runs single-threaded inside its run, as in
 run, and a test with different numbers of threads gave a byte-identical `.csv` file. The 500 runs below took 340.0 s
 with 6 threads on an Apple Silicon machine. The result files carry the number of runs in their name
 (`memory_vs_np_mc500.csv` and `.txt`), so a short test run does not overwrite the full one. The output below is a run
-against library 44cf1ab.
+against library 44cf1ab. The T-Stagewise rows come from a rerun of that solver alone on library 09debc6, with the same
+seeds.
 
 ---
 
@@ -90,7 +91,7 @@ T-LARS                     0.07     0.08     0.09     0.13     0.20     0.34
 T-LASSO                    0.07     0.08     0.09     0.13     0.20     0.34
 T-Stepwise                 0.06     0.08     0.09     0.13     0.20     0.34
 T-ENET (lambda2 0.5)       0.08     0.09     0.11     0.15     0.22     0.35
-T-Stagewise                0.07     0.09     0.09     0.13     0.20     0.34
+T-Stagewise                0.07     0.08     0.09     0.13     0.20     0.34
 T-OMP                      0.05     0.06     0.06     0.09     0.12     0.20
 T-GP                       0.04     0.05     0.06     0.08     0.13     0.21
 T-ACGP                     0.04     0.05     0.06     0.09     0.13     0.23
@@ -109,7 +110,7 @@ T-LARS                     0.10     0.11     0.12     0.16     0.22     0.37
 T-LASSO                    0.09     0.11     0.12     0.16     0.22     0.37
 T-Stepwise                 0.09     0.10     0.11     0.16     0.23     0.37
 T-ENET (lambda2 0.5)       0.10     0.12     0.13     0.17     0.24     0.38
-T-Stagewise                0.13     0.14     0.14     0.16     0.22     0.37
+T-Stagewise                0.08     0.10     0.12     0.16     0.22     0.37
 T-OMP                      0.07     0.08     0.09     0.12     0.16     0.23
 T-GP                       0.06     0.06     0.07     0.10     0.14     0.23
 T-ACGP                     0.06     0.07     0.07     0.11     0.15     0.24
@@ -126,8 +127,7 @@ The data grow 40-fold from $n = 50$ to $n = 2{,}000$. The solver memory grows to
 on the solver. At $n = 50$ all solvers hold 0.04 to 0.08 MiB. At $n = 2{,}000$ the least angle regression (LARS)
 family holds 0.34 to 0.35 MiB, and the orthogonal matching pursuit (OMP) family holds 0.20 to 0.23 MiB, apart from
 T-NCGMP with 0.08 MiB. The adaptive forward stepwise (AFS) solver T-AFS holds 0.20 MiB for $\rho = 1$ and 1.30 MiB for
-$\rho = 0.1$. The largest value over the runs lies at most 0.04 MiB above the median, apart from T-Stagewise at
-$n \le 200$, whose longest paths reach 0.13 and 0.14 MiB.
+$\rho = 0.1$. The largest value over the runs lies at most 0.04 MiB above the median for every solver.
 
 Most of this memory is reserved before the first step. Every solver records the number of dummies in the active set
 after each step, and the LARS family also records the penalty level $\lambda$ of each step. The constructors of all
@@ -179,7 +179,7 @@ T-LARS                      8.7      5.1      3.0      1.7      1.3      1.1
 T-LASSO                     8.7      5.1      3.0      1.7      1.3      1.1
 T-Stepwise                  8.4      5.1      3.0      1.7      1.3      1.1
 T-ENET (lambda2 0.5)       10.7      6.0      3.5      1.9      1.4      1.2
-T-Stagewise                 9.5      5.6      3.0      1.7      1.3      1.1
+T-Stagewise                 8.6      5.0      3.0      1.7      1.3      1.1
 T-OMP                       6.0      3.7      2.1      1.1      0.8      0.7
 T-GP                        5.6      3.3      2.0      1.1      0.8      0.7
 T-ACGP                      5.7      3.4      2.0      1.2      0.9      0.7
@@ -216,7 +216,7 @@ T-LARS                     24.0     29.0     29.0     29.0     29.0     29.0
 T-LASSO                    25.0     31.0     29.0     29.0     29.0     29.0
 T-Stepwise                 21.0     29.0     30.0     29.0     29.0     29.0
 T-ENET (lambda2 0.5)       24.0     28.0     30.0     29.0     29.0     29.0
-T-Stagewise                34.0     40.0     30.0     29.0     29.0     29.0
+T-Stagewise                25.0     30.0     29.0     29.0     29.0     29.0
 T-OMP                      21.0     29.0     30.0     29.0     29.0     29.0
 T-GP                       21.0     30.0     31.0     30.0     30.0     30.0
 T-ACGP                     21.0     30.0     30.0     30.0     30.0     30.0
@@ -235,11 +235,13 @@ Wall time: 340.0 s
 From $n = 200$ on most solvers need 29 to 31 steps, and T-MP and T-NCGMP need 36, as at $L = p$ in
 [demo_ts_perf_02](../demo_ts_perf_02_runtime_vs_dummies/README.md). By the exchangeability count of that demo, a path
 to the tenth dummy holds the ten dummies and about ten null variables. The 21 to 25 steps at $n = 50$ therefore leave
-room for only one to five of the ten true variables. T-Stagewise is the exception, with 34 and 40 steps at $n = 50$
-and $n = 100$. The steps set only the part of the memory that grows along the path, the entry of the sparse path with
-the active coefficients and the diagnostics of each step, several hundred bytes to about 1,000 bytes per step. The
-reservations depend on $n$ alone, so the longer paths of T-Stagewise move its median little and show in its largest
-values. No solver run fails.
+room for only one to five of the ten true variables. T-Stagewise takes 25 and 30 steps at $n = 50$ and $n = 100$,
+within one step of T-LASSO. Its paths were longer, with 34 and 40 steps, until library 09debc6 made a variable removed
+within a step no candidate for the move of that step and let the dummies of the support count toward $T$. The steps
+set only the part of the memory that grows along the path, the entry of the sparse path with the active coefficients
+and the diagnostics of each step, several hundred bytes to about 1,000 bytes per step. The reservations depend on $n$
+alone, so the path length moves the median little. With nine steps fewer at $n = 50$ the median of T-Stagewise fell
+by 7,242 bytes, about 800 bytes per step. No solver run fails.
 
 ### The Python and R runs
 
@@ -247,16 +249,16 @@ The [Python demo](../../../../Python/tsolvers/ad/demo_ts_perf_03_memory_vs_np/RE
 [R demo](../../../../R/tsolvers/ad/demo_ts_perf_03_memory_vs_np/README.md) run the same solvers with the same settings
 and seeds, while NumPy and R draw other data from the seeds, so the path lengths and the bytes differ slightly. Their
 median tables in MiB match the one above in every cell, apart from T-AFS with $\rho = 0.1$ at $n = 50$ in R (0.08
-against 0.07 MiB). In bytes, 53 of the 90 medians of each port equal the C++ value, and all others but one differ from
+against 0.07 MiB). In bytes, 54 of the 90 medians of each port equal the C++ value, and all others but one differ from
 it by at most 1,020 bytes, about one step of the path. The exception is T-LASSO at $n = 100$ in Python, 2,784 bytes
 above the C++ value with 32 against 31 median steps. The median steps of the three runs agree within one step in every
 cell.
 
-On the same data the three languages agree. A check outside the committed runs gave the same $\mathbf{X}$,
-$\mathbf{D}$ and $\mathbf{y}$ at $n = 50$ and $n = 2{,}000$ to all 15 solvers in C++, Python and R. In 29 of the 30
-pairs of solver and $n$ the bytes and the steps were the same in all three languages. The exception was T-Stagewise at
-$n = 50$, with 60 steps in C++, 56 in Python and 50 in R, a near-tie on its path that each build of the library breaks
-differently.
+On the same data the three languages agree. A check outside the committed runs, on library 44cf1ab, gave the same
+$\mathbf{X}$, $\mathbf{D}$ and $\mathbf{y}$ at $n = 50$ and $n = 2{,}000$ to all 15 solvers in C++, Python and R. In
+29 of the 30 pairs of solver and $n$ the bytes and the steps were the same in all three languages. The exception was
+T-Stagewise at $n = 50$, with 60 steps in C++, 56 in Python and 50 in R, a near-tie on its path that each build of the
+library breaks differently.
 
 ---
 

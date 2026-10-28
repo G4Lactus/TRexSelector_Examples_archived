@@ -142,7 +142,8 @@ out <- c(out, sprintf("Failed solver runs: %d", failures), sprintf("Wall time: %
 text <- paste0(paste(out, collapse = "\n"), "\n")
 cat(text)
 
-stem <- sprintf("runtime_vs_dummies_mc%d", num_MC)
+# Suffixed for a TREX_SOLVERS selection
+stem <- paste0(sprintf("runtime_vs_dummies_mc%d", num_MC), solver_file_suffix())
 data_dir <- output_dir(this_dir_)
 csv_path <- file.path(data_dir, paste0(stem, ".csv"))
 lines <- "solver,family,L_factor,L,ms,steps,us_per_step,warm_ms,fresh_ms,fresh_over_warm"

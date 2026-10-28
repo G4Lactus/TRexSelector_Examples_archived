@@ -249,7 +249,7 @@ int main(int argc, char** argv) {
                             if (!std::binary_search(support.begin(), support.end(), j)) ++nulls;
                         }
                         r.included.push_back(nulls);
-                        r.reached += solver->getActiveDummyIndices().size() >= T_stop ? 1.0 : 0.0;
+                        r.reached += ts_perf::included_dummies(*solver) >= T_stop ? 1.0 : 0.0;
                     }
                     r.reached /= static_cast<double>(K);
                     for (const std::size_t min_count : level_min_counts) {
@@ -335,7 +335,8 @@ int main(int argc, char** argv) {
         std::cout << out.str();
 
         // Result files: frequencies of the counts, the NHG reference is computed by the plotter
-        const std::string stem = "null_counts_vs_nhg_mc" + std::to_string(num_MC);
+        // A TREX_SOLVERS selection writes suffixed tables
+        const std::string stem = "null_counts_vs_nhg_mc" + std::to_string(num_MC) + ts_perf::file_suffix();
         const auto csv_path = ts_perf::output_dir() / (stem + ".csv");
         std::ofstream csv(csv_path);
         csv << "solver,family,p0,L,T,K,statistic,count,frequency\n";

@@ -51,6 +51,16 @@ def selected_predictors(solver, p):
     return [int(j) for j in np.flatnonzero(beta)]
 
 
+def included_dummies(solver, p):
+    """
+    Included dummies: nonzero coefficients beyond the first p, the count that
+    stops a T-solver at T (the dummies of the support, as the T-Rex selector
+    counts them). The active set can hold fewer: T-Stagewise keeps the
+    coefficient of a dummy it drops.
+    """
+    return int(np.count_nonzero(np.asarray(solver.getBeta()).ravel()[p:]))
+
+
 def parse_positive(argv, index, fallback):
     """Optional positive integer argument argv[index], or fallback when it is missing."""
     if len(argv) <= index:

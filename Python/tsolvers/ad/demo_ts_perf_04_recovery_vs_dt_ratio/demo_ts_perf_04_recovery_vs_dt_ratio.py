@@ -41,12 +41,13 @@ from ts_demo_utils import (
     output_dir,
     print_section_header,
 )
-from ts_perf_solvers import demo_solvers
+from ts_perf_solvers import demo_solvers, file_suffix, selected
 from ts_perf_utils import (
     draw_support,
     parse_positive,
     reader_data,
     run_parallel,
+    included_dummies,
     selected_predictors,
 )
 
@@ -63,7 +64,8 @@ ratio_grid = [0.25, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0]
 # Part 2
 p_phase = 400
 phase_steps = 20  # n/p and s/n in {1, ..., 20} / 20
-phase_solvers = ["T-LARS", "T-OMP", "T-AFS (rho 0.3)"]
+# Only the ones TREX_SOLVERS selects (all without a selection)
+phase_solvers = [name for name in ("T-LARS", "T-OMP", "T-AFS (rho 0.3)") if selected(name)]
 
 
 def n_for(p, ratio):
@@ -103,7 +105,7 @@ def run_problem(n, p, support, seed, specs):
             selected = selected_predictors(solver, p)
             outcomes.append((1.0 if first_entries_exact(solver, support) else 0.0,
                              compute_tpp(selected, support), compute_fdp(selected, support),
-                             1.0 if len(solver.getActiveDummyIndices()) > 0 else 0.0, True))
+                             1.0 if included_dummies(solver, p) > 0 else 0.0, True))
         except (RuntimeError, ValueError):
             outcomes.append((0.0, 0.0, 0.0, 0.0, False))
     return outcomes
@@ -167,7 +169,7 @@ def run_part1(num_MC, workers):
     text = "\n".join(out) + "\n"
     print(text, end="")
 
-    stem = f"recovery_vs_dt_ratio_mc{num_MC}"
+    stem = f"recovery_vs_dt_ratio_mc{num_MC}{file_suffix()}"  # suffixed for a TREX_SOLVERS selection
     data_dir = output_dir(_THIS_DIR)
     csv_path = os.path.join(data_dir, stem + ".csv")
     with open(csv_path, "w") as f:
@@ -214,6 +216,9 @@ def part2_task(task):
 
 def run_part2(num_MC, workers):
     print_section_header("Part 2: Donoho-Tanner phase transition")
+    if not phase_solvers:
+        print("TREX_SOLVERS selects none of its solvers, Part 2 skipped\n")
+        return
     S, G = len(phase_solvers), phase_steps
     print(f"p = {p_phase}, L = p, n/p and s/n in {{0.05, 0.10, ..., 1}}, T = 1\n"
           f"T-LARS, T-OMP and T-AFS (rho 0.3), {num_MC} runs per cell\n")
@@ -244,7 +249,7 @@ def run_part2(num_MC, workers):
     print(text, end="")
 
     families = {sp.name: sp.family for sp in demo_solvers()}
-    stem = f"phase_transition_mc{num_MC}"
+    stem = f"phase_transition_mc{num_MC}{file_suffix()}"  # suffixed for a TREX_SOLVERS selection
     data_dir = output_dir(_THIS_DIR)
     csv_path = os.path.join(data_dir, stem + ".csv")
     with open(csv_path, "w") as f:

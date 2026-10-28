@@ -37,11 +37,12 @@ from ts_demo_utils import (
     output_dir,
     print_section_header,
 )
-from ts_perf_solvers import demo_solvers
+from ts_perf_solvers import demo_solvers, file_suffix
 from ts_perf_utils import (
     draw_support,
     parse_positive,
     run_parallel,
+    included_dummies,
     selected_predictors,
 )
 
@@ -97,7 +98,7 @@ def run_one(mc):
                 selected = selected_predictors(solver, p)
                 occurrences[selected] += 1
                 included.append(sum(j not in SUPPORT_SET for j in selected))
-                reached += 1.0 if len(solver.getActiveDummyIndices()) >= T_stop else 0.0
+                reached += 1.0 if included_dummies(solver, p) >= T_stop else 0.0
             null_mask = np.ones(p, dtype=bool)
             null_mask[SUPPORT] = False
             selected_nulls = [int(np.sum((occurrences >= c) & null_mask)) for c in LEVEL_MIN_COUNTS]
@@ -184,7 +185,7 @@ def main():
     print(text, end="")
 
     # Result files: frequencies of the counts, the NHG reference is computed by the plotter
-    stem = f"null_counts_vs_nhg_mc{num_MC}"
+    stem = f"null_counts_vs_nhg_mc{num_MC}{file_suffix()}"  # suffixed for a TREX_SOLVERS selection
     data_dir = output_dir(_THIS_DIR)
     csv_path = os.path.join(data_dir, stem + ".csv")
     with open(csv_path, "w") as f:

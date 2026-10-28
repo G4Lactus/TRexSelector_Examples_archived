@@ -79,7 +79,8 @@ ggplot2 module [`ts_plt_utils.R`](../../ts_plt_utils.R), and its `.pdf` files ca
 (`pdf(timestamp = FALSE)`), so a redraw of the same results gives the same bytes. The comma-separated values (CSV) file
 lists the frequency of every count per solver and statistic (`included`, `selected_v1`, `selected_v0.75` and
 `selected_v0.5`), together with $p_0$, $L$, $T$ and $K$, so the plotter computes the NHG reference itself. The output
-below is a run against library 415484d (TRexSelectorNeo 2.0.0).
+below is a run against library 415484d (TRexSelectorNeo 2.0.0), with the T-Stagewise rows rerun on library 09debc6
+with the same seeds.
 
 ---
 
@@ -106,7 +107,7 @@ T-LARS                   19.68    6.13   0.008   100.0 %
 T-LASSO                  19.67    6.13   0.007   100.0 %
 T-Stepwise               19.64    6.09   0.007   100.0 %
 T-ENET (lambda2 0.5)     19.59    6.01   0.006   100.0 %
-T-Stagewise              21.18    7.00   0.093   100.0 %
+T-Stagewise              19.69    6.12   0.009   100.0 %
 T-OMP                    19.64    6.09   0.007   100.0 %
 T-GP                     19.64    6.01   0.008   100.0 %
 T-ACGP                   19.57    6.01   0.008   100.0 %
@@ -119,17 +120,16 @@ T-AFS (rho 0.5)          19.59    5.97   0.004   100.0 %
 T-AFS (rho 1)            19.64    6.09   0.007   100.0 %
 ```
 
-Every experiment reached $T = 20$ dummies, and 14 of the 15 configurations follow the NHG. Their means lie between
-19.51 and 19.68 against 19.60, their standard deviations between 5.97 and 6.13 against 6.01, and their Kolmogorov
-distances are at most 0.010, below the 5 % critical value of 0.014 for 10,000 independent counts. T-Stagewise is the
-one exception again, with a mean of 21.18, a standard deviation of 7.00 and a distance of 0.093. Its non-negative least
-squares (NNLS) step removes variables from the active set and keeps their coefficients frozen, so removed null
-variables stay counted while the path runs on until 20 dummies are active again, as the C++ README explains.
+Every experiment reached $T = 20$ dummies, and all 15 configurations follow the NHG. Their means lie between
+19.51 and 19.69 against 19.60, their standard deviations between 5.97 and 6.13 against 6.01, and their Kolmogorov
+distances are at most 0.010, below the 5 % critical value of 0.014 for 10,000 independent counts. T-Stagewise
+follows the NHG since library 09debc6 (a mean of 19.69, a standard deviation of 6.12 and a distance of 0.009), because
+a dummy that its non-negative least squares (NNLS) step removes from the active set keeps its coefficient and now
+counts toward $T$, as the C++ README explains. Before, its count rose to a mean of 21.18 (distance 0.093).
 
 T-Stepwise and T-AFS ($\rho = 1$) repeat the rows of T-OMP, and T-NCGMP repeats T-MP, as the shared paths of the
 [folder README](../../README.md) predict. The C++ and Python runs give the same picture. Per configuration the means of
-the three languages differ by at most 0.26, and T-Stagewise has the largest distance in each of them (0.104 in C++,
-0.095 in Python).
+the three languages differ by at most 0.26, and no distance exceeds 0.014 in C++ or 0.011 in Python.
 
 ### Selected null variables (A-II)
 
@@ -141,7 +141,7 @@ T-LARS                         6.52        12.09        17.25        0.000      
 T-LASSO                        6.29        11.97        17.22        0.000        0.000        0.005
 T-Stepwise                     0.30         1.41         3.53        0.000        0.000        0.000
 T-ENET (lambda2 0.5)           9.59        14.57        18.29        0.000        0.002        0.037
-T-Stagewise                    6.74        12.66        18.36        0.000        0.000        0.022
+T-Stagewise                    6.51        12.10        17.24        0.000        0.000        0.005
 T-OMP                          0.30         1.41         3.53        0.000        0.000        0.000
 T-GP                           0.33         1.52         3.81        0.000        0.000        0.000
 T-ACGP                         0.31         1.49         3.67        0.000        0.000        0.000
@@ -159,19 +159,19 @@ Wall time: 34.3 s
 
 The NHG dominates the number of selected null variables at $v \to 1$ and $v = 0.75$ in every configuration (an excess
 of at most 0.002). At $v = 0.5$ the excess is zero for the orthogonal matching pursuit (OMP) family, T-Stepwise and
-T-AFS, and positive for the least-angle regression (LARS) family (0.005 for T-LARS and T-LASSO, 0.037 for T-ENET and
-0.022 for T-Stagewise). The excesses sit in the lower tail, at 4 to 14 selected null variables, as in the supplement,
+T-AFS, and positive for the least-angle regression (LARS) family (0.005 for T-LARS, T-LASSO and T-Stagewise, 0.037
+for T-ENET). The excesses sit in the lower tail, at 4 to 14 selected null variables, as in the supplement,
 where the NHG CDF lies slightly above the empirical CDF for $v = 0.5$ between 6 and 12. The one of T-ENET is the
 largest, with an empirical CDF of 0.116 against 0.153 at 13, which is 2.3 standard errors.
 
-The lower tail of T-ENET and T-Stagewise is not noise alone. All three languages show the excess at the same place,
-at 11 to 13 selected null variables (T-ENET 0.023 in C++, 0.048 in Python and 0.037 in R). Pooled over the 1,500 runs
-of the three languages it reaches 0.033 for T-ENET (4.1 standard errors) and 0.026 for T-Stagewise (3.2) at 12. Their
-$V_{T,L}(0.5)$ has means of 18.4 and 18.3 and standard deviations of 4.3 and 4.5, against 19.60 and 6.01 for the NHG,
-so it is more concentrated than the NHG and rarely as small as the lower NHG tail. Its upper tail lies far below the
-NHG, so large numbers of selected null variables stay rarer than the NHG predicts. A-II thus holds in the mean and in
-the upper tail for all configurations, while T-ENET and T-Stagewise miss strict stochastic dominance by about 0.03 in
-the lower tail at $v = 0.5$.
+The lower tail of T-ENET is not noise alone. All three languages show its excess at the same place, at 12 to 13
+selected null variables (0.023 in C++, 0.048 in Python and 0.037 in R). Pooled over the 1,500 runs of the three
+languages it reaches 0.033 (4.1 standard errors) at 12. Its $V_{T,L}(0.5)$ has a mean of 18.4 and a standard deviation
+of 4.3, against 19.60 and 6.01 for the NHG, so it is more concentrated than the NHG and rarely as small as the lower
+NHG tail. Its upper tail lies far below the NHG, so large numbers of selected null variables stay rarer than the NHG
+predicts. A-II thus holds in the mean and in the upper tail for all configurations, while T-ENET misses strict
+stochastic dominance by about 0.03 in the lower tail at $v = 0.5$. T-Stagewise missed it by the same margin before
+library 09debc6 (0.026, 3.2 standard errors) and stays at 0.006 (1.9) over the new runs.
 
 The solver families differ in how close they come to the bound. The LARS family selects 17.2 to 18.4 null variables at
 $v = 0.5$, close to the NHG mean of 19.60, because its candidate sets repeat from one experiment to the next. The
