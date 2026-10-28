@@ -29,7 +29,7 @@
  * - tFDR = 0.1
  * - corr_max = 0.98
  * - single-linkage HAC
- * - lambda2 = CV_1SE_CCD
+ * - lambda2 = CV_1SE_CCD (EN rows), CV_1SE_IEN_CCD (IEN rows)
  *
  * Methods compared:
  * - TENET
@@ -100,7 +100,8 @@ static AR1BlocksMethodSet make_method_set(const GVSSimConfig& cfg) {
   ms.en_aug.en_solver = ENSolverType::TENET_AUG;
 
   ms.ien.gvs_type = GVSType::IEN;
-  ms.ien.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
+  ms.ien.lambda2_method = LambdaSelectionMethod::CV_1SE_IEN_CCD;
+  ms.ien.cv_dfmax_ratio = 1.0;  // support cap 180 > s = 150 (library default 0.8 gives 144)
   ms.ien.corr_max = cfg.corr_max;
   ms.ien.hc_linkage = hac::LinkageMethod::Single;
 
@@ -127,7 +128,7 @@ static void run_ar1_part1_2d_sweep(const GVSSimConfig& cfg,
             << "  MC=" << cfg.num_MC << "  tFDR=" << fmt_num(cfg.tFDR)
             << "  K=" << cfg.K << "  corr_max=" << fmt_num(cfg.corr_max) << "\n"
             << "  methods: TENET / TENET_AUG / TIENET_AUG"
-            << "  |  lambda2=CV_1SE_CCD  linkage=Single\n"
+            << "  |  lambda2=CV_1SE_CCD (EN), CV_1SE_IEN_CCD (IEN)  linkage=Single\n"
             << "  snr_grid: {";
   for (std::size_t i = 0; i < preset.snr_grid_2d.size(); ++i)
     std::cout << (i ? ", " : "") << fmt_num(preset.snr_grid_2d[i]);

@@ -13,13 +13,14 @@
  * @details
  *  Four parts, each in its own function:
  *    sim_hastie_part_1() — 2-D SNR × rho grid
- *    sim_hastie_part_2() — lambda2_method comparison: SVD / CCD (EN), CCD / IEN_CCD (IEN)
+ *    sim_hastie_part_2() — lambda2_method comparison: SVD / CCD (EN), TIK_SVD / IEN_CCD (IEN)
  *    sim_hastie_part_3() — hc_linkage comparison: Single / Complete / Average / WPGMA
  *    sim_hastie_part_4() — clustering cut: corr_max 0.98 / noise floor / oracle groups
  *
  * DGP: three equicorrelated groups of 50 variables each, all active (s = 150),
  *      plus 350 null white-noise variables; p = 500 and n = 200.
- *  Selector: K=20, tFDR=0.1, corr_max=0.98, lambda2=CV_1SE_CCD (Part 2 adds CV_1SE_IEN_CCD for IEN).
+ *  Selector: K=20, tFDR=0.1, corr_max=0.98, lambda2=CV_1SE_CCD on the EN track and the IEN-geometry
+ *  CV_1SE_IEN_CCD on the IEN track (Part 2 compares it with CV_1SE_TIK_SVD).
  *  Methods compared in Parts 1–3: TENET, TENET_AUG, TIENET_AUG (Part 4: TENET, TIENET_AUG).
  *  MC: 200 trials per grid point.
  *
@@ -80,7 +81,8 @@ static void sim_hastie_part_1(const GVSSimConfig& cfg, const std::string& tag)
 
     TRexGVSControlParameter gvs_ctrl_ien;
     gvs_ctrl_ien.gvs_type       = GVSType::IEN;
-    gvs_ctrl_ien.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
+    gvs_ctrl_ien.lambda2_method = LambdaSelectionMethod::CV_1SE_IEN_CCD;
+    gvs_ctrl_ien.cv_dfmax_ratio = 1.0;  // support cap 180 > s = 150 (library default 0.8 gives 144)
     gvs_ctrl_ien.corr_max       = cfg.corr_max;
     gvs_ctrl_ien.hc_linkage     = hac::LinkageMethod::Single;
 
@@ -88,7 +90,7 @@ static void sim_hastie_part_1(const GVSSimConfig& cfg, const std::string& tag)
     std::cout << "  n=" << cfg.n << "  p=" << cfg.p << "  s=150"
               << "  MC=" << cfg.num_MC << "  tFDR=" << fmt_num(cfg.tFDR)
               << "  K=" << cfg.K << "  corr_max=" << fmt_num(cfg.corr_max) << "\n"
-              << "  methods: TENET / TENET_AUG / TIENET_AUG  |  lambda2=CV_1SE_CCD"
+              << "  methods: TENET / TENET_AUG / TIENET_AUG  |  lambda2=CV_1SE_CCD (EN), CV_1SE_IEN_CCD (IEN)"
               << "  linkage=Single\n"
               << "  snr_grid: {";
     for (std::size_t i = 0; i < snr_grid_2d.size(); ++i)
@@ -142,9 +144,11 @@ static void sim_hastie_part_1(const GVSSimConfig& cfg, const std::string& tag)
  * @brief Compare lambda2 selection methods at a fixed Hastie operating point.
  *
  * Runs TENET and TIENET_AUG at SNR = 2.0 and rho = 0.7 with two lambda2 rules per track:
- * CV_1SE_SVD vs CV_1SE_CCD for TENET, CV_1SE_CCD vs the IEN-geometry CV_1SE_IEN_CCD
- * for TIENET_AUG (the EN track rejects the IEN tuner). The IEN tuner caps its lambda1 path
- * at 0.8 * n_train = 144 variables, below this design's s = 150, so Parts 1 and 3 keep CCD.
+ * CV_1SE_SVD vs CV_1SE_CCD for TENET, and the two IEN-geometry tuners CV_1SE_TIK_SVD vs
+ * CV_1SE_IEN_CCD for TIENET_AUG (the EN track rejects them, and an EN tuner on the IEN track
+ * would fit the wrong objective). CV_1SE_IEN_CCD caps its lambda1 path at 0.8 * n_train = 144
+ * variables, below this design's s = 150. CV_1SE_TIK_SVD needs p - M < n_train, which holds here
+ * because no groups form at rho = 0.7, but not where HAC groups the variables (Parts 1 and 4).
  */
 
 static void sim_hastie_part_2(const GVSSimConfig& cfg, const std::string& tag)
@@ -161,17 +165,17 @@ static void sim_hastie_part_2(const GVSSimConfig& cfg, const std::string& tag)
 
     auto trex_ctrl = make_gvs_trex_control(cfg.K);
 
-    // Rules per track: the IEN-geometry tuner is valid on the IEN track only.
+    // Rules per track: the IEN-geometry tuners are valid on the IEN track only.
     const std::vector<LambdaSelectionMethod> en_methods = {
         LambdaSelectionMethod::CV_1SE_SVD,
         LambdaSelectionMethod::CV_1SE_CCD
     };
     const std::vector<std::string> en_labels = {"CV_1SE_SVD", "CV_1SE_CCD"};
     const std::vector<LambdaSelectionMethod> ien_methods = {
-        LambdaSelectionMethod::CV_1SE_CCD,
+        LambdaSelectionMethod::CV_1SE_TIK_SVD,
         LambdaSelectionMethod::CV_1SE_IEN_CCD
     };
-    const std::vector<std::string> ien_labels = {"CV_1SE_CCD", "CV_1SE_IEN_CCD"};
+    const std::vector<std::string> ien_labels = {"CV_1SE_TIK_SVD", "CV_1SE_IEN_CCD"};
 
     cdiag::print_section_header("Part 2/4: lambda2_method Comparison  |  " + tag);
     std::cout << "  n=" << cfg.n << "  p=" << cfg.p << "  s=150"
@@ -180,7 +184,7 @@ static void sim_hastie_part_2(const GVSSimConfig& cfg, const std::string& tag)
               << "  fixed operating point: SNR=" << fmt_num(fixed_snr)
               << "  rho=" << fmt_num(fixed_rho) << "\n"
               << "  lambda2 methods: TENET CV_1SE_SVD / CV_1SE_CCD,"
-              << " TIENET_AUG CV_1SE_CCD / CV_1SE_IEN_CCD  (4 runs)\n\n";
+              << " TIENET_AUG CV_1SE_TIK_SVD / CV_1SE_IEN_CCD  (4 runs)\n\n";
 
     std::vector<GVSGridPointResult> en_results, ien_results;
     en_results.reserve(en_methods.size());
@@ -203,6 +207,7 @@ static void sim_hastie_part_2(const GVSSimConfig& cfg, const std::string& tag)
         TRexGVSControlParameter gvs_ctrl_ien;
         gvs_ctrl_ien.gvs_type       = GVSType::IEN;
         gvs_ctrl_ien.lambda2_method = ien_methods[i];
+        gvs_ctrl_ien.cv_dfmax_ratio = 1.0;
         gvs_ctrl_ien.corr_max       = cfg.corr_max;
         gvs_ctrl_ien.hc_linkage     = hac::LinkageMethod::Single;
 
@@ -273,13 +278,13 @@ static void sim_hastie_part_2(const GVSSimConfig& cfg, const std::string& tag)
  * @brief Compare HAC linkage rules at a fixed Hastie operating point.
  *
  * Runs TENET and TIENET_AUG at SNR = 2.0 and rho = 0.7, comparing Single, Complete,
- * Average, and WPGMA linkage with lambda2 fixed at CV_1SE_CCD.
+ * Average, and WPGMA linkage with lambda2 fixed at CV_1SE_CCD (EN) and CV_1SE_IEN_CCD (IEN).
  */
 
 static void sim_hastie_part_3(const GVSSimConfig& cfg, const std::string& tag)
 {
     // Same fixed operating point as Part 2: SNR=2.0, rho=0.7.
-    // CV_1SE_CCD used throughout to isolate the linkage effect from lambda selection.
+    // One lambda2 rule per track throughout, to isolate the linkage effect from lambda selection.
     constexpr double fixed_snr = 2.0;
     constexpr double fixed_rho = 0.7;
     const double     fixed_sdx = std::sqrt((1.0 - fixed_rho) / fixed_rho);
@@ -302,7 +307,7 @@ static void sim_hastie_part_3(const GVSSimConfig& cfg, const std::string& tag)
     cdiag::print_section_header("Part 3/4: hc_linkage Comparison  |  " + tag);
     std::cout << "  n=" << cfg.n << "  p=" << cfg.p << "  s=150"
               << "  MC=" << cfg.num_MC << "  tFDR=" << fmt_num(cfg.tFDR)
-              << "  K=" << cfg.K << "  lambda2=CV_1SE_CCD\n"
+              << "  K=" << cfg.K << "  lambda2=CV_1SE_CCD (EN), CV_1SE_IEN_CCD (IEN)\n"
               << "  fixed operating point: SNR=" << fmt_num(fixed_snr)
               << "  rho=" << fmt_num(fixed_rho) << "\n"
               << "  linkages: Single / Complete / Average / WPGMA"
@@ -328,7 +333,8 @@ static void sim_hastie_part_3(const GVSSimConfig& cfg, const std::string& tag)
 
         TRexGVSControlParameter gvs_ctrl_ien;
         gvs_ctrl_ien.gvs_type       = GVSType::IEN;
-        gvs_ctrl_ien.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
+        gvs_ctrl_ien.lambda2_method = LambdaSelectionMethod::CV_1SE_IEN_CCD;
+        gvs_ctrl_ien.cv_dfmax_ratio = 1.0;
         gvs_ctrl_ien.corr_max       = cfg.corr_max;
         gvs_ctrl_ien.hc_linkage     = linkages[i];
 
@@ -401,7 +407,7 @@ static void sim_hastie_part_3(const GVSSimConfig& cfg, const std::string& tag)
  */
 static void sim_hastie_part_4(const GVSSimConfig& cfg, const std::string& tag)
 {
-    // Same fixed operating point as Parts 2-3, lambda2 = CV_1SE_CCD as in Parts 1 and 3
+    // Same fixed operating point as Parts 2-3, lambda2 rules as in Parts 1 and 3
     constexpr double fixed_snr = 2.0;
     constexpr double fixed_rho = 0.7;
     const double     fixed_sdx = std::sqrt((1.0 - fixed_rho) / fixed_rho);
@@ -421,7 +427,7 @@ static void sim_hastie_part_4(const GVSSimConfig& cfg, const std::string& tag)
     cdiag::print_section_header("Part 4/4: Clustering-cut Comparison  |  " + tag);
     std::cout << "  n=" << cfg.n << "  p=" << cfg.p << "  s=150"
               << "  MC=" << cfg.num_MC << "  tFDR=" << fmt_num(cfg.tFDR)
-              << "  K=" << cfg.K << "  lambda2=CV_1SE_CCD  linkage=Single\n"
+              << "  K=" << cfg.K << "  lambda2=CV_1SE_CCD (EN), CV_1SE_IEN_CCD (IEN)  linkage=Single\n"
               << "  fixed operating point: SNR=" << fmt_num(fixed_snr)
               << "  rho=" << fmt_num(fixed_rho) << "\n"
               << "  cuts: corr_max " << fmt_num(cfg.corr_max) << " / noise floor "
@@ -442,7 +448,8 @@ static void sim_hastie_part_4(const GVSSimConfig& cfg, const std::string& tag)
 
         TRexGVSControlParameter gvs_ctrl_ien;
         gvs_ctrl_ien.gvs_type       = GVSType::IEN;
-        gvs_ctrl_ien.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
+        gvs_ctrl_ien.lambda2_method = LambdaSelectionMethod::CV_1SE_IEN_CCD;
+        gvs_ctrl_ien.cv_dfmax_ratio = 1.0;
         gvs_ctrl_ien.corr_max       = cut.corr_max;
         gvs_ctrl_ien.hc_linkage     = hac::LinkageMethod::Single;
         ien_results.push_back(run_gvs_mc_trials_cut(

@@ -19,7 +19,7 @@
  *       Trap2 (300–359) + noise (360+); s = 100.
  *  In each correlated group, one half loads positively and the other half
  *  negatively on a latent factor, inducing strong within-group sign structure.
- *  Selector: K=20, tFDR=0.1, corr_max=0.98, lambda2=CV_1SE_CCD.
+ *  Selector: K=20, tFDR=0.1, corr_max=0.98, lambda2=CV_1SE_CCD (EN), CV_1SE_IEN_CCD (IEN).
  *  Methods compared: TENET, TENET_AUG, TIENET_AUG.
  *  MC: 200 trials per grid point.
  */
@@ -73,7 +73,8 @@ static void sim_neg_traps_part1(const GVSSimConfig& cfg, const std::string& tag)
 
     TRexGVSControlParameter gvs_ctrl_ien;
     gvs_ctrl_ien.gvs_type       = GVSType::IEN;
-    gvs_ctrl_ien.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
+    gvs_ctrl_ien.lambda2_method = LambdaSelectionMethod::CV_1SE_IEN_CCD;
+    gvs_ctrl_ien.cv_dfmax_ratio = 1.0;  // support cap 180 as in the s = 150 demos (library default 0.8 gives 144)
     gvs_ctrl_ien.corr_max       = cfg.corr_max;
     gvs_ctrl_ien.hc_linkage     = hac::LinkageMethod::Single;
 
@@ -82,7 +83,7 @@ static void sim_neg_traps_part1(const GVSSimConfig& cfg, const std::string& tag)
               << "  MC=" << cfg.num_MC << "  tFDR=" << fmt_num(cfg.tFDR)
               << "  K=" << cfg.K << "  corr_max=" << fmt_num(cfg.corr_max) << "\n"
               << "  methods: TENET / TENET_AUG / TIENET_AUG"
-              << "  |  lambda2=CV_1SE_CCD  linkage=Single\n"
+              << "  |  lambda2=CV_1SE_CCD (EN), CV_1SE_IEN_CCD (IEN)  linkage=Single\n"
               << "  snr_grid: {";
     for (std::size_t i = 0; i < snr_grid_2d.size(); ++i)
         std::cout << (i ? ", " : "") << fmt_num(snr_grid_2d[i]);

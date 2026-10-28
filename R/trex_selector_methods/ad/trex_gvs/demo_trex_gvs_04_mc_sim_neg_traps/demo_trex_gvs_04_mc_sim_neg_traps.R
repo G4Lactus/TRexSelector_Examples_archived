@@ -18,7 +18,7 @@
 #      Trap2 (301-360) + noise (361+); s = 100.
 # In each correlated group, one half loads positively and the other half
 # negatively on a latent factor, inducing strong within-group sign structure.
-# Selector: K=20, tFDR=0.1, corr_max=0.98, lambda2=CV_1SE_CCD.
+# Selector: K=20, tFDR=0.1, corr_max=0.98, lambda2=CV_1SE_CCD (EN), CV_1SE_IEN_CCD (IEN).
 # Methods compared: TENET, TENET_AUG, TIENET_AUG.
 # MC: 200 trials per grid point (the full run takes hours — reduce num_MC and
 #     the grids for a quick smoke test). Optional first CLI argument sets the
@@ -67,7 +67,7 @@ CFG <- list(
   K        = 20L,
   tFDR     = 0.1,
   seed     = 2026L,
-  num_MC   = 200L,
+  num_MC   = num_mc(200L),  # TREX_NUM_MC for smoke runs
   corr_max = 0.98
 )
 
@@ -75,11 +75,14 @@ SCENARIO_TAG <- "Neg-Traps"
 
 # The TIENET_AUG (IEN) row leaves en_solver at the library default (NULL ->
 # "TENET" in trex_gvs_control(), ignored on the IEN path — its solver is
-# always TIENET_AUG), mirroring the Python demos' en_solver=None.
+# always TIENET_AUG), mirroring the Python demos' en_solver=None, and names the
+# IEN-geometry lambda2 tuner CV_1SE_IEN_CCD.
 GVS_METHODS <- list(
-  list(label = "TENET",      GVS_type = "EN",  en_solver = "TENET"),
-  list(label = "TENET_AUG",  GVS_type = "EN",  en_solver = "TENET_AUG"),
-  list(label = "TIENET_AUG", GVS_type = "IEN", en_solver = NULL)
+  list(label = "TENET",      GVS_type = "EN",  en_solver = "TENET",     lambda2_method = "CV_1SE_CCD"),
+  list(label = "TENET_AUG",  GVS_type = "EN",  en_solver = "TENET_AUG", lambda2_method = "CV_1SE_CCD"),
+  # support cap 180 as in the s = 150 demos (library default 0.8 gives 144)
+  list(label = "TIENET_AUG", GVS_type = "IEN", en_solver = NULL,        lambda2_method = "CV_1SE_IEN_CCD",
+       cv_dfmax_ratio = 1.0)
 )
 
 
@@ -93,7 +96,8 @@ GVS_METHODS <- list(
     n = CFG$n, p = CFG$p, snr = snr, sd_x = sd_x,
     tFDR = CFG$tFDR, K = CFG$K, num_MC = CFG$num_MC, seed = CFG$seed,
     GVS_type = method$GVS_type, corr_max = CFG$corr_max, hc_dist = "Single",
-    en_solver = method$en_solver, lambda2_method = "CV_1SE_CCD",
+    en_solver = method$en_solver, lambda2_method = method$lambda2_method,
+    cv_dfmax_ratio = method$cv_dfmax_ratio,
     n_cores = num_cores
   )
 }
@@ -112,7 +116,7 @@ sim_neg_traps_part1 <- function(cfg, tag) {
               cfg$n, cfg$p, cfg$num_MC, fmt_num(cfg$tFDR), cfg$K,
               fmt_num(cfg$corr_max)))
   cat("  methods: TENET / TENET_AUG / TIENET_AUG",
-      "  |  lambda2=CV_1SE_CCD  linkage=Single\n", sep = "")
+      "  |  lambda2=CV_1SE_CCD (EN), CV_1SE_IEN_CCD (IEN)  linkage=Single\n", sep = "")
   cat("  snr_grid: {", paste(fmt_num(snr_grid_2d), collapse = ", "), "}\n",
       sep = "")
   cat("  rho_grid: {", paste(fmt_num(rho_grid_2d), collapse = ", "), "}\n",

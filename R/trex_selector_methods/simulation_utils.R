@@ -193,6 +193,8 @@ cap_hc <- function(hc_dist) {
 #'                       (mirrors the cpp/Python convention selector seed =
 #'                       cv_seed = trial seed). -1 = hardware entropy.
 #' @param cv_seed        CV fold-permutation seed; -1 derives it from `seed`.
+#' @param cv_dfmax_ratio Support cap of the CV lambda1 path as a share of n_train;
+#'                       NULL keeps the trex_gvs_control() default (0.8).
 #'
 #' @return The TRexGVSSelector object after `$select()` has been called.
 .gvs_select <- function(X, y, tFDR, K, GVS_type, corr_max,
@@ -201,7 +203,8 @@ cap_hc <- function(hc_dist) {
                         lambda2_method = "CV_1SE_CCD",
                         groups         = NULL,
                         seed           = -1L,
-                        cv_seed        = -1L) {
+                        cv_seed        = -1L,
+                        cv_dfmax_ratio = NULL) {
   gvs_args <- list(
     gvs_type       = GVS_type,
     corr_max       = corr_max,
@@ -211,6 +214,7 @@ cap_hc <- function(hc_dist) {
     cv_seed        = cv_seed
   )
   if (!is.null(groups)) gvs_args$groups <- groups
+  if (!is.null(cv_dfmax_ratio)) gvs_args$cv_dfmax_ratio <- cv_dfmax_ratio
 
   # The TIENET_AUG-labeled rows run the augmented IEN solver, matching the
   # cpp/Python reference; with the plain "TLARS" base solver the current
@@ -255,6 +259,7 @@ cap_hc <- function(hc_dist) {
 #' @param GVS_type    GVS variant: "EN" or "IEN".
 #' @param corr_max    HAC clustering threshold passed to trex.
 #' @param hc_dist     HAC linkage type (default "single").
+#' @param cv_dfmax_ratio Support cap of the CV lambda1 path (NULL: library default).
 #' @param n_cores     Number of parallel cores (default num_cores).
 #'
 #' @return Named list: mean_FDP, mean_TPP, sd_FDP, sd_TPP.
@@ -272,6 +277,7 @@ cap_hc <- function(hc_dist) {
   hc_dist  = "single",
   en_solver      = "TENET",
   lambda2_method = "CV_1SE_CCD",
+  cv_dfmax_ratio = NULL,
   n_cores  = num_cores
 ) {
   one_trial <- function(mc) {
@@ -280,7 +286,8 @@ cap_hc <- function(hc_dist) {
                           seed = trial_seed)
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
                        hc_dist, en_solver, lambda2_method,
-                       seed = trial_seed, cv_seed = trial_seed)
+                       seed = trial_seed, cv_seed = trial_seed,
+                       cv_dfmax_ratio = cv_dfmax_ratio)
     ts <- which(dat$beta != 0)
     c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
       TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
@@ -330,6 +337,7 @@ cap_hc <- function(hc_dist) {
   en_solver      = "TENET",
   lambda2_method = "CV_1SE_CCD",
   oracle   = FALSE,
+  cv_dfmax_ratio = NULL,
   n_cores  = num_cores
 ) {
   one_trial <- function(mc) {
@@ -339,7 +347,8 @@ cap_hc <- function(hc_dist) {
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
                        "single", en_solver, lambda2_method,
                        groups = if (oracle) dat$prior_groups else NULL,
-                       seed = trial_seed, cv_seed = trial_seed)
+                       seed = trial_seed, cv_seed = trial_seed,
+                       cv_dfmax_ratio = cv_dfmax_ratio)
     si <- sel$selected_indices
     ts <- which(dat$beta != 0)
     c(FDP = TRexSelectorNeo::trex_fdp(si, ts),
@@ -400,6 +409,7 @@ cap_hc <- function(hc_dist) {
   hc_dist  = "single",
   en_solver      = "TENET",
   lambda2_method = "CV_1SE_CCD",
+  cv_dfmax_ratio = NULL,
   n_cores  = num_cores
 ) {
   one_trial <- function(mc) {
@@ -415,7 +425,8 @@ cap_hc <- function(hc_dist) {
     )
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
                        hc_dist, en_solver, lambda2_method,
-                       seed = trial_seed, cv_seed = trial_seed)
+                       seed = trial_seed, cv_seed = trial_seed,
+                       cv_dfmax_ratio = cv_dfmax_ratio)
     ts <- which(dat$beta != 0)
     c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
       TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
@@ -465,6 +476,7 @@ cap_hc <- function(hc_dist) {
   hc_dist  = "single",
   en_solver      = "TENET",
   lambda2_method = "CV_1SE_CCD",
+  cv_dfmax_ratio = NULL,
   n_cores  = num_cores
 ) {
   one_trial <- function(mc) {
@@ -473,7 +485,8 @@ cap_hc <- function(hc_dist) {
                                 seed = trial_seed)
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
                        hc_dist, en_solver, lambda2_method,
-                       seed = trial_seed, cv_seed = trial_seed)
+                       seed = trial_seed, cv_seed = trial_seed,
+                       cv_dfmax_ratio = cv_dfmax_ratio)
     ts <- which(dat$beta != 0)
     c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
       TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
@@ -523,6 +536,7 @@ cap_hc <- function(hc_dist) {
   hc_dist  = "single",
   en_solver      = "TENET",
   lambda2_method = "CV_1SE_CCD",
+  cv_dfmax_ratio = NULL,
   n_cores  = num_cores
 ) {
   one_trial <- function(mc) {
@@ -531,7 +545,8 @@ cap_hc <- function(hc_dist) {
                              seed = trial_seed)
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
                        hc_dist, en_solver, lambda2_method,
-                       seed = trial_seed, cv_seed = trial_seed)
+                       seed = trial_seed, cv_seed = trial_seed,
+                       cv_dfmax_ratio = cv_dfmax_ratio)
     ts <- which(dat$beta != 0)
     c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
       TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
@@ -585,6 +600,7 @@ cap_hc <- function(hc_dist) {
   df       = 3L,
   en_solver      = "TENET",
   lambda2_method = "CV_1SE_CCD",
+  cv_dfmax_ratio = NULL,
   n_cores  = num_cores
 ) {
   one_trial <- function(mc) {
@@ -593,7 +609,8 @@ cap_hc <- function(hc_dist) {
                                   df = df, seed = trial_seed)
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
                        hc_dist, en_solver, lambda2_method,
-                       seed = trial_seed, cv_seed = trial_seed)
+                       seed = trial_seed, cv_seed = trial_seed,
+                       cv_dfmax_ratio = cv_dfmax_ratio)
     ts <- which(dat$beta != 0)
     c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
       TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
@@ -644,6 +661,7 @@ cap_hc <- function(hc_dist) {
   hc_dist  = "single",
   en_solver      = "TENET",
   lambda2_method = "CV_1SE_CCD",
+  cv_dfmax_ratio = NULL,
   n_cores  = num_cores
 ) {
   one_trial <- function(mc) {
@@ -652,7 +670,8 @@ cap_hc <- function(hc_dist) {
                               seed = trial_seed)
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
                        hc_dist, en_solver, lambda2_method,
-                       seed = trial_seed, cv_seed = trial_seed)
+                       seed = trial_seed, cv_seed = trial_seed,
+                       cv_dfmax_ratio = cv_dfmax_ratio)
     ts <- which(dat$beta != 0)
     c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
       TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
@@ -710,6 +729,7 @@ cap_hc <- function(hc_dist) {
   hc_dist  = "single",
   en_solver      = "TENET",
   lambda2_method = "CV_1SE_CCD",
+  cv_dfmax_ratio = NULL,
   n_cores  = num_cores
 ) {
   one_trial <- function(mc) {
@@ -718,7 +738,8 @@ cap_hc <- function(hc_dist) {
                                seed = trial_seed)
     sel <- .gvs_select(dat$X, dat$y, tFDR, K, GVS_type, corr_max,
                        hc_dist, en_solver, lambda2_method,
-                       seed = trial_seed, cv_seed = trial_seed)
+                       seed = trial_seed, cv_seed = trial_seed,
+                       cv_dfmax_ratio = cv_dfmax_ratio)
     ts <- which(dat$beta != 0)
     c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
       TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))

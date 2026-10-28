@@ -12,14 +12,15 @@
 # Four parts, each in its own function:
 #   sim_hastie_part_1() — 2-D SNR x rho grid
 #   sim_hastie_part_2() — lambda2_method comparison: SVD / CCD (EN),
-#                         CCD / IEN_CCD (IEN)
+#                         TIK_SVD / IEN_CCD (IEN)
 #   sim_hastie_part_3() — hc_linkage comparison: Single / Complete / Average / WPGMA
 #   sim_hastie_part_4() — clustering cut: corr_max 0.98 / noise floor / oracle groups
 #
 # DGP: three equicorrelated groups of 50 variables each, all active (s = 150),
 #      plus 350 null white-noise variables; p = 500 and n = 200.
-# Selector: K=20, tFDR=0.1, corr_max=0.98, lambda2=CV_1SE_CCD (Part 2 adds
-#   CV_1SE_IEN_CCD for IEN).
+# Selector: K=20, tFDR=0.1, corr_max=0.98, lambda2=CV_1SE_CCD on the EN track
+#   and the IEN-geometry CV_1SE_IEN_CCD on the IEN track (Part 2 compares it
+#   with CV_1SE_TIK_SVD).
 # Methods compared: TENET, TENET_AUG, TIENET_AUG (Part 4: TENET, TIENET_AUG).
 # Part selection: TREX_GVS_PARTS (default "1234"), e.g. TREX_GVS_PARTS=4 runs
 #   only the cut comparison.
@@ -40,7 +41,7 @@ for _p in (_THIS_DIR, _PARENT_DIR):
         sys.path.insert(0, _p)
 
 from gvs_sim_common import (N_CORES, resolve_workers, fmt_num, print_mc_matrix,  # noqa: E402
-                            noise_floor_corr_max, print_section_header,
+                            noise_floor_corr_max, num_mc, print_section_header,
                             run_gvs_2d_sweep, run_gvs_mc_trials,
                             run_gvs_mc_trials_cut, save_mc_1d_method_tables,
                             save_mc_2d_tables, save_mc_cut_tables)
@@ -55,10 +56,10 @@ CFG = dict(
     n=200, p=500,
     sd_x=0.1,           # sqrt(0.01) => rho ~ 0.99 (Parts fix rho locally)
     tFDR=0.1, K=20,
-    num_MC=200,
+    num_MC=num_mc(200),  # TREX_NUM_MC overrides it for smoke runs
     base_seed=2026,
     corr_max=0.98,
-    snr=2.0,            # unused here; Parts 2-3 fix SNR = 2.0 locally
+    snr=2.0,           # unused here; Parts 2-3 fix SNR = 2.0 locally
 )
 
 SCENARIO_TAG = "Hastie"
@@ -84,7 +85,8 @@ def sim_hastie_part_1(cfg, tag):
     print(f"  n={cfg['n']}  p={cfg['p']}  s=150  MC={cfg['num_MC']}"
           f"  tFDR={fmt_num(cfg['tFDR'])}  K={cfg['K']}"
           f"  corr_max={fmt_num(cfg['corr_max'])}\n"
-          "  methods: TENET / TENET_AUG / TIENET_AUG  |  lambda2=CV_1SE_CCD"
+          "  methods: TENET / TENET_AUG / TIENET_AUG"
+          "  |  lambda2=CV_1SE_CCD (EN), CV_1SE_IEN_CCD (IEN)"
           "  linkage=Single\n"
           "  snr_grid: {" + ", ".join(fmt_num(s) for s in snr_grid_2d) + "}\n"
           "  rho_grid: {" + ", ".join(fmt_num(r) for r in rho_grid_2d) + "}\n")
@@ -98,10 +100,12 @@ def sim_hastie_part_1(cfg, tag):
                                  "TENET_AUG", hc_linkage="Single",
                                  lambda2_method="CV_1SE_CCD",
                                  max_workers=N_WORKERS)
+    # support cap 180 > s = 150 (library default 0.8 gives 144)
     ien_2d = run_gvs_2d_sweep("dgp_hastie_snr", cell_kwargs, snr_grid_2d,
                               rho_grid_2d, cfg, "IEN", None, "TIENET_AUG",
-                              hc_linkage="Single", lambda2_method="CV_1SE_CCD",
-                              max_workers=N_WORKERS)
+                              hc_linkage="Single",
+                              lambda2_method="CV_1SE_IEN_CCD",
+                              max_workers=N_WORKERS, cv_dfmax_ratio=1.0)
 
     snr_labels = [f"snr={fmt_num(s)}" for s in snr_grid_2d]
     rho_labels = [f"rho={fmt_num(r)}" for r in rho_grid_2d]
@@ -122,16 +126,21 @@ def sim_hastie_part_1(cfg, tag):
 
 def sim_hastie_part_2(cfg, tag):
     """Compare lambda2 selection methods at the fixed operating point
-    SNR = 2.0, rho = 0.7: CV_1SE_SVD vs CV_1SE_CCD for TENET, CV_1SE_CCD vs
-    the IEN-geometry CV_1SE_IEN_CCD for TIENET_AUG (the EN track rejects the
-    IEN tuner). The IEN tuner caps its lambda1 path at 0.8 * n_train = 144
-    variables, below this design's s = 150, so Parts 1 and 3 keep CCD."""
+    SNR = 2.0, rho = 0.7: CV_1SE_SVD vs CV_1SE_CCD for TENET, and the two
+    IEN-geometry tuners CV_1SE_TIK_SVD vs CV_1SE_IEN_CCD for TIENET_AUG (the
+    EN track rejects them, and an EN tuner on the IEN track would fit the
+    wrong objective). With cv_dfmax_ratio = 1.0, CV_1SE_IEN_CCD caps its
+    lambda1 path at n_train = 180 variables, above this design's s = 150
+    (the library default 0.8 gives 144). CV_1SE_TIK_SVD ignores the cap and
+    needs p - M < n_train, which holds here because no groups form at
+    rho = 0.7, but not where HAC groups the variables (Parts 1 and 4)."""
     fixed_snr, fixed_rho = 2.0, 0.7
     fixed_sdx = math.sqrt((1.0 - fixed_rho) / fixed_rho)
     dgp_kwargs = dict(n=cfg["n"], p=cfg["p"], snr=fixed_snr, sd_x=fixed_sdx)
 
+    # Rules per track: the IEN-geometry tuners are valid on the IEN track only.
     en_methods = ["CV_1SE_SVD", "CV_1SE_CCD"]
-    ien_methods = ["CV_1SE_CCD", "CV_1SE_IEN_CCD"]
+    ien_methods = ["CV_1SE_TIK_SVD", "CV_1SE_IEN_CCD"]
 
     print_section_header(f"Part 2/4: lambda2_method Comparison  |  {tag}")
     print(f"  n={cfg['n']}  p={cfg['p']}  s=150  MC={cfg['num_MC']}"
@@ -139,7 +148,7 @@ def sim_hastie_part_2(cfg, tag):
           f"  fixed operating point: SNR={fmt_num(fixed_snr)}"
           f"  rho={fmt_num(fixed_rho)}\n"
           "  lambda2 methods: TENET CV_1SE_SVD / CV_1SE_CCD,"
-          " TIENET_AUG CV_1SE_CCD / CV_1SE_IEN_CCD  (4 runs)\n")
+          " TIENET_AUG CV_1SE_TIK_SVD / CV_1SE_IEN_CCD  (4 runs)\n")
 
     en_results, ien_results = [], []
     for lm_en, lm_ien in zip(en_methods, ien_methods):
@@ -153,7 +162,8 @@ def sim_hastie_part_2(cfg, tag):
             f"TIENET_AUG+{lm_ien}",
             cfg["tFDR"], cfg["K"], "IEN", cfg["corr_max"],
             hc_linkage="Single", en_solver=None, lambda2_method=lm_ien,
-            base_seed=cfg["base_seed"], max_workers=N_WORKERS))
+            base_seed=cfg["base_seed"], max_workers=N_WORKERS,
+            cv_dfmax_ratio=1.0))
 
     save_mc_1d_method_tables(
         tag, "lambda2_method", "lambda2_method", en_methods, en_results,
@@ -169,7 +179,8 @@ def sim_hastie_part_2(cfg, tag):
 def sim_hastie_part_3(cfg, tag):
     """Compare HAC linkage rules (Single / Complete / Average / WPGMA) for
     TENET and TIENET_AUG at the same fixed operating point as Part 2, with
-    lambda2 fixed at CV_1SE_CCD to isolate the linkage effect."""
+    lambda2 fixed at CV_1SE_CCD (EN) and CV_1SE_IEN_CCD (IEN) to isolate the
+    linkage effect."""
     fixed_snr, fixed_rho = 2.0, 0.7
     fixed_sdx = math.sqrt((1.0 - fixed_rho) / fixed_rho)
     dgp_kwargs = dict(n=cfg["n"], p=cfg["p"], snr=fixed_snr, sd_x=fixed_sdx)
@@ -178,7 +189,8 @@ def sim_hastie_part_3(cfg, tag):
 
     print_section_header(f"Part 3/4: hc_linkage Comparison  |  {tag}")
     print(f"  n={cfg['n']}  p={cfg['p']}  s=150  MC={cfg['num_MC']}"
-          f"  tFDR={fmt_num(cfg['tFDR'])}  K={cfg['K']}  lambda2=CV_1SE_CCD\n"
+          f"  tFDR={fmt_num(cfg['tFDR'])}  K={cfg['K']}"
+          "  lambda2=CV_1SE_CCD (EN), CV_1SE_IEN_CCD (IEN)\n"
           f"  fixed operating point: SNR={fmt_num(fixed_snr)}"
           f"  rho={fmt_num(fixed_rho)}\n"
           "  linkages: Single / Complete / Average / WPGMA"
@@ -194,8 +206,9 @@ def sim_hastie_part_3(cfg, tag):
         ien_results.append(run_gvs_mc_trials(
             "dgp_hastie_snr", dgp_kwargs, cfg["num_MC"], f"TIENET_AUG+{lk}",
             cfg["tFDR"], cfg["K"], "IEN", cfg["corr_max"],
-            hc_linkage=lk, en_solver=None, lambda2_method="CV_1SE_CCD",
-            base_seed=cfg["base_seed"], max_workers=N_WORKERS))
+            hc_linkage=lk, en_solver=None, lambda2_method="CV_1SE_IEN_CCD",
+            base_seed=cfg["base_seed"], max_workers=N_WORKERS,
+            cv_dfmax_ratio=1.0))
 
     save_mc_1d_method_tables(
         tag, "hc_linkage", "hc_linkage", linkages, en_results, ien_results,
@@ -211,7 +224,8 @@ def sim_hastie_part_4(cfg, tag):
     """Compare the clustering cut at the fixed operating point SNR = 2.0,
     rho = 0.7: the demos' fixed corr_max = 0.98 (no groups below rho = 0.99),
     the Bonferroni noise floor (about 0.35 here) and the DGP's oracle groups,
-    for TENET and TIENET_AUG with lambda2 = CV_1SE_CCD and single linkage.
+    for TENET and TIENET_AUG with lambda2 = CV_1SE_CCD (EN) or CV_1SE_IEN_CCD
+    (IEN) and single linkage.
     Records variable-level FDP / TPP next to group-level rates."""
     fixed_snr, fixed_rho = 2.0, 0.7
     fixed_sdx = math.sqrt((1.0 - fixed_rho) / fixed_rho)
@@ -225,7 +239,7 @@ def sim_hastie_part_4(cfg, tag):
     print_section_header(f"Part 4/4: Clustering-cut Comparison  |  {tag}")
     print(f"  n={cfg['n']}  p={cfg['p']}  s=150  MC={cfg['num_MC']}"
           f"  tFDR={fmt_num(cfg['tFDR'])}  K={cfg['K']}"
-          "  lambda2=CV_1SE_CCD  linkage=Single\n"
+          "  lambda2=CV_1SE_CCD (EN), CV_1SE_IEN_CCD (IEN)  linkage=Single\n"
           f"  fixed operating point: SNR={fmt_num(fixed_snr)}"
           f"  rho={fmt_num(fixed_rho)}\n"
           f"  cuts: corr_max {fmt_num(cfg['corr_max'])} / noise floor"
@@ -242,8 +256,9 @@ def sim_hastie_part_4(cfg, tag):
         ien_results.append(run_gvs_mc_trials_cut(
             "dgp_hastie_snr", dgp_kwargs, cfg["num_MC"], f"TIENET_AUG+{label}",
             cfg["tFDR"], cfg["K"], "IEN", corr_max, hc_linkage="Single",
-            en_solver=None, lambda2_method="CV_1SE_CCD",
-            base_seed=cfg["base_seed"], oracle=oracle, max_workers=N_WORKERS))
+            en_solver=None, lambda2_method="CV_1SE_IEN_CCD",
+            base_seed=cfg["base_seed"], oracle=oracle, max_workers=N_WORKERS,
+            cv_dfmax_ratio=1.0))
 
     save_mc_cut_tables(tag, [c[0] for c in cuts], en_results, ien_results,
                        fixed_snr, fixed_rho, floor_cut, cfg, OUT_DIR,

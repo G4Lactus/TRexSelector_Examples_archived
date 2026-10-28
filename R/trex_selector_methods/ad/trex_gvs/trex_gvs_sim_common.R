@@ -8,6 +8,11 @@
 #
 #   fmt_num()                    — trailing-zero-trimmed number formatting.
 #   print_section_header()       — framed console section header.
+#   method_selected() / num_mc() /
+#   out_stem() / skipped_point() — method selection TREX_SOLVERS (rows of
+#                                  unselected methods are NaN, tables get a
+#                                  suffix) and the smoke-run trial count
+#                                  TREX_NUM_MC.
 #   run_gvs_2d_sweep()           — nested (SNR x rho) grid MC sweep around a
 #                                  demo-supplied `.run_mc_*()` point function.
 #   render_mc_1d_method_table()  — per-method 1-D table (mean/sd FDP + TPP).
@@ -63,6 +68,40 @@ print_section_header <- function(title) {
 
 
 # ==============================================================================
+# Method selection (TREX_SOLVERS; mirrors cpp trex_gvs_simulation_utils.hpp)
+# ==============================================================================
+
+#' TRUE when the method of a run label is selected by TREX_SOLVERS
+#' (solver_selected() in mc_runtime.R). The method is the label part before
+#' '+' or ' ', after an optional "[i/N] " progress counter
+#' ("TIENET_AUG+CV_1SE_CCD" -> "TIENET_AUG"). Without a selection every
+#' method runs.
+method_selected <- function(label) {
+  lbl <- sub("^\\[[0-9]+/[0-9]+\\] ", "", label)
+  solver_selected(sub("[+ ].*$", "", lbl))
+}
+
+
+#' Monte Carlo trials of a demo: TREX_NUM_MC when a positive integer, else
+#' `value`. For smoke runs; TREX_NUM_MC enters the cell-cache fingerprint, so
+#' a smoke cache is never reused by a full run.
+num_mc <- function(value) {
+  n <- suppressWarnings(as.integer(Sys.getenv("TREX_NUM_MC", "")))
+  if (is.na(n) || n < 1L) value else n
+}
+
+
+#' Output file stem plus the selection suffix, e.g. "gvs_Hastie_2d_tienet_aug".
+out_stem <- function(stem) paste0(stem, solver_file_suffix())
+
+
+#' Grid point of a skipped (unselected) method: all metrics NaN.
+skipped_point <- function() {
+  list(mean_FDP = NaN, mean_TPP = NaN, sd_FDP = NaN, sd_TPP = NaN)
+}
+
+
+# ==============================================================================
 # 2-D (SNR x rho) sweep (mirrors Python run_gvs_2d_sweep)
 # ==============================================================================
 
@@ -76,10 +115,19 @@ print_section_header <- function(title) {
 #' @param num_MC Number of MC trials per cell (progress lines only).
 #'
 #' @return list(mean_TPP, mean_FDP, sd_TPP, sd_FDP), each an
-#'   `length(snr_grid) x length(col_grid)` matrix.
+#'   `length(snr_grid) x length(col_grid)` matrix; all NaN for a method that
+#'   TREX_SOLVERS does not select (nothing is computed then).
 run_gvs_2d_sweep <- function(point_fun, snr_grid, col_grid, label, num_MC) {
   n_snr <- length(snr_grid)
   n_col <- length(col_grid)
+
+  if (!method_selected(label)) {
+    cat(sprintf("\n  Method: %s  (skipped, not in TREX_SOLVERS)\n\n", label))
+    nan_mat <- matrix(NaN, n_snr, n_col)
+    return(list(mean_TPP = nan_mat, mean_FDP = nan_mat,
+                sd_TPP = nan_mat, sd_FDP = nan_mat))
+  }
+
   mean_TPP <- matrix(NA_real_, n_snr, n_col)
   mean_FDP <- mean_TPP
   sd_TPP   <- mean_TPP
@@ -201,6 +249,7 @@ print_mc_matrix <- function(title, row_labels, col_labels, mat) {
 
 #' Write the six 2-D matrices to <out_dir>/<file_stem>.txt and the tidy
 #' long-format CSV (method,metric,row_label,col_label,mean,sd) to .csv.
+#' A TREX_SOLVERS run adds the selection suffix to the stem (out_stem()).
 #'
 #' @param en_2d,en_aug_2d,ien_2d `run_gvs_2d_sweep()` results for TENET,
 #'   TENET_AUG, and TIENET_AUG.
@@ -209,6 +258,7 @@ save_mc_2d_tables <- function(scenario_tag, row_labels, col_labels, en_2d,
                               en_aug_2d, ien_2d, cfg, out_dir, file_stem) {
   if (is.null(file_stem) || !nzchar(file_stem)) return(invisible(NULL))
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+  file_stem <- out_stem(file_stem)
 
   txt_path <- file.path(out_dir, paste0(file_stem, ".txt"))
   txt <- paste0("\n", strrep("=", 78), "\n",
@@ -262,6 +312,7 @@ save_mc_2d_tables <- function(scenario_tag, row_labels, col_labels, en_2d,
 #' CSV schema mirrors cpp/Python: method,metric,<param_col>,mean,sd.
 #' `ien_param_labels` gives the IEN track its own levels (lambda2 rules); the
 #' CSV then lists the EN rows before the IEN rows, as the cpp Part 2 does.
+#' A TREX_SOLVERS run adds the selection suffix to the stem (out_stem()).
 save_mc_1d_method_tables <- function(scenario_tag, comparison, param_col,
                                      param_labels, en_results, ien_results,
                                      fixed_point_note, cfg, out_dir,
@@ -269,6 +320,7 @@ save_mc_1d_method_tables <- function(scenario_tag, comparison, param_col,
   ien_labels <- if (is.null(ien_param_labels)) param_labels else
     ien_param_labels
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+  file_stem <- out_stem(file_stem)
   txt_path <- file.path(out_dir, paste0(file_stem, ".txt"))
 
   txt <- paste0("\n", strrep("=", 78), "\n",
@@ -341,12 +393,24 @@ noise_floor_corr_max <- function(n, p, alpha = 0.05) {
 }
 
 
+#' Cut-comparison point of a skipped (unselected) method: the fields of
+#' `.run_mc_hastie_cut()` (simulation_utils.R), all NaN.
+skipped_cut_point <- function() {
+  fields <- c("mean_FDP", "sd_FDP", "mean_TPP", "sd_TPP", "grp_hit",
+              "sd_grp_hit", "grp_full", "sd_grp_full", "grp_FDP",
+              "sd_grp_FDP", "n_groups", "sd_n_groups")
+  stats::setNames(as.list(rep(NaN, length(fields))), fields)
+}
+
+
 #' Console + .txt + .csv writer for the clustering-cut comparison (one column
 #' per cut, TENET and TIENET_AUG blocks). CSV schema mirrors cpp/Python:
-#' method,metric,cut,mean,sd.
+#' method,metric,cut,mean,sd. A TREX_SOLVERS run adds the selection suffix to
+#' the stem (out_stem()).
 save_mc_cut_tables <- function(scenario_tag, cut_labels, en_results,
                                ien_results, fixed_snr, fixed_rho, floor_cut,
                                cfg, out_dir, file_stem) {
+  file_stem <- out_stem(file_stem)
   rows <- list(c("FDR", "mean_FDP", "mean_FDP", "sd_FDP"),
                c("TPR", "mean_TPP", "mean_TPP", "sd_TPP"),
                c("group hit", "grp_hit", "grp_hit", "sd_grp_hit"),
@@ -404,7 +468,8 @@ save_mc_cut_tables <- function(scenario_tag, cut_labels, en_results,
 
 #' Formatted MC aggregate table for one truth scenario (rows M1-M4 per
 #' (rho, SNR) cell). If `file_stem` is non-empty, also writes the table as
-#' .txt and all aggregates as a tidy .csv into `out_dir`.
+#' .txt and all aggregates as a tidy .csv into `out_dir` (a TREX_SOLVERS run
+#' adds the selection suffix to the stem, out_stem()).
 #'
 #' `results[[i_rho]][[i_snr]]` must be a list with entries M1..M4, each a
 #' named list of aggregates: mean_coord_tpr, sd_coord_tpr, mean_coord_fdp,
@@ -451,6 +516,7 @@ print_block_grid_table <- function(scenario_tag, scenario, rho_grid, snr_grid,
 
   if (!nzchar(file_stem)) return(invisible(NULL))
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+  file_stem <- out_stem(file_stem)
 
   txt_path <- file.path(out_dir, paste0(file_stem, ".txt"))
   writeLines(paste0(table_str, "\n"), txt_path, sep = "")

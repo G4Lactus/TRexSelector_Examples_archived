@@ -18,7 +18,8 @@
 #
 # DGP: block sizes = {20, 50, 80, 65}; blocks 1,2,3 active (beta = 3); block 4
 #      inactive heavy-tailed trap; total active support size s = 150.
-# Selector: K=20, tFDR=0.1, corr_max=0.98, single-linkage HAC, lambda2=CV_1SE_CCD.
+# Selector: K=20, tFDR=0.1, corr_max=0.98, single-linkage HAC,
+#   lambda2 = CV_1SE_CCD (EN rows), CV_1SE_IEN_CCD (IEN rows).
 # Methods compared: TENET, TENET_AUG, TIENET_AUG.
 # MC: 200 trials per grid point (the full run takes hours — reduce num_MC and
 #     the grids for a quick smoke test). Optional first CLI argument sets the
@@ -68,7 +69,7 @@ CFG <- list(
   K        = 20L,
   tFDR     = 0.1,
   seed     = 2026L,
-  num_MC   = 200L,
+  num_MC   = num_mc(200L),  # TREX_NUM_MC for smoke runs
   corr_max = 0.98
 )
 
@@ -82,11 +83,14 @@ PRESET <- list(
 
 # The TIENET_AUG (IEN) row leaves en_solver at the library default (NULL ->
 # "TENET" in trex_gvs_control(), ignored on the IEN path — its solver is
-# always TIENET_AUG), mirroring the Python demos' en_solver=None.
+# always TIENET_AUG), mirroring the Python demos' en_solver=None, and names the
+# IEN-geometry lambda2 tuner CV_1SE_IEN_CCD.
 GVS_METHODS <- list(
-  list(label = "TENET",      GVS_type = "EN",  en_solver = "TENET"),
-  list(label = "TENET_AUG",  GVS_type = "EN",  en_solver = "TENET_AUG"),
-  list(label = "TIENET_AUG", GVS_type = "IEN", en_solver = NULL)
+  list(label = "TENET",      GVS_type = "EN",  en_solver = "TENET",     lambda2_method = "CV_1SE_CCD"),
+  list(label = "TENET_AUG",  GVS_type = "EN",  en_solver = "TENET_AUG", lambda2_method = "CV_1SE_CCD"),
+  # support cap 180 > s = 150 (library default 0.8 gives 144)
+  list(label = "TIENET_AUG", GVS_type = "IEN", en_solver = NULL,        lambda2_method = "CV_1SE_IEN_CCD",
+       cv_dfmax_ratio = 1.0)
 )
 
 
@@ -100,7 +104,8 @@ GVS_METHODS <- list(
     n = CFG$n, p = CFG$p, snr = snr, rho = rho,
     tFDR = CFG$tFDR, K = CFG$K, num_MC = CFG$num_MC, seed = CFG$seed,
     GVS_type = method$GVS_type, corr_max = CFG$corr_max, hc_dist = "Single",
-    df = CFG$df, en_solver = method$en_solver, lambda2_method = "CV_1SE_CCD",
+    df = CFG$df, en_solver = method$en_solver, lambda2_method = method$lambda2_method,
+    cv_dfmax_ratio = method$cv_dfmax_ratio,
     n_cores = num_cores
   )
 }
@@ -117,7 +122,7 @@ run_t3_part1_2d_sweep <- function(cfg, preset) {
               cfg$n, cfg$p, cfg$num_MC, fmt_num(cfg$tFDR), cfg$K,
               fmt_num(cfg$corr_max)))
   cat("  methods: TENET / TENET_AUG / TIENET_AUG",
-      "  |  lambda2=CV_1SE_CCD  linkage=Single\n", sep = "")
+      "  |  lambda2=CV_1SE_CCD (EN), CV_1SE_IEN_CCD (IEN)  linkage=Single\n", sep = "")
   cat("  snr_grid: {", paste(fmt_num(preset$snr_grid_2d), collapse = ", "),
       "}\n", sep = "")
   cat("  rho_grid: {", paste(fmt_num(preset$rho_grid_2d), collapse = ", "),

@@ -17,7 +17,8 @@
 #       preset — its fixed operating points lie on or between the merged rho
 #       grid's columns)
 #
-# Selector: K=20, tFDR=0.1, corr_max=0.98, single-linkage HAC, lambda2=CV_1SE_CCD.
+# Selector: K=20, tFDR=0.1, corr_max=0.98, single-linkage HAC,
+#   lambda2 = CV_1SE_CCD (EN rows), CV_1SE_IEN_CCD (IEN rows).
 # Methods compared: TENET, TENET_AUG, TIENET_AUG.
 # MC: 200 trials per grid point (the full run takes hours — reduce num_MC and
 #     the grids for a quick smoke test). Optional first CLI argument sets the
@@ -36,7 +37,7 @@ for _p in (_THIS_DIR, _PARENT_DIR):
         sys.path.insert(0, _p)
 
 from gvs_sim_common import (N_CORES, resolve_workers, fmt_num, print_mc_matrix,  # noqa: E402
-                            print_section_header, run_gvs_2d_sweep,
+                            num_mc, print_section_header, run_gvs_2d_sweep,
                             save_mc_2d_tables)
 
 # Optional CLI worker count, resolved like TREX_NUM_WORKERS (0 = all usable cores).
@@ -48,7 +49,7 @@ OUT_DIR = os.path.join(_THIS_DIR, "simulation_results", "data")
 CFG = dict(
     n=200, p=500,
     tFDR=0.1, K=20,
-    num_MC=200,
+    num_MC=num_mc(200),  # TREX_NUM_MC overrides it for smoke runs
     base_seed=2026,
     corr_max=0.98,
 )
@@ -81,7 +82,7 @@ def run_part1_2d_sweep(cfg, preset):
           f"  MC={cfg['num_MC']}  tFDR={fmt_num(cfg['tFDR'])}  K={cfg['K']}"
           f"  corr_max={fmt_num(cfg['corr_max'])}\n"
           "  methods: TENET / TENET_AUG / TIENET_AUG"
-          "  |  lambda2=CV_1SE_CCD  linkage=Single\n"
+          "  |  lambda2=CV_1SE_CCD (EN), CV_1SE_IEN_CCD (IEN)  linkage=Single\n"
           "  snr_grid: {"
           + ", ".join(fmt_num(s) for s in preset["snr_grid_2d"]) + "}\n"
           "  rho_grid: {"
@@ -97,11 +98,13 @@ def run_part1_2d_sweep(cfg, preset):
                               cfg, "EN", "TENET_AUG", "TENET_AUG",
                               hc_linkage="Single", lambda2_method="CV_1SE_CCD",
                               max_workers=N_WORKERS)
+    # support cap 180 > s = 150 (library default 0.8 gives 144)
     ien = run_gvs_2d_sweep("dgp_mixed_blocks_snr", cell_kwargs,
                            preset["snr_grid_2d"], preset["rho_grid_2d"], cfg,
                            "IEN", None, "TIENET_AUG",
-                           hc_linkage="Single", lambda2_method="CV_1SE_CCD",
-                           max_workers=N_WORKERS)
+                           hc_linkage="Single",
+                           lambda2_method="CV_1SE_IEN_CCD",
+                           max_workers=N_WORKERS, cv_dfmax_ratio=1.0)
 
     snr_labels = [f"snr={fmt_num(s)}" for s in preset["snr_grid_2d"]]
     rho_labels = [f"rho={fmt_num(r)}" for r in preset["rho_grid_2d"]]

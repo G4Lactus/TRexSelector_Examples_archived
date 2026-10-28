@@ -17,7 +17,8 @@ labels changed (demo 01 Part 2 compares other lambda2 rules on the IEN track).
 Methods count by their solver: TENET, TENET_AUG, TIENET_AUG, and in the block
 bench (demo 08) M1/M2 by the EN solver and M3/M4 ("IE-") as TIENET_AUG.
 
-The merge stops when a filled row has no NaN in the template (it was computed,
+NaN counts in any spelling (C++ and Python write "nan", R "NaN"). The merge
+stops when a filled row has no NaN in the template (it was computed,
 so the selection is wrong), when a row is missing in the full table, or when
 the table titles differ (other grid, other MC count).
 
@@ -39,7 +40,7 @@ from pathlib import Path
 
 VALUE_COLUMNS = ("mean", "sd", "value")
 BLOCK_2D = re.compile(r"^  (?:mean_TPP|mean_FDP) \[(.+)\]\s*$")
-BLOCK_1D = re.compile(r"^  ([A-Z][A-Z_]+)\s*$")
+BLOCK_1D = re.compile(r"^(?:  )?([A-Z][A-Z_]+)\s*$")  # indented, or flush left in the cut tables
 BENCH_RHO = re.compile(r"^  rho = (\S+)\s*$")
 BENCH_ROW = re.compile(r"^  (M\d\([A-Z]+-[A-Z]\))\s+(\S+)\s")
 
@@ -138,13 +139,13 @@ def merge_bench_txt(new: list[str], full: list[str], selected: set[str]) -> list
             rho = r.group(1)
         row = BENCH_ROW.match(line)
         if row and not is_selected(row.group(1), selected):
-            if "nan" not in line:
+            if "nan" not in line.lower():
                 raise MergeError(f"row was computed although not selected: {line.strip()}")
             key = (rho, row.group(1), row.group(2))
             if key not in lookup:
                 raise MergeError(f"row missing in the full table: {key}")
             line = lookup[key]
-        elif row and "nan" in line:
+        elif row and "nan" in line.lower():
             raise MergeError(f"selected row has NaN: {line.strip()}")
         out.append(line)
     return out
@@ -166,7 +167,7 @@ def merge_txt(template: str, full: str, selected: set[str]) -> str:
         if method is None or is_selected(method, selected):
             out += lines
             continue
-        if not any("nan" in ln for ln in lines[1:]):
+        if not any("nan" in ln.lower() for ln in lines[1:]):
             raise MergeError(f"block was computed although not selected: {lines[0].strip()}")
         if (method, lines[0]) not in old_blocks:
             raise MergeError(f"block missing in the full table: {lines[0].strip()}")

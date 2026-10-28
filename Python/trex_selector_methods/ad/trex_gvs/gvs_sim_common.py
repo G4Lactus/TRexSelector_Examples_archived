@@ -7,6 +7,10 @@
 #
 #   fmt_num()                  — trailing-zero-trimmed number formatting.
 #   print_section_header()     — framed console section header.
+#   method_selected() /
+#   num_mc() / out_stem() /
+#   skipped_point()            — method selection (TREX_SOLVERS) and the
+#                                smoke-run trial count (TREX_NUM_MC).
 #   build_gvs_selector()       — TRexGVSSelector adapter (EN / EN_AUG / IEN,
 #                                HAC or oracle prior_groups).
 #   run_gvs_mc_trials()        — parallel MC loop at one parameter point
@@ -36,6 +40,7 @@
 import atexit
 import multiprocessing
 import os
+import re
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor
@@ -52,12 +57,13 @@ import pandas as pd
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
     sys.path.insert(0, _THIS_DIR)
-# Family folder: cell_cache.py (resumable grid cells).
+# Family folder: cell_cache.py (resumable grid cells), solver_filter.py (TREX_SOLVERS).
 _FAMILY_DIR = os.path.dirname(os.path.dirname(_THIS_DIR))
 if _FAMILY_DIR not in sys.path:
     sys.path.insert(0, _FAMILY_DIR)
 
 import cell_cache
+import solver_filter
 
 # ------------------------------------------------------------------------------
 # Worker budget  (identical helper in every suite's *_common / *_utils module)
@@ -215,6 +221,45 @@ def print_section_header(title):
 
 
 # ==============================================================================
+# Method selection (TREX_SOLVERS; mirrors the cpp helpers)
+# ==============================================================================
+
+def method_selected(label):
+    """True when the method of a run label is selected by TREX_SOLVERS.
+
+    The method is the label part before '+' or ' ', after an optional progress
+    counter ("[3/30] TIENET_AUG  SNR=0.20 ..." and "TIENET_AUG+CV_1SE_IEN_CCD"
+    -> "TIENET_AUG"). Without a selection every method runs.
+    """
+    text = re.sub(r"^\[\d+/\d+\]\s*", "", str(label))
+    return solver_filter.selected(re.split(r"[+ ]", text, maxsplit=1)[0])
+
+
+def num_mc(value):
+    """Monte Carlo trials of a demo: TREX_NUM_MC when a positive integer, else value.
+
+    For short smoke runs. TREX_NUM_MC enters the cell-cache fingerprint, so a
+    smoke cache is never reused by a full run.
+    """
+    try:
+        n = int(os.environ.get("TREX_NUM_MC", "").strip())
+    except ValueError:
+        return value
+    return n if n > 0 else value
+
+
+def out_stem(stem):
+    """Output file stem plus the selection suffix, e.g. "_tienet_aug"."""
+    return stem + solver_filter.file_suffix()
+
+
+def skipped_point():
+    """Grid point of a skipped (unselected) method: all metrics NaN."""
+    nan = float("nan")
+    return dict(mean_fdp=nan, mean_tpp=nan, sd_fdp=nan, sd_tpp=nan)
+
+
+# ==============================================================================
 # GVS selector adapter
 # ==============================================================================
 #
@@ -243,7 +288,11 @@ def _get_enum_maps():
                         "CV_1SE_IEN_CCD":
                             trex.LambdaSelectionMethod.CV_1SE_IEN_CCD,
                         "CV_MIN_IEN_CCD":
-                            trex.LambdaSelectionMethod.CV_MIN_IEN_CCD}
+                            trex.LambdaSelectionMethod.CV_MIN_IEN_CCD,
+                        "CV_1SE_TIK_SVD":
+                            trex.LambdaSelectionMethod.CV_1SE_TIK_SVD,
+                        "CV_MIN_TIK_SVD":
+                            trex.LambdaSelectionMethod.CV_MIN_TIK_SVD}
         _LINKAGE_MAP = {"Single": LinkageMethod.Single,
                         "Complete": LinkageMethod.Complete,
                         "Average": LinkageMethod.Average,
@@ -273,25 +322,32 @@ def make_gvs_trex_control(K=20):
 def build_gvs_selector(X, y, tFDR, K, gvs_type, corr_max, hc_linkage="Single",
                        en_solver: "str | None" = "TENET",
                        lambda2_method="CV_1SE_CCD",
-                       prior_groups=None, cv_seed=None, seed=-1):
+                       prior_groups=None, cv_seed=None, seed=-1,
+                       cv_dfmax_ratio=None):
     """Build and run a TRexGVSSelector; returns (selector, GVSSelectionResult).
 
     All method knobs are plain strings (picklable across process boundaries):
     gvs_type in {"EN", "IEN"}, en_solver in {"TENET", "TENET_AUG"} for EN or
     None for IEN (whose solver is set to TIENET_AUG, as in the cpp demos),
     hc_linkage in {"Single", "Complete", "Average", "WPGMA", ...},
-    lambda2_method in {"CV_1SE_CCD", "CV_1SE_SVD", "CV_1SE_IEN_CCD", ...}.
+    lambda2_method in {"CV_1SE_CCD", "CV_1SE_SVD", "CV_1SE_IEN_CCD",
+    "CV_1SE_TIK_SVD", ...}.
 
     `prior_groups` supplies oracle group labels (length-p int vector of
     contiguous 0-based cluster IDs); None discovers groups from the data via
     HAC at `corr_max`. `cv_seed` fixes the CV fold permutation (None keeps the
-    default -1 = derive from the selector seed). The trex_control is passed as
-    the binding's separate argument (it overrides the nested trex_ctrl).
+    default -1 = derive from the selector seed). `cv_dfmax_ratio` sets the
+    support cap of the IEN-geometry CV (floor(ratio * n_train) nonzero
+    coefficients; None keeps the library default 0.8). The trex_control is
+    passed as the binding's separate argument (it overrides the nested
+    trex_ctrl).
 
-    The raw binding is called directly: the TRexGVSSelector wrapper replaces
-    CV_1SE_CCD by CV_1SE_IEN_CCD on the IEN track, while the cpp demos run
-    exactly the rule they set. The returned run object exposes
-    selected_indices like the wrapper.
+    The raw binding is called directly and gets the rule as set. Its C++
+    constructor runs CV_1SE_IEN_CCD where the IEN track asks for CV_1SE_CCD
+    and refuses the IEN-geometry tuners (CV_*_IEN_CCD, CV_*_TIK_SVD) on the
+    EN track, so the IEN callers name their IEN tuner explicitly, as the cpp
+    demos do. The returned run object exposes selected_indices like the
+    wrapper.
     """
     import trex_selector_neo as trex
     gvs_map, en_map, l2_map, hc_map = _get_enum_maps()
@@ -307,6 +363,8 @@ def build_gvs_selector(X, y, tFDR, K, gvs_type, corr_max, hc_linkage="Single",
     gc.lambda2_method = l2_map[lambda2_method]
     if cv_seed is not None:
         gc.cv_seed = int(cv_seed)
+    if cv_dfmax_ratio is not None:
+        gc.cv_dfmax_ratio = float(cv_dfmax_ratio)
     if prior_groups is not None:
         gc.prior_groups = [int(g) for g in np.asarray(prior_groups)]
 
@@ -353,7 +411,7 @@ def _gvs_trial_worker(args):
     from trex_selector_neo.utils import compute_fdp, compute_tpp
 
     (trial_seed, dgp_name, dgp_kwargs, tFDR, K, gvs_type, corr_max,
-     hc_linkage, en_solver, lambda2_method) = args
+     hc_linkage, en_solver, lambda2_method, cv_dfmax_ratio) = args
 
     dgps = importlib.import_module("trex_gvs_dgps")
     dat = getattr(dgps, dgp_name)(seed=trial_seed, **dgp_kwargs)
@@ -362,7 +420,8 @@ def _gvs_trial_worker(args):
     sel, _res = build_gvs_selector(
         dat["X"], dat["y"], tFDR, K, gvs_type, corr_max,
         hc_linkage=hc_linkage, en_solver=en_solver,
-        lambda2_method=lambda2_method, cv_seed=trial_seed, seed=trial_seed)
+        lambda2_method=lambda2_method, cv_seed=trial_seed, seed=trial_seed,
+        cv_dfmax_ratio=cv_dfmax_ratio)
 
     selected = list(sel.selected_indices)
     true_support = np.flatnonzero(dat["beta"]).tolist()
@@ -373,16 +432,21 @@ def run_gvs_mc_trials(dgp_name, dgp_kwargs, num_MC, progress_label, tFDR, K,
                       gvs_type, corr_max, hc_linkage="Single",
                       en_solver: "str | None" = "TENET",
                       lambda2_method="CV_1SE_CCD",
-                      base_seed=2026, max_workers=N_CORES):
+                      base_seed=2026, max_workers=N_CORES,
+                      cv_dfmax_ratio=None):
     """Run num_MC parallel trials at a single parameter point.
 
     Each trial generates a fresh dataset via `dgp_name(seed=base_seed + i,
     **dgp_kwargs)` (a trex_gvs_dgps generator) and runs the selector with
-    seed = cv_seed = trial seed. Returns dict(mean_fdp, mean_tpp, sd_fdp,
-    sd_tpp), matching the cpp GVSGridPointResult.
+    seed = cv_seed = trial seed (cv_dfmax_ratio: see build_gvs_selector).
+    Returns dict(mean_fdp, mean_tpp, sd_fdp,
+    sd_tpp), matching the cpp GVSGridPointResult. A method not selected by
+    TREX_SOLVERS computes nothing and returns NaN metrics (no cache entry).
     """
+    if not method_selected(progress_label):
+        return skipped_point()
     tasks = [(base_seed + mc, dgp_name, dgp_kwargs, tFDR, K, gvs_type,
-              corr_max, hc_linkage, en_solver, lambda2_method)
+              corr_max, hc_linkage, en_solver, lambda2_method, cv_dfmax_ratio)
              for mc in range(num_MC)]
 
     # One resumable grid cell (cell_cache): restored after a restart.
@@ -448,7 +512,7 @@ def _gvs_cut_trial_worker(args):
     from trex_selector_neo.utils import compute_fdp, compute_tpp
 
     (trial_seed, dgp_name, dgp_kwargs, tFDR, K, gvs_type, corr_max,
-     hc_linkage, en_solver, lambda2_method, oracle) = args
+     hc_linkage, en_solver, lambda2_method, oracle, cv_dfmax_ratio) = args
 
     dgps = importlib.import_module("trex_gvs_dgps")
     dat = getattr(dgps, dgp_name)(seed=trial_seed, **dgp_kwargs)
@@ -459,7 +523,7 @@ def _gvs_cut_trial_worker(args):
         hc_linkage=hc_linkage, en_solver=en_solver,
         lambda2_method=lambda2_method,
         prior_groups=dat["prior_groups"] if oracle else None,
-        cv_seed=trial_seed, seed=trial_seed)
+        cv_seed=trial_seed, seed=trial_seed, cv_dfmax_ratio=cv_dfmax_ratio)
 
     selected = list(sel.selected_indices)
     true_support = np.flatnonzero(dat["beta"]).tolist()
@@ -474,15 +538,23 @@ def run_gvs_mc_trials_cut(dgp_name, dgp_kwargs, num_MC, progress_label, tFDR,
                           K, gvs_type, corr_max, hc_linkage="Single",
                           en_solver: "str | None" = "TENET",
                           lambda2_method="CV_1SE_CCD", base_seed=2026,
-                          oracle=False, max_workers=N_CORES):
+                          oracle=False, max_workers=N_CORES,
+                          cv_dfmax_ratio=None):
     """num_MC parallel trials at one fixed operating point under one cut
-    (corr_max, or the DGP's prior_groups when oracle=True). Returns mean / sd
+    (corr_max, or the DGP's prior_groups when oracle=True; cv_dfmax_ratio:
+    see build_gvs_selector). Returns mean / sd
     of FDP, TPP, grp_hit, grp_full, grp_fdp and n_groups, matching the cpp
-    GVSCutPointResult."""
-    tasks = [(base_seed + mc, dgp_name, dgp_kwargs, tFDR, K, gvs_type,
-              corr_max, hc_linkage, en_solver, lambda2_method, bool(oracle))
-             for mc in range(num_MC)]
+    GVSCutPointResult. A method not selected by TREX_SOLVERS computes nothing
+    and returns NaN metrics (no cache entry)."""
     keys = ("fdp", "tpp", "grp_hit", "grp_full", "grp_fdp", "n_groups")
+    if not method_selected(progress_label):
+        nan = float("nan")
+        return {name: nan for k in keys
+                for name in (k if k.startswith(("grp", "n_")) else f"mean_{k}", f"sd_{k}")}
+    tasks = [(base_seed + mc, dgp_name, dgp_kwargs, tFDR, K, gvs_type,
+              corr_max, hc_linkage, en_solver, lambda2_method, bool(oracle),
+              cv_dfmax_ratio)
+             for mc in range(num_MC)]
 
     def compute():
         print(f"  {progress_label} — Running {num_MC} MC trials ...", flush=True)
@@ -515,14 +587,22 @@ def run_gvs_mc_trials_cut(dgp_name, dgp_kwargs, num_MC, progress_label, tFDR,
 def run_gvs_2d_sweep(dgp_name, cell_kwargs_fn, snr_grid, rho_grid, cfg,
                      gvs_type, en_solver: "str | None", label,
                      hc_linkage="Single",
-                     lambda2_method="CV_1SE_CCD", max_workers=N_CORES):
+                     lambda2_method="CV_1SE_CCD", max_workers=N_CORES,
+                     cv_dfmax_ratio=None):
     """Run a nested SNR x rho grid MC sweep for one method variant.
 
     `cell_kwargs_fn(snr, rho)` returns the picklable DGP kwargs for one grid
-    cell (the demos map rho to sd_x here where required). Returns
-    results[i_snr][i_rho], each a run_gvs_mc_trials() dict.
+    cell (the demos map rho to sd_x here where required); cv_dfmax_ratio
+    is passed to every cell (see build_gvs_selector). Returns
+    results[i_snr][i_rho], each a run_gvs_mc_trials() dict (NaN metrics for a
+    method not selected by TREX_SOLVERS).
     """
     n_snr, n_rho = len(snr_grid), len(rho_grid)
+
+    if not method_selected(label):
+        print(f"\n  Method: {label}  (skipped, not in TREX_SOLVERS)\n")
+        return [[skipped_point() for _ in range(n_rho)] for _ in range(n_snr)]
+
     results = [[None] * n_rho for _ in range(n_snr)]
 
     print(f"\n  Method: {label}\n")
@@ -536,7 +616,7 @@ def run_gvs_2d_sweep(dgp_name, cell_kwargs_fn, snr_grid, rho_grid, cfg,
                 cfg["tFDR"], cfg["K"], gvs_type, cfg["corr_max"],
                 hc_linkage=hc_linkage, en_solver=en_solver,
                 lambda2_method=lambda2_method, base_seed=cfg["base_seed"],
-                max_workers=max_workers)
+                max_workers=max_workers, cv_dfmax_ratio=cv_dfmax_ratio)
     return results
 
 
@@ -618,12 +698,13 @@ def print_mc_matrix(title, row_labels, col_labels, values, print_tpp):
 def save_mc_2d_tables(scenario_tag, row_labels, col_labels, en_2d, en_aug_2d,
                       ien_2d, cfg, out_dir, file_stem):
     """Write the six 2-D matrices to <out_dir>/<file_stem>.txt and the tidy
-    long-format CSV (method,metric,row_label,col_label,mean,sd) to .csv."""
+    long-format CSV (method,metric,row_label,col_label,mean,sd) to .csv.
+    A TREX_SOLVERS run appends its suffix to file_stem (out_stem)."""
     if not file_stem:
         return
     os.makedirs(out_dir, exist_ok=True)
 
-    txt_path = os.path.join(out_dir, file_stem + ".txt")
+    txt_path = os.path.join(out_dir, out_stem(file_stem) + ".txt")
     with open(txt_path, "w") as txt:
         txt.write("\n" + "=" * 78 + "\n"
                   f"  T-Rex+GVS MC 2D Grid: {scenario_tag}"
@@ -656,9 +737,10 @@ def save_mc_2d_tables(scenario_tag, row_labels, col_labels, en_2d, en_aug_2d,
                                  mean=round(cell["mean_tpp"], 6),
                                  sd=round(cell["sd_tpp"], 6)))
 
-    csv_path = os.path.join(out_dir, file_stem + ".csv")
+    # na_rep: skipped methods write "nan", as the cpp CSV does
+    csv_path = os.path.join(out_dir, out_stem(file_stem) + ".csv")
     pd.DataFrame(rows).to_csv(csv_path, index=False,
-                              float_format="%.6f")
+                              float_format="%.6f", na_rep="nan")
     print(f"[Info] CSV saved to: {csv_path}\n")
 
 
@@ -673,9 +755,10 @@ def save_mc_1d_method_tables(scenario_tag, comparison, param_col, param_labels,
     comparison (TENET vs TIENET_AUG over lambda2_method / hc_linkage levels).
     CSV schema mirrors cpp: method,metric,<param_col>,mean,sd.
     ien_param_labels gives the IEN track its own levels (lambda2 rules); the
-    CSV then lists the EN rows before the IEN rows, as the cpp Part 2 does."""
+    CSV then lists the EN rows before the IEN rows, as the cpp Part 2 does.
+    A TREX_SOLVERS run appends its suffix to file_stem (out_stem)."""
     os.makedirs(out_dir, exist_ok=True)
-    txt_path = os.path.join(out_dir, file_stem + ".txt")
+    txt_path = os.path.join(out_dir, out_stem(file_stem) + ".txt")
 
     with open(txt_path, "w") as txt:
         def write(s):
@@ -708,9 +791,9 @@ def save_mc_1d_method_tables(scenario_tag, comparison, param_col, param_labels,
             rows += _rows("TENET", lbl, en_r)
         for lbl, ien_r in zip(ien_param_labels, ien_results):
             rows += _rows("TIENET_AUG", lbl, ien_r)
-    csv_path = os.path.join(out_dir, file_stem + ".csv")
+    csv_path = os.path.join(out_dir, out_stem(file_stem) + ".csv")
     pd.DataFrame(rows)[["method", "metric", param_col, "mean", "sd"]].to_csv(
-        csv_path, index=False, float_format="%.6f")
+        csv_path, index=False, float_format="%.6f", na_rep="nan")
     print(f"[Info] CSV saved to: {csv_path}\n")
 
 
@@ -730,7 +813,8 @@ def save_mc_cut_tables(scenario_tag, cut_labels, en_results, ien_results,
                        fixed_snr, fixed_rho, floor_cut, cfg, out_dir, file_stem):
     """Console + .txt + .csv writer for the clustering-cut comparison (one
     column per cut, TENET and TIENET_AUG blocks). CSV schema mirrors cpp:
-    method,metric,cut,mean,sd."""
+    method,metric,cut,mean,sd. A TREX_SOLVERS run appends its suffix to
+    file_stem (out_stem)."""
     os.makedirs(out_dir, exist_ok=True)
     lines = ["", "=" * 78,
              (f"  T-Rex+GVS MC: {scenario_tag} — clustering-cut comparison"
@@ -746,7 +830,7 @@ def save_mc_cut_tables(scenario_tag, cut_labels, en_results, ien_results,
     table = "\n".join(lines) + "\n\n"
     print(table, end="")
 
-    txt_path = os.path.join(out_dir, file_stem + ".txt")
+    txt_path = os.path.join(out_dir, out_stem(file_stem) + ".txt")
     with open(txt_path, "w") as txt:
         txt.write(table)
     print(f"[Info] TXT saved to: {txt_path}")
@@ -757,9 +841,9 @@ def save_mc_cut_tables(scenario_tag, cut_labels, en_results, ien_results,
             for _label, key, metric, sd in _CUT_ROWS:
                 rows.append(dict(method=name, metric=metric, cut=cut,
                                  mean=round(r[key], 6), sd=round(r[sd], 6)))
-    csv_path = os.path.join(out_dir, file_stem + ".csv")
+    csv_path = os.path.join(out_dir, out_stem(file_stem) + ".csv")
     pd.DataFrame(rows)[["method", "metric", "cut", "mean", "sd"]].to_csv(
-        csv_path, index=False, float_format="%.6f")
+        csv_path, index=False, float_format="%.6f", na_rep="nan")
     print(f"[Info] CSV saved to: {csv_path}\n")
 
 
@@ -946,7 +1030,7 @@ def print_block_grid_table(scenario_tag, scenario, rho_grid, snr_grid,
     """Formatted MC aggregate table for one truth scenario (rows M1-M4 per
     (rho, SNR) cell), mirrored from cpp print_block_grid_table. If file_stem
     is non-empty, also writes the table as .txt and all aggregates as a tidy
-    .csv into out_dir."""
+    .csv into out_dir (a TREX_SOLVERS run appends its suffix, out_stem)."""
     blk_metric_name = "full_blk" if scenario == "WHOLE" else "blk_hit"
     blk_key = "mean_full_block" if scenario == "WHOLE" else "mean_block_hit"
     methods = (("M1(EN-C)", "M1"), ("M2(EN-O)", "M2"),
@@ -987,7 +1071,7 @@ def print_block_grid_table(scenario_tag, scenario, rho_grid, snr_grid,
         return
     os.makedirs(out_dir, exist_ok=True)
 
-    txt_path = os.path.join(out_dir, file_stem + ".txt")
+    txt_path = os.path.join(out_dir, out_stem(file_stem) + ".txt")
     with open(txt_path, "w") as txt:
         txt.write(table + "\n")
     print(f"[Info] TXT saved to: {txt_path}")
@@ -1012,6 +1096,7 @@ def print_block_grid_table(scenario_tag, scenario, rho_grid, snr_grid,
                     mean_lambda2=round(a["mean_lambda2"], 6),
                     mean_T_stop=round(a["mean_T_stop"], 6),
                     mean_M_found=round(a["mean_M_found"], 6)))
-    csv_path = os.path.join(out_dir, file_stem + ".csv")
-    pd.DataFrame(rows).to_csv(csv_path, index=False, float_format="%.6f")
+    csv_path = os.path.join(out_dir, out_stem(file_stem) + ".csv")
+    pd.DataFrame(rows).to_csv(csv_path, index=False, float_format="%.6f",
+                              na_rep="nan")
     print(f"[Info] CSV saved to: {csv_path}\n")
