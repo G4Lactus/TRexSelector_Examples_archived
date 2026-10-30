@@ -66,7 +66,9 @@ K = 20                          # Random experiments per T-loop iteration
 tFDR = 0.1                      # Target FDR
 corr_max = 0.98                 # HAC auto-clustering correlation threshold
 hc_linkage = Single             # Single-linkage HAC
-lambda2_method = CV_1SE_CCD     # Elastic-net penalty selection
+lambda2_method = CV_1SE_CCD     # Elastic-net penalty selection, EN rows (TENET, TENET_AUG)
+lambda2_method = CV_1SE_IEN_CCD # IEN rows (TIENET_AUG)
+cv_dfmax_ratio = 1.0            # IEN support cap 1.0 * n_train = 180 (default 0.8 gives 144)
 MC = 200                        # Monte Carlo repetitions per grid point
 ```
 
@@ -77,7 +79,9 @@ MC = 200                        # Monte Carlo repetitions per grid point
 Three T-Rex+GVS solver variants: **TENET** (elastic net) [[3]](#references),
 **TENET_AUG** (row-augmented elastic net) [[1]](#references), and **TIENET_AUG** (informed
 elastic net) [[2]](#references). All use single-linkage hierarchical agglomerative clustering
-(HAC) grouping and `CV_1SE_CCD` for the $\lambda_2$ selection.
+(HAC) grouping. TENET and TENET_AUG select $\lambda_2$ with `CV_1SE_CCD`, and TIENET_AUG with
+`CV_1SE_IEN_CCD`, the rule built for the informed elastic net geometry, with its support cap raised to
+$180$ variables (see [Demo 01](../demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md), Part 2).
 
 ---
 
@@ -134,15 +138,19 @@ up to Monte-Carlo noise — the two ports draw from independent random number ge
    30 grid points, by at most $0.032$, and higher only at $\mathrm{SNR} = 0.2$, $\rho = 0.3$ (by $0.034$). Their FDR
    is higher at all 30 grid points, by $0.003\text{–}0.037$, and still stays below target. The saved data do not
    show the cause.
-- **TIENET_AUG** is the most conservative of the three within this demo (FDR $0.000\text{–}0.073$ outside the
-   $\rho = 0.99$ column, peak TPR $0.85$ rather than $0.95$), and its power collapses entirely in the extreme
-   $\rho = 0.99$ column (TPR $0.01\text{–}0.02$, flat in SNR), where the within-block columns become nearly collinear.
-   Its FDR there climbs to $0.098$ at $\mathrm{SNR} = 0.2$, still just under the target.
+- **TIENET_AUG** is the most conservative of the three within this demo (FDR $0.009\text{–}0.076$ outside the
+   $\rho = 0.99$ column, and below TENET in 29 of the 30 cells). Its TPR lies below TENET's at low $\rho$ but above
+   it at $\mathrm{SNR} = 5$ and $\rho = 0.7\text{–}0.9$ (peak $0.961$ against $0.946$ at $\rho = 0.9$). Its power
+   collapses in the extreme $\rho = 0.99$ column (TPR $0.012\text{–}0.060$), where the within-block columns become
+   nearly collinear. There its FDR reaches $0.095$ at $\mathrm{SNR} = 0.2$, just below the target and the only cell
+   where it exceeds TENET's ($0.090$).
 - This is the same pattern as on the Gaussian equicorrelated designs (Demos 01–03). There, too, TIENET_AUG trades
-   power for a lower FDR and collapses only at $\rho = 0.99$, while it reaches TPR $\approx 1$ in Demos 01–02 and
-   $\approx 0.88$ in Demo 03 elsewhere. The heavy tails keep this pattern but cost TIENET_AUG power and FDR margin.
-   From $\mathrm{SNR} = 1$ on its TPR at $\rho \le 0.9$ lies $0.023\text{–}0.052$ below Demo 03 in all 15 cells, and
-   its FDR is higher at all 30 grid points, by at most $0.088$ ($\mathrm{SNR} = 0.2$, $\rho = 0.99$).
+   power for a lower FDR and collapses only at $\rho = 0.99$, while elsewhere its TPR reaches $0.999$ in Demos 01–02
+   and $0.994$ in Demo 03. The heavy tails keep this pattern without a uniform cost in TIENET_AUG power against
+   Demo 03. From $\mathrm{SNR} = 1$ on, its TPR at $\rho \le 0.9$ lies above Demo 03 in 9 of the 15 cells (by
+   $-0.025$ to $+0.036$), mostly at $\rho \le 0.7$, and below it in most cells at $\rho = 0.85\text{–}0.9$. Its FDR
+   is higher at only 10 of the 30 grid points, mostly in the $\mathrm{SNR} = 0.2$ row and the $\rho = 0.99$ column,
+   by at most $0.074$ ($\mathrm{SNR} = 0.2$, $\rho = 0.99$).
 
 TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver.
 FDR cells above the $\mathrm{tFDR} = 0.1$ target would be outlined in cyan (none are here).

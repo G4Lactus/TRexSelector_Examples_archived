@@ -73,7 +73,9 @@ K = 20                          # Random experiments per T-loop iteration
 tFDR = 0.1                      # Target FDR
 corr_max = 0.98                 # HAC auto-clustering correlation threshold
 hc_linkage = "Single"           # Single-linkage HAC
-lambda2_method = "CV_1SE_CCD"   # Elastic-net penalty selection
+lambda2_method = "CV_1SE_CCD"   # Elastic-net penalty selection, EN rows (TENET, TENET_AUG)
+lambda2_method = "CV_1SE_IEN_CCD"  # IEN rows (TIENET_AUG)
+cv_dfmax_ratio = 1.0            # IEN support cap 1.0 * n_train = 180 (default 0.8 gives 144)
 df = 3                          # Student-t degrees of freedom
 num_MC = 200                    # Monte Carlo repetitions per grid point
 seed = 2026                     # Base seed, trial k uses 2026 + k - 1
@@ -85,12 +87,16 @@ seed = 2026                     # Base seed, trial k uses 2026 + k - 1
 
 Three T-Rex+GVS solver variants are compared. **TENET** runs the elastic net (EN) [[3]](#references),
 **TENET_AUG** its row-augmented form [[1]](#references), and **TIENET_AUG** the informed elastic net (IEN)
-[[2]](#references). All three use single-linkage hierarchical agglomerative clustering (HAC) grouping and
-`CV_1SE_CCD` for the $\lambda_2$ selection, as in the C++ and Python demos. The script lists them in `GVS_METHODS`.
+[[2]](#references). All three use single-linkage hierarchical agglomerative clustering (HAC) grouping. TENET and
+TENET_AUG select $\lambda_2$ with `CV_1SE_CCD`, and TIENET_AUG with `CV_1SE_IEN_CCD`, the rule built for the IEN
+geometry, with its support cap raised to $180$ variables (see
+[Demo 01](../demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md), Part 2), as in the C++ and Python demos. The
+script lists them in `GVS_METHODS`.
 
 - **TENET**: `GVS_type = "EN"`, `en_solver = "TENET"`
 - **TENET_AUG**: `GVS_type = "EN"`, `en_solver = "TENET_AUG"`
-- **TIENET_AUG**: `GVS_type = "IEN"`, with `en_solver` left at the library default, which the IEN path ignores
+- **TIENET_AUG**: `GVS_type = "IEN"`, `lambda2_method = "CV_1SE_IEN_CCD"`, `cv_dfmax_ratio = 1.0`, with `en_solver`
+  left at the library default, which the IEN path ignores
 
 Each Monte Carlo (MC) trial builds the selector through the shared adapter `.gvs_select()` in
 [`../../../simulation_utils.R`](../../../simulation_utils.R), here for TENET:
@@ -117,8 +123,9 @@ tpp <- trex_tpp(sel$selected_indices, true_support)
 ```
 
 TENET_AUG changes only `en_solver`. TIENET_AUG sets `gvs_type = "IEN"` and the base solver `"TIENET_AUG"`, so its
-rows run the augmented IEN solver as in C++ and Python. The trial seed $2026 + k - 1$ of trial $k$ seeds the DGP, the
-selector and the cross-validation folds.
+rows run the augmented IEN solver as in C++ and Python, and it passes `lambda2_method = "CV_1SE_IEN_CCD"` with
+`cv_dfmax_ratio = 1.0`. The trial seed $2026 + k - 1$ of trial $k$ seeds the DGP, the selector and the
+cross-validation folds.
 
 ---
 
@@ -159,7 +166,9 @@ Monte Carlo trials run in parallel on a parallel socket (PSOCK) cluster of spawn
 script also sources [`../../../support_generators.R`](../../../support_generators.R),
 [`../../../simulation_utils.R`](../../../simulation_utils.R), [`../trex_gvs_dgps.R`](../trex_gvs_dgps.R) and
 [`../trex_gvs_sim_common.R`](../trex_gvs_sim_common.R). The recorded run (library commit `44cf1ab`, 8 workers) took
-about 2.8 hours. For a quick smoke test, reduce `num_MC` in `CFG` and the grids in `PRESET` at the top of the script.
+about 2.8 hours. The TIENET_AUG rows come from a rerun of that solver alone on library commit `09debc6`, with the
+same trial seeds. For a quick smoke test, reduce `num_MC` in `CFG` and the grids in `PRESET` at the top of the
+script.
 
 Afterwards, regenerate the figure from the CSV file with [`generate_plots.sh`](generate_plots.sh), which drives the
 suite's ggplot2 plotting module [`../trex_gvs_plt_utils.R`](../trex_gvs_plt_utils.R) through `Rscript` (set `RSCRIPT`
@@ -191,16 +200,19 @@ $|z| > 3$.
   $\rho \ge 0.85$ from $\mathrm{SNR} = 1$ on. TENET's FDR is higher at all 30 grid points, by $0.001\text{–}0.031$,
   and still stays below target. In this R run the heavy tails therefore cost TENET a little FDR margin rather than
   power.
-- **TIENET_AUG** is the most conservative of the three. Outside the $\rho = 0.99$ column its FDR falls with SNR, from
-  $0.027\text{–}0.066$ at $\mathrm{SNR} = 0.2$ to at most $0.004$ at $\mathrm{SNR} = 5$, and its TPR peaks at $0.84$
-  ($\mathrm{SNR} = 5$, $\rho = 0.7$) against a TENET peak of $0.96$. In the $\rho = 0.99$ column its power collapses
-  (TPR $0.013\text{–}0.018$, on average 2.0 to 2.6 of the 150 active variables, flat in SNR). Its FDR there is $0.060$
-  at $\mathrm{SNR} = 0.2$ and at most $0.022$ from $\mathrm{SNR} = 0.5$ on.
+- **TIENET_AUG** is the most conservative of the three, with an FDR below TENET's in all 30 cells. Outside the
+  $\rho = 0.99$ column its FDR falls with SNR, from $0.027\text{–}0.068$ at $\mathrm{SNR} = 0.2$ to
+  $0.008\text{–}0.028$ at $\mathrm{SNR} = 5$. Its TPR lies below TENET's at low $\rho$ but peaks at $0.974$
+  ($\mathrm{SNR} = 5$, $\rho = 0.9$), above the TENET value of $0.960$ there and in the $\rho = 0.85$ cell ($0.972$
+  against $0.958$). In the $\rho = 0.99$ column its power collapses (TPR $0.014\text{–}0.063$, rising with SNR, on
+  average 2.1 to 9.4 of the 150 active variables). Its FDR there is $0.062$ at $\mathrm{SNR} = 0.2$, $0.039$ at
+  $\mathrm{SNR} = 0.5$ and at most $0.019$ from $\mathrm{SNR} = 1$ on.
 - This is the pattern of the Gaussian equicorrelated designs. In the R runs of Demos 01–03, too, TIENET_AUG has a
-  lower FDR than TENET at every grid point, mostly at a lower TPR, and collapses only at $\rho = 0.99$, while it
-  reaches TPR $1.000$ in Demos 01–02 and up to $0.871$ in Demo 03 elsewhere. The heavy tails keep this pattern but
-  cost TIENET_AUG power. From $\mathrm{SNR} = 1$ on, its TPR at $\rho \le 0.9$ lies $0.028\text{–}0.053$ below
-  Demo 03, and its FDR is higher at all 30 grid points (by at most $0.049$).
+  lower FDR than TENET at every grid point, mostly at a lower TPR, and collapses only at $\rho = 0.99$, while
+  elsewhere its TPR reaches $0.999$ in Demo 01, $0.998$ in Demo 02 and $0.996$ in Demo 03. The heavy tails keep this
+  pattern and do not cost TIENET_AUG power against Demo 03. From $\mathrm{SNR} = 1$ on, its TPR at $\rho \le 0.9$
+  lies above Demo 03 in 11 of the 15 cells (by $-0.014$ to $+0.044$), while its FDR is higher at only 10 of the 30
+  grid points (by at most $0.048$).
 
 TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver.
 FDR cells above the $\mathrm{tFDR} = 0.1$ target would be outlined in cyan (none are here).

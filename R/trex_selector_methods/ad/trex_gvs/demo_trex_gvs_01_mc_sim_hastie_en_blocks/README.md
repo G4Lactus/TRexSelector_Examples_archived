@@ -75,7 +75,9 @@ K = 20                       # Random experiments per T-loop iteration
 tFDR = 0.1                   # Target FDR
 corr_max = 0.98              # HAC cut (Part 4 adds the noise floor and oracle groups)
 hc_linkage = Single          # Single-linkage HAC
-lambda2_method = CV_1SE_CCD  # Elastic-net penalty selection (Part 2 adds CV_1SE_IEN_CCD for IEN)
+lambda2_method = CV_1SE_CCD  # Elastic-net penalty selection, EN rows (TENET, TENET_AUG)
+lambda2_method = CV_1SE_IEN_CCD  # IEN rows (TIENET_AUG), Part 2 adds CV_1SE_TIK_SVD
+cv_dfmax_ratio = 1.0         # IEN support cap 1.0 * n_train = 180 > s = 150 (default 0.8 gives 144)
 MC = 200                     # Monte Carlo repetitions per grid point
 ```
 
@@ -124,7 +126,8 @@ Three T-Rex+GVS solver variants, set per row of `GVS_METHODS` at the top of the 
   (`gvs_type = "EN"`, `en_solver = "TENET_AUG"`) as proposed in [[1]](#references).
 - **TIENET_AUG** — terminating elastic net solver based on row-augmented data to solve via a terminating lasso the
   informed elastic net (IEN) proposed in [[2]](#references) (`gvs_type = "IEN"` with the base solver
-  `"TIENET_AUG"`). `en_solver` is not applicable and stays at the library default, which the IEN path ignores.
+  `"TIENET_AUG"`). `en_solver` is not applicable and stays at the library default, which the IEN path ignores. The
+  row sets `lambda2_method = "CV_1SE_IEN_CCD"` and `cv_dfmax_ratio = 1.0` (see [Four Parts](#four-parts)).
 
 ---
 
@@ -133,17 +136,19 @@ Three T-Rex+GVS solver variants, set per row of `GVS_METHODS` at the top of the 
 1. **2-D SNR $\times$ $\rho$ sweep** — TENET / TENET_AUG / TIENET_AUG over
    $\mathrm{SNR} \in \lbrace0.2, 0.5, 1, 2, 5\rbrace$ and
    $\rho \in \lbrace0.30, 0.50, 0.70, 0.90, 0.95, 0.99\rbrace$, 200 MC trials per cell, with `CV_1SE_CCD` for
-   all three methods.
-2. $\lambda_2$**-method comparison** — `CV_1SE_SVD` vs. `CV_1SE_CCD` for TENET, and `CV_1SE_CCD` vs. the rule
-   `CV_1SE_IEN_CCD` built for the IEN geometry for TIENET_AUG, at the fixed operating point $\mathrm{SNR}=2$,
-   $\rho=0.7$. The elastic net (EN) path does not accept the IEN rule.
+   TENET and TENET_AUG. TIENET_AUG uses `CV_1SE_IEN_CCD`, the rule built for the IEN geometry, with its support cap
+   raised to `cv_dfmax_ratio = 1.0` (see Part 2 of the results).
+2. $\lambda_2$**-method comparison** — `CV_1SE_SVD` vs. `CV_1SE_CCD` for TENET, and the two rules built for the IEN
+   geometry, `CV_1SE_TIK_SVD` vs. `CV_1SE_IEN_CCD`, for TIENET_AUG, at the fixed operating point $\mathrm{SNR}=2$,
+   $\rho=0.7$. The elastic net (EN) path does not accept the IEN rules.
 3. **HAC linkage comparison** — Single / Complete / Average / weighted pair group method with arithmetic mean (WPGMA)
-   linkage at the same fixed operating point (TENET and TIENET_AUG, `CV_1SE_CCD`).
-4. **Clustering-cut comparison** — TENET and TIENET_AUG at the same fixed operating point (`CV_1SE_CCD`, single
-   linkage) under three groupings. These are the fixed cut `corr_max = 0.98` of Parts 1–3, the Bonferroni noise
-   floor (`corr_max` = 0.346 here, the absolute correlation that independent columns exceed with probability at
-   most $0.05$ over all $p(p-1)/2$ column pairs, via the Fisher $z$ transform) and the oracle groups of the design.
-   Besides the variable-level FDR and TPR it reports group-level rates.
+   linkage at the same fixed operating point (TENET with `CV_1SE_CCD`, TIENET_AUG with `CV_1SE_IEN_CCD`).
+4. **Clustering-cut comparison** — TENET and TIENET_AUG at the same fixed operating point (`CV_1SE_CCD` for TENET,
+   `CV_1SE_IEN_CCD` for TIENET_AUG, single linkage) under three groupings. These are the fixed cut
+   `corr_max = 0.98` of Parts 1–3, the Bonferroni noise floor (`corr_max` = 0.346 here, the absolute correlation
+   that independent columns exceed with probability at most $0.05$ over all $p(p-1)/2$ column pairs, via the
+   Fisher $z$ transform) and the oracle groups of the design. Besides the variable-level FDR and TPR it reports
+   group-level rates.
 
 Parts 2–3 are supplementary robustness checks over the $\lambda_2$-selection and linkage implementation choices.
 Part 4 shows what real groups do to the two solver families, while Parts 1–3 keep the fixed cut.
@@ -193,14 +198,17 @@ Rscript "$dir/demo_trex_gvs_01_mc_sim_hastie_en_blocks.R" 8    # 8 worker cores
 
 The environment variable `TREX_GVS_PARTS` selects the parts (default `1234`, and `TREX_GVS_PARTS=4` runs only
 Part 4). Reduce `num_MC` in `CFG` and the sweep grids for a quick preview. Monte Carlo trials run in parallel on a
-parallel socket (PSOCK) cluster of spawned R worker processes ([`../../../mc_runtime.R`](../../../mc_runtime.R)). The worker count is the
-first command-line argument, else `TREX_NUM_WORKERS`, else 8, and `0` uses every core. Every finished grid cell is
-appended to a cache in `simulation_results/cache/`, so a stopped run resumes where it left off, and a completed run
-removes the cache. The script also sources [`../trex_gvs_dgps.R`](../trex_gvs_dgps.R),
+parallel socket (PSOCK) cluster of spawned R worker processes
+([`../../../mc_runtime.R`](../../../mc_runtime.R)). The worker count is the first command-line argument, else
+`TREX_NUM_WORKERS`, else 8, and `0` uses every core. Every finished grid cell is appended to a cache in
+`simulation_results/cache/`, so a stopped run resumes where it left off, and a completed run removes the cache. The
+script also sources [`../trex_gvs_dgps.R`](../trex_gvs_dgps.R),
 [`../trex_gvs_sim_common.R`](../trex_gvs_sim_common.R) (2-D sweep driver and result writers),
-[`../../../simulation_utils.R`](../../../simulation_utils.R) (the `.run_mc_hastie()` and `.run_mc_hastie_cut()` runners and the
-`.gvs_select()` adapter) and [`../../../support_generators.R`](../../../support_generators.R). Parts 1–3 of the recorded run
-(library commit `44cf1ab`, 8 workers) took about 3.2 hours, and Part 4 (library commit `61fd84c`) took 8 minutes.
+[`../../../simulation_utils.R`](../../../simulation_utils.R) (the `.run_mc_hastie()` and `.run_mc_hastie_cut()`
+runners and the `.gvs_select()` adapter) and [`../../../support_generators.R`](../../../support_generators.R).
+Parts 1–3 of the recorded run (library commit `44cf1ab`, 8 workers) took about 3.2 hours, and Part 4 (library commit
+`61fd84c`) took 8 minutes. The TIENET_AUG rows of all four parts come from a rerun of that solver alone on library
+commit `09debc6`, with the same trial seeds.
 
 Afterwards, regenerate the figures from the CSV files with [`generate_plots.sh`](generate_plots.sh), which drives the
 suite's ggplot2 plotting module [`../trex_gvs_plt_utils.R`](../trex_gvs_plt_utils.R) through `Rscript` (set
@@ -217,22 +225,24 @@ up to Monte Carlo noise (see [Purpose](#purpose)).
 ### Part 1 — 2-D SNR $\times$ $\rho$ sweep
 
 - FDR stays below the $\mathrm{tFDR} = 0.1$ target in every cell (no cyan violation outlines). **TENET** and
-  **TENET_AUG**, identical in every cell, realize $0.054\text{–}0.090$, and **TIENET_AUG** never exceeds $0.045$
+  **TENET_AUG**, identical in every cell, realize $0.054\text{–}0.090$, and **TIENET_AUG** never exceeds $0.049$
   (both maxima sit in the $\rho = 0.3$ column).
 - **TENET / TENET_AUG** reach a TPR of at least $0.986$ once $\mathrm{SNR} \ge 1$ for $\rho \ge 0.5$. The weakest
   column, $\rho = 0.30$, still climbs $0.87 \to 0.96 \to 0.99$ over $\mathrm{SNR} \in \lbrace1, 2, 5\rbrace$.
-- **TIENET_AUG** is more conservative. Its FDR lies below the TENET value in all 30 cells, and its TPR grows more
-  slowly with SNR, for example $0.67$ at $\mathrm{SNR}=1$, $\rho = 0.3$ against $0.87$ for TENET. From
-  $\mathrm{SNR} = 1$ on it still reaches a TPR of at least $0.98$ for $\rho = 0.7\text{–}0.95$. The same pattern
-  recurs in the other block demos of this folder, where the R runs of Demos 03–07 give TIENET_AUG the lower FDR in
-  149 of their 155 cells.
-- The power of TIENET_AUG **collapses in the extreme $\rho = 0.99$ column** (TPR at most $0.020$), where the
+- **TIENET_AUG** is more conservative. Its FDR lies below the TENET value in all 30 cells, and it has less power,
+  most of all at low $\rho$, for example $0.535$ at $\mathrm{SNR}=1$, $\rho = 0.3$ against $0.87$ for TENET. From
+  $\mathrm{SNR} = 1$ on it reaches a TPR of $0.970\text{–}0.999$ for $\rho = 0.9\text{–}0.95$, against
+  $0.845\text{–}0.954$ at $\rho = 0.7$ and $0.535\text{–}0.796$ at $\rho = 0.3$. The same pattern recurs in the
+  other block demos of this folder, where the R runs of Demos 03–07 give TIENET_AUG the lower FDR in 142 of their
+  155 cells.
+- The power of TIENET_AUG **collapses in the extreme $\rho = 0.99$ column** (TPR $0.007\text{–}0.064$), where the
   within-group columns become nearly collinear, while TENET keeps a TPR of $0.80\text{–}1.00$ there. This is also the
   only column whose within-group correlation lies above `corr_max = 0.98`. A plausible reading is that only there
-  HAC merges each active group into one cluster and TIENET_AUG then keeps very few members per cluster. A TPR of
-  $0.020$ is 3 of the 150 active variables, which would fit one selected variable per group.
+  HAC merges each active group into one cluster and TIENET_AUG then keeps very few members per cluster. Its TPR
+  there rises from $0.007$ at $\mathrm{SNR} = 0.2$ to $0.064$ at $\mathrm{SNR} = 5$, about 1 to 10 of the 150 active
+  variables, so at most about three per group.
 - Below $\rho = 0.99$ a stronger within-group correlation helps both families at low SNR. At $\mathrm{SNR} = 0.2$
-  the TPR rises from $0.155$ at $\rho = 0.3$ to $0.805$ at $\rho = 0.95$ for TENET and from $0.102$ to $0.628$ for
+  the TPR rises from $0.155$ at $\rho = 0.3$ to $0.805$ at $\rho = 0.95$ for TENET and from $0.094$ to $0.607$ for
   TIENET_AUG.
 
 TPR (top) and FDR (bottom) heatmaps, one column per solver. FDR cells above the
@@ -246,15 +256,21 @@ $\mathrm{tFDR} = 0.1$ target would be outlined in cyan.
 
 - For TENET, `CV_1SE_SVD` and `CV_1SE_CCD` give essentially the same result (FDR $0.068$ vs. $0.067$, TPR $1.000$
   for both), so the pipeline is insensitive to the ridge-shaped penalty-selection backend at this point.
-- For TIENET_AUG, the IEN-geometry rule `CV_1SE_IEN_CCD` does clearly worse than `CV_1SE_CCD` (FDR $0.041$ and
-  TPR $0.833$ against $0.002$ and $0.999$). The rule cross-validates $\lambda_2$ jointly with $\lambda_1$, and its
-  $\lambda_1$ path stops at $0.8\, n_{\mathrm{train}} = 144$ selected variables, below the $s = 150$ true variables
-  of this design. The R run does not record the picked penalties. The C++ run found a boundary pick in all 200
-  trials, so a plausible reading is that the same cap drives the loss here. The IEN rows of Demos 01–07 therefore
-  keep `CV_1SE_CCD`, while Demo 08 ($s \le 50$) uses the IEN rule (see
+- For TIENET_AUG, the two IEN-geometry rules differ. `CV_1SE_TIK_SVD` reaches FDR $0.009$ and TPR $0.982$, and
+  `CV_1SE_IEN_CCD` FDR $0.026$ and TPR $0.907$. The EN rules are not compared on this track, because an EN tuner
+  would fit the wrong objective there (the library maps `CV_1SE_CCD` to `CV_1SE_IEN_CCD` on the IEN track).
+- `CV_1SE_IEN_CCD` cross-validates $\lambda_2$ jointly with $\lambda_1$, and its $\lambda_1$ path stops at
+  `cv_dfmax_ratio` $\cdot\, n_{\mathrm{train}}$ selected variables. The library default $0.8$ gives $144$, below the
+  $s = 150$ true variables of this design, so Demos 01–07 set `cv_dfmax_ratio = 1.0` ($180$ variables). The R run
+  does not record the picked penalties, while all $200$ picks in the C++ run are still boundary picks at this cap.
+  With the default cap the previous R run gave FDR $0.041$ and TPR $0.833$.
+- `CV_1SE_TIK_SVD` has no such cap, but it needs fewer within-group contrasts than training samples
+  ($p - M < n_{\mathrm{train}}$, with $M$ the number of clusters). This holds here, where no groups form, and the
+  library refuses the rule otherwise, for example on the trap blocks of Demo 04 at $\rho = 0.99$. The sweeps of
+  Demos 01–07 therefore use `CV_1SE_IEN_CCD`, like Demo 08 (see
   [Demo 08](../demo_trex_gvs_08_mc_sim_block_bench/README.md)).
-- The `CV_1SE_CCD` rows reproduce the Part 1 cell at $\mathrm{SNR}=2$, $\rho=0.7$ exactly, because every part runs
-  the same trial seeds.
+- The TENET row with `CV_1SE_CCD` and the TIENET_AUG row with `CV_1SE_IEN_CCD` reproduce the Part 1 cells at
+  $\mathrm{SNR}=2$, $\rho=0.7$ exactly, because every part runs the same trial seeds.
 
 Grouped bar charts at the fixed operating point $\mathrm{SNR} = 2$, $\rho = 0.7$. Error bars show
 $\pm 1$ Monte Carlo standard deviation.
@@ -266,13 +282,14 @@ $\pm 1$ Monte Carlo standard deviation.
 ### Part 3 — HAC linkage
 
 - Single / Complete / Average / WPGMA linkage produce **numerically identical** results (FDR $0.067$ and TPR
-  $1.000$ for TENET, FDR $0.002$ and TPR $0.999$ for TIENET_AUG), equal to the Part 1 cell at this operating point.
+  $1.000$ for TENET, FDR $0.026$ and TPR $0.907$ for TIENET_AUG), equal to the Part 1 cell at this operating point.
 - At $\rho = 0.7$ the within-group correlation lies far below `corr_max = 0.98`, so the dendrogram cut leaves every
   variable in its own cluster under any linkage, and this point cannot show a linkage effect. The linkage choice would
   matter only where the cut merges variables, as in the $\rho = 0.99$ column of Part 1, which this comparison does not
   cover.
-- Taken together, Parts 2 and 3 show that at $\mathrm{SNR} = 2$, $\rho = 0.7$ the results of Part 1 do not depend
-  on the ridge-shaped $\lambda_2$-selection backend (`CV_1SE_SVD` or `CV_1SE_CCD`) or on the linkage rule.
+- Taken together, Parts 2 and 3 show that at $\mathrm{SNR} = 2$, $\rho = 0.7$ the TENET results of Part 1 do not
+  depend on the ridge-shaped $\lambda_2$-selection backend (`CV_1SE_SVD` or `CV_1SE_CCD`), and no result depends on
+  the linkage rule. TIENET_AUG, in contrast, depends on its IEN rule.
 
 Grouped bar charts at the same fixed operating point as Part 2. Error bars show $\pm 1$ Monte
 Carlo standard deviation.
@@ -285,7 +302,7 @@ Carlo standard deviation.
 
 - With the fixed cut `corr_max = 0.98` the selector forms no group at this operating point, and both solvers
   reproduce the Part 3 single-linkage numbers exactly (FDR $0.067$ and TPR $1.000$ for TENET, FDR
-  $0.002$ and TPR $0.999$ for TIENET_AUG). The noise floor forms $3.025$ clusters with at
+  $0.026$ and TPR $0.907$ for TIENET_AUG). The noise floor forms $3.025$ clusters with at
   least two members on average, against 3 for the oracle groups, and gives nearly the same rates as the oracle groups
   for both solvers.
 - **TENET** keeps its TPR of $1.000$ under real groups, and its FDR drops slightly, from $0.067$ to
@@ -293,15 +310,18 @@ Carlo standard deviation.
   $0.66\text{–}0.70$ next to a variable-level FDR below $0.1$ is the effect described under
   [Four Parts](#four-parts). The few falsely selected background variables are singleton groups, and next to the three
   active groups they make up about two thirds of the selected groups. The selector does not control this rate.
-- **TIENET_AUG** keeps about one variable per active group once the groups are real. Its TPR falls from
-  $0.999$ to $0.020$, about 3 of the 150 active variables, while it still hits most active groups
-  (group hit $0.99$) with variable and group FDR $0$, and its full-group recovery falls from $0.95$
-  to $0$. A plausible reading is that the IEN penalty acts on the sum of the coefficients within each group, so one
-  member already carries the signal of its group. This matches the TIENET_AUG collapse in the $\rho = 0.99$ column of
-  Part 1, the only column where the fixed cut forms groups, and supports the reading given there.
-- Real groups therefore leave the EN selection nearly unchanged and reduce the IEN selection to one representative per
-  group. Parts 1–3 and Demos 02–07 keep the fixed cut `corr_max = 0.98`, which groups only variables correlated above
-  $0.98$, so outside such extreme correlations both solver families are evaluated on individual variables.
+- **TIENET_AUG** keeps only a few variables per active group once the groups are real. Its TPR falls from
+  $0.907$ to $0.141$, about 21 of the 150 active variables or 7 per group, while it hits every active group
+  (group hit $1.00$). Its group FDR falls from $0.45$ to $0.14$ and its full-group recovery from $0.08$ to $0$.
+  Its variable FDR stays near $0.03$ ($0.026$ to $0.029$), while the C++ run drops from $0.026$ to $0.020$ and the
+  Python run stays at $0.022\text{–}0.023$. The gap to C++ is $|z| = 2.42$, below the bound of the cell-by-cell
+  comparison in [Purpose](#purpose). A plausible reading is that the IEN penalty acts on the sum of the coefficients
+  within each group, so a few members already carry the signal of their group. This matches the TIENET_AUG collapse
+  in the $\rho = 0.99$ column of Part 1, the only column where the fixed cut forms groups, and supports the reading
+  given there.
+- Real groups therefore leave the EN selection nearly unchanged and reduce the IEN selection to a few representatives
+  per group. Parts 1–3 and Demos 02–07 keep the fixed cut `corr_max = 0.98`, which groups only variables correlated
+  above $0.98$, so outside such extreme correlations both solver families are evaluated on individual variables.
 
 Grouped bar charts at the same fixed operating point as Parts 2 and 3. The top row shows the variable-level TPR and
 FDR, and the bottom row shows the full-group recovery and the group FDR, which carries no target. Error bars show

@@ -147,11 +147,14 @@ Grouped selection introduces a few additional control parameters and types beyon
     elastic net.
 - **`LambdaSelectionMethod`** — how the elastic-net penalty $\lambda_2$ is chosen: `CV_1SE_CCD` (cross-validation,
    the one-standard-error rule, via coordinate descent) or `CV_1SE_SVD` (via singular value decomposition (SVD)).
-   The rule `CV_1SE_IEN_CCD`, built for the informed elastic net (IEN) geometry, cross-validates $\lambda_2$ jointly
-   with $\lambda_1$ on the group structure and applies to `GVSType::IEN` only. Demo 08 uses it for its IEN rows.
-   Demos 01–07 keep `CV_1SE_CCD`. Six of them have a true support of $s = 150$, above the rule's $\lambda_1$ support
-   cap of $0.8\, n_{\mathrm{train}} = 144$ (see the Demo 01 Part 2 comparison). Demo 04 has $s = 100$ plus trap
-   blocks, and a check with $20$ runs per cell there also gave a boundary pick in every run and no gain in power.
+   The rules `CV_1SE_IEN_CCD` and `CV_1SE_TIK_SVD`, built for the informed elastic net (IEN) geometry, select
+   $\lambda_2$ on the group structure and apply to `GVSType::IEN` only (on the IEN track the library maps
+   `CV_1SE_CCD` to `CV_1SE_IEN_CCD`). All IEN rows use `CV_1SE_IEN_CCD`, which cross-validates $\lambda_2$ jointly
+   with $\lambda_1$. Demos 01–07 raise its $\lambda_1$ support cap to `cv_dfmax_ratio = 1.0`
+   ($n_{\mathrm{train}} = 180$ variables), because six of them have a true support of $s = 150$, above the default
+   cap of $0.8\, n_{\mathrm{train}} = 144$. Demo 08 keeps the default. `CV_1SE_TIK_SVD` appears only in the Demo 01
+   Part 2 comparison, because the library refuses it once the groups hold $n_{\mathrm{train}}$ or more within-group
+   contrasts.
 - **`prior_groups`** — the 0-based per-column group-ID vector. When groups are known in advance (an "oracle" run),
    this vector is taken directly from the data-generating process. When groups must be discovered from the data,
    HAC clustering (with a `corr_max` correlation threshold and a chosen linkage method) is used to build

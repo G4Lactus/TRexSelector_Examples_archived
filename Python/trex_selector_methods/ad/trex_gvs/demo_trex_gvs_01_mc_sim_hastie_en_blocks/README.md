@@ -65,7 +65,9 @@ K = 20                       # Random experiments per T-loop iteration
 tFDR = 0.1                   # Target FDR
 corr_max = 0.98              # HAC cut (Part 4 adds the noise floor and oracle groups)
 hc_linkage = Single          # Single-linkage HAC
-lambda2_method = CV_1SE_CCD  # Elastic-net penalty selection (Part 2 adds CV_1SE_IEN_CCD for IEN)
+lambda2_method = CV_1SE_CCD  # Elastic-net penalty selection, EN rows (TENET, TENET_AUG)
+lambda2_method = CV_1SE_IEN_CCD  # IEN rows (TIENET_AUG), Part 2 adds CV_1SE_TIK_SVD
+cv_dfmax_ratio = 1.0         # IEN support cap 1.0 * n_train = 180 > s = 150 (default 0.8 gives 144)
 MC = 200                     # Monte Carlo repetitions per grid point
 ```
 
@@ -90,16 +92,17 @@ Three T-Rex+GVS solver variants:
    $\mathrm{SNR} \in \lbrace0.2, 0.5, 1, 2, 5\rbrace$ and
    $\rho \in \lbrace0.30, 0.50, 0.70, 0.90, 0.95, 0.99\rbrace$ (derived via
    $\sigma_x = \sqrt{(1-\rho)/\rho}$), 200 Monte Carlo (MC) trials per cell.
-2. $\lambda_2$**-method comparison** — `CV_1SE_SVD` vs. `CV_1SE_CCD` for TENET, and `CV_1SE_CCD` vs. the rule
-   `CV_1SE_IEN_CCD` built for the informed elastic net (IEN) geometry for TIENET_AUG, at the fixed operating point
-   $\mathrm{SNR}=2$, $\rho=0.7$.
+2. $\lambda_2$**-method comparison** — `CV_1SE_SVD` vs. `CV_1SE_CCD` for TENET, and the two rules built for the
+   informed elastic net (IEN) geometry, `CV_1SE_TIK_SVD` vs. `CV_1SE_IEN_CCD`, for TIENET_AUG, at the fixed
+   operating point $\mathrm{SNR}=2$, $\rho=0.7$.
 3. **Hierarchical agglomerative clustering (HAC) linkage comparison** — Single / Complete / Average / weighted pair
    group method with arithmetic mean (WPGMA) linkage at the same fixed operating point (TENET and TIENET_AUG).
-4. **Clustering-cut comparison** — TENET and TIENET_AUG at the same fixed operating point (`CV_1SE_CCD`, single
-   linkage) under three groupings. These are the fixed cut `corr_max = 0.98` of Parts 1–3, the Bonferroni noise
-   floor (`corr_max` = 0.346 here, the absolute correlation that independent columns exceed with probability at
-   most $0.05$ over all $p(p-1)/2$ column pairs, via the Fisher $z$ transform) and the oracle groups of the design.
-   Besides the variable-level FDR and true positive rate (TPR) it reports group-level rates.
+4. **Clustering-cut comparison** — TENET and TIENET_AUG at the same fixed operating point (`CV_1SE_CCD` for TENET,
+   `CV_1SE_IEN_CCD` for TIENET_AUG, single linkage) under three groupings. These are the fixed cut
+   `corr_max = 0.98` of Parts 1–3, the Bonferroni noise floor (`corr_max` = 0.346 here, the absolute correlation
+   that independent columns exceed with probability at most $0.05$ over all $p(p-1)/2$ column pairs, via the
+   Fisher $z$ transform) and the oracle groups of the design. Besides the variable-level FDR and true positive rate
+   (TPR) it reports group-level rates.
 
 Parts 2–3 are supplementary robustness checks over the $\lambda_2$-selection and linkage implementation choices.
 Part 4 shows what real groups do to the two solver families, while Parts 1–3 keep the fixed cut.
@@ -166,24 +169,26 @@ C++ engine there).
 
 - FDR stays at or below the $\mathrm{tFDR} = 0.1$ target in every cell (no cyan violation outlines).
   **TENET** and **TENET_AUG** — numerically identical throughout this demo — realize $0.043\text{–}0.091$, and
-  **TIENET_AUG** never exceeds $0.041$.
+  **TIENET_AUG** never exceeds $0.050$.
 - **TENET / TENET_AUG** reach a TPR of $\approx 1$ once $\mathrm{SNR} \gtrsim 1$ for
   $\rho \ge 0.5$. The weakest column, $\rho = 0.30$, still climbs $0.88 \to 0.96 \to 0.99$ over
   $\mathrm{SNR} \in \lbrace1, 2, 5\rbrace$.
-- **TIENET_AUG** is more conservative (very low FDR, TPR that grows more slowly with SNR — e.g. $0.68$ at
-  $\mathrm{SNR}=1$, $\rho = 0.3$ vs. $0.88$ for TENET), but from $\mathrm{SNR} = 1$ on it reaches TPR $\approx 1$ for
-  $\rho = 0.7\text{–}0.95$. Its power **collapses in the extreme $\rho = 0.99$ column** (TPR $\le 0.02$), where the
-  within-group columns become nearly collinear. This conservatism is not specific to this design — the same pattern
-  recurs across the other block demos in this folder.
+- **TIENET_AUG** is more conservative (FDR below TENET in all 30 cells) and has less power, most of all at low
+  $\rho$. From $\mathrm{SNR} = 1$ on it reaches a TPR of $0.976\text{–}0.999$ for $\rho = 0.9\text{–}0.95$, against
+  $0.853\text{–}0.958$ at $\rho = 0.7$ and $0.544\text{–}0.800$ at $\rho = 0.3$, where TENET reaches
+  $0.88\text{–}0.99$. Its power **collapses in the extreme $\rho = 0.99$ column** (TPR
+  $0.006\text{–}0.064$), where the within-group columns become nearly collinear. This conservatism is not specific
+  to this design — the same pattern recurs across the other block demos in this folder.
 - Below $\rho = 0.99$ a stronger within-group correlation helps both families at low SNR. At $\mathrm{SNR} = 0.2$
-  the TPR rises from $0.146$ at $\rho = 0.3$ to $0.835$ at $\rho = 0.95$ for TENET and from $0.096$ to $0.641$ for
+  the TPR rises from $0.146$ at $\rho = 0.3$ to $0.835$ at $\rho = 0.95$ for TENET and from $0.088$ to $0.621$ for
   TIENET_AUG. The HAC grouping cannot explain this rise. The dendrogram merges each group at a distance of about
   $1 - \rho$, but the fixed cut at `corr_max = 0.98` lies above the within-group correlation for every
   $\rho < 0.99$ (at $\rho = 0.95$ the largest within-group sample correlation is about $0.97$), so it leaves every
   variable in its own cluster.
 - Only the $\rho = 0.99$ column is cut into groups, and only there TIENET_AUG collapses. A plausible reading is that
-  each active group then forms one cluster and TIENET_AUG keeps very few members per cluster. Its top TPR of
-  $0.020$ is 3 of the 150 active variables, which would fit one selected variable per group.
+  each active group then forms one cluster and TIENET_AUG keeps very few members per cluster. Its TPR there rises
+  from $0.006$ at $\mathrm{SNR} = 0.2$ to $0.064$ at $\mathrm{SNR} = 5$, about 1 to 10 of the 150 active variables,
+  so at most about three per group.
 
 TPR (top) and FDR (bottom) heatmaps, one column per solver. FDR cells above the
 $\mathrm{tFDR} = 0.1$ target would be outlined in cyan.
@@ -196,12 +201,20 @@ $\mathrm{tFDR} = 0.1$ target would be outlined in cyan.
 
 - For TENET, `CV_1SE_SVD` and `CV_1SE_CCD` give essentially the same result (FDR $0.071$ vs. $0.070$ at TPR
   $1.000$), so the pipeline is insensitive to the ridge-shaped penalty-selection backend at this point.
-- For TIENET_AUG, the IEN-geometry rule `CV_1SE_IEN_CCD` does clearly worse than `CV_1SE_CCD` here (FDR $0.039$ and
-  TPR $0.833$ against $0.001$ and $0.999$), and $199$ of its $200$ picks are boundary picks. The rule cross-validates
-  $\lambda_2$ jointly with $\lambda_1$, and its $\lambda_1$ path stops at $0.8\, n_{\mathrm{train}} = 144$ selected
-  variables, below the $s = 150$ true variables of this design. The IEN rows of Demos 01–07 therefore keep
-  `CV_1SE_CCD` (all have $s = 150$ except Demo 04 with $s = 100$, where the rule also picked a boundary in every check
-  run), while Demo 08 ($s \le 50$) uses the IEN rule (see [Demo 08](../demo_trex_gvs_08_mc_sim_block_bench/README.md)).
+- For TIENET_AUG, the two IEN-geometry rules differ. `CV_1SE_TIK_SVD` reaches FDR $0.009$ and TPR $0.985$, and
+  `CV_1SE_IEN_CCD` FDR $0.022$ and TPR $0.913$. The elastic net (EN) rules are not compared on this track, because
+  an EN tuner would fit the wrong objective there (the library maps `CV_1SE_CCD` to `CV_1SE_IEN_CCD` on the IEN
+  track).
+- `CV_1SE_IEN_CCD` cross-validates $\lambda_2$ jointly with $\lambda_1$, and its $\lambda_1$ path stops at
+  `cv_dfmax_ratio` $\cdot\, n_{\mathrm{train}}$ selected variables. The library default $0.8$ gives $144$, below the
+  $s = 150$ true variables of this design, so Demos 01–07 set `cv_dfmax_ratio = 1.0` ($180$ variables). $199$ of
+  its $200$ picks are still boundary picks at this cap. With the default cap the previous run gave FDR $0.039$ and
+  TPR $0.833$.
+- `CV_1SE_TIK_SVD` has no such cap, but it needs fewer within-group contrasts than training samples
+  ($p - M < n_{\mathrm{train}}$, with $M$ the number of clusters). This holds here, where no groups form, and the
+  library refuses the rule otherwise, for example on the trap blocks of Demo 04 at $\rho = 0.99$. The sweeps of
+  Demos 01–07 therefore use `CV_1SE_IEN_CCD`, like Demo 08 (see
+  [Demo 08](../demo_trex_gvs_08_mc_sim_block_bench/README.md)).
 
 Grouped bar charts at the fixed operating point $\mathrm{SNR} = 2$, $\rho = 0.7$. Error bars show
 $\pm 1$ Monte Carlo standard deviation.
@@ -213,13 +226,14 @@ $\pm 1$ Monte Carlo standard deviation.
 ### Part 3 — HAC linkage
 
 - Single / Complete / Average / WPGMA linkage produce **numerically identical** results here (FDR $0.070$ and
-  TPR $1.000$ for TENET, FDR $0.001$ and TPR $0.999$ for TIENET_AUG), equal to the Part 1 cell at this point.
+  TPR $1.000$ for TENET, FDR $0.022$ and TPR $0.913$ for TIENET_AUG), equal to the Part 1 cell at this point.
 - At $\rho = 0.7$ the fixed cut at `corr_max = 0.98` lies far above the within-group correlation, so it leaves every
   variable in its own cluster under any linkage, and this point cannot show a linkage effect. The linkage choice
   would matter only where the cut produces groups, as in the $\rho = 0.99$ column of Part 1, which this comparison
   does not cover.
-- Taken together, Parts 2 and 3 show that at $\mathrm{SNR} = 2$, $\rho = 0.7$ the results of Part 1 do not depend
-  on the ridge-shaped $\lambda_2$-selection backend (`CV_1SE_SVD` or `CV_1SE_CCD`) or on the linkage rule.
+- Taken together, Parts 2 and 3 show that at $\mathrm{SNR} = 2$, $\rho = 0.7$ the TENET results of Part 1 do not
+  depend on the ridge-shaped $\lambda_2$-selection backend (`CV_1SE_SVD` or `CV_1SE_CCD`), and no result depends on
+  the linkage rule. TIENET_AUG, in contrast, depends on its IEN rule.
 
 Grouped bar charts at the same fixed operating point as Part 2. Error bars show $\pm 1$ Monte
 Carlo standard deviation.
@@ -232,7 +246,7 @@ Carlo standard deviation.
 
 - With the fixed cut `corr_max = 0.98` the selector forms no group at this operating point, and both solvers
   reproduce the Part 3 single-linkage numbers exactly (FDR $0.070$ and TPR $1.000$ for TENET, FDR
-  $0.001$ and TPR $0.999$ for TIENET_AUG). The noise floor forms $3.04$ clusters with at
+  $0.022$ and TPR $0.913$ for TIENET_AUG). The noise floor forms $3.04$ clusters with at
   least two members on average, against 3 for the oracle groups, and gives nearly the same rates as the oracle groups
   for both solvers.
 - **TENET** keeps its TPR of $1.000$ under real groups, and its FDR drops slightly, from $0.070$ to
@@ -240,15 +254,17 @@ Carlo standard deviation.
   $0.68\text{–}0.71$ next to a variable-level FDR below $0.1$ is the effect described under
   [Four Parts](#four-parts). The few falsely selected background variables are singleton groups, and next to the three
   active groups they make up about two thirds of the selected groups. The selector does not control this rate.
-- **TIENET_AUG** keeps about one variable per active group once the groups are real. Its TPR falls from
-  $0.999$ to $0.020$, about 3 of the 150 active variables, while it still hits most active groups
-  (group hit $0.99$) with variable and group FDR $0$, and its full-group recovery falls from $0.97$
-  to $0$. A plausible reading is that the IEN penalty acts on the sum of the coefficients within each group, so one
-  member already carries the signal of its group. This matches the TIENET_AUG collapse in the $\rho = 0.99$ column of
-  Part 1, the only column where the fixed cut forms groups, and supports the reading given there.
-- Real groups therefore leave the EN selection nearly unchanged and reduce the IEN selection to one representative per
-  group. Parts 1–3 and Demos 02–07 keep the fixed cut `corr_max = 0.98`, which groups only variables correlated above
-  $0.98$, so outside such extreme correlations both solver families are evaluated on individual variables.
+- **TIENET_AUG** keeps only a few variables per active group once the groups are real. Its TPR falls from
+  $0.913$ to $0.141$, about 21 of the 150 active variables or 7 per group, while it hits every active group
+  (group hit $1.00$). Its variable FDR stays at $0.022\text{–}0.023$, but its group FDR falls from $0.41$ to $0.12$
+  and its full-group recovery from $0.08$ to $0$. A plausible reading is that the IEN penalty acts on the sum of the
+  coefficients within each group, so a few members already carry the signal of their group. This matches the
+  TIENET_AUG collapse in the $\rho = 0.99$ column of Part 1, the only column where the fixed cut forms groups, and
+  supports the reading given there.
+- Real groups therefore leave the EN selection nearly unchanged and reduce the IEN selection to a few
+  representatives per group. Parts 1–3 and Demos 02–07 keep the fixed cut `corr_max = 0.98`, which groups only
+  variables correlated above $0.98$, so outside such extreme correlations both solver families are evaluated on
+  individual variables.
 
 Grouped bar charts at the same fixed operating point as Parts 2 and 3. The top row shows the variable-level TPR and
 FDR, and the bottom row shows the full-group recovery and the group FDR, which carries no target. Error bars show

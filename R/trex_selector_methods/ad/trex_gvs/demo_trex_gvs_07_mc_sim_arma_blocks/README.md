@@ -76,7 +76,9 @@ K = 20                          # Random experiments per T-loop iteration
 tFDR = 0.1                      # Target FDR
 corr_max = 0.98                 # HAC auto-clustering correlation threshold
 hc_linkage = "Single"           # Single-linkage HAC
-lambda2_method = "CV_1SE_CCD"   # Elastic-net penalty selection
+lambda2_method = "CV_1SE_CCD"   # Elastic-net penalty selection, EN rows (TENET, TENET_AUG)
+lambda2_method = "CV_1SE_IEN_CCD"  # IEN rows (TIENET_AUG)
+cv_dfmax_ratio = 1.0            # IEN support cap 1.0 * n_train = 180 (default 0.8 gives 144)
 num_MC = 200                    # Monte Carlo repetitions per grid point
 seed = 2026                     # Base seed, trial k uses 2026 + k - 1
 ```
@@ -87,12 +89,16 @@ seed = 2026                     # Base seed, trial k uses 2026 + k - 1
 
 Three T-Rex+GVS solver variants are compared. **TENET** runs the elastic net (EN) [[3]](#references),
 **TENET_AUG** its row-augmented form [[1]](#references), and **TIENET_AUG** the informed elastic net (IEN)
-[[2]](#references). All three use single-linkage hierarchical agglomerative clustering (HAC) grouping and
-`CV_1SE_CCD` for the $\lambda_2$ selection, as in the C++ and Python demos. The script lists them in `GVS_METHODS`.
+[[2]](#references). All three use single-linkage hierarchical agglomerative clustering (HAC) grouping. TENET and
+TENET_AUG select $\lambda_2$ with `CV_1SE_CCD`, and TIENET_AUG with `CV_1SE_IEN_CCD`, the rule built for the IEN
+geometry, with its support cap raised to $180$ variables (see
+[Demo 01](../demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md), Part 2), as in the C++ and Python demos. The
+script lists them in `GVS_METHODS`.
 
 - **TENET**: `GVS_type = "EN"`, `en_solver = "TENET"`
 - **TENET_AUG**: `GVS_type = "EN"`, `en_solver = "TENET_AUG"`
-- **TIENET_AUG**: `GVS_type = "IEN"`, with `en_solver` left at the library default, which the IEN path ignores
+- **TIENET_AUG**: `GVS_type = "IEN"`, `lambda2_method = "CV_1SE_IEN_CCD"`, `cv_dfmax_ratio = 1.0`, with `en_solver`
+  left at the library default, which the IEN path ignores
 
 Each Monte Carlo (MC) trial builds the selector through the shared adapter `.gvs_select()` in
 [`../../../simulation_utils.R`](../../../simulation_utils.R), here for TENET:
@@ -119,8 +125,9 @@ tpp <- trex_tpp(sel$selected_indices, true_support)
 ```
 
 TENET_AUG changes only `en_solver`. TIENET_AUG sets `gvs_type = "IEN"` and the base solver `"TIENET_AUG"`, so its
-rows run the augmented IEN solver as in C++ and Python. The trial seed $2026 + k - 1$ of trial $k$ seeds the DGP, the
-selector and the cross-validation folds.
+rows run the augmented IEN solver as in C++ and Python, and it passes `lambda2_method = "CV_1SE_IEN_CCD"` with
+`cv_dfmax_ratio = 1.0`. The trial seed $2026 + k - 1$ of trial $k$ seeds the DGP, the selector and the
+cross-validation folds.
 
 ---
 
@@ -163,7 +170,9 @@ Monte Carlo trials run in parallel on a parallel socket (PSOCK) cluster of spawn
 script also sources [`../../../support_generators.R`](../../../support_generators.R),
 [`../../../simulation_utils.R`](../../../simulation_utils.R), [`../trex_gvs_dgps.R`](../trex_gvs_dgps.R) and
 [`../trex_gvs_sim_common.R`](../trex_gvs_sim_common.R). The recorded run (library commit `61fd84c`, 8 workers) took
-about 2.4 hours. For a quick smoke test, reduce `num_MC` in `CFG` and the grids in `PRESET` at the top of the script.
+about 2.4 hours. The TIENET_AUG rows come from a rerun of that solver alone on library commit `09debc6`, with the
+same trial seeds. For a quick smoke test, reduce `num_MC` in `CFG` and the grids in `PRESET` at the top of the
+script.
 
 Afterwards, regenerate the figure from the CSV file with [`generate_plots.sh`](generate_plots.sh), which drives the
 suite's ggplot2 plotting module [`../trex_gvs_plt_utils.R`](../trex_gvs_plt_utils.R) through `Rscript` (set `RSCRIPT`
@@ -182,8 +191,8 @@ and the
 up to Monte Carlo noise, not exactly. A cell-by-cell comparison with the C++ run, with $z$ the difference divided by
 the combined Monte Carlo standard error of the two 200-trial means, finds no cell with $|z| > 3$ among the 180 cells
 of this demo (FDR and TPR of every solver at every grid point, largest $|z| = 2.68$). R's FDR lies above the C++ value
-at 25 of the 30 grid points for TENET and at 27 for TIENET_AUG, by $0.004$ on average, and Python lies above C++ at 21
-and 24. Every grid point reuses the same trial seeds, so the cells of one run are correlated and a shared sign is
+at 25 of the 30 grid points for TENET and at 28 for TIENET_AUG, by $0.004$ on average, and Python lies above C++ at 21
+for both. Every grid point reuses the same trial seeds, so the cells of one run are correlated and a shared sign is
 weaker evidence than it would be for independent cells. Over the whole T-Rex+GVS suite no cell of 1,710 has
 $|z| > 3$.
 
@@ -198,10 +207,11 @@ $|z| > 3$.
   two thirds matches 100 of the 150 active variables, the size of the AR(1) and ARMA(2,1) blocks together. A plausible
   reading is that the MA(3) block, whose correlation vanishes beyond lag 3 and does not follow the sweep, stays mostly
   unselected, but the demo records no per-block rates.
-- **TIENET_AUG** is more conservative, with an FDR of at most $0.048$ and a somewhat lower TPR ($0.568\text{–}0.582$
-  at `ar_coef` $\ge 0.9$ and $\mathrm{SNR} = 5$, against $0.669\text{–}0.670$ for TENET). Its FDR falls toward zero
-  at high `ar_coef` and SNR (at most $0.006$ at `ar_coef` $\ge 0.9$ and $\mathrm{SNR} \ge 2$), while the FDR of
-  TENET rises there.
+- **TIENET_AUG** is more conservative, with an FDR of at most $0.058$, below TENET's at 25 of the 30 grid points (the
+  other five lie at `ar_coef` $\le 0.5$ and $\mathrm{SNR} \le 1$). At `ar_coef` $\ge 0.9$ and $\mathrm{SNR} = 5$ it
+  nearly matches the TPR of TENET ($0.653\text{–}0.669$ against $0.669\text{–}0.670$). From $\mathrm{SNR} = 0.5$ on
+  its FDR peaks at `ar_coef` $= 0.7\text{–}0.8$ and falls again toward $0.95$ (at most $0.044$ at `ar_coef`
+  $\ge 0.9$ and $\mathrm{SNR} \ge 2$), while the FDR of TENET keeps rising there.
 - Against Demo 06 (uniform AR(1) blocks, R run), the ARMA design has the higher TPR at low coefficients and the lower
   ceiling. At coefficients up to $0.7$ it gives the higher TENET TPR at 14 of the 15 shared grid points ($0.229$
   against $0.119$ at $0.5$ and $\mathrm{SNR} = 5$, for example). A plausible reading is that its 80-variable ARMA(2,1)

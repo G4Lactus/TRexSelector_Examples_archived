@@ -73,7 +73,9 @@ K = 20                          # Random experiments per T-loop iteration
 tFDR = 0.1                      # Target FDR
 corr_max = 0.98                 # HAC auto-clustering correlation threshold
 hc_linkage = Single             # Single-linkage HAC
-lambda2_method = CV_1SE_CCD     # Elastic-net penalty selection
+lambda2_method = CV_1SE_CCD     # Elastic-net penalty selection, EN rows (TENET, TENET_AUG)
+lambda2_method = CV_1SE_IEN_CCD # IEN rows (TIENET_AUG)
+cv_dfmax_ratio = 1.0            # IEN support cap 1.0 * n_train = 180 (default 0.8 gives 144)
 MC = 200                        # Monte Carlo repetitions per grid point
 ```
 
@@ -93,7 +95,7 @@ sel <- TRexGVSSelector$new(
   X, y, tFDR = 0.1, seed = trial_seed, verbose = FALSE,
   gvs_control = trex_gvs_control(
     gvs_type = "IEN", corr_max = 0.98, hc_linkage = "Single",
-    lambda2_method = "CV_1SE_CCD", cv_seed = trial_seed
+    lambda2_method = "CV_1SE_IEN_CCD", cv_dfmax_ratio = 1.0, cv_seed = trial_seed
   ),
   control = ctrl
 )
@@ -104,8 +106,9 @@ tpp <- trex_tpp(sel$selected_indices, true_support)
 
 `.gvs_select()` in [`../../../simulation_utils.R`](../../../simulation_utils.R) builds this selector in every trial
 and sets every control field explicitly, so no R default can diverge from the C++ reference. The two TENET rows use
-the base solver `"TLARS"` with `gvs_type = "EN"` and `en_solver = "TENET"` or `"TENET_AUG"`. The selector seed and
-the cross-validation fold seed are the trial seed, so every cell is reproducible.
+the base solver `"TLARS"` with `gvs_type = "EN"`, `en_solver = "TENET"` or `"TENET_AUG"` and
+`lambda2_method = "CV_1SE_CCD"`. The selector seed and the cross-validation fold seed are the trial seed, so every
+cell is reproducible.
 
 ---
 
@@ -113,8 +116,10 @@ the cross-validation fold seed are the trial seed, so every cell is reproducible
 
 Three T-Rex+GVS solver variants: **TENET** (elastic net (EN)) [[3]](#references), **TENET_AUG** (row-augmented
 elastic net) [[1]](#references), and **TIENET_AUG** (informed elastic net (IEN)) [[2]](#references). All use
-single-linkage hierarchical agglomerative clustering (HAC) grouping and `CV_1SE_CCD` for the $\lambda_2$ selection.
-The TIENET_AUG row leaves `en_solver` at the library default, which the IEN path ignores.
+single-linkage hierarchical agglomerative clustering (HAC) grouping. TENET and TENET_AUG select $\lambda_2$ with
+`CV_1SE_CCD`, and TIENET_AUG with `CV_1SE_IEN_CCD`, the rule built for the IEN geometry, with its support cap raised
+to $180$ variables (see [Demo 01](../demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md), Part 2), as in the C++ and
+Python demos. The TIENET_AUG row leaves `en_solver` at the library default, which the IEN path ignores.
 
 ---
 
@@ -159,7 +164,8 @@ and a completed run removes the cache. The script also sources [`../trex_gvs_dgp
 [`../trex_gvs_sim_common.R`](../trex_gvs_sim_common.R) (2-D sweep driver and result writers),
 [`../../../simulation_utils.R`](../../../simulation_utils.R) (the `.run_mc_scattered()` runner and the
 `.gvs_select()` adapter) and [`../../../support_generators.R`](../../../support_generators.R). The recorded run
-(library commit `44cf1ab`, 8 workers) took about 2.9 hours.
+(library commit `44cf1ab`, 8 workers) took about 2.9 hours. The TIENET_AUG rows come from a rerun of that solver
+alone on library commit `09debc6`, with the same trial seeds.
 
 Afterwards, regenerate the figure from the CSV file with [`generate_plots.sh`](generate_plots.sh), which drives the
 suite's ggplot2 plotting module [`../trex_gvs_plt_utils.R`](../trex_gvs_plt_utils.R) through `Rscript` (set
@@ -177,22 +183,23 @@ up to Monte Carlo noise (see [Purpose](#purpose)).
   everywhere ($0.052\text{–}0.089$, no cyan violation outlines). Their TPR is at least $0.984$ from
   $\mathrm{SNR} \ge 1$ for $\rho \ge 0.5$, and it climbs $0.87 \to 0.96 \to 0.99$ over
   $\mathrm{SNR} \in \lbrace1, 2, 5\rbrace$ in the weakest column $\rho = 0.30$.
-- **TIENET_AUG** is markedly more conservative. Its FDR stays at or below $0.045$, under the TENET value in all 30
-  cells, and it has less power at low SNR ($0.66$ at $\mathrm{SNR}=1$, $\rho=0.3$ against $0.87$ for TENET). From
-  $\mathrm{SNR} = 1$ on it reaches a TPR of at least $0.98$ for $\rho = 0.7\text{–}0.95$. Its power collapses in the
-  extreme $\rho = 0.99$ column (TPR at most $0.020$, about 3 of the 150 active variables), the only column above
-  `corr_max = 0.98`, where HAC merges each group into one cluster and plausibly one variable per group is selected,
-  as in Demo 01.
+- **TIENET_AUG** is markedly more conservative. Its FDR stays at or below $0.051$, under the TENET value in all 30
+  cells, and it has less power, most of all at low $\rho$ ($0.526$ at $\mathrm{SNR}=1$, $\rho=0.3$ against $0.87$
+  for TENET). From $\mathrm{SNR} = 1$ on it reaches a TPR of $0.968\text{–}0.998$ for $\rho = 0.9\text{–}0.95$,
+  against $0.845\text{–}0.952$ at $\rho = 0.7$ and $0.526\text{–}0.801$ at $\rho = 0.3$. Its power collapses in the
+  extreme $\rho = 0.99$ column (TPR at most $0.062$, about 9 of the 150 active variables), the only column above
+  `corr_max = 0.98`, where HAC merges each group into one cluster and plausibly only a few variables per group are
+  selected, as in Demo 01.
 - Scattering the group members leaves the FDR and TPR pattern of Demo 01's contiguous blocks unchanged within Monte
   Carlo noise. Over the 120 distinct cells (FDR and TPR of TENET and TIENET_AUG at every grid point) the largest gap
-  is $0.013$ in TPR (TENET at $\mathrm{SNR}=0.2$, $\rho=0.7$, $0.654$ here against $0.667$) and $0.008$ in FDR
-  (TENET at $\mathrm{SNR}=1$, $\rho=0.9$, $0.068$ against $0.060$). No cell differs by more than two combined
-  Monte Carlo standard errors (largest $|z| = 1.98$). Both demos use the same trial seeds, but they draw their
-  designs differently, so the comparison holds approximately.
+  is $0.013$ in TPR (TENET at $\mathrm{SNR}=0.2$, $\rho=0.7$, $0.654$ here against $0.667$) and $0.013$ in FDR
+  (TIENET_AUG at $\mathrm{SNR}=1$, $\rho=0.99$, $0.015$ against $0.028$). No cell differs by more than two combined
+  Monte Carlo standard errors (largest $|z| = 1.98$, TENET's FDR at $\mathrm{SNR}=1$, $\rho=0.9$). Both demos use
+  the same trial seeds, but they draw their designs differently, so the comparison holds approximately.
 - HAC clusters the columns on the distance 1 − |correlation|, which does not depend on column order. Below
   $\rho = 0.99$ the within-group correlation stays under `corr_max = 0.98` and the fixed cut leaves every variable in
   its own cluster, so only the $\rho = 0.99$ column tests group *discovery*. There the largest gap to Demo 01 is
-  $|z| = 1.53$, so the scattered layout does not change it.
+  $|z| = 1.94$ (the TIENET_AUG FDR cell above), so the scattered layout does not change it.
 
 TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver.
 FDR cells above the $\mathrm{tFDR} = 0.1$ target would be outlined in cyan.

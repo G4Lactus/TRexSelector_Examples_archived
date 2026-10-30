@@ -132,8 +132,9 @@ def sim_hastie_part_2(cfg, tag):
     wrong objective). With cv_dfmax_ratio = 1.0, CV_1SE_IEN_CCD caps its
     lambda1 path at n_train = 180 variables, above this design's s = 150
     (the library default 0.8 gives 144). CV_1SE_TIK_SVD ignores the cap and
-    needs p - M < n_train, which holds here because no groups form at
-    rho = 0.7, but not where HAC groups the variables (Parts 1 and 4)."""
+    needs p - M < n_train (M clusters, so p - M within-group contrasts). The
+    library refuses it otherwise, e.g. on the trap blocks of demo 04 at
+    rho = 0.99, so the sweeps of demos 01-07 use CV_1SE_IEN_CCD."""
     fixed_snr, fixed_rho = 2.0, 0.7
     fixed_sdx = math.sqrt((1.0 - fixed_rho) / fixed_rho)
     dgp_kwargs = dict(n=cfg["n"], p=cfg["p"], snr=fixed_snr, sd_x=fixed_sdx)

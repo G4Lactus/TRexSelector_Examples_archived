@@ -75,7 +75,9 @@ K = 20                          # Random experiments per T-loop iteration
 tFDR = 0.1                      # Target FDR
 corr_max = 0.98                 # HAC auto-clustering correlation threshold
 hc_linkage = "Single"           # Single-linkage HAC
-lambda2_method = "CV_1SE_CCD"   # Elastic-net penalty selection (all three rows)
+lambda2_method = "CV_1SE_CCD"   # Elastic-net penalty selection, EN rows (TENET, TENET_AUG)
+lambda2_method = "CV_1SE_IEN_CCD"  # IEN rows (TIENET_AUG)
+cv_dfmax_ratio = 1.0            # IEN support cap 1.0 * n_train = 180 (default 0.8 gives 144)
 num_MC = 200                    # Monte Carlo repetitions per grid point
 seed = 2026                     # Trial k uses seed + k - 1
 ```
@@ -86,12 +88,16 @@ seed = 2026                     # Trial k uses seed + k - 1
 
 Three T-Rex+GVS solver variants: **TENET** (elastic net (EN)) [[3]](#references), **TENET_AUG** (row-augmented
 elastic net) [[1]](#references), and **TIENET_AUG** (informed elastic net (IEN)) [[2]](#references). All use
-single-linkage hierarchical agglomerative clustering (HAC) to form the groups and `CV_1SE_CCD` (cross-validation
-with the one-standard-error rule, solved by coordinate descent) to select $\lambda_2$, as in the C++ and Python demos.
+single-linkage hierarchical agglomerative clustering (HAC) to form the groups. TENET and TENET_AUG select
+$\lambda_2$ with `CV_1SE_CCD` (cross-validation with the one-standard-error rule, solved by coordinate descent), and
+TIENET_AUG with `CV_1SE_IEN_CCD`, the rule built for the IEN geometry, with its support cap raised to $180$
+variables (see [Demo 01](../demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md), Part 2), as in the C++ and Python
+demos.
 
 - **TENET**: `GVS_type = "EN"`, `en_solver = "TENET"`
 - **TENET_AUG**: `GVS_type = "EN"`, `en_solver = "TENET_AUG"`
-- **TIENET_AUG**: `GVS_type = "IEN"` (`en_solver` is left at the library default and ignored on the IEN path)
+- **TIENET_AUG**: `GVS_type = "IEN"`, `lambda2_method = "CV_1SE_IEN_CCD"`, `cv_dfmax_ratio = 1.0` (`en_solver` is
+  left at the library default and ignored on the IEN path)
 
 Each Monte Carlo trial builds the selector through the TRexSelectorNeo class interface, here for TIENET_AUG:
 
@@ -107,7 +113,7 @@ sel <- TRexGVSSelector$new(
   X, y, tFDR = 0.1, seed = trial_seed, verbose = FALSE,
   gvs_control = trex_gvs_control(
     gvs_type = "IEN", corr_max = 0.98, hc_linkage = "Single",
-    lambda2_method = "CV_1SE_CCD", cv_seed = trial_seed
+    lambda2_method = "CV_1SE_IEN_CCD", cv_dfmax_ratio = 1.0, cv_seed = trial_seed
   ),
   control = ctrl
 )
@@ -118,9 +124,9 @@ tpp <- trex_tpp(sel$selected_indices, true_support)
 
 The adapter `.gvs_select()` in [`../../../simulation_utils.R`](../../../simulation_utils.R) sets every control field
 explicitly, so no R default can diverge from the C++ reference. The two EN rows use the base solver `"TLARS"` with
-`gvs_type = "EN"` and pass `en_solver = "TENET"` or `"TENET_AUG"`. The IEN row needs the base solver `"TIENET_AUG"`
-to run the augmented IEN solver of the C++ and Python demos. The selector seed and the cross-validation fold seed
-both equal the trial seed.
+`gvs_type = "EN"` and pass `en_solver = "TENET"` or `"TENET_AUG"` with `lambda2_method = "CV_1SE_CCD"`. The IEN row
+needs the base solver `"TIENET_AUG"` to run the augmented IEN solver of the C++ and Python demos. The selector seed
+and the cross-validation fold seed both equal the trial seed.
 
 ---
 
@@ -164,7 +170,8 @@ script also sources [`../trex_gvs_dgps.R`](../trex_gvs_dgps.R), [`../trex_gvs_si
 [`../../../support_generators.R`](../../../support_generators.R) and
 [`../../../simulation_utils.R`](../../../simulation_utils.R). For a quick smoke test, reduce `num_MC` in `CFG` at the
 top of the script and the grids in `sim_neg_traps_part1()`. The recorded run (library commit `44cf1ab`, 8 workers)
-took about 2.9 hours.
+took about 2.9 hours. The TIENET_AUG rows come from a rerun of that solver alone on library commit `09debc6`, with
+the same trial seeds.
 
 Afterwards, regenerate the figure from the CSV file with [`generate_plots.sh`](generate_plots.sh), which drives the
 suite's ggplot2 plotting module [`../trex_gvs_plt_utils.R`](../trex_gvs_plt_utils.R) through `Rscript` (set `RSCRIPT`
@@ -206,15 +213,17 @@ whole T-Rex+GVS suite no cell of 1,710 has $|z| > 3$.
   two group members rarely reaches the cut at `corr_max` $= 0.98$ when $\rho \le 0.95$, yet at $\rho = 0.9$ and
   $0.95$ the TPR rounds to $1.000$ at every SNR, as at $\rho = 0.99$. A plausible reading is that the near-complete
   recovery does not hinge on the grouping. The data do not record the groups.
-- **TIENET_AUG** is far more conservative, with an FDR of at most $0.042$ ($\mathrm{SNR} = 0.2$, $\rho = 0.3$). Away
-  from $\rho = 0.99$ it reaches a TPR of at least $0.98$ from $\mathrm{SNR} = 0.5$ at $\rho \ge 0.5$ and from
-  $\mathrm{SNR} = 1$ at $\rho = 0.3$, unlike in [Demo 03](../demo_trex_gvs_03_mc_sim_mixed_blocks/README.md), where it
-  stays at or below $0.871$. Away from $\rho = 0.99$ it trails TENET most at low SNR and weak correlation ($0.556$
-  against $0.778$ at $\mathrm{SNR} = 0.2$, $\rho = 0.3$).
+- **TIENET_AUG** is far more conservative, with an FDR of at most $0.048$ ($\mathrm{SNR} = 0.2$, $\rho = 0.3$),
+  below TENET's in all 30 cells. Away from $\rho = 0.99$ it reaches a TPR of at least $0.98$ from
+  $\mathrm{SNR} = 0.5$ at $\rho \ge 0.7$ and from $\mathrm{SNR} = 2$ at $\rho = 0.5$, while at $\rho = 0.3$ it climbs
+  from $0.500$ to $0.972$. At each of the 25 grid points it shares with
+  [Demo 03](../demo_trex_gvs_03_mc_sim_mixed_blocks/README.md) below $\rho = 0.99$, its TPR here is the higher one.
+  Away from $\rho = 0.99$ it trails TENET most at low SNR and weak correlation ($0.500$ against $0.778$ at
+  $\mathrm{SNR} = 0.2$, $\rho = 0.3$).
 - In the extreme $\rho = 0.99$ column the TPR of TIENET_AUG collapses to $0.026\text{–}0.078$, rising with SNR. This
-  is the only column where its FDR rises with SNR, from $0.015$ to $0.036$, while elsewhere it falls to at most
-  $0.0004$ from $\mathrm{SNR} = 2$. The same collapse appears in the positively correlated blocks of Demo 03 (TPR
-  $0.007\text{–}0.011$), so the sign flips are not needed to trigger it.
+  is the only column where its FDR rises with SNR, from $0.015$ to $0.036$, while elsewhere it falls with SNR, to at
+  most $0.016$ from $\mathrm{SNR} = 2$ (at most $0.006$ for $\rho \ge 0.5$). The same collapse appears in the
+  positively correlated blocks of Demo 03 (TPR $0.008\text{–}0.059$), so the sign flips are not needed to trigger it.
 
 TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver.
 FDR cells above the $\mathrm{tFDR} = 0.1$ target would be outlined in cyan.

@@ -33,9 +33,12 @@ elastic net (IEN), augmented solver). Demo 01 adds three fixed-operating-point c
 discovery rate (FDR) of $\mathrm{tFDR} = 0.1$, K = 20, `corr_max = 0.98` and 200 MC runs.
 
 The shared `.gvs_select()` adapter sets the solver and the $\lambda_2$ rule explicitly, as the C++ and Python
-suites do. The IEN rows run TIENET_AUG, demos 01–07 choose $\lambda_2$ by `CV_1SE_CCD`, and the IEN rows of demo 08
-(and the IEN half of demo 01's `lambda2_method` comparison) use `CV_1SE_IEN_CCD`, the rule built for the IEN
-geometry.
+suites do. The IEN rows run TIENET_AUG. The EN rows choose $\lambda_2$ by `CV_1SE_CCD`, and the IEN rows by
+`CV_1SE_IEN_CCD`, the rule built for the IEN geometry, to which the library maps `CV_1SE_CCD` on the IEN track anyway.
+Demos 01–07 raise its $\lambda_1$ support cap to `cv_dfmax_ratio = 1.0` ($n_{\mathrm{train}} = 180$ variables),
+because six of them have a true support of $s = 150$, above the default cap of $0.8\, n_{\mathrm{train}} = 144$.
+Demo 08 keeps the default. Demo 01's `lambda2_method` comparison adds the second IEN rule `CV_1SE_TIK_SVD`, which
+the library refuses once the groups hold $n_{\mathrm{train}}$ or more within-group contrasts.
 
 Dependencies: `TRexSelectorNeo`, `parallel`. Each demo sources the
 consolidated [trex_gvs_dgps.R](trex_gvs_dgps.R) (all scenario generators in one
@@ -114,11 +117,12 @@ renders the figures from these tables into `simulation_results/plots/` via the s
 [trex_gvs_plt_utils.R](trex_gvs_plt_utils.R), with the same file names as the Python suite.
 
 The committed results are the first R run of all eight demos (200 MC trials per cell, 8 workers, 30.0 h in total),
-except demo 07 (stationary ARMA(2,1) block) and demo 01 Part 4, which come from a later run on library commit `61fd84c`.
-R draws its own random numbers, so its cells agree with C++ and Python up to Monte Carlo noise, not exactly. Of 1,710
-cells compared with C++, none lies more than three Monte Carlo standard errors away. The block benchmark of demo 08
-agrees in all 384 compared cells (largest $|z| = 2.82$), and its IEN rows pick $\lambda_2$ with the IEN rule at the same
-order of magnitude as in C++ and Python.
+except demo 07 (stationary ARMA(2,1) block) and demo 01 Part 4, which come from a later run on library commit
+`61fd84c`. The TIENET_AUG rows of demos 01–07 come from a rerun of that solver alone on library commit `09debc6`,
+with the same trial seeds. R draws its own random numbers, so its cells agree with C++ and Python up to Monte Carlo
+noise, not exactly. Of 1,710 cells compared with C++, none lies more than three Monte Carlo standard errors away. The
+block benchmark of demo 08 agrees in all 384 compared cells (largest $|z| = 2.82$), and its IEN rows pick
+$\lambda_2$ with the IEN rule at the same order of magnitude as in C++ and Python.
 
 ---
 

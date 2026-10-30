@@ -1967,7 +1967,7 @@ inline BlockTrialResult run_block_single(
     TRexGVSControlParameter gvs_ien;
     gvs_ien.gvs_type       = GVSType::IEN;
     // IEN-geometry tuner: the true support (10 blocks of 5) lies below its
-    // lambda1 support cap (0.8 * n_train), unlike the s = 150 designs of 01-07.
+    // default lambda1 support cap (0.8 * n_train); the s = 150 demos 01-07 raise it.
     gvs_ien.lambda2_method = LambdaSelectionMethod::CV_1SE_IEN_CCD;
     gvs_ien.corr_max       = corr_max;
     gvs_ien.hc_linkage     = hac::LinkageMethod::Single;

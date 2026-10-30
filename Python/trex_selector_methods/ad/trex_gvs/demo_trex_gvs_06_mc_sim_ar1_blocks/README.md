@@ -70,7 +70,9 @@ K = 20                          # Random experiments per T-loop iteration
 tFDR = 0.1                      # Target FDR
 corr_max = 0.98                 # HAC auto-clustering correlation threshold
 hc_linkage = Single             # Single-linkage HAC
-lambda2_method = CV_1SE_CCD     # Elastic-net penalty selection
+lambda2_method = CV_1SE_CCD     # Elastic-net penalty selection, EN rows (TENET, TENET_AUG)
+lambda2_method = CV_1SE_IEN_CCD # IEN rows (TIENET_AUG)
+cv_dfmax_ratio = 1.0            # IEN support cap 1.0 * n_train = 180 (default 0.8 gives 144)
 MC = 200                        # Monte Carlo repetitions per grid point
 ```
 
@@ -80,8 +82,10 @@ MC = 200                        # Monte Carlo repetitions per grid point
 
 Three T-Rex+GVS solver variants: **TENET** (elastic net) [[3]](#references),
 **TENET_AUG** (row-augmented elastic net) [[1]](#references), and **TIENET_AUG** (informed
-elastic net) [[2]](#references). All use single-linkage HAC grouping
-and `CV_1SE_CCD` for the $\lambda_2$ selection.
+elastic net) [[2]](#references). All use single-linkage HAC grouping. TENET and TENET_AUG select
+$\lambda_2$ with `CV_1SE_CCD`, and TIENET_AUG with `CV_1SE_IEN_CCD`, the rule built for the informed elastic net
+geometry, with its support cap raised to $180$ variables (see
+[Demo 01](../demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md), Part 2).
 
 ---
 
@@ -133,7 +137,7 @@ up to Monte-Carlo noise — the two ports draw from independent random number ge
 
 - The false discovery rate (FDR) stays under control everywhere (no cyan cells). **TENET** and **TENET_AUG** are
    numerically identical and peak at $0.087$, just below the $\mathrm{tFDR} = 0.1$ target, while **TIENET_AUG** is
-   markedly more conservative (FDR $\le 0.042$).
+   markedly more conservative (FDR $\le 0.054$).
 - **The true positive rate (TPR) recovers much more slowly with SNR than in the equicorrelated Hastie/Mixed-Blocks
    demos.** At $\mathrm{SNR} = 5$, TENET's TPR runs $0.02 / 0.12 / 0.51 / 0.88 / 0.95 / 0.96$ across
    $\rho \in \lbrace0.3, 0.5, 0.7, 0.85, 0.9, 0.99\rbrace$, so the $\text{low-}\rho$ columns barely lift off zero.
@@ -143,10 +147,10 @@ up to Monte-Carlo noise — the two ports draw from independent random number ge
    leaves every variable in its own cluster, here as in Demo 03. A plausible reading is that the AR(1) decay keeps
    only nearby columns of a block strongly correlated, so the active columns share no common factor and each carries
    too little of the signal on its own at $n = 200$. Full recovery needs both a high $\rho$ and a high SNR.
-- **TIENET_AUG** again has less power than the TENET-based methods, as in the other block demos. Its TPR rises with
-   SNR in every column (to $0.86$ at $\rho = 0.9$, $\mathrm{SNR} = 5$, against $0.95$ for TENET). In the
-   $\rho = 0.99$ column, where neighboring columns are nearly collinear, it rises too but stays collapsed at
-   $0.007\text{–}0.012$.
+- **TIENET_AUG** again has less power than the TENET-based methods, as in most cells of the other block demos. Its
+   TPR rises with SNR in every column (to $0.86$ at $\rho = 0.9$, $\mathrm{SNR} = 5$, against $0.95$ for TENET). In
+   the $\rho = 0.99$ column, where neighboring columns are nearly collinear, it rises too, from $0.010$ to $0.104$,
+   but stays far below TENET's $0.754\text{–}0.958$.
 - The $\rho$ axis is the most informative view of this demo. Recovery degrades sharply as $\rho$ decreases and the
    AR(1) decay becomes steeper (correlation vanishing faster with column distance).
 

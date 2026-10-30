@@ -118,11 +118,11 @@ cross-validation curve.
 The IEN variants use the IEN-geometry rule `CV_1SE_IEN_CCD`, which cross-validates $\lambda_2$ jointly with
 $\lambda_1$ on the group structure the variant is given, so the clustered and oracle runs get different penalties
 (mean $0.39$ vs. $0.14$ at $\rho = 0.35$, $\mathrm{SNR} = 5$). Its $\lambda_1$ path stops at
-$0.8\, n_{\mathrm{train}} = 144$ selected variables, well above the $s \le 50$ true variables here. Demos 01–07 keep
-`CV_1SE_CCD` for their IEN rows, because there (mostly $s = 150$) the IEN rule runs into that cap (see
-[Demo 01](../demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md)). Here the IEN rule also returns boundary picks,
-which the library reports on the console and keeps. The R workers discard their console output, so the R run has no
-count of them, and the C++ README gives the count for the C++ run.
+$0.8\, n_{\mathrm{train}} = 144$ selected variables, well above the $s \le 50$ true variables here. Demos 01–07 use
+the same rule for their IEN rows, with the cap raised to $n_{\mathrm{train}} = 180$ because most of them have
+$s = 150$ (see [Demo 01](../demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md)). Here the IEN rule also returns
+boundary picks, which the library reports on the console and keeps. The R workers discard their console output, so
+the R run has no count of them, and the C++ README gives the count for the C++ run.
 
 ---
 

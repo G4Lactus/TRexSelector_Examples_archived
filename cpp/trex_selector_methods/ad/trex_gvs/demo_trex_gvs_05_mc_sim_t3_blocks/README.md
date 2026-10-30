@@ -51,7 +51,9 @@ K = 20                          # Random experiments per T-loop iteration
 tFDR = 0.1                      # Target FDR
 corr_max = 0.98                 # HAC auto-clustering correlation threshold
 hc_linkage = Single             # Single-linkage HAC
-lambda2_method = CV_1SE_CCD     # Elastic-net penalty selection
+lambda2_method = CV_1SE_CCD     # Elastic-net penalty selection, EN rows (TENET, TENET_AUG)
+lambda2_method = CV_1SE_IEN_CCD # IEN rows (TIENET_AUG)
+cv_dfmax_ratio = 1.0            # IEN support cap 1.0 * n_train = 180 (default 0.8 gives 144)
 MC = 200                        # Monte Carlo repetitions per grid point
 ```
 
@@ -62,7 +64,9 @@ MC = 200                        # Monte Carlo repetitions per grid point
 Three T-Rex+GVS solver variants: **TENET** (elastic net) [[3]](#references),
 **TENET_AUG** (row-augmented elastic net) [[1]](#references), and **TIENET_AUG** (informed
 elastic net) [[2]](#references). All use single-linkage hierarchical agglomerative clustering
-(HAC) grouping and `CV_1SE_CCD` for the $\lambda_2$ selection.
+(HAC) grouping. TENET and TENET_AUG select $\lambda_2$ with `CV_1SE_CCD`, and TIENET_AUG with
+`CV_1SE_IEN_CCD`, the rule built for the informed elastic net geometry, with its support cap raised to
+$180$ variables (see [Demo 01](../demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md), Part 2).
 
 ---
 
@@ -107,14 +111,17 @@ produced by `./generate_plots.sh`.
    (by $0.001\text{–}0.037$) but stays below target, so the heavy tails do not compromise FDR control. The data do
    not show the cause. Noisier group boundaries are an unlikely one, because below $\rho = 0.99$ the fixed cut at
    `corr_max = 0.98` lies above the within-block correlation and leaves almost every variable in its own cluster.
-- **TIENET_AUG** is the most conservative of the three within this demo (FDR $0.00\text{–}0.09$, peak TPR $0.85$ rather
-   than $0.95$), and its power collapses entirely in the extreme $\rho = 0.99$ column (TPR $0.01\text{–}0.02$, flat in
-   SNR), where the within-block columns become nearly collinear.
+- **TIENET_AUG** is the most conservative of the three within this demo (FDR $0.009\text{–}0.077$ below
+   $\rho = 0.99$, and below TENET in 29 of the 30 cells). Its TPR lies below TENET's at low $\rho$ but above it at
+   $\mathrm{SNR} = 5$ and $\rho = 0.7\text{–}0.9$ (peak $0.976$ against $0.951$ at $\rho = 0.9$). Its power
+   collapses in the extreme $\rho = 0.99$ column (TPR $0.013\text{–}0.061$), where the within-block columns become
+   nearly collinear. There its FDR reaches $0.095$ at $\mathrm{SNR} = 0.2$, just below the target and the only cell
+   where it exceeds TENET's.
 - This is the same pattern as on the Gaussian equicorrelated designs (Demos 01–03). There, too, TIENET_AUG trades
-   power for a lower FDR and collapses only at $\rho = 0.99$, while it reaches TPR $\approx 1$ in Demos 01–02 and
-   $\approx 0.87$ in Demo 03 elsewhere. The heavy tails keep this pattern but cost TIENET_AUG some power and FDR
-   margin. From $\mathrm{SNR} = 1$ on, its TPR at $\rho \le 0.9$ lies $0.015\text{–}0.040$ below Demo 03 in all 15
-   cells, and its FDR is higher at all 30 grid points (by at most $0.077$).
+   power for a lower FDR and collapses only at $\rho = 0.99$, while elsewhere its TPR reaches $0.999$ in Demos 01–02
+   and $0.995$ in Demo 03. The heavy tails do not cost TIENET_AUG power against Demo 03. From $\mathrm{SNR} = 1$ on,
+   its TPR at $\rho \le 0.9$ lies above Demo 03 in 10 of the 15 cells (by $-0.012$ to $+0.042$), while its FDR is
+   higher at 18 of the 30 grid points (by at most $0.082$).
 
 TPR (top) and FDR (bottom) heatmaps over the SNR $\times$ $\rho$ grid, one column per solver.
 FDR cells above the $\mathrm{tFDR} = 0.1$ target would be outlined in cyan (none are here).

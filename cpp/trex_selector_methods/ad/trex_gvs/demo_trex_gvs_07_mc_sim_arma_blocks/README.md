@@ -57,7 +57,9 @@ K = 20                          # Random experiments per T-loop iteration
 tFDR = 0.1                      # Target FDR
 corr_max = 0.98                 # HAC auto-clustering correlation threshold
 hc_linkage = Single             # Single-linkage HAC
-lambda2_method = CV_1SE_CCD     # Elastic-net penalty selection
+lambda2_method = CV_1SE_CCD     # Elastic-net penalty selection, EN rows (TENET, TENET_AUG)
+lambda2_method = CV_1SE_IEN_CCD # IEN rows (TIENET_AUG)
+cv_dfmax_ratio = 1.0            # IEN support cap 1.0 * n_train = 180 (default 0.8 gives 144)
 MC = 200                        # Monte Carlo repetitions per grid point
 ```
 
@@ -68,7 +70,9 @@ MC = 200                        # Monte Carlo repetitions per grid point
 Three T-Rex+GVS solver variants: **TENET** (elastic net) [[3]](#references),
 **TENET_AUG** (row-augmented elastic net) [[1]](#references), and **TIENET_AUG** (informed
 elastic net) [[2]](#references). All use single-linkage hierarchical agglomerative clustering
-(HAC) grouping and `CV_1SE_CCD` for the $\lambda_2$ selection.
+(HAC) grouping. TENET and TENET_AUG select $\lambda_2$ with `CV_1SE_CCD`, and TIENET_AUG with
+`CV_1SE_IEN_CCD`, the rule built for the informed elastic net geometry, with its support cap raised to
+$180$ variables (see [Demo 01](../demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md), Part 2).
 
 ---
 
@@ -116,10 +120,10 @@ produced by `./generate_plots.sh`.
    The ceiling of about two thirds matches 100 of the 150 active variables, the size of the AR(1) and ARMA(2,1) blocks
    together. A plausible reading is that the MA(3) block, whose correlation vanishes beyond lag 3 and does not follow
    the sweep, stays mostly unselected, but the demo records no per-block rates.
-- **TIENET_AUG** is more conservative, with an FDR of at most $0.043$ and a somewhat lower TPR ($0.569\text{–}0.581$
-   at `ar_coef` $\ge 0.9$ and $\mathrm{SNR} = 5$, against $0.664\text{–}0.666$ for TENET). Its FDR falls toward zero
-   at high `ar_coef` and SNR (at most $0.006$ at `ar_coef` $\ge 0.9$ and $\mathrm{SNR} \ge 2$), while the FDR of
-   TENET rises there.
+- **TIENET_AUG** is more conservative, with an FDR of at most $0.055$, and at `ar_coef` $\ge 0.9$ and
+   $\mathrm{SNR} = 5$ it matches the TPR of TENET ($0.657\text{–}0.672$ against $0.664\text{–}0.666$). From
+   $\mathrm{SNR} = 0.5$ on its FDR peaks at `ar_coef` $= 0.7\text{–}0.8$ and falls again toward $0.95$ (at most
+   $0.042$ at `ar_coef` $\ge 0.9$ and $\mathrm{SNR} \ge 2$), while the FDR of TENET keeps rising there.
 - Against Demo 06 (AR(1) in every block, with $\rho$ in the role of `ar_coef`), the ARMA design has the higher TPR at
    low coefficients and the lower ceiling. Up to a coefficient of $0.7$ it gives the higher TENET TPR at 14 of the 15
    shared grid points ($0.230$ against $0.134$ at $0.5$ and $\mathrm{SNR} = 5$, for example). Its ARMA(2,1) block is

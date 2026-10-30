@@ -74,7 +74,9 @@ K = 20                          # Random experiments per T-loop iteration
 tFDR = 0.1                      # Target FDR
 corr_max = 0.98                 # HAC auto-clustering correlation threshold
 hc_linkage = "Single"           # Single-linkage HAC
-lambda2_method = "CV_1SE_CCD"   # Elastic-net penalty selection (all three rows)
+lambda2_method = "CV_1SE_CCD"   # Elastic-net penalty selection, EN rows (TENET, TENET_AUG)
+lambda2_method = "CV_1SE_IEN_CCD"  # IEN rows (TIENET_AUG)
+cv_dfmax_ratio = 1.0            # IEN support cap 1.0 * n_train = 180 (default 0.8 gives 144)
 num_MC = 200                    # Monte Carlo repetitions per grid point
 seed = 2026                     # Trial k uses seed + k - 1
 ```
@@ -85,12 +87,16 @@ seed = 2026                     # Trial k uses seed + k - 1
 
 Three T-Rex+GVS solver variants: **TENET** (elastic net (EN)) [[3]](#references), **TENET_AUG** (row-augmented
 elastic net) [[1]](#references), and **TIENET_AUG** (informed elastic net (IEN)) [[2]](#references). All use
-single-linkage hierarchical agglomerative clustering (HAC) to form the groups and `CV_1SE_CCD` (cross-validation
-with the one-standard-error rule, solved by coordinate descent) to select $\lambda_2$, as in the C++ and Python demos.
+single-linkage hierarchical agglomerative clustering (HAC) to form the groups. TENET and TENET_AUG select
+$\lambda_2$ with `CV_1SE_CCD` (cross-validation with the one-standard-error rule, solved by coordinate descent), and
+TIENET_AUG with `CV_1SE_IEN_CCD`, the rule built for the IEN geometry, with its support cap raised to $180$
+variables (see [Demo 01](../demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md), Part 2), as in the C++ and Python
+demos.
 
 - **TENET**: `GVS_type = "EN"`, `en_solver = "TENET"`
 - **TENET_AUG**: `GVS_type = "EN"`, `en_solver = "TENET_AUG"`
-- **TIENET_AUG**: `GVS_type = "IEN"` (`en_solver` is left at the library default and ignored on the IEN path)
+- **TIENET_AUG**: `GVS_type = "IEN"`, `lambda2_method = "CV_1SE_IEN_CCD"`, `cv_dfmax_ratio = 1.0` (`en_solver` is
+  left at the library default and ignored on the IEN path)
 
 Each Monte Carlo trial builds the selector through the TRexSelectorNeo class interface, here for TENET_AUG:
 
@@ -163,7 +169,8 @@ script also sources [`../trex_gvs_dgps.R`](../trex_gvs_dgps.R), [`../trex_gvs_si
 [`../../../support_generators.R`](../../../support_generators.R) and
 [`../../../simulation_utils.R`](../../../simulation_utils.R). For a quick smoke test, reduce `num_MC` and the grids
 at the top of the script. The recorded run (library commit `44cf1ab`, 8 workers) took about 3.5 hours, partly slowed
-by a library build that ran at the same time.
+by a library build that ran at the same time. The TIENET_AUG rows come from a rerun of that solver alone on library
+commit `09debc6`, with the same trial seeds.
 
 Afterwards, regenerate the figure from the CSV file with [`generate_plots.sh`](generate_plots.sh), which drives the
 suite's ggplot2 plotting module [`../trex_gvs_plt_utils.R`](../trex_gvs_plt_utils.R) through `Rscript` (set `RSCRIPT`
@@ -197,11 +204,12 @@ whole T-Rex+GVS suite no cell of 1,710 has $|z| > 3$.
   is $0.029\text{–}0.038$ at $\rho = 0.3$ and $0.057\text{–}0.074$ at $\rho \ge 0.85$, so at strong correlation the
   FDP varies more from run to run. A plausible reading is that correlated null variables, such as the trap block,
   then enter or leave the selection together. The data do not record which variables are false discoveries.
-- **TIENET_AUG** is far more conservative. Its FDR is at most $0.035$ ($\mathrm{SNR} = 0.2$, $\rho = 0.3$), falls
-  with SNR in every column and stays at or below $0.005$ from $\mathrm{SNR} = 2$. Its TPR is at most $0.871$ and
-  trails TENET by $0.055\text{–}0.188$ for $\rho \le 0.95$.
-- In the extreme $\rho = 0.99$ column the TPR of TIENET_AUG collapses to $0.007\text{–}0.011$ at every SNR. This is
-  the only grid value above the clustering threshold. The single-linkage HAC step joins variables only through pairs
+- **TIENET_AUG** is far more conservative. Its FDR is $0.008\text{–}0.043$ and lies below TENET's in all 35 cells.
+  Below $\rho = 0.99$ its TPR trails TENET's at low $\rho$ and SNR (by up to $0.271$, at $\mathrm{SNR} = 0.5$,
+  $\rho = 0.3$), but lies above it in five of the six cells with $\mathrm{SNR} \ge 2$ and $\rho = 0.85\text{–}0.95$
+  (up to $0.996$ against $0.951$ at $\mathrm{SNR} = 5$, $\rho = 0.95$).
+- In the extreme $\rho = 0.99$ column the TPR of TIENET_AUG collapses to $0.008\text{–}0.059$, rising with SNR. This
+  is the only grid value above the clustering threshold. The single-linkage HAC step joins variables only through pairs
   whose sample correlation reaches $0.98$ in absolute value (`corr_max`). With $n = 200$, two block members rarely
   get there at $\rho \le 0.95$ and usually do at $\rho = 0.99$. A plausible reading is that the HAC step forms the
   true blocks as groups only in this column, and that the IEN collapse is tied to that grouping. The data do not

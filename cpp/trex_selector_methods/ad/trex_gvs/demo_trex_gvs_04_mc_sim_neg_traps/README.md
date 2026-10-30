@@ -55,7 +55,9 @@ K = 20                          # Random experiments per T-loop iteration
 tFDR = 0.1                      # Target FDR
 corr_max = 0.98                 # HAC auto-clustering correlation threshold
 hc_linkage = Single             # Single-linkage HAC
-lambda2_method = CV_1SE_CCD     # Elastic-net penalty selection
+lambda2_method = CV_1SE_CCD     # Elastic-net penalty selection, EN rows (TENET, TENET_AUG)
+lambda2_method = CV_1SE_IEN_CCD # IEN rows (TIENET_AUG)
+cv_dfmax_ratio = 1.0            # IEN support cap 1.0 * n_train = 180 (default 0.8 gives 144)
 MC = 200                        # Monte Carlo repetitions per grid point
 ```
 
@@ -66,7 +68,9 @@ MC = 200                        # Monte Carlo repetitions per grid point
 Three T-Rex+GVS solver variants: **TENET** (elastic net) [[3]](#references),
 **TENET_AUG** (row-augmented elastic net) [[1]](#references), and **TIENET_AUG** (informed
 elastic net) [[2]](#references). All use single-linkage hierarchical agglomerative clustering
-(HAC) grouping and `CV_1SE_CCD` for the $\lambda_2$ selection.
+(HAC) grouping. TENET and TENET_AUG select $\lambda_2$ with `CV_1SE_CCD`, and TIENET_AUG with
+`CV_1SE_IEN_CCD`, the rule built for the informed elastic net geometry, with its support cap raised to
+$180$ variables (see [Demo 01](../demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md), Part 2).
 
 ---
 
@@ -112,9 +116,10 @@ produced by `./generate_plots.sh`.
    cluster, yet at $\rho = 0.9$ and $0.95$ TENET already finds every active variable in every run at every SNR
    (TPR $1$). A plausible reading is that the near-complete recovery does not hinge on the grouping. The data do not
    record the groups.
-- **TIENET_AUG** is far more conservative (FDR at most about $0.045$ everywhere) and its TPR collapses to near zero
-   in the extreme $\rho = 0.99$ column. Otherwise it behaves as in the uniformly-positive-correlation scenarios of
-   Demos 01–03 — the sign-flipped halves do not by themselves trigger different informed elastic net (IEN) behavior.
+- **TIENET_AUG** is far more conservative (FDR at most $0.051$, below TENET in all 30 cells) and its TPR collapses to
+   $0.027\text{–}0.081$ in the extreme $\rho = 0.99$ column. Otherwise it behaves as in the
+   uniformly-positive-correlation scenarios of Demos 01–03 — the sign-flipped halves do not by themselves trigger
+   different informed elastic net (IEN) behavior.
 - The two spatially separated traps are a stronger test of false-group exclusion than a single trap. In this run
    TENET's FDR creeps up with SNR only slightly and only for $\rho \ge 0.9$, most at $\rho = 0.99$, where it rises
    from $0.085$ to $0.098$ and stays below the target. From $\mathrm{SNR} = 0.2$ to $5$ each of these rises stays

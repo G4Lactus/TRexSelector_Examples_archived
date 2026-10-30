@@ -72,7 +72,9 @@ K = 20                          # Random experiments per T-loop iteration
 tFDR = 0.1                      # Target FDR
 corr_max = 0.98                 # HAC auto-clustering correlation threshold
 hc_linkage = "Single"           # Single-linkage HAC
-lambda2_method = "CV_1SE_CCD"   # Elastic-net penalty selection
+lambda2_method = "CV_1SE_CCD"   # Elastic-net penalty selection, EN rows (TENET, TENET_AUG)
+lambda2_method = "CV_1SE_IEN_CCD"  # IEN rows (TIENET_AUG)
+cv_dfmax_ratio = 1.0            # IEN support cap 1.0 * n_train = 180 (default 0.8 gives 144)
 num_MC = 200                    # Monte Carlo repetitions per grid point
 seed = 2026                     # Base seed, trial k uses 2026 + k - 1
 ```
@@ -83,12 +85,15 @@ seed = 2026                     # Base seed, trial k uses 2026 + k - 1
 
 Three T-Rex+GVS solver variants are compared. **TENET** runs the elastic net (EN) [[3]](#references),
 **TENET_AUG** its row-augmented form [[1]](#references), and **TIENET_AUG** the informed elastic net (IEN)
-[[2]](#references). All three use single-linkage HAC grouping and `CV_1SE_CCD` for the $\lambda_2$ selection, as in
-the C++ and Python demos. The script lists them in `GVS_METHODS`.
+[[2]](#references). All three use single-linkage HAC grouping. TENET and TENET_AUG select $\lambda_2$ with
+`CV_1SE_CCD`, and TIENET_AUG with `CV_1SE_IEN_CCD`, the rule built for the IEN geometry, with its support cap raised
+to $180$ variables (see [Demo 01](../demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md), Part 2), as in the C++ and
+Python demos. The script lists them in `GVS_METHODS`.
 
 - **TENET**: `GVS_type = "EN"`, `en_solver = "TENET"`
 - **TENET_AUG**: `GVS_type = "EN"`, `en_solver = "TENET_AUG"`
-- **TIENET_AUG**: `GVS_type = "IEN"`, with `en_solver` left at the library default, which the IEN path ignores
+- **TIENET_AUG**: `GVS_type = "IEN"`, `lambda2_method = "CV_1SE_IEN_CCD"`, `cv_dfmax_ratio = 1.0`, with `en_solver`
+  left at the library default, which the IEN path ignores
 
 Each Monte Carlo (MC) trial builds the selector through the shared adapter `.gvs_select()` in
 [`../../../simulation_utils.R`](../../../simulation_utils.R), here for TENET:
@@ -115,8 +120,9 @@ tpp <- trex_tpp(sel$selected_indices, true_support)
 ```
 
 TENET_AUG changes only `en_solver`. TIENET_AUG sets `gvs_type = "IEN"` and the base solver `"TIENET_AUG"`, so its
-rows run the augmented IEN solver as in C++ and Python. The trial seed $2026 + k - 1$ of trial $k$ seeds the DGP, the
-selector and the cross-validation folds.
+rows run the augmented IEN solver as in C++ and Python, and it passes `lambda2_method = "CV_1SE_IEN_CCD"` with
+`cv_dfmax_ratio = 1.0`. The trial seed $2026 + k - 1$ of trial $k$ seeds the DGP, the selector and the
+cross-validation folds.
 
 ---
 
@@ -158,7 +164,9 @@ Monte Carlo trials run in parallel on a parallel socket (PSOCK) cluster of spawn
 script also sources [`../../../support_generators.R`](../../../support_generators.R),
 [`../../../simulation_utils.R`](../../../simulation_utils.R), [`../trex_gvs_dgps.R`](../trex_gvs_dgps.R) and
 [`../trex_gvs_sim_common.R`](../trex_gvs_sim_common.R). The recorded run (library commit `44cf1ab`, 8 workers) took
-about 3.1 hours. For a quick smoke test, reduce `num_MC` in `CFG` and the grids in `PRESET` at the top of the script.
+about 3.1 hours. The TIENET_AUG rows come from a rerun of that solver alone on library commit `09debc6`, with the
+same trial seeds. For a quick smoke test, reduce `num_MC` in `CFG` and the grids in `PRESET` at the top of the
+script.
 
 Afterwards, regenerate the figure from the CSV file with [`generate_plots.sh`](generate_plots.sh), which drives the
 suite's ggplot2 plotting module [`../trex_gvs_plt_utils.R`](../trex_gvs_plt_utils.R) through `Rscript` (set `RSCRIPT`
@@ -182,8 +190,8 @@ $|z| > 3$.
 - The FDR stays under control everywhere (no cyan cells). **TENET** and **TENET_AUG** return identical numbers
   (means and standard deviations agree in every cell). Their FDR is $0.009\text{–}0.018$ at $\rho = 0.3$, rises
   column by column to a peak of $0.090$ ($\mathrm{SNR} = 5$, $\rho = 0.9$), just below the $\mathrm{tFDR} = 0.1$
-  target, and is $0.066\text{–}0.080$ at $\rho = 0.99$. The FDR of **TIENET_AUG** peaks at $0.041$, and from
-  $\rho = 0.85$ on it lies below TENET's in every cell.
+  target, and is $0.066\text{–}0.080$ at $\rho = 0.99$. The FDR of **TIENET_AUG** peaks at $0.055$, and from
+  $\rho = 0.7$ on it lies below TENET's in every cell.
 - **Up to $\rho = 0.9$ the TPR recovers much more slowly with SNR than in the equicorrelated demos.** At
   $\mathrm{SNR} = 5$, TENET's TPR runs $0.016 / 0.12 / 0.52 / 0.89 / 0.95 / 0.96$ across
   $\rho \in \lbrace0.3, 0.5, 0.7, 0.85, 0.9, 0.99\rbrace$, so the $\text{low-}\rho$ columns barely lift off zero. At
@@ -193,12 +201,12 @@ $|z| > 3$.
   because below $\rho = 0.99$ neighboring columns stay under `corr_max = 0.98` and the fixed cut leaves every variable
   in its own cluster, here as in Demo 03. The C++ and Python runs show the same gap. Full recovery needs both a high
   $\rho$ and a high SNR, and only the $\rho = 0.99$ column starts high ($0.78$ already at $\mathrm{SNR} = 0.2$).
-- **TIENET_AUG** has less power than the TENET variants, as in the other block demos. It gains power with SNR (from
-  $0.11$ to $0.86$ at $\rho = 0.9$, against $0.95$ for TENET at $\mathrm{SNR} = 5$). In the $\rho = 0.99$ column,
-  the only one where neighboring columns exceed `corr_max = 0.98` and single-linkage HAC chains each block into one
-  cluster, its TPR collapses to $0.008\text{–}0.012$ at every SNR, on average 1.1 to 1.8 of the 150 active
-  variables. Its FDR there is $0.010$ at $\mathrm{SNR} = 0.2$ and $0$ from $\mathrm{SNR} = 1$ on. At $\rho \le 0.5$,
-  where every method stays at a TPR of at most $0.12$, TIENET_AUG trails TENET by at most $0.021$.
+- **TIENET_AUG** has less power than the TENET variants, as in most cells of the other block demos. It gains power
+  with SNR (from $0.10$ to $0.86$ at $\rho = 0.9$, against $0.95$ for TENET at $\mathrm{SNR} = 5$). In the
+  $\rho = 0.99$ column, the only one where neighboring columns exceed `corr_max = 0.98` and single-linkage HAC chains
+  each block into one cluster, its TPR stays far below TENET's at $0.011\text{–}0.104$, rising with SNR, on average
+  1.6 to 15.7 of the 150 active variables. Its FDR there is $0.015\text{–}0.022$. At $\rho \le 0.5$, where every
+  method stays at a TPR of at most $0.12$, TIENET_AUG trails TENET by at most $0.026$.
 - The $\rho$ axis is the most informative view of this demo. Recovery degrades sharply as $\rho$ decreases and the
   AR(1) decay becomes steeper. At $\mathrm{SNR} = 2$, TENET's TPR falls from $0.95$ at $\rho = 0.99$ to $0.82$ at
   $0.85$, $0.36$ at $0.7$ and $0.049$ at $0.5$.

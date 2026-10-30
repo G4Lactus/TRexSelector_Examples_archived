@@ -66,7 +66,9 @@ K = 20                          # Random experiments per T-loop iteration
 tFDR = 0.1                      # Target FDR
 corr_max = 0.98                 # HAC auto-clustering correlation threshold
 hc_linkage = Single             # Single-linkage HAC
-lambda2_method = CV_1SE_CCD     # Elastic-net penalty selection
+lambda2_method = CV_1SE_CCD     # Elastic-net penalty selection, EN rows (TENET, TENET_AUG)
+lambda2_method = CV_1SE_IEN_CCD # IEN rows (TIENET_AUG)
+cv_dfmax_ratio = 1.0            # IEN support cap 1.0 * n_train = 180 (default 0.8 gives 144)
 MC = 200                        # Monte Carlo repetitions per grid point
 ```
 
@@ -77,7 +79,9 @@ MC = 200                        # Monte Carlo repetitions per grid point
 Three T-Rex+GVS solver variants: **TENET** (elastic net) [[3]](#references),
 **TENET_AUG** (row-augmented elastic net) [[1]](#references), and **TIENET_AUG** (informed
 elastic net) [[2]](#references). All use single-linkage hierarchical agglomerative clustering
-(HAC) grouping and `CV_1SE_CCD` for the $\lambda_2$ selection.
+(HAC) grouping. TENET and TENET_AUG select $\lambda_2$ with `CV_1SE_CCD`, and TIENET_AUG with
+`CV_1SE_IEN_CCD`, the rule built for the informed elastic net geometry, with its support cap raised to
+$180$ variables (see [Demo 01](../demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md), Part 2).
 
 ---
 
@@ -130,16 +134,17 @@ up to Monte-Carlo noise — the two ports draw from independent random number ge
    $\mathrm{tFDR} = 0.1$ target in every cell ($0.042\text{–}0.088$, no cyan violation outlines), with true positive
    rate (TPR) $\approx 1$ from $\mathrm{SNR} \ge 1$ for $\rho \ge 0.5$ and $0.87 \to 0.96 \to 0.99$ over
    $\mathrm{SNR} \in \lbrace1, 2, 5\rbrace$ in the weakest column $\rho = 0.30$.
-- **TIENET_AUG** is markedly more conservative (FDR $\le 0.044$) and has less power at low SNR, but from
-   $\mathrm{SNR} = 1$ on it reaches TPR $\approx 1$ for $\rho = 0.7\text{–}0.95$. Its power collapses in the extreme
-   $\rho = 0.99$ column (TPR $\le 0.02$, about 3 of the 150 active variables), where the within-group columns become
-   nearly collinear. This is the only column that the fixed cut at `corr_max = 0.98` divides into groups, and a
-   plausible reading is that each group then forms one cluster and TIENET_AUG keeps about one variable per group, as
-   in Demo 01.
+- **TIENET_AUG** is markedly more conservative (FDR $\le 0.047$, below TENET in all 30 cells) and has less power,
+   most of all at low $\rho$. From $\mathrm{SNR} = 1$ on it reaches a TPR of $0.976\text{–}0.999$ for
+   $\rho = 0.9\text{–}0.95$, against $0.851\text{–}0.957$ at $\rho = 0.7$. Its power collapses in the extreme
+   $\rho = 0.99$ column (TPR $\le 0.064$, about 10 of the 150 active variables), where the within-group columns
+   become nearly collinear. This is the only column that the fixed cut at `corr_max = 0.98` divides into groups, and
+   a plausible reading is that each group then forms one cluster and TIENET_AUG keeps only a few variables per group,
+   as in Demo 01.
 - Scattering the group members leaves the FDR/TPR pattern very close to Demo 01's contiguous-block results. Over the
    120 distinct cells (FDR and TPR of TENET and TIENET_AUG at every grid point) the largest gap is $0.024$ in TPR
    (TENET at $\mathrm{SNR}=0.2$, $\rho=0.7$, $0.657$ here vs. $0.682$) and $0.011$ in FDR. The largest gap in units
-   of the combined Monte Carlo standard error is $|z| = 2.44$, and 5 of the 120 cells exceed $|z| = 1.96$. TENET's
+   of the combined Monte Carlo standard error is $|z| = 2.44$, and 4 of the 120 cells exceed $|z| = 1.96$. TENET's
    FDR is lower here in 28 of 30 cells, by $0.004$ on average. All cells of a demo reuse the same 200 trial seeds,
    so their Monte Carlo errors are correlated, and such a common shift does not by itself point to a layout effect.
 - HAC clusters the columns on the distance $1 - |\mathrm{corr}|$, which does not depend on column order. The
