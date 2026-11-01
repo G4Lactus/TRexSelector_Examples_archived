@@ -15,7 +15,7 @@ The AR(1) mismatch study was its own demo (03b) in the legacy R numbering, and i
 come from the R run against library 44cf1ab (200 MC trials per cell, 8 workers, 6.8 h). R draws its own random
 numbers, so its cells agree with C++ and Python up to Monte Carlo noise, not exactly. Of the 1,728 FDR and true
 positive rate (TPR) cells compared with the C++ run, none lies more than three combined Monte Carlo standard errors
-away. Over the whole suite it is 25 of 9,344 cells (0.27 %), the rate noise alone produces.
+away. Over the whole suite it is 27 of 9,344 cells (0.29 %), the rate noise alone produces.
 
 The greedy solvers use *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for TAFS/TOMP, `0` for TLARS
 and TLARS_STAG) in every part, as in C++. TAFS and TOMP run with the T-loop stagnation stop, TLARS without it.

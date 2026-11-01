@@ -45,8 +45,9 @@ mismatch, §9 this resolution).
 
 **Relation to BT.** The method is now exactly "BT, tightened by prior knowledge". It uses the same
 machinery, but the tree can never merge across known group boundaries, so actives are never deflated against
-unrelated variables. A BT reference run on this DGP (TLARS, $\mathrm{SNR}=2$) shows the same FDR
-behaviour (0.355 vs. 0.380) but markedly *lower* power (true positive rate (TPR) 0.701 vs. 0.844) — the constraints buy
+unrelated variables. A separate BT reference run on this DGP (TLARS, $\mathrm{SNR}=2$, $\mathrm{MC}=100$, archived in
+that document) shows the same FDR behaviour ($0.355$ against $0.380$ for the constrained method in that run, $0.353$
+here) but markedly *lower* power (true positive rate (TPR) $0.701$ against $0.844$, $0.850$ here) — the constraints buy
 power, not a different failure mode. The figures label the method `TREX-DA+AKG: <solver>`.
 
 ## Setup — data generating process (`dgp_groups_toeplitz_leaf`)
@@ -102,22 +103,27 @@ The figure (`.png` and `.pdf`, plus an interactive Plotly `.html` page with `--p
 ## Results — SNR sweep
 
 - **The greedy solvers are controlled everywhere and win on power once the signal is clear**. TOMP's maximum FDR is
-  $0.135$ (dropping to $\approx 0.04\text{–}0.05$ at high SNR) with TPR up to $0.954$, while TAFS — which violated at
+  $0.138$ (dropping to $\approx 0.035$ from $\mathrm{SNR}=2$ on) with TPR up to $0.955$, while TAFS — which violated at
   $\mathrm{SNR}=0.5$ under the old raw-group deflation ($0.211$) — is now controlled at every grid
-  point (max $0.185$) with TPR up to $0.949$. TAFS overtakes TLARS in TPR from $\mathrm{SNR}=1$ on and TOMP from
-  $\mathrm{SNR}=2$ on. Below that, TLARS has the higher TPR ($0.375$ against $0.321$ for TAFS and $0.240$ for TOMP at
-  $\mathrm{SNR}=0.5$), bought with an FDR of $0.334$.
-- **TLARS remains the outlier of the suite**: FDR $\approx 0.33\text{–}0.38$ from $\mathrm{SNR}=0.5$ on
-  (vs. the $\mathrm{tFDR}=0.2$ target), with TPR $\approx 0.84\text{–}0.85$. Its power is higher than under the old
-  raw-group deflation (TPR capped at $0.80$ there) while its FDR stays in the same range ($0.33\text{–}0.35$ there),
-  because the tight neighbourhoods deflate actives less, which buys power but also stops masking part of the
-  least-angle regression (LARS) shadow leak.
+  point (max $0.185$) with TPR up to $0.950$. TAFS overtakes TLARS in TPR from $\mathrm{SNR}=1$ on, and TOMP overtakes
+  it from $\mathrm{SNR}=2$ on. Below that, TLARS has the higher TPR ($0.392$ against $0.313$ for TAFS and $0.247$ for
+  TOMP at $\mathrm{SNR}=0.5$), bought with an FDR of $0.328$.
+- **TLARS remains the outlier among the solvers**, with FDR $\approx 0.33\text{–}0.38$ from $\mathrm{SNR}=0.5$ on
+  (vs. the $\mathrm{tFDR}=0.2$ target) and TPR $\approx 0.85$ from $\mathrm{SNR}=2$ on. Its power is higher than under
+  the old raw-group deflation (TPR capped at $0.80$ there) while its FDR stays in the same range
+  ($0.33\text{–}0.35$ there), because the tight neighbourhoods deflate actives less, which buys power but also stops
+  masking part of the least-angle regression (LARS) shadow leak.
 - **TLARS_STAG shows the same violation** ($0.35\text{–}0.37$ from $\mathrm{SNR}=0.5$ on) with the same power,
-  although its T-loop stops after $4\text{–}5$ steps instead of TLARS' $8\text{–}11$. The leak therefore does not come
+  although its T-loop stops after $4\text{–}5$ steps instead of TLARS' $7\text{–}10$. The leak therefore does not come
   from a long T-loop, which supports the structural explanation below.
 - The BT reference run (see Setup) shows the same TLARS FDR on this DGP with *less* power — the
   residual violation is a property of the shared BT deflation machinery under LARS-type occurrence
   profiles, not of the prior-groups path.
+
+Against the previous run on library commit `44cf1ab`, TAFS and TOMP lose $0.007\text{–}0.019$ of FDR at
+$\mathrm{SNR}=2$ and $5$ while their TPR stays flat. All three language trees show the same drop, so it is more than
+Monte Carlo noise. The corrected false discovery proportion (FDP) estimate of library commit `415484d` is the likely
+cause, but no paired run has tested that.
 
 ![SNR sweep on multi-level prior-groups data](simulation_results/plots/da_trex_mc_da_groups_toeplitz_leaf_fdr_tpr.png)
 

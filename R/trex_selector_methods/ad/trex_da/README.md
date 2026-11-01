@@ -102,7 +102,7 @@ Each demo writes its result tables to its own `simulation_results/data/` folder 
 
 The committed results are the first R run of all eight demos (200 Monte Carlo trials per cell, 8 workers, about
 25 h in total). R draws its own random numbers, so its cells agree with C++ and Python up to Monte Carlo noise, not
-exactly. Of 9,344 cells compared with C++, 25 (0.27 %) lie more than three Monte Carlo standard errors away, the
+exactly. Of 9,344 cells compared with C++, 27 (0.29 %) lie more than three Monte Carlo standard errors away, the
 rate noise alone produces. The largest single differences are 0.085 in the false discovery rate (FDR) (Demo 08,
 DA-TOMP at $\rho = 0.7$ and $\mathrm{SNR} = 0.5$, the high-variance false-alarm cell) and 0.117 in the true positive
 rate (TPR).
@@ -124,7 +124,7 @@ most $8.2$ steps on average.
 The demo READMEs document the known rough edges.
 
 - TLARS, and TLARS_STAG with it, breaks the target at $\rho = 0.9$ on the block designs under Average and Complete
-  linkage (Demos 03 and 04, FDR $0.22\text{–}0.25$), and on the multi-level prior-groups design of Demo 06, where its
+  linkage (Demos 03 and 04, FDR $0.21\text{–}0.25$), and on the multi-level prior-groups design of Demo 06, where its
   FDR stays near $0.36$ from $\mathrm{SNR} = 0.5$ on while TAFS and TOMP stay below $0.2$.
 - Heavy-tailed noise raises the FDR in Demo 05 (mean over the DA cells $0.117$ against $0.075$ with Gaussian noise)
   without costing power, while in Demo 04 the two noise models give the same averages.

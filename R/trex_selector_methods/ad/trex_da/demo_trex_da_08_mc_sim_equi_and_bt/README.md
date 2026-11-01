@@ -21,7 +21,7 @@ Demos 02–05). The numbers below come from the R run against library 44cf1ab (2
 4.0 h). R draws its own random numbers, so its cells agree with C++ and Python up to Monte Carlo noise, not exactly.
 Of the 512 FDR and true positive rate (TPR) cells compared with the C++ run, one lies more than three combined Monte
 Carlo standard errors away (DA-TLARS_STAG at $\rho = 0$, $\mathrm{SNR} = 0.5$, FDR $0.135$ in R vs. $0.090$ in C++).
-Over the whole suite it is 25 of 9,344 cells (0.27 %), the rate noise alone produces.
+Over the whole suite it is 27 of 9,344 cells (0.29 %), the rate noise alone produces.
 
 > **Purpose.** Equicorrelation is the stress case of the `trex_da` framework — every column loads
 > on one shared factor, so there is no "distance" to exploit the way the first-order autoregressive (AR) model AR(1)

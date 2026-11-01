@@ -170,7 +170,7 @@ The block part grows as $p_{\text{ar}} = 5Q$, while the white padding shrinks as
 ## Part 4 — Number-of-blocks $M$ sweep ($M \in \lbrace1, 3, 5, 10, 15, 20, 30\rbrace$, $s = M$)
 
 - The power collapse hits **earlier and harder than in the Gaussian demos 02/03**. TPR is already
-  down to $\leq 0.21$ at $M=15$, $\leq 0.10$ at $M=20$ and $\leq 0.03$ at $M=30$ (vs. $\approx 0.14\text{–}0.19$
+  down to $\leq 0.21$ at $M=15$, $\leq 0.10$ at $M=20$ and $\leq 0.03$ at $M=30$ (vs. $\approx 0.12\text{–}0.19$
   at $M=20$ in Demo 03) — spreading a fixed signal budget over many *heavy-tailed* blocks at $n=150$
   is the hardest setting in this suite.
 - During the collapse the realized FDR peaks at $M=15\text{–}20$, where TLARS and TLARS_STAG touch the target
@@ -213,8 +213,8 @@ target by more than two standard errors in any cell.
 
 - Read as the "combined effects" check against **Demo 03** (Gaussian, no white noise), **Demo 02**
   (Gaussian, with white noise), and **Demo 04** (heavy-tailed, no white noise). The white-noise
-  padding again *helps* FDR control (mean over the Gaussian-scenario cells $0.076$ here against $0.098$ in Demo 04,
-  and TLARS $0.050$ against $0.149$ at $\mathrm{SNR}=2$, although Demo 04 also has far fewer variables, $p = 25$
+  padding again *helps* FDR control (mean over the Gaussian-scenario cells $0.076$ here against $0.095$ in Demo 04,
+  and TLARS $0.050$ against $0.144$ at $\mathrm{SNR}=2$, although Demo 04 also has far fewer variables, $p = 25$
   against $500$), while heavy-tailed *response* noise adds a roughly constant FDR offset on top — the two effects
   partially offset, and every base-parameter cell stays under target.
 - Heavy tails cost almost no power. Their price is paid in FDR (the `s2_Heavy` offset, plus the

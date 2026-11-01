@@ -209,7 +209,7 @@ greedy-solver cells at $\rho=0.9$ with power (e.g. for gap=100: TAFS $0.24\to0.1
 support: TAFS $0.26\to0.16$, TOMP $0.27\to0.15$), where the greedy DA solvers now also retain *more* power than
 DA-TLARS. Heavy-tailed predictors cost power more than FDR control (Demo 04 against the Gaussian Demo 03 at the same
 $\rho$). Heavy-tailed noise raises the FDR in Demo 05 (mean over the DA cells $0.123$ against $0.078$ with Gaussian
-noise) without costing power, while in Demo 04 the two noise models give the same averages ($0.097$ / $0.098$). The
+noise) without costing power, while in Demo 04 the two noise models give the same averages ($0.094$ / $0.096$). The
 multi-level grouped design of Demo 06 pushes DA-TLARS above the $\mathrm{tFDR}$ target (FDR $0.33\text{–}0.38$ from
 $\mathrm{SNR}=0.5$ on), while TAFS and TOMP stay below it.
 

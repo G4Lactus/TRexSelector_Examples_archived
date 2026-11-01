@@ -16,8 +16,8 @@ R port of the C++ demo
 with the same DGP, control parameters, sweep axis, console summaries and result-file naming. The numbers
 below are this R run's own results. R draws its own random numbers, so they agree with the C++ and Python runs within
 Monte Carlo noise, not exactly. A cell-by-cell comparison with the C++ run (200 trials each) finds none of the 48 FDR
-and true positive rate (TPR) cells more than three combined MC standard errors apart. Over the whole suite 25 of
-$9{,}344$ cells ($0.27\,\%$) lie that far apart, the rate noise alone produces.
+and true positive rate (TPR) cells more than three combined MC standard errors apart. Over the whole suite 27 of
+$9{,}344$ cells ($0.29\,\%$) lie that far apart, about the rate noise alone produces.
 
 The solver pool is `default_solvers()` from [`../da_sim_common.R`](../da_sim_common.R), without a variant tag. TLARS
 runs without the T-loop stagnation stop, TAFS and TOMP run with it, and TLARS_STAG is TLARS with the stop switched on,
@@ -127,7 +127,7 @@ command-line argument, else `TREX_NUM_WORKERS`, else 8, and `0` uses every core)
 in `simulation_results/cache/`, so a stopped run resumes where it left off, and the cache is removed when the demo
 finishes. The script resolves its own directory and sources [`../../../mc_runtime.R`](../../../mc_runtime.R),
 [`../../../support_generators.R`](../../../support_generators.R), [`../trex_da_dgps.R`](../trex_da_dgps.R) and
-[`../da_sim_common.R`](../da_sim_common.R). The recorded run (library commit `44cf1ab`, 8 workers) took about
+[`../da_sim_common.R`](../da_sim_common.R). The recorded run (library commit `09debc6`, 8 workers) took about
 13 minutes.
 
 Afterwards, regenerate the figure from the CSV file with
@@ -150,21 +150,27 @@ files (this port renders no interactive `.html` page).
 ## Results — SNR sweep
 
 - **The greedy solvers are controlled at every grid point and win on power once the signal is clear**. TOMP
-  reaches a TPR of $0.949$ with FDR down to $0.051\text{–}0.054$ at $\mathrm{SNR}=2\text{–}5$, and TAFS reaches a TPR
-  of $0.938$ with FDR $0.087\text{–}0.110$ from $\mathrm{SNR}=1$ on. Below that, TLARS has the higher TPR ($0.366$
-  against $0.297$ for TAFS and $0.219$ for TOMP at $\mathrm{SNR}=0.5$), bought with an FDR of about $0.37$.
+  reaches a TPR of $0.949$ with FDR down to $0.035\text{–}0.039$ at $\mathrm{SNR}=2\text{–}5$, and TAFS reaches a TPR
+  of $0.940$ with FDR $0.071\text{–}0.105$ from $\mathrm{SNR}=1$ on. Below that, TLARS has the higher TPR ($0.366$
+  against $0.285$ for TAFS and $0.209$ for TOMP at $\mathrm{SNR}=0.5$), bought with an FDR of about $0.36$.
 - Both greedy solvers have a **high-variance excursion in the low-SNR transition region**. At
-  $\mathrm{SNR}=0.5$ TAFS realizes $0.197$, just under the $\mathrm{tFDR}=0.2$ target (standard deviation (sd)
-  $0.224$), and TOMP $0.154$ (sd $0.226$), with TPR still only $0.219\text{–}0.297$ there. With so few selections per
+  $\mathrm{SNR}=0.5$ TAFS realizes $0.190$, just under the $\mathrm{tFDR}=0.2$ target (standard deviation (sd)
+  $0.206$), and TOMP $0.155$ (sd $0.256$), with TPR still only $0.209\text{–}0.285$ there. With so few selections per
   trial the false discovery proportion (FDP) takes coarse values, so these cells carry a Monte Carlo standard error
   of about $0.016$, three to four times that at $\mathrm{SNR} \geq 2$.
-- **TLARS remains the outlier of the suite**. Its FDR is $0.361\text{–}0.370$ from $\mathrm{SNR}=0.5$ on
+- **TLARS remains the outlier of the suite**. Its FDR is $0.349\text{–}0.373$ from $\mathrm{SNR}=0.5$ on
   (against the $\mathrm{tFDR}=0.2$ target) and **flat in SNR**, with a TPR of $0.84$ at $\mathrm{SNR}=5$. At
-  $\mathrm{SNR}=0.2$ it already realizes $0.221$ (sd $0.334$) while finding almost nothing (TPR below $0.07$).
-- **TLARS_STAG shows the same violation** ($0.346\text{–}0.383$ from $\mathrm{SNR}=0.5$ on) with the same power
-  (TPR $0.84$ at $\mathrm{SNR}=5$), although its T-loop stops after $4.1\text{–}4.7$ steps on average instead of
-  TLARS' $5.2\text{–}9.3$. The leak therefore does not come from a long T-loop, which supports the structural
+  $\mathrm{SNR}=0.2$ it already sits at the target ($0.198$, sd $0.318$) while finding almost nothing (TPR below
+  $0.07$).
+- **TLARS_STAG shows the same violation** ($0.345\text{–}0.378$ from $\mathrm{SNR}=0.5$ on) with nearly the same
+  power (TPR $0.83$ at $\mathrm{SNR}=5$), although its T-loop stops after $4.0\text{–}4.6$ steps on average instead of
+  TLARS' $5.9\text{–}8.5$. The leak therefore does not come from a long T-loop, which supports the structural
   explanation below.
+
+Against the previous run on library commit `44cf1ab`, TAFS and TOMP lose $0.015\text{–}0.019$ of FDR at
+$\mathrm{SNR}=2$ and $5$ while their TPR stays flat. All three language trees show the same drop, so it is more than
+Monte Carlo noise. The corrected FDP estimate of library commit `415484d` is the likely cause, but no paired run has
+tested that.
 
 ![SNR sweep on multi-level prior-groups data](simulation_results/plots/da_trex_mc_da_groups_toeplitz_leaf_fdr_tpr.png)
 

@@ -16,8 +16,8 @@ with the same data-generating process (DGP), control parameters, sweep axes, con
 naming. The numbers below are this R run's own results. R uses its own random number streams, so they differ from the
 C++ and Python numbers within Monte Carlo noise, not exactly. A cell-by-cell comparison with the C++ run (200 trials
 per cell on both sides, $z$ = difference divided by the combined Monte Carlo standard error) finds $|z| > 3$ in 3 of
-the 816 FDR and true positive rate (TPR) cells of this demo. Over the whole DA-TRex suite it is 25 of 9,344 cells
-(0.27 %), the rate that noise alone produces.
+the 816 FDR and true positive rate (TPR) cells of this demo. Over the whole DA-TRex suite it is 27 of 9,344 cells
+(0.29 %), the rate that noise alone produces.
 
 The greedy solvers use *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for TAFS/TOMP, `0` for
 TLARS/TLARS_STAG). See `Exchangeable_Tie_Breaking_DA_TRex.md` in the TRex_Research documentation.

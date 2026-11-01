@@ -224,7 +224,7 @@ figures draw TLARS_STAG dashed in the TLARS colour.
 - Compare against **Demo 03** (same block AR(1) core, *no* white-noise columns), which also runs at half the
   sample size ($n = 150$) and twice the target ($\mathrm{tFDR} = 0.2$). The white padding, together with the larger
   $n$, keeps the FDR low here, also relative to the halved target. Outside the $M$ stress sweep it stays at or below
-  $0.039$ (and at most $0.088$ in it), while Demo 03 reaches $0.115$ already in its SNR sweep and $0.27$ at
+  $0.039$ (and at most $0.088$ in it), while Demo 03 reaches $0.113$ already in its SNR sweep and $0.26$ at
   $\rho = 0.9$. This comes without hurting the detection of the true blocks at the base point.
 - The linkage question gets a two-sided answer. Linkage is irrelevant at the well-correlated base
   point, but **Single linkage is fragile** exactly where the block structure is weak (low $\rho$) or

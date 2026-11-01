@@ -198,7 +198,7 @@ The block part grows as $p_{\text{ar}} = 5Q$, while the white padding shrinks as
 ## Part 4 — Number-of-blocks $M$ sweep ($M \in \lbrace1, 3, 5, 10, 15, 20, 30\rbrace$, $s = M$)
 
 - The power collapse hits **earlier and harder than in the Gaussian Demo 03**. TPR is already down to
-  $\leq 0.195$ at $M=15$, $\leq 0.091$ at $M=20$ and $\leq 0.032$ at $M=30$ (against $0.15\text{–}0.19$ at $M=20$
+  $\leq 0.195$ at $M=15$, $\leq 0.091$ at $M=20$ and $\leq 0.032$ at $M=30$ (against $0.13\text{–}0.20$ at $M=20$
   in Demo 03). Spreading a fixed signal budget over many *heavy-tailed* blocks at $n=150$ is the hardest setting in
   this suite.
 - During the collapse the realized FDR peaks at $M=15\text{–}20$, just under the target for TLARS and TLARS_STAG
@@ -250,7 +250,7 @@ path, and in every language the $Q = 5$ and $\mathrm{tFDR} = 0.05$ cells are the
 run on the same 200 data sets. Python lies between C++ and R in each of them, which is consistent with Monte Carlo
 noise (the C++ run a little low, R a little high). The sixteenth cell is the FDR of TLARS_STAG at $Q = 50$ (heavy
 noise, Average linkage), where C++ reports $0.200$ against $0.149$ in Python and $0.145$ in R. Over the whole suite
-25 of $9{,}344$ cells ($0.27\,\%$) exceed $|z| = 3$, the rate noise alone produces.
+27 of $9{,}344$ cells ($0.29\,\%$) exceed $|z| = 3$, the rate noise alone produces.
 
 ---
 
@@ -259,7 +259,7 @@ noise, Average linkage), where C++ reports $0.200$ against $0.149$ in Python and
 - Read as the "combined effects" check against **Demo 03** (Gaussian, no white noise), **Demo 02**
   (Gaussian, with white noise), and **Demo 04** (heavy-tailed, no white noise). The white-noise
   padding again *helps* FDR control (TLARS realizes $0.055$ at $\mathrm{SNR}=2$ in the Gaussian scenario here against
-  $0.156$ in Demo 04, although Demo 04 also has far fewer variables, $p = 25$ against $500$), while heavy-tailed
+  $0.162$ in Demo 04, although Demo 04 also has far fewer variables, $p = 25$ against $500$), while heavy-tailed
   *response* noise adds an FDR offset on top (mean over all cells $0.117$
   against $0.075$ with Gaussian noise). The two effects partially offset, and every base-parameter cell stays under
   the target (at most $0.133$).

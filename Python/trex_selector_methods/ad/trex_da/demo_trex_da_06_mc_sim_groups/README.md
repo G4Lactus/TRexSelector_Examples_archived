@@ -130,24 +130,29 @@ The figure (Portable Network Graphics (PNG) and Portable Document Format (PDF), 
 ## Results — SNR sweep
 
 - **The greedy solvers win on power once the signal is clear and are controlled wherever the signal is
-  resolvable**. TOMP reaches true positive rate (TPR) $0.945$ with FDR down to $\approx 0.05$ at high SNR, and TAFS
-  reaches TPR $0.939$ with FDR $\approx 0.08\text{–}0.13$ from $\mathrm{SNR}=1$ on. TAFS overtakes TLARS in TPR at
-  $\mathrm{SNR}=1$ ($0.722$ against $0.698$) and TOMP at $\mathrm{SNR}=2$ ($0.936$ against $0.824$). Below that TLARS
-  has the higher TPR ($0.407$ against $0.345$ for TAFS and $0.249$ for TOMP at $\mathrm{SNR}=0.5$), bought with an
-  FDR of $0.386$.
+  resolvable**. TOMP reaches true positive rate (TPR) $0.945$ with FDR down to $\approx 0.03$ at high SNR, and TAFS
+  reaches TPR $0.941$ with FDR $\approx 0.07\text{–}0.12$ from $\mathrm{SNR}=1$ on. TAFS overtakes TLARS in TPR at
+  $\mathrm{SNR}=1$ ($0.727$ against $0.688$) and TOMP at $\mathrm{SNR}=2$ ($0.935$ against $0.820$). Below that TLARS
+  has the higher TPR ($0.414$ against $0.344$ for TAFS and $0.258$ for TOMP at $\mathrm{SNR}=0.5$), bought with an
+  FDR of $0.382$.
 - Both greedy solvers have a **high-variance excursion in the low-SNR transition region**. At
-  $\mathrm{SNR}=0.5$ TAFS realizes $0.219$ (above the $\mathrm{tFDR}=0.2$ target, standard deviation (sd) $0.207$)
-  and TOMP $0.167$, with TPR still only $0.25\text{–}0.35$ there. With so few selections per trial the false
-  discovery proportion (FDP) takes coarse values, although it is not near-binary (sd $0.207$ / $0.244$ against
+  $\mathrm{SNR}=0.5$ TAFS realizes $0.217$ (above the $\mathrm{tFDR}=0.2$ target, standard deviation (sd) $0.213$)
+  and TOMP $0.162$, with TPR still only $0.26\text{–}0.34$ there. With so few selections per trial the false
+  discovery proportion (FDP) takes coarse values, although it is not near-binary (sd $0.213$ / $0.234$ against
   $0.41$ / $0.37$ for a 0/1 FDP with the same mean). These cells carry a Monte-Carlo standard error of
   $0.015\text{–}0.017$, several times that at $\mathrm{SNR} \geq 2$ (the C++ reference run lands at $0.185$ /
-  $0.135$ in the same cells).
-- **TLARS remains the outlier of the suite**: FDR $\approx 0.36\text{–}0.39$ from $\mathrm{SNR}=0.5$ on
-  (vs. the $\mathrm{tFDR}=0.2$ target) and **flat in SNR**, with TPR $\approx 0.84$ at
+  $0.138$ in the same cells).
+- **TLARS remains the outlier of the suite**: FDR $\approx 0.36\text{–}0.38$ from $\mathrm{SNR}=0.5$ on
+  (vs. the $\mathrm{tFDR}=0.2$ target) and **flat in SNR**, with TPR $\approx 0.83$ at
   $\mathrm{SNR}=5$.
-- **TLARS_STAG shows the same violation** ($0.36\text{–}0.38$ from $\mathrm{SNR}=0.5$ on) with the same power,
-  although its T-loop stops after $4\text{–}5$ steps instead of TLARS' $6\text{–}10$. The leak therefore does not
+- **TLARS_STAG shows the same violation** ($0.36\text{–}0.37$ from $\mathrm{SNR}=0.5$ on) with the same power,
+  although its T-loop stops after $4\text{–}5$ steps instead of TLARS' $6\text{–}8$. The leak therefore does not
   come from a long T-loop, which supports the structural explanation below.
+
+Against the previous run on library commit `44cf1ab`, TAFS and TOMP lose $0.011\text{–}0.019$ of FDR at
+$\mathrm{SNR}=2$ and $5$ while their TPR stays flat. All three language trees show the same drop, so it is more than
+Monte Carlo noise. The corrected FDP estimate of library commit `415484d` is the likely cause, but no paired run has
+tested that.
 
 ![SNR sweep on multi-level prior-groups data](simulation_results/plots/da_trex_mc_da_groups_toeplitz_leaf_fdr_tpr.png)
 
