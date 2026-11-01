@@ -34,11 +34,13 @@ Rerun:          trex_core 02 and 03, the TSTAGEWISE rows in C++, Python and R (T
                 and R (see Validated perf). trex_gvs 01-07, the TIENET_AUG rows in C++, Python and R
                 (TREX_SOLVERS, merged): the IEN rows run CV_1SE_IEN_CCD with cv_dfmax_ratio = 1.0, and demo 01
                 Part 2 compares it with CV_1SE_TIK_SVD. The FDR stays below the target and below TENET almost
-                everywhere, and the three languages agree on the new rows.
-Pending:        reruns on 09debc6 that the batch moves: trex_core 04 in C++, Python and R (in full, only the
-                SEEDED rows move). Still pending from 415484d: trex_core 08 in Python and R (nightly runner),
-                trex_core 09 and 10 in R, trex_da (tFDR 0.2, long T-loops), the trex_gvs and trex_spca spot
-                checks.
+                everywhere, and the three languages agree on the new rows. trex_core 04 in full in C++, Python
+                and R: SEEDED now calibrates the L of STANDARD (average L down by about 0.3), its FDR and TPR
+                stay within Monte Carlo noise, and the other rows move only by that noise, because the selector
+                is not seeded. Python and R also gain the FDP estimate of 415484d here, so SKIPL_10p under TLARS
+                stays below the target in all three languages.
+Pending:        Still pending from 415484d: trex_core 08 in Python and R (nightly runner), trex_core 09 and 10
+                in R, trex_da (tFDR 0.2, long T-loops), the trex_gvs and trex_spca spot checks.
 Previous pins:  415484d (2026-10-24), 61fd84c (2026-10-21), 44cf1ab (2026-09-28), b95b984 (2026-09-27), 8ad3376
                 (2026-09-26), f390bfc (2026-09-25), d404033 (2026-09-25); what changed between pins is in the
                 git log of this file and in the library's HISTORY.md.

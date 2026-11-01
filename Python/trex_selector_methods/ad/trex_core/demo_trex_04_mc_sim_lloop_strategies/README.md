@@ -62,7 +62,8 @@ permuted per experiment) and **storage** (*stored* vs seed-derived *on-demand*):
 3. **PERMUTATION** — stored base dummy matrix, re-used via deterministic row permutations.
 4. **PERMUTATION_SEEDED** — seed-derived base + row permutations, with nothing stored.
    Bit-identical to PERMUTATION for the same seed.
-5. **SEEDED** — seed-derived independent dummies, with nothing stored.
+5. **SEEDED** — seed-derived independent dummies per L-loop step, with nothing stored. It is the storage-free twin
+   of STANDARD.
 6. **SKIPL_5p / SKIPL_10p / SKIPL_20p** — skip the L-loop entirely and use the
    fixed $L = \text{max\_dummy\_multiplier} \in \lbrace5, 10, 20\rbrace \times p$.
 
@@ -135,34 +136,40 @@ fresh `..._{tlars,tomp,tafs,tlars_stag}_random_support.txt`):
 
 - Under **TLARS** the adaptive strategies (STANDARD, HCONCAT, PERMUTATION,
   PERMUTATION_SEEDED, SEEDED) hold FDR near or below the target FDR (tFDR) $= 0.1$
-  across the grid (at most $0.056$) — STANDARD even trends *down* to
-  $\approx 0.028$ at SNR 5 — while the fixed-budget `SKIPL` levels break control in
-  ascending order of budget. `SKIPL_5p` stays under (max FDR $\approx 0.071$ near
-  SNR 1.7), `SKIPL_10p` crosses only at SNR 5 ($\approx 0.105$), and `SKIPL_20p`
-  crosses the line at SNR 1.7–1.9 and ends at **≈ 0.129** at SNR 5 — an
+  across the grid (at most $0.055$) — STANDARD even trends *down* to
+  $\approx 0.030$ at SNR 5 — while the fixed-budget `SKIPL` levels rise in
+  ascending order of budget. `SKIPL_5p` stays under (max FDR $\approx 0.074$ near
+  SNR 1.7), `SKIPL_10p` stays under as well ($\approx 0.095$ at SNR 5), and `SKIPL_20p`
+  crosses the line at SNR 1.7–1.9 and ends at **≈ 0.130** at SNR 5 — an
   overshoot that grows with the budget and tracks a runaway stopping time
-  (`SKIPL_20p` Avg T reaches $\approx 148$ vs the true support size $s = 10$,
+  (`SKIPL_20p` Avg T reaches $\approx 144$ vs the true support size $s = 10$,
   while `SKIPL_10p` reaches
-  $\approx 86$ and `SKIPL_5p` $\approx 23$). Freezing $L$ removes the calibration
+  $\approx 79$ and `SKIPL_5p` $\approx 24$). Freezing $L$ removes the calibration
   that places the relative-occurrence threshold and the T-loop stop, so an
   over-large fixed dummy pool biases the estimate of the false discovery
   proportion (FDP) optimistic.
 - **Neither greedy solver overshoots**. Under **TOMP** the highest FDR over all
-  eight strategies and 21 SNR values is $0.034$, and under **TAFS** it is $0.045$
-  (`SKIPL_5p` at SNR 1.5). At SNR 5 the `SKIPL` levels read $0.023$ / $0.018$ /
-  $0.006$ (TOMP) and $0.043$ / $0.026$ / $0.012$ (TAFS) for 5p / 10p / 20p, so the
+  eight strategies and 21 SNR values is $0.033$, and under **TAFS** it is $0.044$
+  (`SKIPL_5p` at SNR 1.8). At SNR 5 the `SKIPL` levels read $0.023$ / $0.017$ /
+  $0.007$ (TOMP) and $0.043$ / $0.028$ / $0.015$ (TAFS) for 5p / 10p / 20p, so the
   budget ordering **reverses** — a *larger* fixed $L$ yields *lower* FDR — and
   their `Avg T` never runs away ($\approx 6$ at SNR 5). Both run with the
   stagnation stop, which the AUTO setting enables for the greedy solvers only.
 - **TLARS_STAG settles the cause**. It is the same LARS path with the stop on, and
   there the overshoot vanishes. `SKIPL_20p` ends at an FDR of $0.024$ at SNR 5
-  instead of $0.129$ (at most $0.055$ over all SNR values), `SKIPL_10p` peaks at
-  $0.065$ instead of $0.105$, no cell exceeds the target, and the T-loop stops at
-  $T \approx 7$ instead of $T \approx 148$. An over-large fixed dummy budget
+  instead of $0.130$ (at most $0.060$ over all SNR values), `SKIPL_10p` peaks at
+  $0.067$ instead of $0.095$, no cell exceeds the target, and the T-loop stops at
+  $T \approx 7$ instead of $T \approx 144$. An over-large fixed dummy budget
   therefore only harms FDR control when nothing stops the T-loop. The price is a
-  little power for `SKIPL_20p` at moderate SNR (TPR $0.76$ instead of $0.82$ at
+  little power for `SKIPL_20p` at moderate SNR (TPR $0.75$ instead of $0.82$ at
   SNR 1), which closes again at high SNR, and the adaptive strategies give the
   same FDR and TPR with and without the stop.
+
+**Library changes.** Library 09debc6 made SEEDED the storage-free twin of STANDARD. Its average $L$ over the SNR grid
+under TLARS fell from 3.54 to 3.19, next to STANDARD's 3.19, while its FDR and TPR stayed within MC noise. This run
+also brings in the corrected FDP estimate of library 415484d, which took `SKIPL_10p` under TLARS from an FDR of
+$0.105$ and $T \approx 86$ to $0.095$ and $T \approx 79$, as it did in the C++ demo. The trial data are seeded and the
+selector's dummies are not, so the other rows also move a little from run to run.
 
 These numbers match the C++ run within Monte Carlo noise. See the C++ demo's
 [discussion](../../../../../cpp/trex_selector_methods/ad/trex_core/demo_trex_04_mc_sim_lloop_strategies/README.md#results-visualization).
@@ -216,5 +223,5 @@ The MC loop is parallelized with `ProcessPoolExecutor`, with `TREX_NUM_WORKERS`
 worker processes (default 8, see `resolve_workers()` in
 [`../trex_sim_common.py`](../trex_sim_common.py)). The full sweep is large — with
 `num_MC = 200` across 4 solvers × 8 strategies × 21 SNR, expect an overnight run
-(16 hours on 8 workers). The `SKIPL_20p` / `SKIPL_10p` points at high SNR dominate
-under TLARS, where the T-loop runs to $T \approx 85\text{–}150$.
+(15 hours on 8 workers). The `SKIPL_20p` / `SKIPL_10p` points at high SNR dominate
+under TLARS, where the T-loop runs to $T \approx 80\text{–}150$.
