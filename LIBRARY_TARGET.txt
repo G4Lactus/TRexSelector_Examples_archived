@@ -39,8 +39,8 @@ Rerun:          trex_core 02 and 03, the TSTAGEWISE rows in C++, Python and R (T
                 stay within Monte Carlo noise, and the other rows move only by that noise, because the selector
                 is not seeded. Python and R also gain the FDP estimate of 415484d here, so SKIPL_10p under TLARS
                 stays below the target in all three languages.
-Pending:        Still pending from 415484d: trex_core 08 in Python and R (nightly runner), trex_core 09 and 10
-                in R, trex_da (tFDR 0.2, long T-loops), the trex_gvs and trex_spca spot checks.
+Pending:        Still pending from 415484d: trex_core 09 and 10 in R, trex_da (tFDR 0.2, long T-loops), and after
+                the push trex_core 08 in Python and R (nightly runner).
 Previous pins:  415484d (2026-10-24), 61fd84c (2026-10-21), 44cf1ab (2026-09-28), b95b984 (2026-09-27), 8ad3376
                 (2026-09-26), f390bfc (2026-09-25), d404033 (2026-09-25); what changed between pins is in the
                 git log of this file and in the library's HISTORY.md.

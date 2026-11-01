@@ -145,7 +145,7 @@ results to source-side `simulation_results/` folders.
 
 Classical T-Rex selector. Demos cover single runs, Monte Carlo simulations
 with fixed and variable support, l-loop strategies, and memory-mapped designs
-(7 demos, 1 pending).
+(10 demos).
 
 #### `ad/trex_da/`
 

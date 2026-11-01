@@ -173,16 +173,24 @@ Library 09debc6 made SEEDED the storage-free twin of STANDARD. Its average $L$ o
 within MC noise. The trial data are seeded and the selector's dummies are not, so the other rows also move a little
 from run to run.
 
-**Mechanism.** `SKIPL` disables the L-loop and freezes the dummy multiplier at `L = {5, 10, 20}·p`. With
-`L = 20`, about one null variable enters per 20 T-steps. The FDP estimate adds
-the expected null inflow of a step, $(p - \sum_j \Phi_t(j)) / (Lp - t + 1)$, only when the variables with
-$\Phi > 0.5$ gain occurrence in that same step. In most steps they gain nothing, and the inflow of those steps is
-lost, so the estimate falls behind the realized FDP and the T-loop rarely trips. A diagnostic with 200 seeded trials
-(TLARS, `SKIPL_20p`, SNR 5) measured an estimate 30 % to 50 % below the realized FDP at every voting level from
-`T = 5` on (0.180 against 0.264 at `T = 100` and $v = 0.5$). The T-loop reached its cap `T = n/2 = 150` in 95 % of
-the trials, and the selected point had an estimate of 0.075 and a realized FDR of 0.136. The adaptive strategies
-calibrate `L ≈ 1` at high SNR, so nearly every step brings new entries and no inflow is lost. The estimate follows
-the T-Rex paper, and the library keeps it.
+**Mechanism.** `SKIPL` disables the L-loop and freezes the dummy multiplier at `L = {5, 10, 20}·p`. With `L = 20`, the
+expected null inflow of one T-step, $(p - \sum_j \Phi_t(j)) / (Lp - t + 1)$, is about 0.05 and the T-loop reaches
+`T ≈ 140`. The clamps on $\Phi'$ and on the FDP estimate play no part, because they never activate in this cell and the
+selections are identical without them. A replay study with 200 seeded trials per cell (TLARS, `SKIPL_20p`, SNR 5,
+realized FDR 0.136) gives this picture at the selected row:
+
+- The total inflow is about right, because the null variables hold a mass of 7.0 against an expected 7.0.
+- That mass collects on a few columns, because $\mathbf{X}$ and $\mathbf{y}$ are the same in every random experiment.
+  There are 4.9 null variables above $\Phi = 0.5$, while independent experiments would give about $10^{-16}$.
+- The gain above $\Phi = 0.5$ arrives in lumps. Two thirds of the steps add nothing, and the others add 0.29.
+- After step 20 all of this gain is false, yet the estimate books only the expected inflow of each step with a gain,
+  which is 1.9 against 2.9 realized. So the estimate falls behind and the T-loop rarely trips.
+
+Smaller budgets keep more of it covered, because the inflow per step is larger (at `SKIPL_5p`, 1.0 booked against 0.65
+realized). The estimate at the selected cell stays below the realized false discoveries at every budget (0.88 against
+1.6 at `SKIPL_20p`, 0.63 against 0.89 at `SKIPL_5p`), so a smaller gap remains that this study does not explain. The
+adaptive strategies calibrate `L ≈ 1` at high SNR and stop after a few steps. The estimate follows the T-Rex paper, and
+the library keeps it.
 
 **Original working hypothesis (refuted by the TLARS_STAG column).** The overshoot is **LARS-specific**. Once the 10
 true variables are in
@@ -208,7 +216,7 @@ check to the fixed-budget SKIPL regime.)
 > `T ≈ 7` instead of `T ≈ 144`.
 >
 > The stop does not repair the estimate (under TLARS_STAG the selected `SKIPL_20p` point at SNR 5 has an estimate of
-> 0.013 and a realized FDR of 0.023), but it ends the T-loop before much inflow is lost.
+> 0.013 and a realized FDR of 0.023), but it ends the T-loop before the null mass builds up.
 >
 > An over-large fixed dummy budget therefore only harms FDR control when nothing stops the T-loop. The price of the
 > stop is a little power for `SKIPL_20p` at moderate SNR (TPR 0.78 instead of 0.84 at SNR 1), which closes again at
