@@ -46,7 +46,7 @@
 
 import numpy as np
 
-from trex_selector_neo.ml_methods import ElasticNet, ElasticNetCV
+from trexselector.ml_methods import ElasticNet, ElasticNetCV
 
 
 def print_section_header(title):

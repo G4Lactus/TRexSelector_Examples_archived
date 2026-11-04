@@ -2,7 +2,7 @@
 
 ## Overview
 
-This folder holds the Python examples for `MemoryMappedMatrix` from `trex_selector_neo.utils`. The class stores a
+This folder holds the Python examples for `MemoryMappedMatrix` from `trexselector.utils`. The class stores a
 matrix in a file on disk and exposes it through a zero-copy NumPy view:
 
 ```math
@@ -20,7 +20,7 @@ Open Multi-Processing (OpenMP) parallel generation of the C++ demo stays C++-onl
 functionality (see [cpp/memory_mapping/](../../cpp/memory_mapping/README.md) and
 [R/memory_mapping/](../../R/memory_mapping/README.md)).
 
-The entry points, all from `trex_selector_neo.utils`, are:
+The entry points, all from `trexselector.utils`, are:
 
 - `MemoryMappedMatrix(filename, rows, cols, mode)` with `rows()`, `cols()`, `size()`, `to_numpy()`, `write_block()` and
   `mmap[row, col]` reads and writes (block writes through slices as well),

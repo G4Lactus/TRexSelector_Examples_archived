@@ -152,10 +152,10 @@ print_selection <- function(solver, true_support) {
 print_selection_quality <- function(solver, true_support) {
   selected <- selected_variables(solver)$predictors
   tp <- length(intersect(selected, true_support))
-  fdp <- TRexSelectorNeo::trex_fdp(selected, true_support)
-  tpp <- TRexSelectorNeo::trex_tpp(selected, true_support)
-  prec <- TRexSelectorNeo::trex_precision(selected, true_support)
-  rec <- TRexSelectorNeo::trex_recall(selected, true_support)
+  fdp <- TRexSelector::trex_fdp(selected, true_support)
+  tpp <- TRexSelector::trex_tpp(selected, true_support)
+  prec <- TRexSelector::trex_precision(selected, true_support)
+  rec <- TRexSelector::trex_recall(selected, true_support)
   f1 <- if (prec + rec > 0) 2 * prec * rec / (prec + rec) else 0
   cat("\nSelection Quality:\n")
   cat(sprintf("  True Positives:  %d\n", tp))

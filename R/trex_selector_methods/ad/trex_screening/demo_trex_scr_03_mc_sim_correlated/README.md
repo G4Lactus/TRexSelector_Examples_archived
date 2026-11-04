@@ -17,7 +17,7 @@ in the C++ suite README).
 
 This is the R port of the C++ demo
 [demo_trex_scr_03_mc_sim_correlated](../../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_03_mc_sim_correlated/README.md),
-using the `TRexScreeningSelector` class of the TRexSelectorNeo package. It keeps the data-generating processes (DGPs),
+using the `TRexScreeningSelector` class of the TRexSelector package. It keeps the data-generating processes (DGPs),
 the control parameters, the sweep grids, the console tables and the result-file naming of the C++ demo. Indices are
 1-based (R convention).
 
@@ -134,10 +134,10 @@ The DA variant is always matched to the design that generated the data, so this 
 DA**, not a misspecification study. All methods also report an **estimated FDR** alongside the realized FDR and TPR.
 Under correlation the gap between the two becomes the main story.
 
-Each Monte Carlo trial builds the selector through the TRexSelectorNeo class interface, here for Ordinary+DA-AR1:
+Each Monte Carlo trial builds the selector through the TRexSelector class interface, here for Ordinary+DA-AR1:
 
 ```r
-library(TRexSelectorNeo)
+library(TRexSelector)
 
 ctrl <- trex_control(
   solver = "TLARS", K = 20L, max_dummy_multiplier = 10L, use_max_T_stop = TRUE,

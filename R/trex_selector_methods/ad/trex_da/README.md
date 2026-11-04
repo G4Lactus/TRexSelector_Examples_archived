@@ -1,6 +1,6 @@
 # DA-TRex: Dependency-Aware T-Rex — R Demonstration Suite
 
-> **Status**: New — migrated to the **TRexSelectorNeo** R6 application programming interface (API)
+> **Status**: New — migrated to the **TRexSelector** R6 application programming interface (API)
 > (`TRexDASelector$new(..., da_control = trex_da_control(...))$select()`, with `trex_fdp()` / `trex_tpp()`). No
 > longer depends on the `TRexSelector` package from the Comprehensive R Archive Network (CRAN).
 
@@ -32,7 +32,7 @@ trex_da/
   └── demo_trex_da_08_mc_sim_equi_and_bt/
 ```
 
-Dependencies: `TRexSelectorNeo`, `parallel` (MC loops). Each demo sources the
+Dependencies: `TRexSelector`, `parallel` (MC loops). Each demo sources the
 consolidated [trex_da_dgps.R](trex_da_dgps.R) (all scenario generators in one
 file, mirroring the C++ `dgp_generators.hpp` / Python `dgp_generators.py`), the
 shared [da_sim_common.R](da_sim_common.R) (default solver set, parallel MC

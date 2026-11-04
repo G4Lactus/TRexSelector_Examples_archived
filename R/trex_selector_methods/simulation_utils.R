@@ -147,7 +147,7 @@ plot_cormat <- function(cor_matrix) {
 
 
 # ==============================================================================
-# R6 API adapters (legacy TRexSelector -> TRexSelectorNeo)
+# R6 API adapters (legacy TRexSelector -> TRexSelector)
 # ==============================================================================
 
 #' Map legacy lowercase HC linkage names to the R6 capitalized names.
@@ -223,15 +223,15 @@ cap_hc <- function(hc_dist) {
 
   # Every field of the cpp make_gvs_trex_control() is set explicitly, so no
   # R default (AUTO stagnation off for TLARS) can diverge from the reference.
-  ctrl <- TRexSelectorNeo::trex_control(
+  ctrl <- TRexSelector::trex_control(
     solver = base_solver, K = K, max_dummy_multiplier = 10,
     use_max_T_stop = TRUE, lloop_strategy = "HCONCAT",
     tloop_stagnation_stop = TRUE, tloop_max_stagnant_steps = 5,
     use_memory_mapping = FALSE
   )
-  sel <- TRexSelectorNeo::TRexGVSSelector$new(
+  sel <- TRexSelector::TRexGVSSelector$new(
     X, y, tFDR = tFDR, seed = as.integer(seed), verbose = FALSE,
-    gvs_control = do.call(TRexSelectorNeo::trex_gvs_control, gvs_args),
+    gvs_control = do.call(TRexSelector::trex_gvs_control, gvs_args),
     control     = ctrl
   )
   sel$select()
@@ -289,8 +289,8 @@ cap_hc <- function(hc_dist) {
                        seed = trial_seed, cv_seed = trial_seed,
                        cv_dfmax_ratio = cv_dfmax_ratio)
     ts <- which(dat$beta != 0)
-    c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
-      TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
+    c(FDP = TRexSelector::trex_fdp(sel$selected_indices, ts),
+      TPP = TRexSelector::trex_tpp(sel$selected_indices, ts))
   }
 
   # One resumable grid cell: restored from the cell cache after a restart. The
@@ -351,8 +351,8 @@ cap_hc <- function(hc_dist) {
                        cv_dfmax_ratio = cv_dfmax_ratio)
     si <- sel$selected_indices
     ts <- which(dat$beta != 0)
-    c(FDP = TRexSelectorNeo::trex_fdp(si, ts),
-      TPP = TRexSelectorNeo::trex_tpp(si, ts),
+    c(FDP = TRexSelector::trex_fdp(si, ts),
+      TPP = TRexSelector::trex_tpp(si, ts),
       .gvs_group_rates(si, dat$prior_groups, ts),
       n_groups = sum(table(sel$groups) >= 2L))
   }
@@ -428,8 +428,8 @@ cap_hc <- function(hc_dist) {
                        seed = trial_seed, cv_seed = trial_seed,
                        cv_dfmax_ratio = cv_dfmax_ratio)
     ts <- which(dat$beta != 0)
-    c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
-      TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
+    c(FDP = TRexSelector::trex_fdp(sel$selected_indices, ts),
+      TPP = TRexSelector::trex_tpp(sel$selected_indices, ts))
   }
 
   # One resumable grid cell: restored from the cell cache after a restart. The
@@ -488,8 +488,8 @@ cap_hc <- function(hc_dist) {
                        seed = trial_seed, cv_seed = trial_seed,
                        cv_dfmax_ratio = cv_dfmax_ratio)
     ts <- which(dat$beta != 0)
-    c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
-      TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
+    c(FDP = TRexSelector::trex_fdp(sel$selected_indices, ts),
+      TPP = TRexSelector::trex_tpp(sel$selected_indices, ts))
   }
 
   # One resumable grid cell: restored from the cell cache after a restart. The
@@ -548,8 +548,8 @@ cap_hc <- function(hc_dist) {
                        seed = trial_seed, cv_seed = trial_seed,
                        cv_dfmax_ratio = cv_dfmax_ratio)
     ts <- which(dat$beta != 0)
-    c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
-      TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
+    c(FDP = TRexSelector::trex_fdp(sel$selected_indices, ts),
+      TPP = TRexSelector::trex_tpp(sel$selected_indices, ts))
   }
 
   # One resumable grid cell: restored from the cell cache after a restart. The
@@ -612,8 +612,8 @@ cap_hc <- function(hc_dist) {
                        seed = trial_seed, cv_seed = trial_seed,
                        cv_dfmax_ratio = cv_dfmax_ratio)
     ts <- which(dat$beta != 0)
-    c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
-      TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
+    c(FDP = TRexSelector::trex_fdp(sel$selected_indices, ts),
+      TPP = TRexSelector::trex_tpp(sel$selected_indices, ts))
   }
 
   # One resumable grid cell: restored from the cell cache after a restart. The
@@ -673,8 +673,8 @@ cap_hc <- function(hc_dist) {
                        seed = trial_seed, cv_seed = trial_seed,
                        cv_dfmax_ratio = cv_dfmax_ratio)
     ts <- which(dat$beta != 0)
-    c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
-      TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
+    c(FDP = TRexSelector::trex_fdp(sel$selected_indices, ts),
+      TPP = TRexSelector::trex_tpp(sel$selected_indices, ts))
   }
 
   # One resumable grid cell: restored from the cell cache after a restart. The
@@ -741,8 +741,8 @@ cap_hc <- function(hc_dist) {
                        seed = trial_seed, cv_seed = trial_seed,
                        cv_dfmax_ratio = cv_dfmax_ratio)
     ts <- which(dat$beta != 0)
-    c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
-      TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts))
+    c(FDP = TRexSelector::trex_fdp(sel$selected_indices, ts),
+      TPP = TRexSelector::trex_tpp(sel$selected_indices, ts))
   }
 
   # One resumable grid cell: restored from the cell cache after a restart. The

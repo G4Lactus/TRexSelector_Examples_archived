@@ -2,7 +2,7 @@
 
 ## Overview
 
-This folder holds the R examples for the memory-mapped matrix of the TRexSelectorNeo package. The `mmap_matrix`
+This folder holds the R examples for the memory-mapped matrix of the TRexSelector package. The `mmap_matrix`
 handle stores a matrix in a file on disk and exposes it through S3 methods like an ordinary R matrix:
 
 ```math
@@ -20,7 +20,7 @@ the Open Multi-Processing (OpenMP) parallel generation of the C++ demo stays C++
 the same functionality (see [cpp/memory_mapping/](../../cpp/memory_mapping/README.md) and
 [Python/memory_mapping/](../../Python/memory_mapping/README.md)).
 
-The entry points, all from TRexSelectorNeo, are:
+The entry points, all from TRexSelector, are:
 
 - `mem_matrix(filename, rows, cols, mode)`, which opens or creates a mapped file in `"readwrite"` (default) or
   `"readonly"` mode and returns an `mmap_matrix` handle,
@@ -46,7 +46,7 @@ The same handles feed the out-of-core examples
 
 ## Running
 
-From the repository root, with the TRexSelectorNeo R package 2.0.0 built from library commit b95b984:
+From the repository root, with the TRexSelector R package 2.0.0 built from library commit b95b984:
 
 ```bash
 Rscript R/memory_mapping/demo_memory_mapping/demo_memory_mapping.R

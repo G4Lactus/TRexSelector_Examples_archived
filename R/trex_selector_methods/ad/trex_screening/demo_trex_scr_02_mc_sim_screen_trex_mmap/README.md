@@ -17,7 +17,7 @@ in the C++ suite README).
 
 This is the R port of the C++ demo
 [demo_trex_scr_02_mc_sim_screen_trex_mmap](../../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_02_mc_sim_screen_trex_mmap/README.md),
-using the `TRexScreeningSelector` class of the TRexSelectorNeo package. It keeps the data-generating process (DGP), the
+using the `TRexScreeningSelector` class of the TRexSelector package. It keeps the data-generating process (DGP), the
 control parameters, the sweep grid, the console tables and the result-file naming of the C++ demo. Indices are 1-based
 (R convention). As in the C++ source, the design matrix `X` still lives in RAM. Only the dummy matrices move to disk,
 and the library manages those temporary files in its own scratch directories, so the script has nothing to clean up.
@@ -93,10 +93,10 @@ Two Screen-TRex thresholding rules [[1]](#references), both with `trex_method = 
   (`R_boot = 1000` replicates) and picks its threshold from that band (`use_bootstrap_CI = TRUE`).
 
 Both report an **estimated FDR** alongside the realized FDR and TPR. Each Monte Carlo trial builds the selector through
-the TRexSelectorNeo class interface, here for the Ordinary rule:
+the TRexSelector class interface, here for the Ordinary rule:
 
 ```r
-library(TRexSelectorNeo)
+library(TRexSelector)
 
 ctrl <- trex_control(
   solver = "TLARS", K = 20L, max_dummy_multiplier = 10L, use_max_T_stop = TRUE,

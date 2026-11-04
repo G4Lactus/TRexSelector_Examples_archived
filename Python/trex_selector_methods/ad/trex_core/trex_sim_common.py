@@ -60,8 +60,8 @@ from support_generators import make_support_random  # noqa: E402
 # ------------------------------------------------------------------------------
 # Worker budget  (identical helper in every suite's *_common / *_utils module)
 #
-# N_CORES MC worker processes, each pinned to one inner OpenMP thread by
-# _init_worker(), so a demo never exceeds N_CORES cores in total. The default
+# N_CORES MC worker processes, each running the selector serially (the library
+# default), so a demo never exceeds N_CORES cores in total. The default
 # cap matches the cpp demos' default of 8 threads, keeping runtimes
 # comparable across the C++ / Python suites.
 #
@@ -108,25 +108,11 @@ def resolve_workers(requested=None):
 N_CORES = resolve_workers()
 
 
-def _init_worker():
-    """Pin each worker's inner OpenMP pool to a single thread.
-
-    The MC parallelism lives in the process pool (max_workers processes). Left
-    alone, the selector's own OpenMP defaults to every logical core *inside each
-    worker*, so max_workers x n_logical threads contend for the machine. The cpp
-    demos avoid this because OpenMP nested parallelism is off by default, so the
-    inner regions of a trial run serially inside one of the outer threads.
-    Here: max_workers outer trials x 1 inner thread = max_workers cores total.
-    """
-    from trex_selector_neo.utils import set_num_threads
-    set_num_threads(1)
-
-
 # ------------------------------------------------------------------------------
 # Persistent worker pool (mirrors trex_da/da_sim_common.py)
 #
 # The demos call the MC runners once per (solver, config) point, so a pool
-# created per call re-pays (process spawn + `import trex_selector_neo`) every
+# created per call re-pays (process spawn + `import trexselector`) every
 # time: measured at ~0.5 s for 6 workers. One lazily-created pool is reused
 # instead, keyed on max_workers so a demo's num_workers override still applies.
 #
@@ -183,7 +169,6 @@ def _get_executor(max_workers, n_tasks=0):
     if _EXECUTOR is None:
         _EXECUTOR = ProcessPoolExecutor(
             max_workers=max_workers,
-            initializer=_init_worker,
             mp_context=multiprocessing.get_context("spawn"))
         _EXECUTOR_WORKERS = max_workers
         _TASKS_SINCE_SPAWN = 0
@@ -299,7 +284,7 @@ def compute_tpp(selected, true_support):
 # ==============================================================================
 #
 # Lazy-initialised string → enum maps.  Populated on first use inside a process
-# so that the module can be imported without trex_selector_neo being available.
+# so that the module can be imported without trexselector being available.
 #
 _SOLVER_MAP = None
 _LLOOP_MAP  = None
@@ -308,7 +293,7 @@ _LLOOP_MAP  = None
 def _get_solver_map():
     global _SOLVER_MAP
     if _SOLVER_MAP is None:
-        import trex_selector_neo as trex
+        import trexselector as trex
         _SOLVER_MAP = {
             "TLARS":      trex.SolverTypeForTRex.TLARS,
             "TLASSO":     trex.SolverTypeForTRex.TLASSO,
@@ -329,7 +314,7 @@ def _get_solver_map():
 def _get_lloop_map():
     global _LLOOP_MAP
     if _LLOOP_MAP is None:
-        import trex_selector_neo as trex
+        import trexselector as trex
         _LLOOP_MAP = {
             "STANDARD":             trex.LLoopStrategy.STANDARD,
             "HCONCAT":              trex.LLoopStrategy.HCONCAT,
@@ -353,7 +338,7 @@ def _make_dummy_distribution(spec):
         Laplace/Gumbel/Logistic(location, scale)
     Omitted parameters use the binding's unit-variance defaults.
     """
-    import trex_selector_neo as trex
+    import trexselector as trex
     D = trex.DummyDistribution
     t = spec["type"]
     if t == "Normal":
@@ -407,7 +392,7 @@ def _make_trex_ctrl_from_dict(d):
         parallel_rnd_experiments, use_memory_mapping,
         dummy_distribution (a spec dict for _make_dummy_distribution).
     """
-    import trex_selector_neo as trex
+    import trexselector as trex
     solver_map = _get_solver_map()
     lloop_map  = _get_lloop_map()
 
@@ -471,7 +456,7 @@ def _trial_worker(args):
     track_L_T  = args.get("track_L_T", False)
     seeded     = args.get("seeded_selector", False)
 
-    import trex_selector_neo as trex
+    import trexselector as trex
 
     # Resolve support
     if fixed_supp is None:
@@ -795,8 +780,8 @@ def _trial_worker_full_mmap(args):
     will be set in the ctrl dict by the caller).
     """
     import tempfile
-    import trex_selector_neo as trex
-    from trex_selector_neo.utils import numpy_to_memmap
+    import trexselector as trex
+    from trexselector.utils import numpy_to_memmap
 
     trial_seed = args["trial_seed"]
     n, p, s    = args["n"], args["p"], args["s"]

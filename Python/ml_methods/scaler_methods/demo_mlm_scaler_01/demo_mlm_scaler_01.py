@@ -34,8 +34,8 @@ import tempfile
 
 import numpy as np
 
-from trex_selector_neo.ml_methods import LpNormScaler, NormType, ZScoreScaler
-from trex_selector_neo.utils import (
+from trexselector.ml_methods import LpNormScaler, NormType, ZScoreScaler
+from trexselector.utils import (
     AccessMode,
     MemoryMappedMatrix,
     get_max_threads,

@@ -13,7 +13,7 @@ For details on grouped variable selection and false discovery rate (FDR) control
 R port of the C++ demo
 [cpp/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_01_mc_sim_hastie_en_blocks](../../../../../cpp/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md)
 with the same data-generating process (DGP), control parameters, sweep grids and result-file naming, built on the
-`TRexGVSSelector` class of `TRexSelectorNeo`. Indices are 1-based (R convention). The numbers below are this R run's
+`TRexGVSSelector` class of `TRexSelector`. Indices are 1-based (R convention). The numbers below are this R run's
 own results. R draws its own random numbers, so they differ from the C++ and
 [Python](../../../../../Python/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_01_mc_sim_hastie_en_blocks/README.md)
 runs within Monte Carlo (MC) noise, not exactly. A cell-by-cell comparison with the C++ run, with $z$ the difference
@@ -87,10 +87,10 @@ pair of variables with an absolute correlation above $0.98$, whatever the linkag
 
 ## Selector Setup in R
 
-Each Monte Carlo trial builds the selector through the TRexSelectorNeo class interface, here for TENET in Part 1:
+Each Monte Carlo trial builds the selector through the TRexSelector class interface, here for TENET in Part 1:
 
 ```r
-library(TRexSelectorNeo)
+library(TRexSelector)
 
 ctrl <- trex_control(
   solver = "TLARS", K = 20L, max_dummy_multiplier = 10, use_max_T_stop = TRUE,

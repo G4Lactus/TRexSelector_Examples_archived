@@ -63,7 +63,7 @@ drawing on its own, so this reason is not proven.
 The result files carry the number of runs in their name (`recovery_vs_dt_ratio_mc500` and `phase_transition_mc500`,
 each as `.csv` and `.txt`), so a short test run does not overwrite the full one, and `generate_plots.sh 5` draws the
 figures of a 5-run test. It draws them with `Python/tsolvers/ts_plt_utils.py`, a byte-identical copy of the C++
-plotting module. The output below is a run against library b95b984 (TRexSelectorNeo 1.0.0).
+plotting module. The output below is a run against library b95b984 (TRexSelector 1.0.0).
 
 ---
 
@@ -305,9 +305,8 @@ $s/n = 1/(2 \ln N)$.
   variance of the drawn signal by this ratio.
 - Part 1 draws its support once per $p$, and Part 2 once per cell. With independent standard normal predictors the
   place of the support does not matter.
-- The worker pool calls `set_num_threads(1)` in every worker process, so the 6 workers share 6 cores with
-  single-threaded solvers. Part 1 hands out one task per cell and run, and Part 2 hands out its 200,000 tasks in
-  chunks of 64.
+- The solvers run serially by default, so the 6 workers of the pool share 6 cores with single-threaded solvers.
+  Part 1 hands out one task per cell and run, and Part 2 hands out its 200,000 tasks in chunks of 64.
 - References: D. L. Donoho and Y. Tsaig, *Fast solution of ℓ1-norm minimization problems when the solution may
   be sparse*, IEEE Transactions on Information Theory 54(11), 2008. D. Amelunxen, M. Lotz, M. B. McCoy and
   J. A. Tropp, *Living on the edge: phase transitions in convex programs with random data*, Information and

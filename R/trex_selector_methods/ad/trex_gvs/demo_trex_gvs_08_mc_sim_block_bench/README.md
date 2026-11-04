@@ -16,7 +16,7 @@ in the C++ suite README).
 R port of the C++ demo
 [cpp/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_08_mc_sim_block_bench](../../../../../cpp/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_08_mc_sim_block_bench/README.md)
 with the same DGP, control parameters, sweep grids, console tables and result-file naming, built on the
-`TRexGVSSelector` class of `TRexSelectorNeo`. Indices are 1-based (R convention). The numbers below are this R run's own
+`TRexGVSSelector` class of `TRexSelector`. Indices are 1-based (R convention). The numbers below are this R run's own
 results. R draws its own random numbers, so they differ from the C++ and
 [Python](../../../../../Python/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_08_mc_sim_block_bench/README.md) runs
 within Monte Carlo (MC) noise, not exactly. A cell-by-cell comparison with the C++ run, with $z$ the difference divided
@@ -145,10 +145,10 @@ the DGP and for all four selectors, so the four methods see identical data withi
 
 ## Selector Setup in R
 
-Each Monte Carlo trial builds the four selectors through the TRexSelectorNeo class interface, here for M4:
+Each Monte Carlo trial builds the four selectors through the TRexSelector class interface, here for M4:
 
 ```r
-library(TRexSelectorNeo)
+library(TRexSelector)
 
 ctrl <- trex_control(
   solver = "TIENET_AUG", K = 20L, max_dummy_multiplier = 10, use_max_T_stop = TRUE,

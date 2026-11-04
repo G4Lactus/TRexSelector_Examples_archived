@@ -2,7 +2,7 @@
 
 ## Overview
 
-This folder holds the Python demos of the terminating solvers (T-solvers) exposed by `trex_selector_neo.tsolvers`. They
+This folder holds the Python demos of the terminating solvers (T-solvers) exposed by `trexselector.tsolvers`. They
 mirror [cpp/tsolvers/](../../cpp/tsolvers/README.md) demo by demo, with the same numbering, parts, settings, seeds and
 console format, while NumPy draws the data, so the numbers differ from the C++ runs. The solvers are variable-selection
 algorithms for high-dimensional linear models inside the T-Rex framework. Each one follows its own path-following,

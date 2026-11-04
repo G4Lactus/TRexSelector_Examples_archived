@@ -49,8 +49,8 @@ import tempfile  # noqa: E402
 
 import numpy as np  # noqa: E402
 
-import trex_selector_neo as trex  # noqa: E402
-from trex_selector_neo.utils import numpy_to_memmap  # noqa: E402
+import trexselector as trex  # noqa: E402
+from trexselector.utils import numpy_to_memmap  # noqa: E402
 
 from dgp_gauss_snr import dgp_gauss_snr  # noqa: E402
 from trex_helpers import make_dual_out, print_selection_results, save_selection_csv  # noqa: E402

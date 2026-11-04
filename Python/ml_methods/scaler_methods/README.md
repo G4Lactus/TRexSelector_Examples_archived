@@ -2,7 +2,7 @@
 
 ## Overview
 
-This folder holds the Python example for column-wise scaling and normalization in the `trex_selector_neo.ml_methods`
+This folder holds the Python example for column-wise scaling and normalization in the `trexselector.ml_methods`
 module. Both scalers subtract a center $c_j$ from every column of $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ and
 divide it by a scale $s_j$,
 
@@ -34,7 +34,7 @@ second. The C++ and R packages have the same demo in
 
 ## Running
 
-From the repository root, with TRexSelectorNeo installed in the repository virtual environment `.venv`:
+From the repository root, with TRexSelector installed in the repository virtual environment `.venv`:
 
 ```bash
 .venv/bin/python Python/ml_methods/scaler_methods/demo_mlm_scaler_01/demo_mlm_scaler_01.py

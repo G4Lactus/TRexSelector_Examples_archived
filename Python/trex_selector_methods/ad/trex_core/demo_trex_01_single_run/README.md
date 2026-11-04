@@ -13,7 +13,7 @@ This is not a Monte Carlo study, so the results come from a single random seed
 and should not be read as population averages (see Demos 02–07 for that).
 Python port of
 [cpp/trex_selector_methods/ad/trex_core/demo_trex_01_single_run](../../../../../cpp/trex_selector_methods/ad/trex_core/demo_trex_01_single_run/),
-using `trex_selector_neo`'s `TRexSelector`.
+using `trexselector`'s `TRexSelector`.
 
 ---
 

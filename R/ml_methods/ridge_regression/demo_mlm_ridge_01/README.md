@@ -69,7 +69,7 @@ Gaussian design is about $\lambda^\ast \approx p\,\sigma^2 / \lVert \boldsymbol\
 
 ## Running the demo
 
-From the repository root, with the TRexSelectorNeo R package 2.0.0 installed:
+From the repository root, with the TRexSelector R package 2.0.0 installed:
 
 ```bash
 Rscript R/ml_methods/ridge_regression/demo_mlm_ridge_01/demo_mlm_ridge_01.R

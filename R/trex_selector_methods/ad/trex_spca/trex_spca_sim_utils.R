@@ -40,7 +40,7 @@
 # ~0.14 to ~0.5 — see cpp validation_trex_spca_06_handrolled_comparison).
 # ==============================================================================
 
-library(TRexSelectorNeo)
+library(TRexSelector)
 
 
 # ==============================================================================

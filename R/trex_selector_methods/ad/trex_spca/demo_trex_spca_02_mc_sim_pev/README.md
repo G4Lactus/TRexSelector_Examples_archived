@@ -18,7 +18,7 @@ The pairing is the point. Under one denominator ordinary principal component ana
 
 This is the R port of the
 [C++ demo](../../../../../cpp/trex_selector_methods/ad/trex_spca/demo_trex_spca_02_mc_sim_pev/README.md),
-using the `TRexSPCASelector` and `TRexGVSSelector` classes of the TRexSelectorNeo package. It keeps the
+using the `TRexSPCASelector` and `TRexGVSSelector` classes of the TRexSelector package. It keeps the
 data-generating process (DGP), the sweeps, the measurement definitions and the result-file naming of the C++ demo and
 of the
 [Python port](../../../../../Python/trex_selector_methods/ad/trex_spca/demo_trex_spca_02_mc_sim_pev/README.md).

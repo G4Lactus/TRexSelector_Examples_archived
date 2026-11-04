@@ -10,7 +10,7 @@ least-angle regression (LARS) path warm-start state is serialized to disk betwee
 T-loop iterations. Part B additionally memory-maps the design matrix
 $\mathbf{X}$ itself. Python port of
 [cpp/trex_selector_methods/ad/trex_core/demo_trex_06_mmap](../../../../../cpp/trex_selector_methods/ad/trex_core/demo_trex_06_mmap/),
-using `trex_selector_neo`.
+using `trexselector`.
 
 ---
 

@@ -33,7 +33,7 @@ $T = 11$, and the time of a fresh run to $T = 11$, each with `Sys.time()`.
 
 ## Running the demo
 
-From the repository root, with the TRexSelectorNeo R package installed:
+From the repository root, with the TRexSelector R package installed:
 
 ```bash
 Rscript R/tsolvers/ad/demo_ts_perf_02_runtime_vs_dummies/demo_ts_perf_02_runtime_vs_dummies.R        # 500 runs, 6 workers
@@ -54,7 +54,7 @@ demo and 545.5 s for the Python one. The result files carry the number of runs i
 (`runtime_vs_dummies_mc500.csv` and `.txt`), so a short test run does not overwrite the full one. `generate_plots.sh`
 draws the figures with the ggplot2 module [`ts_plt_utils.R`](../../ts_plt_utils.R) into `simulation_results/plots/`, and
 its `.pdf` files carry no creation date (`pdf(timestamp = FALSE)`), so a redraw of the same results gives the same
-bytes. The output below is a run against library b95b984 (TRexSelectorNeo 2.0.0). Two fixes in library 09debc6 change
+bytes. The output below is a run against library b95b984 (TRexSelector 2.0.0). Two fixes in library 09debc6 change
 the paths of T-Stagewise, so its rows come from a rerun of the 500 runs on that library in a session of their own, with
 the same seeds and workers. The wall times quoted here are those of the first runs.
 
@@ -256,7 +256,7 @@ $\rho \le 0.5$ dip at $L = p$, and T-OLS falls from 25.6 at $L = p$ to 23.1 at $
 
 ## Technical notes
 
-- Every worker is a spawned R process that loads TRexSelectorNeo and calls `trex_set_num_threads(1L)`, as the
+- Every worker is a spawned R process that loads TRexSelector and calls `trex_set_num_threads(1L)`, as the
   technical notes of [demo_ts_perf_01](../demo_ts_perf_01_fdr_tpr_vs_T/README.md) explain, so the 6 workers share 6
   cores with single-threaded solvers. `parallel::parLapplyLB()` hands the runs to the free workers one at a time.
 - At $L = 20p$ every worker holds about 84 megabytes (MB) of data in $\mathbf{X}$, $\mathbf{D}$ and $\mathbf{y}$,

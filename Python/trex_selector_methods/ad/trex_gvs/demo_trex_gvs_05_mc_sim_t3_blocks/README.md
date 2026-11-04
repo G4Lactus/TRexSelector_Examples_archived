@@ -12,7 +12,7 @@ T-Rex+GVS, on non-Gaussian data.
 
 This is the Python port of the C++ demo
 [demo_trex_gvs_05_mc_sim_t3_blocks](../../../../../cpp/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_05_mc_sim_t3_blocks/),
-using `trex_selector_neo`'s `TRexGVSSelector`.
+using `trexselector`'s `TRexGVSSelector`.
 
 ---
 

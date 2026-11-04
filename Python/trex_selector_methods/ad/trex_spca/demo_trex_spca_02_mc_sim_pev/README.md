@@ -159,7 +159,7 @@ python demo_trex_spca_02_mc_sim_pev.py 12         # 12 workers (0 = all usable c
 and `TREX_SPCA_PARTS` selects which parts run (default `12345`, while `TREX_SPCA_PARTS=5`, for example,
 reruns only the FDR/TPR heatmap sweep) — the same environment switches as the cpp executable.
 
-Run the demo inside an environment that carries `trex_selector_neo` (e.g. the `trex-dev` conda environment
+Run the demo inside an environment that carries `trexselector` (e.g. the `trex-dev` conda environment
 or the repo `.venv`). It parallelizes trials via `concurrent.futures.ProcessPoolExecutor` (spawn), so run it
 **as a real `.py` file**, not via `python -` / piped stdin. It uses `TREX_NUM_WORKERS` worker processes (default 8,
 and `0` uses every usable core, see `resolve_workers()` in [`../trex_spca_sim_utils.py`](../trex_spca_sim_utils.py)).

@@ -27,7 +27,7 @@ import os
 
 import numpy as np
 
-import trex_selector_neo as trex
+import trexselector as trex
 
 # The shared helper modules live one directory up (the trex_core/ suite
 # root); put that on sys.path before importing them so the demo runs from

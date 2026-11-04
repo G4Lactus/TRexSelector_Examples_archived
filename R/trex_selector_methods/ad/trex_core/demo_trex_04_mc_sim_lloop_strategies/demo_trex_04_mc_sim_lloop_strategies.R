@@ -41,7 +41,7 @@
 #
 # ==============================================================================
 
-library(TRexSelectorNeo)
+library(TRexSelector)
 library(parallel)
 
 # ==============================================================================
@@ -167,7 +167,7 @@ trx_04_lloop_strategies <- function(num_MC = NUM_MC, rnd_coef = FALSE,
       # solver family (disabled for TLARS, enabled for the greedy TOMP/TAFS).
       # TLARS_STAG sets it to TRUE. tloop_max_stagnant_steps = 5 is the C++
       # struct default (only active when the stop is on).
-      ctrl <- TRexSelectorNeo::trex_control(
+      ctrl <- TRexSelector::trex_control(
         solver                   = solver_entry$solver,
         lambda2                  = solver_entry$lambda2,
         rho_afs                  = solver_entry$rho_afs,

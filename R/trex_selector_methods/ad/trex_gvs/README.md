@@ -1,6 +1,6 @@
 # T-Rex+GVS: Grouped Variable Selection — R Demonstration Suite
 
-> **Status**: migrated to the **TRexSelectorNeo** R6 application programming interface (API)
+> **Status**: migrated to the **TRexSelector** R6 application programming interface (API)
 > (`TRexGVSSelector$new(..., gvs_control = trex_gvs_control(...))$select()`,
 > with `trex_fdp()` / `trex_tpp()`). No longer depends on the `TRexSelector`
 > package from the Comprehensive R Archive Network (CRAN).
@@ -40,7 +40,7 @@ because six of them have a true support of $s = 150$, above the default cap of $
 Demo 08 keeps the default. Demo 01's `lambda2_method` comparison adds the second IEN rule `CV_1SE_TIK_SVD`, which
 the library refuses once the groups hold $n_{\mathrm{train}}$ or more within-group contrasts.
 
-Dependencies: `TRexSelectorNeo`, `parallel`. Each demo sources the
+Dependencies: `TRexSelector`, `parallel`. Each demo sources the
 consolidated [trex_gvs_dgps.R](trex_gvs_dgps.R) (all scenario generators in one
 file, mirroring the C++ `trex_gvs_dgps.hpp`), the shared
 [trex_gvs_sim_common.R](trex_gvs_sim_common.R) (2-D sweep driver, matrix/table

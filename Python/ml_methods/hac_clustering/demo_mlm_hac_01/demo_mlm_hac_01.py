@@ -57,13 +57,13 @@ import time
 
 import numpy as np
 
-from trex_selector_neo.ml_methods.clustering import (
+from trexselector.ml_methods.clustering import (
     DistanceMetric,
     LinkageMethod,
     agglomerative_cluster,
     cut_tree,
 )
-from trex_selector_neo.utils import get_max_threads, set_num_threads
+from trexselector.utils import get_max_threads, set_num_threads
 
 
 def print_section_header(title):

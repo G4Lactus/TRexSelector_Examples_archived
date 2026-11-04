@@ -2,7 +2,7 @@
 
 ## Overview
 
-This folder holds the R example for principal component analysis (PCA) in the TRexSelectorNeo package, where the R6
+This folder holds the R example for principal component analysis (PCA) in the TRexSelector package, where the R6
 class `MLPCA` wraps the C++ `PCA`. PCA projects a data matrix $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ onto
 $M \le \min(n, p)$ orthogonal directions of largest variance,
 
@@ -34,7 +34,7 @@ demo in [cpp/ml_methods/pca/](../../../cpp/ml_methods/pca/README.md) and
 
 ## Running
 
-From the repository root, with the TRexSelectorNeo R package installed:
+From the repository root, with the TRexSelector R package installed:
 
 ```bash
 Rscript R/ml_methods/pca/demo_mlm_pca_01/demo_mlm_pca_01.R

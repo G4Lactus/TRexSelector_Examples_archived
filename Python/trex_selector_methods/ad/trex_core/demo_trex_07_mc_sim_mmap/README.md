@@ -11,7 +11,7 @@ each MC iteration creates and destroys its own mmap-backed $\mathbf{X}/\mathbf{y
 files. The question is whether the storage medium is visible in the *results*.
 Python port of
 [cpp/trex_selector_methods/ad/trex_core/demo_trex_07_mc_sim_mmap](../../../../../cpp/trex_selector_methods/ad/trex_core/demo_trex_07_mc_sim_mmap/),
-using `trex_selector_neo`.
+using `trexselector`.
 
 ---
 

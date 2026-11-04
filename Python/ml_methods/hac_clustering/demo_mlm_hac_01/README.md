@@ -21,7 +21,7 @@ Six subproblems, SP1 to SP6 in the section headings below, run in the main block
 Throughout the demo, clustering quality is assessed by the **adjusted Rand index (ARI)**, which compares the recovered
 cluster labels against the known ground-truth labels from the synthetic data generator. Each subproblem section below
 ends with the console output of the recorded run. The output below is a run against library b95b984. It used the
-package TRexSelectorNeo 1.0.0 and 6 Open Multi-Processing (OpenMP) threads in the C++ backend.
+package TRexSelector 1.0.0 and 6 Open Multi-Processing (OpenMP) threads in the C++ backend.
 
 ---
 
@@ -573,6 +573,6 @@ no launch script, which only the C++ folder has.
 - The data are generated with vectorized NumPy from `np.random.default_rng(42)`, NumPy's permuted congruential
   generator (PCG64), while the C++ demo fills its matrices from per-thread `std::mt19937` streams. The two languages
   therefore draw different random numbers, and the results agree qualitatively, not bitwise.
-- The thread count comes from `set_num_threads(min(6, get_max_threads()))` in `trex_selector_neo.utils`, which mirrors
+- The thread count comes from `set_num_threads(min(6, get_max_threads()))` in `trexselector.utils`, which mirrors
   the C++ default of 6. It governs the parallel distance computations of the C++ backend, while generation and
   standardization run in NumPy.

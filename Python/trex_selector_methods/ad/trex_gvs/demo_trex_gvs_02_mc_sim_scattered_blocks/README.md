@@ -12,7 +12,7 @@ Test whether spatially **scattering** the members of a correlated group across t
 
 This is the Python port of the C++ demo
 [demo_trex_gvs_02_mc_sim_scattered_blocks](../../../../../cpp/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_02_mc_sim_scattered_blocks/),
-using `trex_selector_neo`'s `TRexGVSSelector`.
+using `trexselector`'s `TRexGVSSelector`.
 
 ---
 

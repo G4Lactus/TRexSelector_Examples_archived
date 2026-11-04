@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This demo runs the terminating orthogonal matching pursuit (T-OMP) solver of the TRexSelectorNeo R package on its own,
+This demo runs the terminating orthogonal matching pursuit (T-OMP) solver of the TRexSelector R package on its own,
 outside the Terminating-Random Experiments (T-Rex) selector, through the R6 class `TOMP_Solver`. It mirrors the [C++
 demo](../../../../cpp/tsolvers/ad/demo_ts_06_tomp/README.md) and the [Python
 demo](../../../../Python/tsolvers/ad/demo_ts_06_tomp/README.md) part by part, with the same settings, seed values and
@@ -45,7 +45,7 @@ continues the stored path, which Part 5 uses for the warm start.
 
 ## Running the demo
 
-From the repository root, with the TRexSelectorNeo R package 2.0.0 installed from library commit b95b984:
+From the repository root, with the TRexSelector R package 2.0.0 installed from library commit b95b984:
 
 ```bash
 Rscript R/tsolvers/ad/demo_ts_06_tomp/demo_ts_06_tomp.R        # Parts 1-5
@@ -61,7 +61,7 @@ module of the C++ demos, through the `Rscript` on the `PATH` or the one that `RS
 Portable Network Graphics (PNG) and Portable Document Format (PDF) files to `simulation_results/plots/`. The PDF is
 written with `pdf(timestamp = FALSE)`, so a rerun on the same data gives a byte-identical file.
 
-The output below is a run against library b95b984 (TRexSelectorNeo 2.0.0). The demo pins six Open Multi-Processing
+The output below is a run against library b95b984 (TRexSelector 2.0.0). The demo pins six Open Multi-Processing
 (OpenMP) threads with `trex_set_num_threads(6L)`, as the C++ demo does, and confirms it in its first lines:
 
 ```text
@@ -71,7 +71,7 @@ T-OMP Demo Suite
 Running with 6 threads
 ```
 
-The line reads `Running with 6 threads` only when TRexSelectorNeo was built with OpenMP, and a build without it compiles
+The line reads `Running with 6 threads` only when TRexSelector was built with OpenMP, and a build without it compiles
 single-threaded, where `trex_set_num_threads()` does nothing and the demo prints `Running with 1 threads`. Linux and
 Windows builds use R's own OpenMP flags, while on macOS, where R from the Comprehensive R Archive Network (CRAN) has
 none, the configure script of the package links R's own OpenMP runtime when an `omp.h` is available (from Homebrew or

@@ -44,9 +44,9 @@ from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 import pandas as pd
 
-import trex_selector_neo as trex
-from trex_selector_neo.ml_methods.clustering import LinkageMethod
-from trex_selector_neo.utils import compute_fdp, compute_tpp, set_num_threads
+import trexselector as trex
+from trexselector.ml_methods.clustering import LinkageMethod
+from trexselector.utils import compute_fdp, compute_tpp
 
 # Family folder: cell_cache.py (resumable grid cells).
 _FAMILY_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -66,8 +66,8 @@ if _THIS_DIR not in sys.path:
 # ------------------------------------------------------------------------------
 # Worker budget  (identical helper in every suite's *_common / *_utils module)
 #
-# N_CORES MC worker processes, each pinned to one inner OpenMP thread by
-# _init_worker(), so a demo never exceeds N_CORES cores in total. The default
+# N_CORES MC worker processes, each running the selector serially (the library
+# default), so a demo never exceeds N_CORES cores in total. The default
 # cap matches the cpp demos' default of 8 threads + inner set(1), keeping
 # runtimes comparable across the C++ / Python suites.
 #
@@ -322,18 +322,6 @@ _EXECUTOR_WORKERS = None
 _ATEXIT_REGISTERED = False
 
 
-def _init_worker():
-    """Pin each worker's inner OpenMP pool to a single thread.
-
-    The MC parallelism lives in the process pool (n_cores workers). Left alone,
-    the selector's own OpenMP defaults to every logical core *inside each
-    worker*, so n_cores x n_logical threads contend for the machine. This
-    mirrors the cpp omp_set_num_threads(1) inside run_mc_trials' parallel
-    region: n_cores outer trials x 1 inner thread = n_cores cores in total.
-    """
-    set_num_threads(1)
-
-
 def _shutdown_executor():
     """Shut the persistent pool down (atexit hook; safe to call repeatedly)."""
     global _EXECUTOR, _EXECUTOR_WORKERS, _TASKS_SINCE_SPAWN
@@ -358,7 +346,6 @@ def _get_executor(n_cores, n_tasks=0):
     if _EXECUTOR is None:
         _EXECUTOR = ProcessPoolExecutor(
             max_workers=n_cores,
-            initializer=_init_worker,
             mp_context=multiprocessing.get_context("spawn"))
         _EXECUTOR_WORKERS = n_cores
         _TASKS_SINCE_SPAWN = 0

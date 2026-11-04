@@ -20,7 +20,7 @@
 # Indices are 1-based (R convention); the Python counterpart is 0-based.
 # ==============================================================================
 
-library(TRexSelectorNeo)
+library(TRexSelector)
 library(parallel)
 
 # Worker processes: first CLI argument, else TREX_NUM_WORKERS, else 8 (0 = all).

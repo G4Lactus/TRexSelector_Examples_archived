@@ -48,7 +48,7 @@ multiplies by $s_j$ and adds $c_j$ back.
 
 ## Running the demo
 
-From the repository root, with the TRexSelectorNeo R package 2.0.0 installed:
+From the repository root, with the TRexSelector R package 2.0.0 installed:
 
 ```bash
 Rscript R/ml_methods/scaler_methods/demo_mlm_scaler_01/demo_mlm_scaler_01.R
@@ -213,7 +213,7 @@ The suite closes with its final banner.
   writes `scaler_test.bin` and `mmap_matrix.bin` unless the compile-time macros `TREX_DEMO_SCALER_SER_PATH` and
   `TREX_DEMO_MMAP_PATH` override them.
 - The R version fills the mapped matrix column by column, where the C++ demo runs a parallel loop with Open
-  Multi-Processing (OpenMP). `trex_set_num_threads(min(6L, trex_get_max_threads()))` from TRexSelectorNeo pins six
+  Multi-Processing (OpenMP). `trex_set_num_threads(min(6L, trex_get_max_threads()))` from TRexSelector pins six
   OpenMP threads for the column loops of the scalers, or fewer on a smaller machine, as the C++ and Python demos do.
   The console line `Running with 6 threads` reports the count.
 - The labels print R's logicals (`center=TRUE`), where the C++ output prints `center=true` and the Python output

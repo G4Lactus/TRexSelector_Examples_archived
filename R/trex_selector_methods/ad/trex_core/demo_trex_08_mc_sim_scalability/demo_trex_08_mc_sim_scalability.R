@@ -92,7 +92,7 @@
 #
 # ==============================================================================
 
-library(TRexSelectorNeo)
+library(TRexSelector)
 
 # ==============================================================================
 # Setup
@@ -229,7 +229,7 @@ RAM_GIB <- .physical_ram_gib()
   # T-Rex control (base config of demos 02/03/07) for one grid point.
   # EVERY control option is set explicitly and identically to the C++ demo's
   # make_scalability_trex_ctrl() — no reliance on trex_control() defaults.
-  TRexSelectorNeo::trex_control(
+  TRexSelector::trex_control(
     solver                   = solver_entry$solver,
     lambda2                  = solver_entry$lambda2,
     rho_afs                  = solver_entry$rho_afs,
@@ -516,8 +516,8 @@ run_scalability_trial <- function(n, p, ctrl, tFDR, snr, seed, support, coefs,
   m$fp_mib       <- current_footprint_mib()
   m$peak_rss_mib <- peak_rss_mib()   # process-lifetime max up to this trial
 
-  m$fdp <- TRexSelectorNeo::trex_fdp(sel$selected_indices, support)
-  m$tpp <- TRexSelectorNeo::trex_tpp(sel$selected_indices, support)
+  m$fdp <- TRexSelector::trex_fdp(sel$selected_indices, support)
+  m$tpp <- TRexSelector::trex_tpp(sel$selected_indices, support)
   m$L   <- as.numeric(sel$L)
   m$T   <- as.numeric(sel$T_stop)
 
@@ -805,9 +805,9 @@ demo_trex_scalability <- function(grid, file_stem, block_title, num_MC_target,
 
 # Pin the selector's OpenMP to a fixed thread count (mirrors the C++/Python
 # demos); experiments and trials run one after another.
-TRexSelectorNeo::trex_set_num_threads(NUM_THREADS)
+TRexSelector::trex_set_num_threads(NUM_THREADS)
 cat(sprintf("Running with %d thread(s) (pinned to match the C++ demo)\n\n",
-            TRexSelectorNeo::trex_get_max_threads()))
+            TRexSelector::trex_get_max_threads()))
 
 # CLI:  [smoke | base | large] [num_MC]  (order-independent; num_MC is any
 # integer token; without a block token both blocks run, base first)

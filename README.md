@@ -39,8 +39,8 @@ The software implements the classical T-Rex selector plus several extensions:
 | Folder | Language | Status | Description |
 |---|---|---|---|
 | [cpp/](cpp/) | C++20 | reference | All selector variants, all terminating solvers, ML building blocks, memory mapping, and validation programs. Has its own CMake build (see [cpp/README.md](cpp/README.md)). |
-| [R/](R/) | R ≥ 4.3 | mirrors cpp | Demos for the `TRexSelectorNeo` R package with its R6 application programming interface (API): all selector suites (trex_core, trex_da, trex_gvs, trex_spca, trex_screening), all terminating-solver demos (`tsolvers/`) + validation, memory mapping, and the full ml_methods set. The Comprehensive R Archive Network (CRAN) package `TRexSelector` 1.0.0 is used only as an independent reference in the tsolvers cross-check. See [R/README.md](R/README.md). |
-| [Python/](Python/) | Python ≥ 3.10 | mirrors cpp | Demos for the `TRexSelectorNeo` Python package (`import trex_selector_neo`): all selector suites (trex_core, trex_da, trex_gvs, trex_spca, trex_screening), all terminating-solver demos (`tsolvers/`) + validation, memory mapping, and the full ml_methods set. Only the `ml_methods/validation/` reference programs are not ported. See [Python/README.md](Python/README.md). |
+| [R/](R/) | R ≥ 4.3 | mirrors cpp | Demos for the `TRexSelector` R package with its R6 application programming interface (API): all selector suites (trex_core, trex_da, trex_gvs, trex_spca, trex_screening), all terminating-solver demos (`tsolvers/`) + validation, memory mapping, and the full ml_methods set. Version 2.0.0 replaces the pure-R 1.0.0 of the Comprehensive R Archive Network (CRAN) in place, and no demo depends on the pure-R package any more. See [R/README.md](R/README.md). |
+| [Python/](Python/) | Python ≥ 3.10 | mirrors cpp | Demos for the `trexselector` Python package (`import trexselector`): all selector suites (trex_core, trex_da, trex_gvs, trex_spca, trex_screening), all terminating-solver demos (`tsolvers/`) + validation, memory mapping, and the full ml_methods set. Only the `ml_methods/validation/` reference programs are not ported. See [Python/README.md](Python/README.md). |
 
 Demo naming follows the C++ convention `demo_<area>_NN_<topic>`.
 R and Python demos refer to their C++ counterpart in the file header, which simplifies cross-checking.
@@ -57,10 +57,10 @@ documented random number generator (RNG) and indexing conventions (C++/Python ar
 
 ### R Package
 
-`TRexSelectorNeo` (R ≥ 4.3, Rcpp/RcppEigen, R6 classes). Install from the main repo:
+`TRexSelector` (R ≥ 4.3, Rcpp/RcppEigen, R6 classes). Install from the main repo:
 
 ```sh
-R CMD INSTALL <path-to>/TRexSelector/R/TRexSelectorNeo
+R CMD INSTALL <path-to>/TRexSelector/R/TRexSelector
 ```
 
 Typical usage: `TRexSelector$new(X, y, tFDR = 0.1, control = trex_control(...))$select()`.
@@ -68,13 +68,13 @@ See [R/README.md](R/README.md) for more details.
 
 ### Python Package
 
-`TRexSelectorNeo` (Python ≥ 3.10, pybind11/scikit-build-core), imported as `trex_selector_neo`:
+`trexselector` (Python ≥ 3.10, pybind11/scikit-build-core), distributed on PyPI and imported under that name:
 
 ```sh
-pip install <path-to>/TRexSelector/Python/TRexSelectorNeo
+pip install <path-to>/TRexSelector/Python/trexselector
 ```
 
-Typical usage: `trex_selector_neo.TRexSelector(X, y, tFDR=0.1, trex_control=ctrl).select()`.
+Typical usage: `trexselector.TRexSelector(X, y, tFDR=0.1, trex_control=ctrl).select()`.
 
 ### Cpp Package
 

@@ -3,7 +3,7 @@
 # ==============================================================================
 #
 # Classical T-Rex selector demo.
-# Part 5 demonstrates memory-mapped usage patterns in the R package TRexSelectorNeo.
+# Part 5 demonstrates memory-mapped usage patterns in the R package TRexSelector.
 #
 # The file mirrors:
 # cpp/trex_selector_methods/ad/trex_core/demo_trex_06_mmap.cpp
@@ -19,7 +19,7 @@
 #
 #  Part B: Fully memory-mapped X + use_memory_mapping = TRUE.
 #          In C++ this uses SyntheticDataMapped (X never fully in RAM).
-#          The R package TRexSelectorNeo supports MemoryMappedMatrix objects
+#          The R package TRexSelector supports MemoryMappedMatrix objects
 #          for X (via mem_matrix_from / mem_matrix), but creating
 #          a memory-mapped version of a generated matrix requires writing it
 #          to disk first.
@@ -33,7 +33,7 @@
 #
 # ==============================================================================
 
-library(TRexSelectorNeo)
+library(TRexSelector)
 
 # ==============================================================================
 # Setup

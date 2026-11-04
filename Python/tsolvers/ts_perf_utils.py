@@ -18,8 +18,7 @@ from multiprocessing import Pool
 import numpy as np
 from ts_demo_utils import gen_synthetic_data
 
-from trex_selector_neo.ml_methods import LpNormScaler, NormType
-from trex_selector_neo.utils import set_num_threads
+from trexselector.ml_methods import LpNormScaler, NormType
 
 
 def draw_support(p, s, seed):
@@ -71,16 +70,10 @@ def parse_positive(argv, index, fallback):
     return int(text)
 
 
-def _init_worker():
-    """Single-threaded solvers in every worker, so the runs share the cores (6-core rule)."""
-    set_num_threads(1)
-
-
 def run_parallel(func, tasks, workers, chunksize=1):
-    """Map func over tasks on `workers` processes with single-threaded solvers, in task order."""
+    """Map func over tasks on `workers` processes, in task order (the solvers run serially by default)."""
     if workers == 1:
-        _init_worker()
         return [func(t) for t in tasks]
-    with Pool(processes=workers, initializer=_init_worker) as pool:
+    with Pool(processes=workers) as pool:
         return pool.map(func, tasks, chunksize=chunksize)
 

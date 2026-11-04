@@ -53,7 +53,7 @@ and FDR and TPR are their means over the runs.
 
 ## Running the demo
 
-From the repository root, with the TRexSelectorNeo R package installed:
+From the repository root, with the TRexSelector R package installed:
 
 ```bash
 Rscript R/tsolvers/ad/demo_ts_perf_01_fdr_tpr_vs_T/demo_ts_perf_01_fdr_tpr_vs_T.R         # 500 runs, 6 workers
@@ -73,7 +73,7 @@ Python one, and the section on steps and run time shows where the extra time lie
 of runs in their name (`fdr_tpr_vs_T_mc500.csv` and `.txt`), so a short test run does not overwrite the full one.
 `generate_plots.sh` draws the figures with the ggplot2 module [`ts_plt_utils.R`](../../ts_plt_utils.R) into
 `simulation_results/plots/`. Its `.pdf` files carry no creation date (`pdf(timestamp = FALSE)`), so a redraw of the
-same results gives the same bytes. The output below is a run against library b95b984 (TRexSelectorNeo 2.0.0), and its
+same results gives the same bytes. The output below is a run against library b95b984 (TRexSelector 2.0.0), and its
 T-Stagewise rows come from a rerun of that solver alone against library 09debc6 with the same seeds. Run $k$ draws its
 data with the seed `1000 + k` and its test set with the seed `2000000 + k`, so the results do not depend on the number
 of workers.
@@ -382,7 +382,7 @@ $T = 100$ mark their selections past $n$.
 ## Technical notes
 
 - `run_parallel()` starts the workers with `parallel::makePSOCKcluster()`. Each worker is a fresh R process that loads
-  TRexSelectorNeo, receives the globals of the demo script through `parallel::clusterExport()` and calls
+  TRexSelector, receives the globals of the demo script through `parallel::clusterExport()` and calls
   `trex_set_num_threads(1L)`, as the initializer of the Python pool does. `parallel::parLapplyLB()` then hands the
   runs to the free workers one at a time. A forked worker of `parallel::mclapply()` would run only on macOS and Linux,
   and it would not keep a thread setting made before the fork, because the OpenMP runtime resets the thread count in a

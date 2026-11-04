@@ -13,7 +13,7 @@ recovery under strong equicorrelation, using the classical three-group design of
 
 This is the Python port of the C++ demo
 [demo_trex_gvs_01_mc_sim_hastie_en_blocks](../../../../../cpp/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_01_mc_sim_hastie_en_blocks/),
-using `trex_selector_neo`'s `TRexGVSSelector`.
+using `trexselector`'s `TRexGVSSelector`.
 
 ---
 

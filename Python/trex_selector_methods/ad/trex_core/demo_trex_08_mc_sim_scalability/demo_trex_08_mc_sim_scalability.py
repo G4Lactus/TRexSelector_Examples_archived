@@ -108,8 +108,8 @@ import time  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-import trex_selector_neo as trex  # noqa: E402
-from trex_selector_neo.utils import (  # noqa: E402
+import trexselector as trex  # noqa: E402
+from trexselector.utils import (  # noqa: E402
     AccessMode, MemoryMappedMatrix, get_max_threads, set_num_threads,
 )
 

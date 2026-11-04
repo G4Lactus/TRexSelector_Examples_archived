@@ -18,7 +18,7 @@ performance, or whether it
 
 This is the Python port of the C++ demo
 [demo_trex_scr_06_mc_sim_solvers](../../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_06_mc_sim_solvers/README.md),
-using `trex_selector_neo`'s `TRexScreeningSelector`.
+using `trexselector`'s `TRexScreeningSelector`.
 
 ---
 

@@ -30,7 +30,7 @@
 #   (default TREX_NUM_WORKERS, else 8 worker cores; MC trials run on PSOCK workers via mc_map)
 # ==============================================================================
 
-library(TRexSelectorNeo)
+library(TRexSelector)
 library(parallel)
 
 # ==============================================================================

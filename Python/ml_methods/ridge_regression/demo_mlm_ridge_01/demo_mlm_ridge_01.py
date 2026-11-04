@@ -33,7 +33,7 @@
 
 import numpy as np
 
-from trex_selector_neo.ml_methods import RidgeSolver
+from trexselector.ml_methods import RidgeSolver
 
 
 def print_section_header(title):

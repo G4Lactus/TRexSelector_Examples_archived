@@ -20,7 +20,7 @@ in the C++ suite README).
 
 This is the R port of the C++ demo
 [demo_trex_scr_05_mc_sim_biobank_mmap](../../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_05_mc_sim_biobank_mmap/README.md),
-using the `TRexBiobankScreeningSelector` class of the TRexSelectorNeo package. It keeps the data-generating process
+using the `TRexBiobankScreeningSelector` class of the TRexSelector package. It keeps the data-generating process
 (DGP), the control parameters, the signal-to-noise ratio (SNR) grid, the console tables and the result-file naming of
 the C++ demo. Indices are 1-based (R convention).
 
@@ -111,11 +111,11 @@ the Ordinary run. The library then takes the decision step of Algorithm 1 (`appl
 - If both lie in the window, the rule with the larger estimate is used, and a tie goes to Bootstrap-CI.
 - If neither lies in the window, the phenotype goes to the T-Rex fallback.
 
-Each Monte Carlo trial of Part 2 builds the selector through the TRexSelectorNeo class interface. The only change
+Each Monte Carlo trial of Part 2 builds the selector through the TRexSelector class interface. The only change
 against Demo 04 is `use_memory_mapping = TRUE`:
 
 ```r
-library(TRexSelectorNeo)
+library(TRexSelector)
 
 ctrl <- trex_control(
   solver = "TLARS", K = 20L, max_dummy_multiplier = 10L, use_max_T_stop = TRUE,

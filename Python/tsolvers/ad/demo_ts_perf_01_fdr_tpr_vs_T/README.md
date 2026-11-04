@@ -64,7 +64,7 @@ in place of the OpenMP threads of the C++ demo. The 500 runs take 7.4 s on an Ap
 close to the 7.3 s of the C++ run. The result files carry the number of runs in their name
 (`fdr_tpr_vs_T_mc500.csv` and `.txt`), so a short test run does not overwrite the full one. `generate_plots.sh` draws
 the figures with `Python/tsolvers/ts_plt_utils.py`, a byte-identical copy of the C++ plotting module, into
-`simulation_results/plots/`. The output below is a run against library b95b984 (TRexSelectorNeo 1.0.0), and its
+`simulation_results/plots/`. The output below is a run against library b95b984 (TRexSelector 1.0.0), and its
 T-Stagewise rows come from a rerun of that solver alone against library 09debc6 with the same seeds. Run $k$ draws its
 data with the seed `1000 + k` and its test set with the seed `2000000 + k`, so the results do not depend on the number
 of workers.

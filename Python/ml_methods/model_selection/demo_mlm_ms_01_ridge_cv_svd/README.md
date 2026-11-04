@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This demo shows `RidgeCV` from `trex_selector_neo.ml_methods`, the Python binding of the library's `ridge_cv_svd`.
+This demo shows `RidgeCV` from `trexselector.ml_methods`, the Python binding of the library's `ridge_cv_svd`.
 It is the K-fold cross-validation (CV) routine for ridge regression that solves every fold with a singular value
 decomposition (SVD), and it selects the penalty $\lambda$ from the cross-validated prediction error in four synthetic
 Gaussian settings:
@@ -100,7 +100,7 @@ From the repository root, with the repository's virtual environment `.venv` set 
 ```
 
 The demo prints to the console only and takes about 40 seconds. The output below is a run against library b95b984,
-with the package TRexSelectorNeo 1.0.0 built from that commit. The data come from NumPy's permuted congruential
+with the package TRexSelector 1.0.0 built from that commit. The data come from NumPy's permuted congruential
 generator (PCG64) via `numpy.random.default_rng`, with the same data seeds as the C++ demo. The C++ demo draws from
 `std::mt19937`, so the two languages see different data, and their numbers agree qualitatively, not bitwise.
 

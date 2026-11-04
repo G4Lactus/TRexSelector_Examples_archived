@@ -13,7 +13,7 @@ into a memory-mapped (mmap) backing file (chunked column generation over
 $\mathbf{D}$ and serializes solver warm-start state to disk. The selector receives a zero-copy view of the
 mapped file, so the binding never copies $\mathbf{X}$. Python port of
 [cpp/trex_selector_methods/ad/trex_core/demo_trex_08_mc_sim_scalability](../../../../../cpp/trex_selector_methods/ad/trex_core/demo_trex_08_mc_sim_scalability/README.md),
-using `trex_selector_neo`. The C++ README explains the memory behaviour and the expected cost in detail.
+using `trexselector`. The C++ README explains the memory behaviour and the expected cost in detail.
 
 The benchmark reports, per $(n, p)$ × solver grid point:
 

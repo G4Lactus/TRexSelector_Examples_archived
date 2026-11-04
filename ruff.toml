@@ -3,4 +3,4 @@
 # the import conventions in Python/README.md describe.
 
 [lint.isort]
-known-first-party = ["trex_selector_neo"]
+known-first-party = ["trexselector"]

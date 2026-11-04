@@ -22,7 +22,7 @@ From the repository root, with the package installed in the repository's virtual
 
 The demo prints to the console only, so no `simulation_results/` folder is created. The backing files live in the
 system temporary directory and are removed when each part ends. The output below is a run against library b95b984. It
-used the package TRexSelectorNeo 1.0.0 and finished within seconds. The random suffixes of the temporary file names
+used the package TRexSelector 1.0.0 and finished within seconds. The random suffixes of the temporary file names
 differ per run, while everything else is deterministic. The demo itself prints the temporary folder as `<tmp>/`.
 
 ---

@@ -14,7 +14,7 @@ Instead of selecting sparse *variables* in a regression model, T-Rex SPCA select
 
 The demos are the Python counterparts of the C++ suite in
  [`cpp/trex_selector_methods/ad/trex_spca/`](../../../../cpp/trex_selector_methods/ad/trex_spca/README.md)
- (and the R suite in `R/trex_selector_methods/ad/trex_spca/`), using the `trex_selector_neo` root-level
+ (and the R suite in `R/trex_selector_methods/ad/trex_spca/`), using the `trexselector` root-level
  `trex.TRexSPCASelector`. They are designed to help users understand:
 
 1. whether the FDR of the estimated loading support is actually held at the target,
@@ -244,7 +244,7 @@ python demo_trex_spca_01_mc_sim.py                # TREX_NUM_WORKERS workers (de
 python demo_trex_spca_01_mc_sim.py 12             # 12 workers (0 = all usable cores)
 ```
 
-Run inside an environment that carries `trex_selector_neo` (e.g. the `trex-dev` conda environment or the
+Run inside an environment that carries `trexselector` (e.g. the `trex-dev` conda environment or the
 repo `.venv`). Each demo inserts both its own directory and the parent suite directory onto `sys.path`, so
 the shared `trex_spca_sim_utils` module resolves from the nested location and is re-importable by the
 spawn-launched Monte Carlo workers — run demos **as files** (not via `python -` / piped stdin), matching the

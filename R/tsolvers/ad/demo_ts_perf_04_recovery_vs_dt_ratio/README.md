@@ -45,7 +45,7 @@ Mersenne-Twister turns these seeds into the supports and into the data of `gen_s
 
 ## Running the demo
 
-From the repository root, with the TRexSelectorNeo R package installed:
+From the repository root, with the TRexSelector R package installed:
 
 ```bash
 demo=R/tsolvers/ad/demo_ts_perf_04_recovery_vs_dt_ratio/demo_ts_perf_04_recovery_vs_dt_ratio.R
@@ -74,7 +74,7 @@ The result files carry the number of runs in their name (`recovery_vs_dt_ratio_m
 each as `.csv` and `.txt`), so a short test run does not overwrite the full one, and `generate_plots.sh 5` draws the
 figures of a 5-run test. It draws them with the ggplot2 module [`ts_plt_utils.R`](../../ts_plt_utils.R), and its `.pdf`
 files carry no creation date (`pdf(timestamp = FALSE)`), so a redraw of the same results gives the same bytes. The
-output below is a run against library b95b984 (TRexSelectorNeo 2.0.0).
+output below is a run against library b95b984 (TRexSelector 2.0.0).
 
 ---
 
@@ -372,7 +372,7 @@ $s/n = 1/(2 \ln N)$.
   variance of the drawn signal by this ratio.
 - Part 1 draws its support once per $p$, and Part 2 once per cell. With independent standard normal predictors the
   place of the support does not matter.
-- `run_parallel()` starts the 6 workers once per part, and every worker loads TRexSelectorNeo and calls
+- `run_parallel()` starts the 6 workers once per part, and every worker loads TRexSelector and calls
   `trex_set_num_threads(1L)`, so the 6 workers share 6 cores with single-threaded solvers. `parallel::parLapplyLB()`
   hands the tasks to the free workers. Part 1 sends its 17,500 tasks, one per configuration and run, one at a time,
   and Part 2 sends its 200,000 tasks, one per run and cell, in chunks of 64, so fewer messages pass between the parent

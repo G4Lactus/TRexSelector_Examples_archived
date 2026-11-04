@@ -43,7 +43,7 @@ dendrogram-based hierarchical block detection via hierarchical agglomerative clu
   automatically whenever `da_control.prior_groups` is non-empty). Each targets the matching correlation structure, and
   DA-TRex uses this structure to widen or narrow the "correction window" around each candidate variable when
   accumulating dummy-based voting evidence.
-- **BT linkage method** (`LinkageMethod` from `trex_selector_neo.ml_methods.clustering`) — for the `BT` method,
+- **BT linkage method** (`LinkageMethod` from `trexselector.ml_methods.clustering`) — for the `BT` method,
   variables are grouped via hierarchical agglomerative clustering, and several demos sweep **Single**, **Complete**, and
   **Average** linkage to study sensitivity to this choice.
 - **Prior groups as merge constraints**: the `PRIOR_GROUPS` method sub-clusters *within* the finest

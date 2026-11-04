@@ -16,7 +16,7 @@ Grouped Variable Selection
 
 This is the Python port of the C++ demo
 [demo_trex_gvs_08_mc_sim_block_bench](../../../../../cpp/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_08_mc_sim_block_bench/),
-using `trex_selector_neo`'s `TRexGVSSelector`.
+using `trexselector`'s `TRexGVSSelector`.
 
 ---
 

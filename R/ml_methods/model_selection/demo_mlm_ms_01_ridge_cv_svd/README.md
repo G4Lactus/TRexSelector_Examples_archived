@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This demo shows `MLRidgeCV` from the TRexSelectorNeo R package, the R6 binding of the library's `ridge_cv_svd`. It is
+This demo shows `MLRidgeCV` from the TRexSelector R package, the R6 binding of the library's `ridge_cv_svd`. It is
 the K-fold cross-validation (CV) routine for ridge regression that solves every fold with a singular value
 decomposition (SVD), and it selects the penalty $\lambda$ from the cross-validated prediction error in four synthetic
 Gaussian settings:
@@ -95,7 +95,7 @@ CV picks with it.
 
 ## Running the demo
 
-From the repository root, with the TRexSelectorNeo R package installed as described in
+From the repository root, with the TRexSelector R package installed as described in
 [`LIBRARY_TARGET.txt`](../../../../LIBRARY_TARGET.txt):
 
 ```bash
@@ -103,7 +103,7 @@ Rscript R/ml_methods/model_selection/demo_mlm_ms_01_ridge_cv_svd/demo_mlm_ms_01_
 ```
 
 The demo prints to the console only and takes about 40 seconds. The output below is a run against library b95b984,
-with the package TRexSelectorNeo 2.0.0 built from that commit. The data come from R's Mersenne-Twister generator via
+with the package TRexSelector 2.0.0 built from that commit. The data come from R's Mersenne-Twister generator via
 `set.seed()` and `rnorm()`, which draws normals by inversion, with the same data seeds as the C++ demo. The C++ demo
 draws from `std::mt19937` and the Python demo from NumPy's `default_rng`, so the three languages see different data,
 and their numbers agree qualitatively, not bitwise.

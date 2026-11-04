@@ -2,7 +2,7 @@
 
 ## Overview
 
-This folder holds the Python examples for model selection in the `trex_selector_neo.ml_methods` module, which choose
+This folder holds the Python examples for model selection in the `trexselector.ml_methods` module, which choose
 the penalty of a regularized Gaussian regression by K-fold cross-validation (CV). In TRexSelector, these routines tune
 the ridge penalty of Grouped Variable Selection (GVS). Both demos draw synthetic data from
 

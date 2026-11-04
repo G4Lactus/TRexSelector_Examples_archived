@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This demo shows the memory-mapped matrix of TRexSelectorNeo in R, a file-backed matrix that is read and written like
+This demo shows the memory-mapped matrix of TRexSelector in R, a file-backed matrix that is read and written like
 an R matrix, so data larger than the random-access memory (RAM) can be written, read and streamed column by column. It
 mirrors the C++ and Python twins (`cpp/memory_mapping/demo_memory_mapping`, `Python/memory_mapping/demo_memory_mapping`)
 and replaces the C++-specific features with their R counterparts. Cleanup by Resource Acquisition Is Initialization
@@ -11,7 +11,7 @@ handle (`print()`, `dim()`, `[`, `[<-`, `as.matrix()`), and the Open Multi-Proce
 serial fill with the same per-column seeds. On top of the C++ scalar interface, the R demo also writes a block through
 `[<-` and copies the whole matrix into R memory with `as.matrix()`.
 
-The entry points, all from TRexSelectorNeo, are:
+The entry points, all from TRexSelector, are:
 
 - `mem_matrix(filename, rows, cols, mode)`, which opens or creates a mapped file in `"readwrite"` (default) or
   `"readonly"` mode and returns an `mmap_matrix` handle,
@@ -22,7 +22,7 @@ The entry points, all from TRexSelectorNeo, are:
 
 ## Running the demo
 
-From the repository root, with the TRexSelectorNeo R package 2.0.0 built from library commit b95b984:
+From the repository root, with the TRexSelector R package 2.0.0 built from library commit b95b984:
 
 ```bash
 Rscript R/memory_mapping/demo_memory_mapping/demo_memory_mapping.R

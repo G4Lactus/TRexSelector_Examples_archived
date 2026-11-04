@@ -21,7 +21,7 @@ Six subproblems, SP1 to SP6 in the section headings below, run in the main block
 Throughout the demo, clustering quality is assessed by the **adjusted Rand index (ARI)**, which compares the recovered
 cluster labels against the known ground-truth labels from the synthetic data generator. Each subproblem section below
 ends with the console output of the recorded run. The output below is a run against library b95b984. It used the R
-package TRexSelectorNeo 2.0.0 and 6 Open Multi-Processing (OpenMP) threads in the C++ backend.
+package TRexSelector 2.0.0 and 6 Open Multi-Processing (OpenMP) threads in the C++ backend.
 
 ---
 
@@ -546,7 +546,7 @@ at the R sizes in [Python](../../../../Python/ml_methods/hac_clustering/demo_mlm
 
 ## Running the demo
 
-From the repository root, with the TRexSelectorNeo R package 2.0.0 built from library commit b95b984:
+From the repository root, with the TRexSelector R package 2.0.0 built from library commit b95b984:
 
 ```bash
 Rscript R/ml_methods/hac_clustering/demo_mlm_hac_01/demo_mlm_hac_01.R

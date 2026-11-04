@@ -14,7 +14,7 @@ dependence) affects the achieved FDR / true positive rate (TPR) and the
 calibrated $L$ / $T$ — and whether any such effect depends on the solver family.
 Python port of
 [cpp/trex_selector_methods/ad/trex_core/demo_trex_05_mc_sim_dummy_distributions](../../../../../cpp/trex_selector_methods/ad/trex_core/demo_trex_05_mc_sim_dummy_distributions/),
-using `trex_selector_neo`.
+using `trexselector`.
 
 ---
 
@@ -50,7 +50,7 @@ and its correlation structure above are held fixed.)
 
 ## Dummy Distributions Tested
 
-`DISTRIBUTIONS` defines **12 rows** (resolved to `trex_selector_neo`
+`DISTRIBUTIONS` defines **12 rows** (resolved to `trexselector`
 `DummyDistribution` objects inside each worker):
 
 Normal, Uniform, Rademacher, StudentT_df3, StudentT_df5, Laplace, Gumbel,

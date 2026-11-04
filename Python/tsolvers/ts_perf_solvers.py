@@ -24,16 +24,16 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from trex_selector_neo.tsolvers.ad import SolverOptions
-from trex_selector_neo.tsolvers.ad.afs_based import TAFS_Solver
-from trex_selector_neo.tsolvers.ad.lars_based import (
+from trexselector.tsolvers.ad import SolverOptions
+from trexselector.tsolvers.ad.afs_based import TAFS_Solver
+from trexselector.tsolvers.ad.lars_based import (
     TENET_Solver,
     TLARS_Solver,
     TLASSO_Solver,
     TSTAGEWISE_Solver,
     TSTEPWISE_Solver,
 )
-from trex_selector_neo.tsolvers.ad.omp_based import (
+from trexselector.tsolvers.ad.omp_based import (
     NCGMPVariant,
     TACGP_Solver,
     TGP_Solver,

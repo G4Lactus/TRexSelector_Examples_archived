@@ -13,7 +13,7 @@ in the C++ suite README).
 
 This is the R port of the C++ demo
 [demo_trex_gvs_05_mc_sim_t3_blocks](../../../../../cpp/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_05_mc_sim_t3_blocks/README.md),
-using the `TRexGVSSelector` class of `TRexSelectorNeo`. It keeps the DGP, control parameters, sweep, console
+using the `TRexGVSSelector` class of `TRexSelector`. It keeps the DGP, control parameters, sweep, console
 summaries and result-file naming of the C++ demo. Indices are 1-based (R convention).
 
 ---
@@ -102,7 +102,7 @@ Each Monte Carlo (MC) trial builds the selector through the shared adapter `.gvs
 [`../../../simulation_utils.R`](../../../simulation_utils.R), here for TENET:
 
 ```r
-library(TRexSelectorNeo)
+library(TRexSelector)
 
 ctrl <- trex_control(
   solver = "TLARS", K = 20L, max_dummy_multiplier = 10, use_max_T_stop = TRUE,

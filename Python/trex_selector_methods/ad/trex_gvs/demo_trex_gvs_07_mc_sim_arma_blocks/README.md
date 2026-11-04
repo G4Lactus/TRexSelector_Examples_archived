@@ -13,7 +13,7 @@ T-Rex+GVS, when different blocks follow
 
 This is the Python port of the C++ demo
 [demo_trex_gvs_07_mc_sim_arma_blocks](../../../../../cpp/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_07_mc_sim_arma_blocks/),
-using `trex_selector_neo`'s `TRexGVSSelector`.
+using `trexselector`'s `TRexGVSSelector`.
 
 ---
 

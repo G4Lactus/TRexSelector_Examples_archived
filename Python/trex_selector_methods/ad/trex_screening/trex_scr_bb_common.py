@@ -20,7 +20,7 @@
 #
 # As in trex_scr_common.py, Monte Carlo trials run in a ProcessPoolExecutor;
 # workers are module-level, receive only picklable flat dicts, and rebuild the
-# trex_selector_neo controls inside the child process.
+# trexselector controls inside the child process.
 # ==============================================================================
 
 import os
@@ -29,7 +29,7 @@ import sys
 import numpy as np
 import pandas as pd
 
-import trex_selector_neo as trex
+import trexselector as trex
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
@@ -91,8 +91,8 @@ def _biobank_single_worker(args):
     Support drawn from an RNG stream offset from the trial seed (by 500000),
     matching the cpp isolation of the support draw from design/noise.
     """
-    import trex_selector_neo as _tsn
-    from trex_selector_neo.utils import compute_fdp as _fdp, compute_tpp as _tpp
+    import trexselector as _tsn
+    from trexselector.utils import compute_fdp as _fdp, compute_tpp as _tpp
 
     n, p = args["n"], args["p"]
     support_size, snr = args["support_size"], args["snr"]
@@ -116,8 +116,8 @@ def _biobank_multi_worker(args):
     Returns a list of q records. All phenotypes share the design matrix X drawn
     with x_seed; each phenotype gets its own random support and noise draw.
     """
-    import trex_selector_neo as _tsn
-    from trex_selector_neo.utils import compute_fdp as _fdp, compute_tpp as _tpp
+    import trexselector as _tsn
+    from trexselector.utils import compute_fdp as _fdp, compute_tpp as _tpp
 
     n, p, q = args["n"], args["p"], args["q"]
     support_size, snr = args["support_size"], args["snr"]

@@ -76,7 +76,7 @@ run does not overwrite the full one, and `generate_plots.sh 4` draws the figures
 `Python/tsolvers/ts_plt_utils.py`, a byte-identical copy of the C++ plotting module. The comma-separated values (CSV)
 file lists the frequency of every count per solver and statistic (`included`, `selected_v1`, `selected_v0.75` and
 `selected_v0.5`), together with $p_0$, $L$, $T$ and $K$, so the plotter computes the NHG reference itself. The output
-below is a run against library 415484d (TRexSelectorNeo 1.0.0), with the T-Stagewise rows rerun on library 09debc6
+below is a run against library 415484d (TRexSelector 1.0.0), with the T-Stagewise rows rerun on library 09debc6
 with the same seeds.
 
 ---
@@ -212,8 +212,7 @@ further Python runs on other seeds give a mean of 3.65 with a standard error of 
   the 500 independent runs.
 - The demo draws the $K \cdot L = 6{,}000$ dummy columns of a run in one call of `gen_synthetic_data()` and hands the
   $k$-th block of 300 columns to experiment $k$.
-- The worker pool calls `set_num_threads(1)` in every worker process, so the 6 workers share 6 cores with
-  single-threaded solvers.
+- The solvers run serially by default, so the 6 workers of the pool share 6 cores with single-threaded solvers.
 - Reference: Machkour, J., Muma, M., & Palomar, D. P., "The Terminating-Random Experiments Selector: Fast
   High-Dimensional Variable Selection with False Discovery Rate Control.", Signal Processing 231, 2025, 109894, and
   its supplementary material, Appendix G. [DOI-Link](https://doi.org/10.1016/j.sigpro.2025.109894)

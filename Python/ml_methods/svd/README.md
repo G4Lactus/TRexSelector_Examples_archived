@@ -3,7 +3,7 @@
 ## Overview
 
 This folder holds the Python example for the singular value decomposition (SVD) in the
-`trex_selector_neo.ml_methods` module. For $\mathbf{X} \in \mathbb{R}^{n \times p}$, the truncated SVD keeps the
+`trexselector.ml_methods` module. For $\mathbf{X} \in \mathbb{R}^{n \times p}$, the truncated SVD keeps the
 leading $M$ singular components,
 
 ```math
@@ -32,7 +32,7 @@ packages have the same demo in [cpp/ml_methods/svd/](../../../cpp/ml_methods/svd
 
 ## Running
 
-From the repository root, with TRexSelectorNeo installed in the repository virtual environment `.venv`:
+From the repository root, with TRexSelector installed in the repository virtual environment `.venv`:
 
 ```bash
 .venv/bin/python Python/ml_methods/svd/demo_mlm_svd_01/demo_mlm_svd_01.py

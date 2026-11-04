@@ -10,7 +10,7 @@ while the **number** of active variables stays fixed. This isolates the effect o
 support *location* (rather than support size) and complements the fixed-support
 study in Demo 02. Python port of
 [cpp/trex_selector_methods/ad/trex_core/demo_trex_03_mc_sim_variable_support](../../../../../cpp/trex_selector_methods/ad/trex_core/demo_trex_03_mc_sim_variable_support/),
-using `trex_selector_neo`.
+using `trexselector`.
 
 ---
 

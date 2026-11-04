@@ -68,8 +68,8 @@ import solver_filter
 # ------------------------------------------------------------------------------
 # Worker budget  (identical helper in every suite's *_common / *_utils module)
 #
-# N_CORES MC worker processes, each pinned to one inner OpenMP thread by
-# _init_worker(), so a demo never exceeds N_CORES cores in total. The default
+# N_CORES MC worker processes, each running the selector serially (the library
+# default), so a demo never exceeds N_CORES cores in total. The default
 # cap matches the cpp demos' default of 8 threads, keeping runtimes
 # comparable across the C++ / Python suites.
 #
@@ -116,25 +116,11 @@ def resolve_workers(requested=None):
 N_CORES = resolve_workers()
 
 
-def _init_worker():
-    """Pin each worker's inner OpenMP pool to a single thread.
-
-    The MC parallelism lives in the process pool (max_workers processes). Left
-    alone, the selector's own OpenMP defaults to every logical core *inside each
-    worker*, so max_workers x n_logical threads contend for the machine. The cpp
-    demos avoid this because OpenMP nested parallelism is off by default, so the
-    inner regions of a trial run serially inside one of the 6 outer threads.
-    Here: max_workers outer trials x 1 inner thread = max_workers cores total.
-    """
-    from trex_selector_neo.utils import set_num_threads
-    set_num_threads(1)
-
-
 # ------------------------------------------------------------------------------
 # Persistent worker pool (mirrors trex_da/da_sim_common.py)
 #
 # The sweeps call run_gvs_mc_trials() once per grid point, so a pool created per
-# call re-pays (process spawn + `import trex_selector_neo`) on every cell:
+# call re-pays (process spawn + `import trexselector`) on every cell:
 # measured at ~0.5 s for 6 workers, i.e. ~0.4% of a ~2 min cell. Modest, but
 # free to avoid — one lazily-created pool is reused instead, keyed on
 # max_workers so a demo's CLI worker-count override still takes effect
@@ -188,7 +174,6 @@ def _get_executor(max_workers, n_tasks=0):
     if _EXECUTOR is None:
         _EXECUTOR = ProcessPoolExecutor(
             max_workers=max_workers,
-            initializer=_init_worker,
             mp_context=multiprocessing.get_context("spawn"))
         _EXECUTOR_WORKERS = max_workers
         _TASKS_SINCE_SPAWN = 0
@@ -264,7 +249,7 @@ def skipped_point():
 # ==============================================================================
 #
 # String -> enum maps are built lazily inside each process so the module can be
-# imported (and pickled args shipped to spawn workers) without trex_selector_neo
+# imported (and pickled args shipped to spawn workers) without trexselector
 # being loaded in the parent first.
 
 _GVS_TYPE_MAP = None
@@ -276,8 +261,8 @@ _LINKAGE_MAP = None
 def _get_enum_maps():
     global _GVS_TYPE_MAP, _EN_SOLVER_MAP, _LAMBDA2_MAP, _LINKAGE_MAP
     if _GVS_TYPE_MAP is None:
-        import trex_selector_neo as trex
-        from trex_selector_neo.ml_methods.clustering import LinkageMethod
+        import trexselector as trex
+        from trexselector.ml_methods.clustering import LinkageMethod
         _GVS_TYPE_MAP = {"EN": trex.GVSType.EN, "IEN": trex.GVSType.IEN}
         _EN_SOLVER_MAP = {"TENET": trex.ENSolverType.TENET,
                           "TENET_AUG": trex.ENSolverType.TENET_AUG}
@@ -307,7 +292,7 @@ def make_gvs_trex_control(K=20):
     """TRexControlParameter with the shared GVS defaults (mirrors cpp
     make_gvs_trex_control). build_gvs_selector sets solver_type for IEN
     (TIENET_AUG); for EN the binding derives it from en_solver."""
-    import trex_selector_neo as trex
+    import trexselector as trex
     tc = trex.TRexControlParameter()
     tc.K = int(K)
     tc.max_dummy_multiplier = 10
@@ -349,7 +334,7 @@ def build_gvs_selector(X, y, tFDR, K, gvs_type, corr_max, hc_linkage="Single",
     demos do. The returned run object exposes selected_indices like the
     wrapper.
     """
-    import trex_selector_neo as trex
+    import trexselector as trex
     gvs_map, en_map, l2_map, hc_map = _get_enum_maps()
 
     gc = trex.TRexGVSControlParameter()
@@ -383,7 +368,7 @@ def build_gvs_selector(X, y, tFDR, K, gvs_type, corr_max, hc_linkage="Single",
 
 def _raw_gvs_selector():
     """The pybind TRexGVSSelector class (no Python-side lambda2 remap)."""
-    from trex_selector_neo.trex_selector_methods.ad import TRexGVSSelector
+    from trexselector.trex_selector_methods.ad import TRexGVSSelector
     return TRexGVSSelector
 
 
@@ -408,7 +393,7 @@ def _gvs_trial_worker(args):
     """Top-level worker for ProcessPoolExecutor (must stay module-level so
     pickle can resolve it as ('gvs_sim_common', '_gvs_trial_worker'))."""
     import importlib
-    from trex_selector_neo.utils import compute_fdp, compute_tpp
+    from trexselector.utils import compute_fdp, compute_tpp
 
     (trial_seed, dgp_name, dgp_kwargs, tFDR, K, gvs_type, corr_max,
      hc_linkage, en_solver, lambda2_method, cv_dfmax_ratio) = args
@@ -509,7 +494,7 @@ def _gvs_cut_trial_worker(args):
     group rates and the number of clusters with >= 2 members."""
     import importlib
 
-    from trex_selector_neo.utils import compute_fdp, compute_tpp
+    from trexselector.utils import compute_fdp, compute_tpp
 
     (trial_seed, dgp_name, dgp_kwargs, tFDR, K, gvs_type, corr_max,
      hc_linkage, en_solver, lambda2_method, oracle, cv_dfmax_ratio) = args
@@ -931,7 +916,7 @@ def _run_block_method(dat, gvs_type, oracle, cfg, seed):
     """Run one GVS method variant on one dataset; returns a metrics dict.
     Mirrors cpp run_block_method (cv_seed stays at its default -1 = derived
     from the selector seed, as in the cpp block bench)."""
-    from trex_selector_neo.utils import compute_fdp, compute_tpp
+    from trexselector.utils import compute_fdp, compute_tpp
 
     t0 = time.perf_counter()
     # EN uses the configured solver (TENET / TENET_AUG); IEN runs TIENET_AUG

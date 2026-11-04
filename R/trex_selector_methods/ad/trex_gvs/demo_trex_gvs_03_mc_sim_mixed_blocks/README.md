@@ -14,7 +14,7 @@ more realistic grouped design.
 
 This is the R port of the C++ demo
 [demo_trex_gvs_03_mc_sim_mixed_blocks](../../../../../cpp/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_03_mc_sim_mixed_blocks/README.md),
-using the `TRexGVSSelector` class of the TRexSelectorNeo package. It keeps the data-generating process (DGP), the
+using the `TRexGVSSelector` class of the TRexSelector package. It keeps the data-generating process (DGP), the
 control parameters, the sweep grid, the console tables and the result-file naming of the C++ demo. Indices are 1-based
 (R convention).
 
@@ -98,10 +98,10 @@ demos.
 - **TIENET_AUG**: `GVS_type = "IEN"`, `lambda2_method = "CV_1SE_IEN_CCD"`, `cv_dfmax_ratio = 1.0` (`en_solver` is
   left at the library default and ignored on the IEN path)
 
-Each Monte Carlo trial builds the selector through the TRexSelectorNeo class interface, here for TENET_AUG:
+Each Monte Carlo trial builds the selector through the TRexSelector class interface, here for TENET_AUG:
 
 ```r
-library(TRexSelectorNeo)
+library(TRexSelector)
 
 ctrl <- trex_control(
   solver = "TLARS", K = 20L, max_dummy_multiplier = 10, use_max_T_stop = TRUE,

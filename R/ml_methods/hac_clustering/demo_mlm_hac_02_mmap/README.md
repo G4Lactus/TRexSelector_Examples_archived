@@ -19,7 +19,7 @@ The workflow is organized into three phases:
 3. **Clustering**: benchmark selected HAC linkage strategies under an LSH-based correlation distance approximation.
 
 Each phase section below ends with the console output of the recorded run. The output below is a run against library
-b95b984. It used the R package TRexSelectorNeo 2.0.0 and 6 Open Multi-Processing (OpenMP) threads in the C++ backend,
+b95b984. It used the R package TRexSelector 2.0.0 and 6 Open Multi-Processing (OpenMP) threads in the C++ backend,
 and it finished within a few seconds.
 
 ---
@@ -264,7 +264,7 @@ The Python twin is in
 
 ## Running the demo
 
-From the repository root, with the TRexSelectorNeo R package 2.0.0 built from library commit b95b984:
+From the repository root, with the TRexSelector R package 2.0.0 built from library commit b95b984:
 
 ```bash
 Rscript R/ml_methods/hac_clustering/demo_mlm_hac_02_mmap/demo_mlm_hac_02_mmap.R

@@ -36,7 +36,7 @@
 #
 # ==============================================================================
 
-library(TRexSelectorNeo)
+library(TRexSelector)
 library(parallel)
 
 # ==============================================================================
@@ -198,7 +198,7 @@ trx_10_dt_ratio <- function(num_MC = NUM_MC) {
 
     # Demo 05 configuration with Normal dummies, every option explicit (C++
     # reference). tloop_stagnation_stop is left unset (NULL = AUTO, C++ nullopt).
-    ctrl <- TRexSelectorNeo::trex_control(
+    ctrl <- TRexSelector::trex_control(
       solver                   = solver_entry$solver,
       lambda2                  = solver_entry$lambda2,
       rho_afs                  = solver_entry$rho_afs,

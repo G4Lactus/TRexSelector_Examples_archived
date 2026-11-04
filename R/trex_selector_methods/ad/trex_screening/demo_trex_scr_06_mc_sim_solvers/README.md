@@ -18,7 +18,7 @@ in the C++ suite README).
 
 This is the R port of the C++ demo
 [demo_trex_scr_06_mc_sim_solvers](../../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_06_mc_sim_solvers/README.md),
-using the `TRexScreeningSelector` class of the TRexSelectorNeo package. It keeps the data-generating process (DGP),
+using the `TRexScreeningSelector` class of the TRexSelector package. It keeps the data-generating process (DGP),
 the control parameters, the SNR grid, the console tables and the result-file naming of the C++ demo. Indices are
 1-based (R convention).
 
@@ -107,11 +107,11 @@ Each backend is combined with the Screen-TRex thresholding rules:
 - **Bootstrap-CI** builds a bootstrap confidence band around the estimated FDR curve (`R_boot = 1000` replicates)
   and picks its threshold from that band.
 
-Each Monte Carlo trial builds the selector through the TRexSelectorNeo class interface, here for TAFS-0.3 under the
+Each Monte Carlo trial builds the selector through the TRexSelector class interface, here for TAFS-0.3 under the
 Bootstrap-CI rule:
 
 ```r
-library(TRexSelectorNeo)
+library(TRexSelector)
 
 ctrl <- trex_control(
   solver = "TAFS", K = 20L, max_dummy_multiplier = 10L, use_max_T_stop = TRUE,

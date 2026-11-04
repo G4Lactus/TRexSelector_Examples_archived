@@ -3,7 +3,7 @@
 ## Overview
 
 This folder contains the Python demos for the `ml_methods` layer of the TRexSelector library, used through the
-`trex_selector_neo.ml_methods` module of the TRexSelectorNeo package.
+`trexselector.ml_methods` module of the TRexSelector package.
 
 The layer provides the numerical and preprocessing components that support the higher-level workflows of the
 Terminating-Random Experiments (T-Rex) selector, including column scaling, singular value decomposition (SVD),
@@ -53,12 +53,12 @@ In particular:
 
 ## Installation
 
-The demos are plain scripts without a build step. They need TRexSelectorNeo 1.0.0 in the repository virtual
+The demos are plain scripts without a build step. They need TRexSelector 1.0.0 in the repository virtual
 environment `.venv`, installed as described in the [Python README](../README.md):
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install <path-to-TRexSelector>/Python/TRexSelectorNeo
+.venv/bin/pip install <path-to-TRexSelector>/Python/trexselector
 ```
 
 ---

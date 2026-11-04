@@ -86,7 +86,7 @@ run_parallel <- function(fun, tasks, workers, ..., chunk = 1L) {
   on.exit(parallel::stopCluster(cl), add = TRUE)
   parallel::clusterExport(cl, ls(globalenv(), all.names = TRUE), envir = globalenv())
   parallel::clusterEvalQ(cl, {
-    suppressMessages(library(TRexSelectorNeo))
+    suppressMessages(library(TRexSelector))
     single_thread()
   })
   chunks <- split(tasks, ceiling(seq_along(tasks) / chunk))

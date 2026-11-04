@@ -3,10 +3,10 @@
 ## Purpose
 
 R example programs for the classical **Terminating Random Experiments Selector
-(T-Rex Selector)**, built on the **TRexSelectorNeo** R6 application programming interface (API):
+(T-Rex Selector)**, built on the **TRexSelector** R6 application programming interface (API):
 
 ```r
-library(TRexSelectorNeo)
+library(TRexSelector)
 
 ctrl     <- trex_control(solver = "TLARS", K = 20L)
 selector <- TRexSelector$new(X, y, tFDR = 0.1, control = ctrl)

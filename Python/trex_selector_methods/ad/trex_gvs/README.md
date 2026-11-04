@@ -4,7 +4,7 @@
 
 This folder contains the Python ports of the demonstration suite for the **Terminating Random Experiments (T-Rex)
 Selector with Grouped Variable Selection (GVS)**, in short T-Rex+GVS, according to [[1,2]](#references), using
-`trex_selector_neo`'s `TRexGVSSelector`. They mirror the authoritative C++ suite in
+`trexselector`'s `TRexGVSSelector`. They mirror the authoritative C++ suite in
 [cpp/trex_selector_methods/ad/trex_gvs/](../../../../cpp/trex_selector_methods/ad/trex_gvs/README.md) one-to-one (folder
 names, scenarios, sweep grids, console tables, and result-file names all match).
 
@@ -97,7 +97,7 @@ patterns).
 ## T-Rex+GVS specific concepts
 
 Grouped selection introduces a few additional control parameters and types beyond the classical T-Rex selector
- (all accessed via `import trex_selector_neo as trex`, e.g. `trex.TRexGVSControlParameter`):
+ (all accessed via `import trexselector as trex`, e.g. `trex.TRexGVSControlParameter`):
 
 - **`trex.GVSType`** — the group-level base method:
   - `EN`: elastic-net-based grouped selection [[1]](#references),
@@ -185,7 +185,7 @@ Shared infrastructure:
 
 ## Running a demo
 
-Each demo is run directly with the Python interpreter (with `trex_selector_neo`, `numpy`, and
+Each demo is run directly with the Python interpreter (with `trexselector`, `numpy`, and
 `pandas` installed — see the [Python examples README](../../../README.md)):
 
 ```bash

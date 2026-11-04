@@ -57,7 +57,7 @@ technical notes give the reasons for the change.
 
 ## Running the demo
 
-From the repository root, with the TRexSelectorNeo R package installed:
+From the repository root, with the TRexSelector R package installed:
 
 ```bash
 Rscript R/tsolvers/ad/demo_ts_perf_03_memory_vs_np/demo_ts_perf_03_memory_vs_np.R        # 500 runs, 6 workers
@@ -76,7 +76,7 @@ with 6 workers on an Apple Silicon machine. The result files carry the number of
 takes the `.csv` file of such a run as an optional argument. It draws the figure with the ggplot2 module
 [`ts_plt_utils.R`](../../ts_plt_utils.R), and its `.pdf` file carries no creation date (`pdf(timestamp = FALSE)`), so a
 redraw of the same results gives the same bytes. The output below is a run against library 44cf1ab
-(TRexSelectorNeo 2.0.0). The T-Stagewise rows come from a rerun of that solver alone on library 09debc6, with the same
+(TRexSelector 2.0.0). The T-Stagewise rows come from a rerun of that solver alone on library 09debc6, with the same
 seeds.
 
 ---

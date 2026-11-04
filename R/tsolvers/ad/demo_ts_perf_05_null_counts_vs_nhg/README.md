@@ -58,7 +58,7 @@ $T = 20$ the NHG mean is $20 \cdot 295 / 301 = 19.60$.
 
 ## Running the demo
 
-From the repository root, with the TRexSelectorNeo R package installed:
+From the repository root, with the TRexSelector R package installed:
 
 ```bash
 demo=R/tsolvers/ad/demo_ts_perf_05_null_counts_vs_nhg/demo_ts_perf_05_null_counts_vs_nhg.R
@@ -79,7 +79,7 @@ ggplot2 module [`ts_plt_utils.R`](../../ts_plt_utils.R), and its `.pdf` files ca
 (`pdf(timestamp = FALSE)`), so a redraw of the same results gives the same bytes. The comma-separated values (CSV) file
 lists the frequency of every count per solver and statistic (`included`, `selected_v1`, `selected_v0.75` and
 `selected_v0.5`), together with $p_0$, $L$, $T$ and $K$, so the plotter computes the NHG reference itself. The output
-below is a run against library 415484d (TRexSelectorNeo 2.0.0), with the T-Stagewise rows rerun on library 09debc6
+below is a run against library 415484d (TRexSelector 2.0.0), with the T-Stagewise rows rerun on library 09debc6
 with the same seeds.
 
 ---
@@ -214,7 +214,7 @@ so the gaps between the languages come from the data that each of them draws.
   the 500 independent runs.
 - The demo draws the $K \cdot L = 6{,}000$ dummy columns of a run in one call of `gen_synthetic_data()` and hands the
   $k$-th block of 300 columns to experiment $k$.
-- `run_parallel()` starts the 6 workers once, and every worker loads TRexSelectorNeo and calls
+- `run_parallel()` starts the 6 workers once, and every worker loads TRexSelector and calls
   `trex_set_num_threads(1L)`, so the 6 workers share 6 cores with single-threaded solvers. `parallel::parLapplyLB()`
   hands the 500 runs to the free workers one at a time.
 - Reference: Machkour, J., Muma, M., & Palomar, D. P., "The Terminating-Random Experiments Selector: Fast

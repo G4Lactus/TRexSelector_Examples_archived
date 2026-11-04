@@ -219,7 +219,7 @@ cd R/trex_selector_methods/ad/trex_spca/demo_trex_spca_01_mc_sim && ./generate_p
 R/trex_selector_methods/ad/trex_spca/generate_corr_plots.sh
 ```
 
-Dependencies are `TRexSelectorNeo` and base-R `parallel` for the demos plus ggplot2 and patchwork for the figures.
+Dependencies are `TRexSelector` and base-R `parallel` for the demos plus ggplot2 and patchwork for the figures.
 The old `elasticnet`/`glmnet` dependencies are gone from this suite.
 
 ---

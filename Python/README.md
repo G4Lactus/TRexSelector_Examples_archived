@@ -3,11 +3,11 @@
 ## Overview
 
 This directory contains the standalone Python examples project. It consumes the
-**TRexSelectorNeo** package (1.0.0), the pybind11 binding layer over the C++
+**trexselector** package (1.0.0), the pybind11 binding layer over the C++
 TRexSelector backend, imported as
 
 ```python
-import trex_selector_neo
+import trexselector
 ```
 
 The demos mirror their C++ counterparts in the sibling [cpp/](../cpp/) tree
@@ -35,11 +35,11 @@ import sys
 import numpy as np
 import pandas as pd
 
-import trex_selector_neo as trex
-from trex_selector_neo.ml_methods import LpNormScaler, NormType
-from trex_selector_neo.ml_methods.clustering import LinkageMethod, agglomerative_cluster
-from trex_selector_neo.tsolvers.ad.lars_based import TLARS_Solver
-from trex_selector_neo.utils import compute_fdp, compute_tpp, numpy_to_memmap
+import trexselector as trex
+from trexselector.ml_methods import LpNormScaler, NormType
+from trexselector.ml_methods.clustering import LinkageMethod, agglomerative_cluster
+from trexselector.tsolvers.ad.lars_based import TLARS_Solver
+from trexselector.utils import compute_fdp, compute_tpp, numpy_to_memmap
 
 from trex_sim_common import run_mc_trex  # local demo helpers last
 ```
@@ -50,21 +50,21 @@ The rules:
    selector classes (`trex.TRexSelector`, `trex.TRexDASelector`, …), control
    parameters (`trex.TRexControlParameter`, …), and enums
    (`trex.SolverTypeForTRex`, `trex.LLoopStrategy`, `trex.DummyDistribution`, …) —
-   is accessed through `import trex_selector_neo as trex`, mirroring the C++
-   `namespace` qualification and R's `trexselector::`. Root symbols are never
+   is accessed through `import trexselector as trex`, mirroring the C++
+   `namespace` qualification and R's `TRexSelector::`. Root symbols are never
    `from`-imported, and the alias is only introduced in files that use it.
 2. **Subpackage symbols via explicit `from`-imports.** Solvers come from
-   `trex_selector_neo.tsolvers.ad.{lars_based,omp_based,afs_based}`, machine learning (ML) building
-   blocks from `trex_selector_neo.ml_methods` (clustering from
-   `trex_selector_neo.ml_methods.clustering`), and metrics/memory-mapping
-   helpers from `trex_selector_neo.utils`. Call sites use the bare names.
+   `trexselector.tsolvers.ad.{lars_based,omp_based,afs_based}`, machine learning (ML) building
+   blocks from `trexselector.ml_methods` (clustering from
+   `trexselector.ml_methods.clustering`), and metrics/memory-mapping
+   helpers from `trexselector.utils`. Call sites use the bare names.
    Subpackages are never aliased and never accessed as `trex.utils.…`.
 3. **Only the public surface.** Demos never import from the raw binding module
-   `trex_selector_neo.trex_selector_methods` (it bypasses the ergonomic Python
-   wrappers), never from `trex_selector_neo._core`, and never through the
+   `trexselector.trex_selector_methods` (it bypasses the ergonomic Python
+   wrappers), never from `trexselector._core`, and never through the
    legacy `ml_methods.clustering.hierarchical` shim.
 4. **Import order.** Standard library → third-party (`numpy`, `pandas`,
-   `matplotlib`) → `trex_selector_neo` (root alias first, then subpackages
+   `matplotlib`) → `trexselector` (root alias first, then subpackages
    alphabetically) → local demo helper modules.
 
 ---
@@ -72,12 +72,12 @@ The rules:
 ## Prerequisites and Installation
 
 - Python >= 3.10
-- numpy >= 1.26 (installed automatically with TRexSelectorNeo)
+- numpy >= 1.26 (installed automatically with trexselector)
 - pandas (used by the demos to write comma-separated values (CSV) result files)
 - matplotlib and plotly (used by the plotters behind each demo's
   `generate_plots.sh`)
 
-TRexSelectorNeo is built with scikit-build-core + pybind11 from the main
+trexselector is built with scikit-build-core + pybind11 from the main
 repository. Install it into a virtual environment at the repository root,
 because the overnight runners and the `generate_plots.sh` scripts look for
 `.venv/bin/python` there:
@@ -85,13 +85,13 @@ because the overnight runners and the `generate_plots.sh` scripts look for
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install <path-to>/TRexSelector/Python/TRexSelectorNeo
+pip install <path-to>/TRexSelector/Python/trexselector
 pip install pandas matplotlib plotly
 pip install -r requirements-dev.txt   # optional: mypy + stubs for the linter
 ```
 
 The old package name `trex_selector` is obsolete — all demos in this tree
-import `trex_selector_neo`.
+import `trexselector`.
 
 ---
 

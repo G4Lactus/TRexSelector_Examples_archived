@@ -16,7 +16,7 @@ The demo measures what **predictor correlation does to Screen-TRex**, and whethe
 
 This is the Python port of the C++ demo
 [demo_trex_scr_03_mc_sim_correlated](../../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_03_mc_sim_correlated/README.md),
-using `trex_selector_neo`'s `TRexScreeningSelector`.
+using `trexselector`'s `TRexScreeningSelector`.
 
 ---
 

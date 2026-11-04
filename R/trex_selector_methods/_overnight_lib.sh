@@ -28,7 +28,7 @@
 # --------------
 # The demos parallelise over TREX_NUM_WORKERS worker processes (default 8,
 # exported below; PSOCK workers via mc_runtime.R, no fork).
-# R's bundled reference BLAS is single-threaded, but TRexSelectorNeo carries
+# R's bundled reference BLAS is single-threaded, but TRexSelector carries
 # its own OpenMP — 8 workers x all-core OpenMP would oversubscribe the machine.
 # The runner therefore exports OMP_NUM_THREADS=1 (plus the usual BLAS caps
 # for portability to builds linked against OpenBLAS/vecLib/MKL); the workers

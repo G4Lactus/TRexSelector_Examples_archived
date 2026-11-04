@@ -33,7 +33,7 @@ One framing is worth keeping in mind throughout. T-Rex SPCA supervises each comp
 
 This is the R port of the
 [C++ demo](../../../../../cpp/trex_selector_methods/ad/trex_spca/demo_trex_spca_01_mc_sim/README.md),
-using the `TRexSPCASelector` class of the TRexSelectorNeo package. It keeps the data-generating process (DGP), the
+using the `TRexSPCASelector` class of the TRexSelector package. It keeps the data-generating process (DGP), the
 sweep, the measurement definitions and the result-file naming of the C++ demo and of the
 [Python port](../../../../../Python/trex_selector_methods/ad/trex_spca/demo_trex_spca_01_mc_sim/README.md). Support
 indices are 1-based (R convention).
@@ -92,11 +92,11 @@ base_seed = 42        # Trial mc (0-based) draws its data from base_seed_offset 
                       # with base_seed_offset = base_seed + round(snr_db)
 ```
 
-Each Monte Carlo trial builds the selector through the TRexSelectorNeo class interface, here for `ActiveSet` with
+Each Monte Carlo trial builds the selector through the TRexSelector class interface, here for `ActiveSet` with
 `TENET`:
 
 ```r
-library(TRexSelectorNeo)
+library(TRexSelector)
 
 sel <- TRexSPCASelector$new(
   X + 0, M = 3L, tFDR = 0.10,
@@ -273,7 +273,7 @@ about 9 min for both sections.
 
 Afterwards, regenerate the figures from the CSV files with [`generate_plots.sh`](generate_plots.sh), which drives
 [`../trex_spca_plt_utils.R`](../trex_spca_plt_utils.R) through `Rscript` (set `RSCRIPT` to use another R
-installation). The demo needs only `TRexSelectorNeo`, and the figures additionally need `ggplot2` and `patchwork`.
+installation). The demo needs only `TRexSelector`, and the figures additionally need `ggplot2` and `patchwork`.
 
 ---
 

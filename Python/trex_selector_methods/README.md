@@ -2,7 +2,7 @@
 
 ## Overview
 
-This folder contains the Python demos for all **T-Rex selector variants**, built on the `trex_selector_neo` package
+This folder contains the Python demos for all **T-Rex selector variants**, built on the `trexselector` package
 (the pybind11 binding layer over the C++ `tsolvers` and `ml_methods` stack).
 
 Each variant addresses a different variable-selection scenario — the classical baseline, dependent/correlated designs,
@@ -40,7 +40,7 @@ and T-Rex SPCA is its sparse PCA (SPCA) variant.
 
 ## Architecture context
 
-The demos exercise the `trex_selector_neo` selector layer, which sits on top of the solver and preprocessing layers:
+The demos exercise the `trexselector` selector layer, which sits on top of the solver and preprocessing layers:
 
 ```txt
 utils -> ml_methods -> tsolvers -> trex_selector_methods -> demos
@@ -55,7 +55,7 @@ In particular:
 - `trex_screening` and the memory-mapped demos in `trex_core` build on the memory-mapping utilities for large design
   matrices.
 
-All selector-layer classes and enums are accessed through the package root (`import trex_selector_neo as trex`).
+All selector-layer classes and enums are accessed through the package root (`import trexselector as trex`).
 See the [import conventions](../README.md#import-conventions) for details.
 
 ---

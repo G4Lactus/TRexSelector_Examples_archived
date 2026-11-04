@@ -21,7 +21,7 @@
 #
 # Parallelism follows the suite convention (see Python/README.md): trials run in
 # a concurrent.futures.ProcessPoolExecutor. Workers are module-level functions
-# and receive only picklable flat dicts; the trex_selector_neo enums/controls
+# and receive only picklable flat dicts; the trexselector enums/controls
 # are rebuilt inside each worker, never sent across a process boundary. On macOS
 # the spawn start method copies sys.path, so the sys.path insert below lets
 # spawned workers import this module and its siblings.
@@ -36,7 +36,7 @@ from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 import pandas as pd
 
-import trex_selector_neo as trex
+import trexselector as trex
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
@@ -51,8 +51,8 @@ import cell_cache
 # ------------------------------------------------------------------------------
 # Worker budget  (identical helper in every suite's *_common / *_utils module)
 #
-# N_CORES MC worker processes, each pinned to one inner OpenMP thread by
-# _init_worker(), so a demo never exceeds N_CORES cores in total. The default
+# N_CORES MC worker processes, each running the selector serially (the library
+# default), so a demo never exceeds N_CORES cores in total. The default
 # cap matches the cpp demos' default of 8 threads, keeping runtimes
 # comparable across the C++ / Python suites.
 #
@@ -100,27 +100,11 @@ def resolve_workers(requested=None):
 N_CORES = resolve_workers()
 
 
-def _init_worker():
-    """Pin each worker's inner OpenMP pool to a single thread.
-
-    The MC parallelism lives in the process pool (max_workers processes). Left
-    alone, the selector's own OpenMP defaults to every logical core *inside each
-    worker*, so max_workers x n_logical threads contend for the machine. The cpp
-    demos avoid this because OpenMP nested parallelism is off by default, so the
-    inner regions of a trial run serially inside one of the outer threads.
-    Here: max_workers outer trials x 1 inner thread = max_workers cores total.
-
-    Shared with trex_scr_bb_common.py, which imports it for its own pool.
-    """
-    from trex_selector_neo.utils import set_num_threads
-    set_num_threads(1)
-
-
 # ------------------------------------------------------------------------------
 # Persistent worker pool (mirrors trex_da/da_sim_common.py)
 #
 # The demos call the MC runners once per parameter point, so a pool created per
-# call re-pays (process spawn + `import trex_selector_neo`) every time: measured
+# call re-pays (process spawn + `import trexselector`) every time: measured
 # at ~0.5 s for 6 workers. One lazily-created pool is reused instead, keyed on
 # max_workers so the worker-count override still takes effect. Shared with
 # trex_scr_bb_common.py.
@@ -173,7 +157,6 @@ def _get_executor(max_workers, n_tasks=0):
     if _EXECUTOR is None:
         _EXECUTOR = ProcessPoolExecutor(
             max_workers=max_workers,
-            initializer=_init_worker,
             mp_context=multiprocessing.get_context("spawn"))
         _EXECUTOR_WORKERS = max_workers
         _TASKS_SINCE_SPAWN = 0
@@ -292,7 +275,7 @@ def dgp_block_equi(n, p, p1, rho, n_blocks, snr, beta_val, seed):
 # Section 2 - Control-parameter factories
 # ==============================================================================
 #
-# Solver names and screening methods are resolved to trex_selector_neo enums by
+# Solver names and screening methods are resolved to trexselector enums by
 # name via getattr, so the flat arg dicts stay picklable across the process
 # boundary and the enums are only ever built inside a worker.
 #
@@ -402,8 +385,8 @@ def _screen_trial_worker(args):
     runs the selector with seed = -1 (hardware entropy per trial, as in the cpp
     MC loop), and returns picklable per-trial metrics.
     """
-    import trex_selector_neo as _tsn
-    from trex_selector_neo.utils import compute_fdp as _fdp, compute_tpp as _tpp
+    import trexselector as _tsn
+    from trexselector.utils import compute_fdp as _fdp, compute_tpp as _tpp
 
     dat = _build_screen_data(args)
     trex_ctrl = _build_trex_ctrl(args)

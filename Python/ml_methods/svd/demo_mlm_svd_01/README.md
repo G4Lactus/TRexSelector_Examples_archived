@@ -48,7 +48,7 @@ $\min(n, p)$. All other shapes go through a thin Jacobi SVD.
 
 ## Running the demo
 
-From the repository root, with TRexSelectorNeo 1.0.0 installed in the repository virtual environment `.venv`:
+From the repository root, with TRexSelector 1.0.0 installed in the repository virtual environment `.venv`:
 
 ```bash
 .venv/bin/python Python/ml_methods/svd/demo_mlm_svd_01/demo_mlm_svd_01.py

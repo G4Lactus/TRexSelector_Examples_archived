@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This demo runs the terminating matching pursuit (T-MP) solver of the TRexSelectorNeo Python package on its own, outside
+This demo runs the terminating matching pursuit (T-MP) solver of the TRexSelector Python package on its own, outside
 the T-Rex selector. It mirrors the [C++ demo](../../../../cpp/tsolvers/ad/demo_ts_09_tmp/README.md) part by part, with
 the same settings, seeds and console format, while NumPy draws the data, so the numbers differ from the C++ run.
 Matching pursuit updates only the coefficient of the selected variable by its correlation with the residual, without a
@@ -50,7 +50,7 @@ Python/tsolvers/ad/demo_ts_09_tmp/generate_plots.sh                         # pa
 The optional arguments select the parts to run, and all five parts run in a few seconds. `generate_plots.sh` draws the
 figure with the plotting module of the C++ demos, of which `Python/tsolvers/ts_plt_utils.py` is a byte-identical copy,
 and writes it as Portable Network Graphics (PNG) and Portable Document Format (PDF) files to
-`simulation_results/plots/`. The output below is a run against library b95b984 (TRexSelectorNeo 1.0.0).
+`simulation_results/plots/`. The output below is a run against library b95b984 (TRexSelector 1.0.0).
 
 ---
 

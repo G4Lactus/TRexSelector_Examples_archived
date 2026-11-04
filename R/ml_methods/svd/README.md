@@ -2,7 +2,7 @@
 
 ## Overview
 
-This folder holds the R example for the singular value decomposition (SVD) in the TRexSelectorNeo package, where the
+This folder holds the R example for the singular value decomposition (SVD) in the TRexSelector package, where the
 R6 class `MLSVD` wraps the C++ `SVDSolver`. For $\mathbf{X} \in \mathbb{R}^{n \times p}$, the truncated SVD keeps the
 leading $M$ singular components,
 
@@ -32,7 +32,7 @@ The C++ and Python packages have the same demo in [cpp/ml_methods/svd/](../../..
 
 ## Running
 
-From the repository root, with the TRexSelectorNeo R package installed:
+From the repository root, with the TRexSelector R package installed:
 
 ```bash
 Rscript R/ml_methods/svd/demo_mlm_svd_01/demo_mlm_svd_01.R

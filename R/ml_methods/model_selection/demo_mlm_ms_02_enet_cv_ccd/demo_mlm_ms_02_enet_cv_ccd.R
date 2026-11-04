@@ -39,7 +39,7 @@
 #
 # ==============================================================================
 
-library(TRexSelectorNeo)
+library(TRexSelector)
 
 
 print_section_header <- function(title) {

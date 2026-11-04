@@ -3,7 +3,7 @@
 ## Overview
 
 This folder contains the R demos for the `ml_methods` layer of the TRexSelector library, used through the R6 classes
-and functions of the TRexSelectorNeo package.
+and functions of the TRexSelector package.
 
 The layer provides the numerical and preprocessing components that support the higher-level workflows of the
 Terminating-Random Experiments (T-Rex) selector, including column scaling, singular value decomposition (SVD),
@@ -53,11 +53,11 @@ In particular:
 
 ## Installation
 
-The demos are plain scripts without a build step. They need the TRexSelectorNeo R package 2.0.0, installed from the
+The demos are plain scripts without a build step. They need the TRexSelector R package 2.0.0, installed from the
 library as described in the [R README](../README.md):
 
 ```bash
-R CMD INSTALL --preclean <path-to-TRexSelector>/R/TRexSelectorNeo
+R CMD INSTALL --preclean <path-to-TRexSelector>/R/TRexSelector
 ```
 
 ---

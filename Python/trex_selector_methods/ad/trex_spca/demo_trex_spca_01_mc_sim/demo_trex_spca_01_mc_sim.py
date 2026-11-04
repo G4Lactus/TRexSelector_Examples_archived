@@ -60,7 +60,7 @@ for _p in (_THIS_DIR, _PARENT_DIR):
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-import trex_selector_neo as trex  # noqa: E402
+import trexselector as trex  # noqa: E402
 
 from trex_spca_sim_utils import (N_CORES, center_columns,  # noqa: E402
                                  resolve_workers,

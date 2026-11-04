@@ -50,8 +50,8 @@ from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 import pandas as pd
 
-import trex_selector_neo as trex
-from trex_selector_neo.ml_methods import PCA
+import trexselector as trex
+from trexselector.ml_methods import PCA
 
 # Family folder: cell_cache.py (resumable grid cells).
 _FAMILY_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -62,8 +62,8 @@ import cell_cache
 # ------------------------------------------------------------------------------
 # Worker budget  (identical helper in every suite's *_common / *_utils module)
 #
-# N_CORES MC worker processes, each pinned to one inner OpenMP thread by
-# init_worker(), so a demo never exceeds N_CORES cores in total. The default cap
+# N_CORES MC worker processes, each running the selector serially (the library
+# default), so a demo never exceeds N_CORES cores in total. The default cap
 # matches the cpp demos' default of 8 threads, keeping runtimes comparable
 # across the C++ / Python suites.
 #
@@ -110,32 +110,14 @@ def resolve_workers(requested=None):
 N_CORES = resolve_workers()
 
 
-def init_worker():
-    """Pin each worker's inner OpenMP pool to a single thread.
-
-    The MC parallelism lives in the process pool (n_cores processes). Left
-    alone, the selector's own OpenMP defaults to every logical core *inside each
-    worker*, so n_cores x n_logical threads contend for the machine. The cpp
-    demos avoid this because OpenMP nested parallelism is off by default, so the
-    inner regions of a trial run serially inside one of the outer threads.
-    Here: n_cores outer trials x 1 inner thread = n_cores cores total.
-
-    Public (no leading underscore) because the demos build their own pools for
-    the parts that do not go through _run_mc() and import this as initializer.
-    """
-    from trex_selector_neo.utils import set_num_threads
-    set_num_threads(1)
-
-
 # ------------------------------------------------------------------------------
 # Persistent worker pool (mirrors trex_da/da_sim_common.py)
 #
 # The demos call the MC runners once per parameter point, so a pool created per
-# call re-pays (process spawn + `import trex_selector_neo`) every time: measured
+# call re-pays (process spawn + `import trexselector`) every time: measured
 # at ~0.5 s for 6 workers. One lazily-created pool is reused instead, keyed on
-# n_cores so a demo's CLI worker-count override still takes effect. Public, like
-# init_worker(), because the demos drive their own loops for the parts that
-# bypass _run_mc().
+# n_cores so a demo's CLI worker-count override still takes effect. Public,
+# because the demos drive their own loops for the parts that bypass _run_mc().
 #
 # Workers are recycled after _RECYCLE_AFTER_TASKS trials. Measured worker RSS
 # grows ~0.25 MB/trial on a small design (allocator arenas + extension caches
@@ -183,7 +165,6 @@ def get_executor(n_cores, n_tasks=0):
     if _EXECUTOR is None:
         _EXECUTOR = ProcessPoolExecutor(
             max_workers=n_cores,
-            initializer=init_worker,
             mp_context=multiprocessing.get_context("spawn"))
         _EXECUTOR_WORKERS = n_cores
         _TASKS_SINCE_SPAWN = 0
@@ -194,7 +175,7 @@ def get_executor(n_cores, n_tasks=0):
     return _EXECUTOR
 
 # String -> enum maps: only plain strings cross the process boundary; workers
-# resolve them to trex_selector_neo enums on their side.
+# resolve them to trexselector enums on their side.
 _SPCA_MODE = {"ActiveSet": trex.SPCAMode.ActiveSet,
               "Thresholded": trex.SPCAMode.Thresholded}
 _EN_SOLVER = {"TENET": trex.ENSolverType.TENET,

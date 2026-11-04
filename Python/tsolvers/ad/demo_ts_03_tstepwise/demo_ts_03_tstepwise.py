@@ -23,10 +23,10 @@ import sys
 
 import numpy as np
 
-from trex_selector_neo.ml_methods import LpNormScaler, NormType
-from trex_selector_neo.tsolvers.ad import SolverOptions
-from trex_selector_neo.tsolvers.ad.lars_based import TSTEPWISE_Solver
-from trex_selector_neo.utils import (
+from trexselector.ml_methods import LpNormScaler, NormType
+from trexselector.tsolvers.ad import SolverOptions
+from trexselector.tsolvers.ad.lars_based import TSTEPWISE_Solver
+from trexselector.utils import (
     compute_fdp,
     compute_tpp,
     get_max_threads,

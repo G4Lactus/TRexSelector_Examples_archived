@@ -2,7 +2,7 @@
 
 ## Overview
 
-This folder holds the R examples for hierarchical agglomerative clustering (HAC) in the TRexSelectorNeo package. HAC
+This folder holds the R examples for hierarchical agglomerative clustering (HAC) in the TRexSelector package. HAC
 builds a tree of successive merges and recovers cluster assignments by cutting that tree at a chosen level. In
 TRexSelector the Grouped Variable Selection (GVS) workflow uses it to form variable groups from a dendrogram cut.
 
@@ -42,7 +42,7 @@ standardization) inlined.
 
 ## Running
 
-From the repository root, with the TRexSelectorNeo R package 2.0.0 built from library commit b95b984:
+From the repository root, with the TRexSelector R package 2.0.0 built from library commit b95b984:
 
 ```bash
 Rscript R/ml_methods/hac_clustering/demo_mlm_hac_01/demo_mlm_hac_01.R

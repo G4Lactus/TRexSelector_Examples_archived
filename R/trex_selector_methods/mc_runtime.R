@@ -50,8 +50,8 @@
   globals <- setdiff(ls(globalenv(), all.names = TRUE), ".mc_rt")
   parallel::clusterExport(cl, globals, envir = globalenv())
   parallel::clusterEvalQ(cl, {
-    suppressMessages(library(TRexSelectorNeo))
-    TRexSelectorNeo::trex_set_num_threads(1L)
+    suppressMessages(library(TRexSelector))
+    TRexSelector::trex_set_num_threads(1L)
   })
   .mc_rt$cl <- cl
   .mc_rt$workers <- workers
@@ -87,7 +87,7 @@ mc_stop_cluster <- function() {
 #' @param workers Number of worker processes.
 #' @return List of results in task order.
 mc_map <- function(tasks, fun, workers = 1L) {
-  TRexSelectorNeo::trex_set_num_threads(1L)
+  TRexSelector::trex_set_num_threads(1L)
   run <- function(task) {
     out <- fun(task)
     invisible(gc(verbose = FALSE))

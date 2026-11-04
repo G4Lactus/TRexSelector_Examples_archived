@@ -22,7 +22,7 @@ per-method sweep tables (`.txt` + tidy `.csv`) into each demo's own
 `simulation_results/data/` folder, with figures in `simulation_results/plots/`.
 
 ```python
-import trex_selector_neo as trex
+import trexselector as trex
 
 # Ordinary / DA screening
 sc = trex.ScreenTRexControlParameter()
@@ -35,7 +35,7 @@ sel.selected_indices          # 0-based screened support (numpy array)
 res.estimated_FDR             # procedure's self-reported FDR
 res.estimated_correlation     # estimated rho (DA variants)
 
-from trex_selector_neo.utils import compute_fdp, compute_tpp
+from trexselector.utils import compute_fdp, compute_tpp
 compute_fdp(list(sel.selected_indices), true_support)
 compute_tpp(list(sel.selected_indices), true_support)
 
@@ -251,7 +251,7 @@ from every `ProcessPoolExecutor` child.
   identical figures from identically-named CSVs.
 
 Both runners follow the suite convention, in which workers are module-level functions
-that receive only picklable flat dicts. The `trex_selector_neo` enums and controls
+that receive only picklable flat dicts. The `trexselector` enums and controls
 are rebuilt inside each worker and never sent across a process boundary. Every
 trial constructs its selector with `seed = -1` (hardware entropy per trial),
 which the library requires for valid Monte Carlo FDR estimates.

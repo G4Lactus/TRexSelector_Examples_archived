@@ -68,7 +68,7 @@ Gaussian design is about $\lambda^\ast \approx p\,\sigma^2 / \lVert \boldsymbol\
 
 ## Running the demo
 
-From the repository root, with TRexSelectorNeo 1.0.0 installed in the repository virtual environment `.venv`:
+From the repository root, with TRexSelector 1.0.0 installed in the repository virtual environment `.venv`:
 
 ```bash
 .venv/bin/python Python/ml_methods/ridge_regression/demo_mlm_ridge_01/demo_mlm_ridge_01.py

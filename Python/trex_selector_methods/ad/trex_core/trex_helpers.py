@@ -116,7 +116,7 @@ def print_selection_results(selected, true_support, sel, out=None):
     ----------
     selected     : iterable of int  0-based selected indices.
     true_support : iterable of int  0-based true active indices.
-    sel          : trex_selector_neo.TRexSelector after .select().
+    sel          : trexselector.TRexSelector after .select().
     out          : callable or None  PrintFn sink (console-only when None).
     """
     from trex_sim_common import compute_fdp, compute_tpp  # local import avoids circular dep
@@ -163,7 +163,7 @@ def print_single_run_result(scenario_name, dat, sel, tFDR, out=None):
         Label printed in the header (e.g. "Part 1 — i.i.d. Gaussian [TLARS]").
     dat           : dict
         Output of dgp_gauss_snr() with keys X, y, beta, true_support, n, p, s, snr.
-    sel           : trex_selector_neo.TRexSelector
+    sel           : trexselector.TRexSelector
         Selector instance after .select() has been called.
     tFDR          : float
         Target FDR level.

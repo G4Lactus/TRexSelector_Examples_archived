@@ -71,7 +71,7 @@ of a run, and a test with different numbers of workers gave a byte-identical `.c
 (`memory_vs_np_mc500.csv` and `.txt`), so a short test run does not overwrite the full one, and `generate_plots.sh`
 takes the `.csv` file of such a run as an optional argument. It draws the figure with
 `Python/tsolvers/ts_plt_utils.py`, a byte-identical copy of the C++ plotting module. The output below is a run against
-library 44cf1ab (TRexSelectorNeo 1.0.0). The T-Stagewise rows come from a rerun of that solver alone on library
+library 44cf1ab (TRexSelector 1.0.0). The T-Stagewise rows come from a rerun of that solver alone on library
 09debc6, with the same seeds.
 
 ---
@@ -293,9 +293,9 @@ T-NCGMP stays nearly flat.
   serves the small allocations of a solver from memory it already holds, so R read about 0 MiB per solver. The memory
   report needs neither a fork nor the Unix-only `resource` module, so the demo runs on macOS, Linux and Windows alike.
 - `run_parallel()` of [`ts_perf_utils.py`](../../ts_perf_utils.py) starts a `multiprocessing.Pool` with Python's
-  default start method, which spawns fresh interpreters on macOS and Windows. Its initializer calls
-  `set_num_threads(1)` in every worker after the start, so the setting holds with any start method. A worker runs
-  whole runs, and no solver runs in a process of its own.
+  default start method, which spawns fresh interpreters on macOS and Windows. The solvers run serially by
+  default, so a worker never spawns threads of its own. A worker runs whole runs, and no solver runs in a process
+  of its own.
 - A writer, a solver with `normalize=True` or `intercept=True`, centers and scales the caller's $\mathbf{X}$ and
   $\mathbf{D}$ in place and restores them when it is released, so it borrows the data too. It holds $16\,(p + L)$
   bytes more than a reader for the means and norms of the columns. This demo runs the precentered readers only.

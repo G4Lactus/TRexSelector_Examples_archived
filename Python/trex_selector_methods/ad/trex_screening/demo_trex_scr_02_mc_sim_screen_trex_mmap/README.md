@@ -17,7 +17,7 @@ Screening returns a *candidate set*, and the false discovery rate (FDR) and the 
 
 This is the Python port of the C++ demo
 [demo_trex_scr_02_mc_sim_screen_trex_mmap](../../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_02_mc_sim_screen_trex_mmap/README.md),
-using `trex_selector_neo`'s `TRexScreeningSelector`. As in the C++ source, the design matrix `X` still
+using `trexselector`'s `TRexScreeningSelector`. As in the C++ source, the design matrix `X` still
 lives in RAM. Only the dummy matrices move to disk, and the library manages those temporary files in its
 own scratch directories (nothing to clean up in the script).
 

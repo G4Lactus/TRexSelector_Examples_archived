@@ -30,7 +30,7 @@ import sys
 
 import numpy as np
 
-from trex_selector_neo.utils import (
+from trexselector.utils import (
     compute_fdp,
     compute_precision,
     compute_recall,

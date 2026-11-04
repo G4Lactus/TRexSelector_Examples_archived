@@ -2,7 +2,7 @@
 
 ## Overview
 
-This folder holds the R example for ridge regression in the TRexSelectorNeo package, where the R6 class `MLRidge`
+This folder holds the R example for ridge regression in the TRexSelector package, where the R6 class `MLRidge`
 wraps the C++ `RidgeSolver`. Ridge regression adds an $\ell_2$-penalty to least squares, which stabilizes the estimate
 and shrinks the coefficients toward zero:
 
@@ -34,7 +34,7 @@ same demo in [cpp/ml_methods/ridge_regression/](../../../cpp/ml_methods/ridge_re
 
 ## Running
 
-From the repository root, with the TRexSelectorNeo R package installed:
+From the repository root, with the TRexSelector R package installed:
 
 ```bash
 Rscript R/ml_methods/ridge_regression/demo_mlm_ridge_01/demo_mlm_ridge_01.R

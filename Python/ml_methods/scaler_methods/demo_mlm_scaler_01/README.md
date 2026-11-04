@@ -46,7 +46,7 @@ multiplies by $s_j$ and adds $c_j$ back.
 
 ## Running the demo
 
-From the repository root, with TRexSelectorNeo 1.0.0 installed in the repository virtual environment `.venv`:
+From the repository root, with TRexSelector 1.0.0 installed in the repository virtual environment `.venv`:
 
 ```bash
 .venv/bin/python Python/ml_methods/scaler_methods/demo_mlm_scaler_01/demo_mlm_scaler_01.py
@@ -201,6 +201,6 @@ The suite closes with its final banner.
   blocks. The C++ demo writes `scaler_test.bin` and `mmap_matrix.bin` unless the compile-time macros
   `TREX_DEMO_SCALER_SER_PATH` and `TREX_DEMO_MMAP_PATH` override them.
 - The Python demo fills the mapped matrix with a vectorized NumPy broadcast, where the C++ demo runs a parallel loop
-  with Open Multi-Processing (OpenMP). `set_num_threads(min(6, get_max_threads()))` from `trex_selector_neo.utils`
+  with Open Multi-Processing (OpenMP). `set_num_threads(min(6, get_max_threads()))` from `trexselector.utils`
   mirrors the six OpenMP threads of the C++ demo.
 - The labels print Python booleans (`center=True`), where the C++ output prints `center=true`.

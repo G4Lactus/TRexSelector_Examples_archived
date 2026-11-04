@@ -3,7 +3,7 @@
 ## Overview
 
 This folder holds the Python examples for hierarchical agglomerative clustering (HAC) in the
-`trex_selector_neo.ml_methods.clustering` module. HAC builds a tree of successive merges and recovers cluster
+`trexselector.ml_methods.clustering` module. HAC builds a tree of successive merges and recovers cluster
 assignments by cutting that tree at a chosen level. In TRexSelector the Grouped Variable Selection (GVS) workflow uses
 it to form variable groups from a dendrogram cut.
 

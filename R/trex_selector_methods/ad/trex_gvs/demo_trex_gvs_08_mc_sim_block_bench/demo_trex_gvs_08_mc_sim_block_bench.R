@@ -49,7 +49,7 @@
 #
 # =================================================================================
 
-library(TRexSelectorNeo)
+library(TRexSelector)
 library(parallel)
 
 # Worker processes: first CLI argument, else TREX_NUM_WORKERS, else 8 (0 = all).
@@ -201,15 +201,15 @@ CFG <- list(
   solver <- if (gvs_type == "IEN") "TIENET_AUG" else "TLARS"
   # All fields of the cpp make_gvs_trex_control() explicit (the R AUTO
   # stagnation default would switch the stop off for the EN rows).
-  ctrl <- TRexSelectorNeo::trex_control(
+  ctrl <- TRexSelector::trex_control(
     solver = solver, K = cfg$K, max_dummy_multiplier = 10,
     use_max_T_stop = TRUE, lloop_strategy = "HCONCAT",
     tloop_stagnation_stop = TRUE, tloop_max_stagnant_steps = 5,
     use_memory_mapping = FALSE
   )
-  sel <- TRexSelectorNeo::TRexGVSSelector$new(
+  sel <- TRexSelector::TRexGVSSelector$new(
     dat$X, dat$y, tFDR = cfg$tFDR, seed = seed, verbose = FALSE,
-    gvs_control = do.call(TRexSelectorNeo::trex_gvs_control, gvs_args),
+    gvs_control = do.call(TRexSelector::trex_gvs_control, gvs_args),
     control     = ctrl
   )
   sel$select()
@@ -217,8 +217,8 @@ CFG <- list(
   si <- sel$selected_indices
   ts <- dat$true_support
   list(
-    coord_fdp     = TRexSelectorNeo::trex_fdp(si, ts),
-    coord_tpr     = TRexSelectorNeo::trex_tpp(si, ts),
+    coord_fdp     = TRexSelector::trex_fdp(si, ts),
+    coord_tpr     = TRexSelector::trex_tpp(si, ts),
     exact_support = .exact_support(si, ts),
     block_hit     = .block_hit_rate(si, dat$active_blocks, dat$block_size),
     block_fdp     = .block_fdp(si, dat$active_blocks, dat$G, dat$block_size),

@@ -56,7 +56,7 @@
 #
 # ==============================================================================
 
-library(TRexSelectorNeo)
+library(TRexSelector)
 library(parallel)
 
 # ==============================================================================
@@ -184,7 +184,7 @@ trx_05_dummy_distributions <- function(num_MC = NUM_MC, rnd_coef = FALSE,
       # — every option explicit. tloop_stagnation_stop is left unset (NULL =
       # AUTO, C++ nullopt): resolved per solver family (disabled for TLARS,
       # enabled for the greedy TOMP/TAFS).
-      ctrl <- TRexSelectorNeo::trex_control(
+      ctrl <- TRexSelector::trex_control(
         solver                   = solver_entry$solver,
         lambda2                  = solver_entry$lambda2,
         rho_afs                  = solver_entry$rho_afs,

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This folder holds the R example for column-wise scaling and normalization in the TRexSelectorNeo package, where the
+This folder holds the R example for column-wise scaling and normalization in the TRexSelector package, where the
 R6 classes `MLZScoreScaler` and `MLLpNormScaler` wrap the C++ `ZScoreScaler` and `LpNormScaler`. Both scalers
 subtract a center $c_j$ from every column of $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ and divide it by a scale
 $s_j$,
@@ -35,7 +35,7 @@ The C++ and Python packages have the same demo in
 
 ## Running
 
-From the repository root, with the TRexSelectorNeo R package installed:
+From the repository root, with the TRexSelector R package installed:
 
 ```bash
 Rscript R/ml_methods/scaler_methods/demo_mlm_scaler_01/demo_mlm_scaler_01.R

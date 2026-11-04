@@ -14,7 +14,7 @@ Screening returns a *candidate set*, and the false discovery rate (FDR) and the 
 
 This is the Python port of the C++ demo
 [demo_trex_scr_01_mc_sim_screen_trex](../../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_01_mc_sim_screen_trex/README.md),
-using `trex_selector_neo`'s `TRexScreeningSelector`. In-memory variant — see Demo 02 for the
+using `trexselector`'s `TRexScreeningSelector`. In-memory variant — see Demo 02 for the
 memory-mapped counterpart.
 
 ---

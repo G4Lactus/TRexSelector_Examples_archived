@@ -46,7 +46,7 @@ minutes, on an Apple Silicon machine with 6 workers, against 545.8 s for the C++
 result files carry the number of runs in their name (`runtime_vs_dummies_mc500.csv` and `.txt`), so a short test run
 does not overwrite the full one. `generate_plots.sh` draws the figures with `Python/tsolvers/ts_plt_utils.py`, a
 byte-identical copy of the C++ plotting module, into `simulation_results/plots/`. The output below is a run against
-library b95b984 (TRexSelectorNeo 1.0.0). Two fixes in library 09debc6 change the paths of T-Stagewise, so its rows
+library b95b984 (TRexSelector 1.0.0). Two fixes in library 09debc6 change the paths of T-Stagewise, so its rows
 come from a rerun of the 500 runs on that library in a session of their own, with the same seeds and workers. The wall
 times quoted here are those of the first runs.
 

@@ -130,12 +130,12 @@ make_support_one_per_block <- function(s, p, block_size = 0L) {
 #' _make_trex_ctrl / cpp make_trex_control + the per-solver fields set by
 #' run_param_sweep).
 .make_trex_ctrl <- function(solver_desc, K) {
-  TRexSelectorNeo::trex_control(
+  TRexSelector::trex_control(
     solver                   = solver_desc$solver,
     K                        = as.integer(K),
     max_dummy_multiplier     = 10,
     use_max_T_stop           = TRUE,
-    dummy_distribution       = TRexSelectorNeo::trex_dummy_distribution(),
+    dummy_distribution       = TRexSelector::trex_dummy_distribution(),
     lloop_strategy           = "STANDARD",
     tloop_stagnation_stop    = isTRUE(solver_desc$use_stagnation),
     tloop_max_stagnant_steps = 7,
@@ -161,7 +161,7 @@ make_support_one_per_block <- function(s, p, block_size = 0L) {
   }
   if (!is.null(da_spec$rho_thr_DA))   da_args$rho_thr_DA <- da_spec$rho_thr_DA
   if (!is.null(da_spec$cor_coef))     da_args$cor_coef   <- da_spec$cor_coef
-  do.call(TRexSelectorNeo::trex_da_control, da_args)
+  do.call(TRexSelector::trex_da_control, da_args)
 }
 
 
@@ -201,12 +201,12 @@ run_mc_trials <- function(num_MC, progress_label, n, p, dgp, dgp_kwargs,
 
     ctrl <- .make_trex_ctrl(solver_desc, K)
     sel <- if (!is.null(da_spec)) {
-      TRexSelectorNeo::TRexDASelector$new(
+      TRexSelector::TRexDASelector$new(
         dat$X, dat$y, tFDR = tFDR, seed = -1L, verbose = FALSE,
         da_control = .make_da_ctrl(da_spec), control = ctrl
       )
     } else {
-      TRexSelectorNeo::TRexSelector$new(
+      TRexSelector::TRexSelector$new(
         dat$X, dat$y, tFDR = tFDR, seed = -1L, verbose = FALSE,
         control = ctrl
       )
@@ -214,8 +214,8 @@ run_mc_trials <- function(num_MC, progress_label, n, p, dgp, dgp_kwargs,
     sel$select()
 
     ts <- dat$true_support
-    c(FDP = TRexSelectorNeo::trex_fdp(sel$selected_indices, ts),
-      TPP = TRexSelectorNeo::trex_tpp(sel$selected_indices, ts),
+    c(FDP = TRexSelector::trex_fdp(sel$selected_indices, ts),
+      TPP = TRexSelector::trex_tpp(sel$selected_indices, ts),
       L   = as.numeric(sel$L),
       T   = as.numeric(sel$T_stop))
   }

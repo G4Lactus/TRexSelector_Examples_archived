@@ -34,7 +34,7 @@ import tempfile
 
 import numpy as np
 
-from trex_selector_neo.utils import AccessMode, MemoryMappedMatrix, numpy_to_memmap
+from trexselector.utils import AccessMode, MemoryMappedMatrix, numpy_to_memmap
 
 
 def print_section_header(title):

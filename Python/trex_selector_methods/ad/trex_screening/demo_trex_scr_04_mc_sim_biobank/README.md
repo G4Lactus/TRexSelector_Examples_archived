@@ -19,7 +19,7 @@ Screening returns a *candidate set*, and the FDR and the true positive rate (TPR
 
 This is the Python port of the C++ demo
 [demo_trex_scr_04_mc_sim_biobank](../../../../../cpp/trex_selector_methods/ad/trex_screening/demo_trex_scr_04_mc_sim_biobank/README.md),
-using `trex_selector_neo`'s `TRexBiobankScreeningSelector`.
+using `trexselector`'s `TRexBiobankScreeningSelector`.
 
 ---
 

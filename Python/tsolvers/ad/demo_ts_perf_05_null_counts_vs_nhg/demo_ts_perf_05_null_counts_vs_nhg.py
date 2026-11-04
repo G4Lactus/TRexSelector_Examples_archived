@@ -76,7 +76,7 @@ def nhg_pmf():
 
 def run_one(mc):
     """One run: one data set with K * L dummies, block k for experiment k, every solver to T."""
-    from trex_selector_neo.ml_methods import LpNormScaler, NormType
+    from trexselector.ml_methods import LpNormScaler, NormType
 
     seed = data_seed_offset + mc
     X, D_all, y = gen_synthetic_data(n, p, K * num_dummies, SUPPORT, COEFS, snr, seed=seed)

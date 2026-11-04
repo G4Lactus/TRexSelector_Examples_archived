@@ -25,7 +25,7 @@ import time
 
 import numpy as np
 
-from trex_selector_neo.utils import compute_fdp, compute_tpp
+from trexselector.utils import compute_fdp, compute_tpp
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _PARENT_DIR = os.path.dirname(os.path.dirname(_THIS_DIR))  # tsolvers/, the shared helpers
@@ -93,7 +93,7 @@ def run_one(mc):
     oracle = refit_errors(X_raw, y_raw, X_test, y_test, SUPPORT, BETA_TRUE)
 
     # Center and scale once in front; every solver below is a precentered reader
-    from trex_selector_neo.ml_methods import LpNormScaler, NormType
+    from trexselector.ml_methods import LpNormScaler, NormType
     LpNormScaler(NormType.L2, center=True).fit_transform_inplace(X)
     LpNormScaler(NormType.L2, center=True).fit_transform_inplace(D)
     y -= y.mean()

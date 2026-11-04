@@ -2,7 +2,7 @@
 
 ## Overview
 
-This folder holds the R examples for model selection in the TRexSelectorNeo R package, which choose the penalty of a
+This folder holds the R examples for model selection in the TRexSelector R package, which choose the penalty of a
 regularized Gaussian regression by K-fold cross-validation (CV). In TRexSelector, these routines tune the ridge penalty
 of Grouped Variable Selection (GVS). Both demos draw synthetic data from
 
@@ -37,7 +37,7 @@ Both print to the console only and finish in under a minute. The C++ and Python 
 
 ## Running
 
-From the repository root, with the TRexSelectorNeo R package installed as described in
+From the repository root, with the TRexSelector R package installed as described in
 [`LIBRARY_TARGET.txt`](../../../LIBRARY_TARGET.txt):
 
 ```bash

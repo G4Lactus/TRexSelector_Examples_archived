@@ -94,7 +94,7 @@ The control object is assembled as `trex.TRexSPCAControlParameter()` with `mode`
  `trex_ctrl.scaling_mode = trex.ScalingMode.L2`). The selector is the root-level wrapper
  `trex.TRexSPCASelector(X, spca_ctrl=ctrl, seed=-1)`. Its call `sel.select(M, tFDR)` returns `self`, and the
  results are read from the `sel.V`, `sel.Z` and `sel.active_sets` properties (0-based). The PCA baselines use
- `trex_selector_neo.ml_methods.PCA(center=False, normalize=False).fit(X, M)` → `PCAResult` with `.V` / `.Z`
+ `trexselector.ml_methods.PCA(center=False, normalize=False).fit(X, M)` → `PCAResult` with `.V` / `.Z`
  — `center=False` because $\boldsymbol{X}$ is already centered (covariance PCA).
 
 Note that only the **data** is seeded deterministically. Each trial's dummies are drawn from hardware entropy
@@ -235,7 +235,7 @@ python demo_trex_spca_01_mc_sim.py 12             # 12 workers (0 = all usable c
 and `TREX_SPCA_PARTS` selects the sections (default `12`, with `1` = method comparison and `2` = union-FDR
 sweep) — the same environment switches as the cpp executable.
 
-Run the demo inside an environment that carries `trex_selector_neo` (e.g. the `trex-dev` conda environment
+Run the demo inside an environment that carries `trexselector` (e.g. the `trex-dev` conda environment
 or the repo `.venv`). The Monte Carlo trials run in parallel via `concurrent.futures.ProcessPoolExecutor`
 (spawn), so the demo must be run **as a real `.py` file** (workers re-import the module) — not via
 `python -` / piped stdin. It uses `TREX_NUM_WORKERS` worker processes (default 8, and `0` uses every usable core,

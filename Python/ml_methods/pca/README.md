@@ -2,7 +2,7 @@
 
 ## Overview
 
-This folder holds the Python example for principal component analysis (PCA) in the `trex_selector_neo.ml_methods`
+This folder holds the Python example for principal component analysis (PCA) in the `trexselector.ml_methods`
 module. PCA projects a data matrix $\boldsymbol{X} \in \mathbb{R}^{n \times p}$ onto $M \le \min(n, p)$ orthogonal
 directions of largest variance,
 
@@ -33,7 +33,7 @@ C++ and R packages have the same demo in [cpp/ml_methods/pca/](../../../cpp/ml_m
 
 ## Running
 
-From the repository root, with TRexSelectorNeo installed in the repository virtual environment `.venv`:
+From the repository root, with TRexSelector installed in the repository virtual environment `.venv`:
 
 ```bash
 .venv/bin/python Python/ml_methods/pca/demo_mlm_pca_01/demo_mlm_pca_01.py

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This folder holds the Python example for ridge regression in the `trex_selector_neo.ml_methods` module. Ridge
+This folder holds the Python example for ridge regression in the `trexselector.ml_methods` module. Ridge
 regression adds an $\ell_2$-penalty to least squares, which stabilizes the estimate and shrinks the coefficients
 toward zero:
 
@@ -34,7 +34,7 @@ well under a second. Choosing $\lambda$ by cross-validation is covered in
 
 ## Running
 
-From the repository root, with TRexSelectorNeo installed in the repository virtual environment `.venv`:
+From the repository root, with TRexSelector installed in the repository virtual environment `.venv`:
 
 ```bash
 .venv/bin/python Python/ml_methods/ridge_regression/demo_mlm_ridge_01/demo_mlm_ridge_01.py

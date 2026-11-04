@@ -19,7 +19,7 @@ The workflow is organized into three phases:
 3. **Clustering**: benchmark selected HAC linkage strategies under an LSH-based correlation distance approximation.
 
 Each phase section below ends with the console output of the recorded run. The output below is a run against library
-b95b984. It used the package TRexSelectorNeo 1.0.0 and 6 Open Multi-Processing (OpenMP) threads in the C++ backend,
+b95b984. It used the package TRexSelector 1.0.0 and 6 Open Multi-Processing (OpenMP) threads in the C++ backend,
 and it finished within seconds.
 
 ---

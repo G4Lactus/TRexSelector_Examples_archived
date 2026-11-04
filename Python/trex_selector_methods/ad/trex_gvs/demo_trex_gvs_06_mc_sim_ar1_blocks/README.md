@@ -13,7 +13,7 @@ when within-block correlation follows a
 
 This is the Python port of the C++ demo
 [demo_trex_gvs_06_mc_sim_ar1_blocks](../../../../../cpp/trex_selector_methods/ad/trex_gvs/demo_trex_gvs_06_mc_sim_ar1_blocks/),
-using `trex_selector_neo`'s `TRexGVSSelector`.
+using `trexselector`'s `TRexGVSSelector`.
 
 ---
 

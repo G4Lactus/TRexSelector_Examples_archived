@@ -45,11 +45,11 @@ for the full penalty formula). The **linkage method** sets the between-cluster d
 the unweighted pair group method with arithmetic mean (UPGMA). Every sweep below runs once per linkage to probe its
 influence.
 
-Each Monte Carlo trial builds the selector through the TRexSelectorNeo class interface, here for TOMP at Average
+Each Monte Carlo trial builds the selector through the TRexSelector class interface, here for TOMP at Average
 linkage:
 
 ```r
-library(TRexSelectorNeo)
+library(TRexSelector)
 
 ctrl <- trex_control(
   solver = "TOMP", K = 20L, max_dummy_multiplier = 10, use_max_T_stop = TRUE,

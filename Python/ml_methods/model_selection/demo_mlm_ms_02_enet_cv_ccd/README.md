@@ -4,7 +4,7 @@
 
 This demo shows `ElasticNet`, which fits elastic-net regularization paths by cyclic coordinate descent (CCD), and
 `ElasticNetCV`, which selects the penalty $\lambda$ by K-fold cross-validation (CV). Both come from
-`trex_selector_neo.ml_methods`, bind the library's `enet_gaussian` and `enet_cv_ccd`, and follow the semantics of the
+`trexselector.ml_methods`, bind the library's `enet_gaussian` and `enet_cv_ccd`, and follow the semantics of the
 R package glmnet. The demo shows how the path changes with the mixing parameter $\alpha$ and how CV picks $\lambda$
 for ridge, elastic net and lasso, including the ridge conversion used by Grouped Variable Selection (GVS) in
 TRexSelector (`TRexGVS`). It has four scenarios:
@@ -139,7 +139,7 @@ From the repository root, with the repository's virtual environment `.venv` set 
 ```
 
 The demo prints to the console only and finishes in about a second. The output below is a run against library
-b95b984, with the package TRexSelectorNeo 1.0.0 built from that commit. The data come from NumPy's permuted
+b95b984, with the package TRexSelector 1.0.0 built from that commit. The data come from NumPy's permuted
 congruential generator (PCG64) via `numpy.random.default_rng`, with the same data seeds as the C++ demo. The C++ demo
 draws from `std::mt19937`, so the two languages see different data, and their numbers agree qualitatively, not
 bitwise.

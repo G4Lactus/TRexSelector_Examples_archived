@@ -37,7 +37,7 @@ formula). Every sweep runs across the three HAC **linkage methods** (Single / Co
 For heavy-tailed data the *sample* correlations feeding the clustering are themselves noisier, so
 linkage robustness is part of what this demo probes.
 
-Each trial calls the TRexSelectorNeo selector with the linkage of the current loop.
+Each trial calls the TRexSelector selector with the linkage of the current loop.
 
 ```r
 sel <- TRexDASelector$new(

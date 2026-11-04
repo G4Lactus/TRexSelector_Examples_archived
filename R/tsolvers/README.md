@@ -2,7 +2,7 @@
 
 ## Overview
 
-This folder holds the R demos of the terminating solvers (T-solvers) that the TRexSelectorNeo R package exposes as R6
+This folder holds the R demos of the terminating solvers (T-solvers) that the TRexSelector R package exposes as R6
 classes. They mirror [cpp/tsolvers/](../../cpp/tsolvers/README.md) and
 [Python/tsolvers/](../../Python/tsolvers/README.md) demo by demo, with the same numbering, parts, settings, seed values
 and console format, while R's Mersenne-Twister draws the data and all indices are 1-based, so the numbers differ from
@@ -135,7 +135,7 @@ $p > n$. The T-AFS figure shows four values of $\rho$ from 0.1 to 1, and the T-N
 
 ## Running
 
-Run any demo from the repository root, with the TRexSelectorNeo R package 2.0.0 installed:
+Run any demo from the repository root, with the TRexSelector R package 2.0.0 installed:
 
 ```bash
 Rscript R/tsolvers/ad/demo_ts_01_tlars/demo_ts_01_tlars.R      # Parts 1-5
@@ -145,7 +145,7 @@ R/tsolvers/ad/demo_ts_01_tlars/generate_plots.sh               # path figure fro
 
 If the package is installed in a separate library, prefix the commands with `R_LIBS=<R library>`. Every solver demo
 takes the parts to run as optional arguments and pins six Open Multi-Processing (OpenMP) threads with
-`trex_set_num_threads(6L)`. The demos print `Running with 6 threads` only when TRexSelectorNeo was built with OpenMP,
+`trex_set_num_threads(6L)`. The demos print `Running with 6 threads` only when TRexSelector was built with OpenMP,
 and a build without it compiles single-threaded, where `trex_set_num_threads()` does nothing and the demos print
 `Running with 1 threads`. Linux and Windows builds use R's own OpenMP flags, while on macOS, where R from the
 Comprehensive R Archive Network (CRAN) has none, the configure script of the package links R's own OpenMP runtime when

@@ -4,13 +4,13 @@
 
 This folder contains the Python example scripts for the classical
 **Terminating Random Experiments Selector (T-Rex Selector)**, built on the
-`trex_selector_neo` package. The demos mirror the C++ suite in
+`trexselector` package. The demos mirror the C++ suite in
 [cpp/trex_selector_methods/ad/trex_core/](../../../../cpp/trex_selector_methods/ad/trex_core/)
 and the R suite in `R/trex_selector_methods/ad/trex_core/`, and they show:
 
 1. how to generate synthetic Gaussian regression data with noise calibrated to a
    target signal-to-noise ratio (SNR),
-2. how to run the T-Rex Selector (`trex_selector_neo.TRexSelector`) in
+2. how to run the T-Rex Selector (`trexselector.TRexSelector`) in
    single-run and Monte Carlo (MC) settings,
 3. how to interpret the resulting variable selections, scored by the false
    discovery proportion (FDP) and the true positive proportion (TPP), and the
@@ -186,4 +186,4 @@ All CSVs are written with pandas and can be plotted with any tool of choice
 - C++ suite: [cpp/trex_selector_methods/ad/trex_core/](../../../../cpp/trex_selector_methods/ad/trex_core/README.md)
   (statistical background, notation, example results)
 - R suite: `R/trex_selector_methods/ad/trex_core/`
-- Main package: `TRexSelector/Python/TRexSelectorNeo` (TRexSelectorNeo v0.2.0)
+- Main package: `TRexSelector/Python/trexselector` (trexselector 1.0.0)

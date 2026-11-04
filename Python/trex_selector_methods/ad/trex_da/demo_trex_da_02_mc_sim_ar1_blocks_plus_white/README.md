@@ -47,7 +47,7 @@ but — unlike the correlation-threshold group design of the nearest-neighbor (N
 **BT group design** obtains $\mathrm{Gr}(j)$ from a **binary tree**. Variables are clustered by hierarchical
 agglomerative clustering (HAC) on the dissimilarity $1 - |\mathrm{corr}(\boldsymbol x_j, \boldsymbol x_{j'})|$,
 and the dendrogram cut defines disjoint variable groups. The **linkage method**
-(`LinkageMethod` from `trex_selector_neo.ml_methods.clustering`) sets the between-cluster distance
+(`LinkageMethod` from `trexselector.ml_methods.clustering`) sets the between-cluster distance
 during agglomeration:
 
 - **Single** — $d(A,B) = \min_{j \in A,\, j' \in B} d(j, j')$ (nearest member, prone to chaining),

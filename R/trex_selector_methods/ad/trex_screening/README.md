@@ -16,7 +16,7 @@ R worker processes and write per-method tables (`.txt` + tidy `.csv`) into each 
 `simulation_results/data/` folder, with figures in `simulation_results/plots/`.
 
 ```r
-library(TRexSelectorNeo)
+library(TRexSelector)
 
 # Ordinary / DA screening
 sel <- TRexScreeningSelector$new(

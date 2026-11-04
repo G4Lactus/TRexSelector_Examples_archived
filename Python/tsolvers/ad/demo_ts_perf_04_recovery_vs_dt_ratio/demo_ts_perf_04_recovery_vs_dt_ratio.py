@@ -28,7 +28,7 @@ import time
 
 import numpy as np
 
-from trex_selector_neo.utils import compute_fdp, compute_tpp
+from trexselector.utils import compute_fdp, compute_tpp
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _PARENT_DIR = os.path.dirname(os.path.dirname(_THIS_DIR))  # tsolvers/, the shared helpers

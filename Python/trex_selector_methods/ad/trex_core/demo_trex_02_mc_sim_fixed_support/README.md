@@ -8,7 +8,7 @@ across a range of **Signal-to-Noise Ratios (SNR)** with a **fixed** true
 support, comparing all default base solvers. This is the foundational empirical
 validation demo for the classical T-Rex algorithm. Python port of
 [cpp/trex_selector_methods/ad/trex_core/demo_trex_02_mc_sim_fixed_support](../../../../../cpp/trex_selector_methods/ad/trex_core/demo_trex_02_mc_sim_fixed_support/),
-using `trex_selector_neo`.
+using `trexselector`.
 
 ---
 
