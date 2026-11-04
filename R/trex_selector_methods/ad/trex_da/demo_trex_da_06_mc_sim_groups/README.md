@@ -16,8 +16,8 @@ R port of the C++ demo
 with the same DGP, control parameters, sweep axis, console summaries and result-file naming. The numbers
 below are this R run's own results. R draws its own random numbers, so they agree with the C++ and Python runs within
 Monte Carlo noise, not exactly. A cell-by-cell comparison with the C++ run (200 trials each) finds none of the 48 FDR
-and true positive rate (TPR) cells more than three combined MC standard errors apart. Over the whole suite 27 of
-$9{,}344$ cells ($0.29\,\%$) lie that far apart, about the rate noise alone produces.
+and true positive rate (TPR) cells more than three combined MC standard errors apart. Over the whole suite 29 of
+$9{,}344$ cells ($0.31\,\%$) lie that far apart, about the rate noise alone produces.
 
 The solver pool is `default_solvers()` from [`../da_sim_common.R`](../da_sim_common.R), without a variant tag. TLARS
 runs without the T-loop stagnation stop, TAFS and TOMP run with it, and TLARS_STAG is TLARS with the stop switched on,
@@ -169,8 +169,9 @@ files (this port renders no interactive `.html` page).
 
 Against the previous run on library commit `44cf1ab`, TAFS and TOMP lose $0.015\text{–}0.019$ of FDR at
 $\mathrm{SNR}=2$ and $5$ while their TPR stays flat. All three language trees show the same drop, so it is more than
-Monte Carlo noise. The corrected FDP estimate of library commit `415484d` is the likely cause, but no paired run has
-tested that.
+Monte Carlo noise. The corrected FDP estimate of library commit `415484d` causes it, because it is the only library
+change on the path of the two solvers. Both stop their T-loop on stagnation, so the larger estimate raises the voting
+threshold instead of shortening the loop.
 
 ![SNR sweep on multi-level prior-groups data](simulation_results/plots/da_trex_mc_da_groups_toeplitz_leaf_fdr_tpr.png)
 

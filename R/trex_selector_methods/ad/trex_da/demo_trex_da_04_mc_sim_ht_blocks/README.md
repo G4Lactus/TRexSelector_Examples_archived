@@ -19,7 +19,7 @@ naming. Indices are 1-based (R convention). The numbers below are this R run's o
 numbers, so they differ from the C++ and Python runs within Monte Carlo noise, not exactly. A cell-by-cell comparison
 with the C++ run, with $z$ the difference divided by the combined Monte Carlo standard error of the two 200-trial
 means, finds $5$ cells with $|z| > 3$ among the 2,160 cells of this demo (FDR and TPR of every solver at every grid
-point). Over the whole DA-TRex suite 27 of 9,344 cells (0.29 %) exceed $|z| > 3$, about the rate that noise alone
+point). Over the whole DA-TRex suite 29 of 9,344 cells (0.31 %) exceed $|z| > 3$, about the rate that noise alone
 produces.
 
 The greedy solvers use *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for TAFS/TOMP, `0` for

@@ -67,11 +67,11 @@ dendrogram-based hierarchical block detection via hierarchical agglomerative clu
   because its monotone path needs none, and in correlated designs its T-loop then often runs far, up to the cap of
   $T = 150$ (Demo 08). The fourth pool entry TLARS_STAG is the same TLARS with the stop on (window 7), on the same
   data. In every demo it matches TLARS within Monte Carlo noise (averaged over a demo's cells, the true positive rate
-  (TPR) changes by at most $0.004$ and the FDR by at most $+0.003$). It breaks the target in about as many cells as
-  TLARS (56 against 58 DA cells over all demos), and the cells where only one of the two crosses the target lie within
-  $0.02$ of it. Below the correction-window boundary of Demo 01 it raises fewer false alarms than TLARS. Its T-loop
-  stops after at most $8.4$ steps on average in the DA rows. The `TREX: TLARS_STAG` base rows of Demos 01, 07 and 08
-  match `TREX: TLARS` in the same way. The figures draw TLARS_STAG dashed in TLARS' colour.
+  (TPR) changes by at most $0.003$, and the FDR rises by at most $0.001$ and falls by at most $0.009$). It breaks the
+  target in about as many cells as TLARS (56 against 57 DA cells over all demos), and the cells where only one of the
+  two crosses the target lie within $0.02$ of it. Below the correction-window boundary of Demo 01 it raises fewer false
+  alarms than TLARS. Its T-loop stops after at most $8.0$ steps on average in the DA rows. The `TREX: TLARS_STAG` base
+  rows of Demos 01, 07 and 08 match `TREX: TLARS` in the same way. The figures draw TLARS_STAG dashed in TLARS' colour.
 
 ---
 
@@ -203,21 +203,23 @@ matching x-axis. It offers four figure patterns:
 
 ## What to expect
 
-Every demo ships with real committed data and figures, and the pattern matches the C++ reference throughout (independent
-random number generator (RNG) streams, so cells agree up to Monte-Carlo noise). DA-TRex's FDR stays far closer to
-controlled than the classical (no-DA) T-Rex selector on the same correlated data — in Demo 01 at $\mathrm{SNR}=2$,
-DA-TRex realizes $\mathrm{FDR}\approx 0.04\text{–}0.08$ against base T-Rex TLARS's $\approx 0.27$ — at some cost in TPR,
-largest around $\mathrm{SNR} = 1$ and under `Random` support. The greedy DA solvers (TAFS/TOMP) are FDR-controlled
-across the full $\rho$ grid and both support placements, which the C++ README traces to the exchangeable-tie fix, and
-they generally outperform DA-TLARS on block designs. TLARS_STAG tracks DA-TLARS in FDR and TPR in every demo while
-cutting its long T-loops short. The demo READMEs document the known rough edges. TLARS, and TLARS_STAG with it, breaks
-the target at $\rho = 0.9$ on block designs (Demos 03/04) and on the multi-level prior-groups DGP (Demo 06, flat in SNR
-— consistent with a structural property of the symmetric nearest-partner deflation under least-angle regression (LARS)
-type occurrence profiles). Heavy-tailed noise raises the FDR in Demo 05 (mean over the DA cells $0.119$ against $0.076$
-with Gaussian noise) without costing power, while in Demo 04 the two noise models give the same averages. Against the
-Gaussian Demo 03, the heavy-tailed predictors of Demo 04 cost power more than FDR control. The NN correction breaks down
-when applied to AR(1) data at $\rho \geq 0.8$ (Demo 07), and equicorrelation suppresses the DA selector entirely from
-$\rho = 0.025$ on (Demo 08).
+Every demo ships with real committed data and figures, and the pattern matches the C++ reference throughout
+(independent random number generator (RNG) streams, so cells agree up to Monte-Carlo noise). All eight demos run on
+library commit `09debc6` (200 Monte Carlo trials per cell, 8 workers, about 23.5 h in total). Of the 9,344 FDR and TPR
+cells, 29 (0.31 %) lie more than three Monte Carlo standard errors from C++ and 17 (0.18 %) from R, the rate noise
+alone produces. DA-TRex's FDR stays far closer to controlled than the classical (no-DA) T-Rex selector on the same
+correlated data — in Demo 01 at $\mathrm{SNR}=2$, DA-TRex realizes $\mathrm{FDR}\approx 0.03\text{–}0.04$ against base
+T-Rex TLARS's $\approx 0.27\text{–}0.28$ — at some cost in TPR, largest around $\mathrm{SNR} = 1$ and under `Random`
+support. The greedy DA solvers (TAFS/TOMP) are FDR-controlled across the full $\rho$ grid and both support placements,
+which the C++ README traces to the exchangeable-tie fix, and they generally outperform DA-TLARS on block designs.
+TLARS_STAG tracks DA-TLARS in FDR and TPR in every demo while cutting its long T-loops short. The demo READMEs document
+the known rough edges. TLARS, and TLARS_STAG with it, breaks the target at $\rho = 0.9$ on block designs (Demos 03/04)
+and on the multi-level prior-groups DGP (Demo 06, flat in SNR — consistent with a structural property of the symmetric
+nearest-partner deflation under least-angle regression (LARS) type occurrence profiles). Heavy-tailed noise raises the
+FDR in Demo 05 (mean over the DA cells $0.115$ against $0.072$ with Gaussian noise) without costing power, while in
+Demo 04 the two noise models give the same averages. Against the Gaussian Demo 03, the heavy-tailed predictors of
+Demo 04 cost power more than FDR control. The NN correction breaks down when applied to AR(1) data at $\rho \geq 0.8$
+(Demo 07), and equicorrelation suppresses the DA selector entirely from $\rho = 0.025$ on (Demo 08).
 
 ---
 

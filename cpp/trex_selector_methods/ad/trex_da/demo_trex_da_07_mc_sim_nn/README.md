@@ -123,12 +123,12 @@ Figures (`.png` and `.pdf`, plus uncommitted interactive `.html` pages with `./g
 
 DA-TRex+NN vs. base T-Rex over $\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 1, 2, 5\rbrace$, CappedSpread vs. Random support:
 
-- All four DA solvers stay below $\mathrm{tFDR}=0.2$ at every SNR (worst cell $\approx 0.12$), while base T-Rex TLARS
-  violates from $\mathrm{SNR}=0.5$ on (FDR $\approx 0.23\text{–}0.27$), and base TAFS grazes the target at
-  $\mathrm{SNR}=5$.
+- All four DA solvers stay below $\mathrm{tFDR}=0.2$ at every SNR (worst cell $\approx 0.11$), while base T-Rex TLARS
+  violates from $\mathrm{SNR}=0.5$ on (FDR $\approx 0.23\text{–}0.26$), and base TAFS comes closest to the target at
+  $\mathrm{SNR}=5$ ($0.16\text{–}0.17$).
 - From $\mathrm{SNR}=2$ on, the DA cost in true positive rate (TPR) is modest and concentrates in DA-TLARS (e.g.
-  $0.85\text{–}0.87$ vs. base $1.00$ at $\mathrm{SNR}=2$), while DA-TAFS/TOMP reach $\approx 0.95\text{–}0.99$. Below
-  that the cost is larger (at $\mathrm{SNR}=1$ DA-TLARS $0.60\text{–}0.62$ vs. base $0.85\text{–}0.87$, and at
+  $0.84\text{–}0.87$ vs. base $1.00$ at $\mathrm{SNR}=2$), while DA-TAFS/TOMP reach $\approx 0.96\text{–}0.99$. Below
+  that the cost is larger (at $\mathrm{SNR}=1$ DA-TLARS $0.58\text{–}0.62$ vs. base $0.85\text{–}0.86$, and at
   $\mathrm{SNR}=0.5$ all DA rows stay at $0.09\text{–}0.13$ vs. base $0.30\text{–}0.43$).
 - DA-TLARS runs its T-loop almost to the cap ($T \approx 138$ of $150$), and TLARS' path then selects so many columns
   that some of them become linearly dependent, which the console reports as `collinear; dropped`. TLARS_STAG stops
@@ -155,7 +155,17 @@ cyan.
   of Demo 01's gap-vs-window story, but entering through the band width rather than the support spacing.
 - **TPR degrades gracefully** toward the same corner, down to about $0.6$ for every solver at $\kappa = 15$,
   $\rho = 0.9$, and is essentially flat elsewhere.
-- TLARS_STAG gives the same heatmaps as TLARS (mean FDR and TPR changes below $0.003$).
+- TLARS_STAG gives the same heatmaps as TLARS (mean FDR and TPR changes below $0.002$).
+
+Against the previous run on library commit `44cf1ab`, DA-TAFS and DA-TOMP lose FDR beyond Monte Carlo noise in all
+three parts while their TPR stays flat. Over their $204$ cells the mean FDR drops from $0.086$ to $0.070$ for TAFS and
+from $0.072$ to $0.055$ for TOMP, most on this $\kappa \times \rho$ grid ($0.103$ to $0.077$ and $0.084$ to $0.057$),
+while the mean TPR moves from $0.655$ to $0.657$ and stays at $0.661$. DA-TLARS and TLARS_STAG move much less
+($0.111$ to $0.105$ and $0.109$ to $0.103$), and the base TAFS and TOMP rows of Part 1 lose about $0.01$ ($0.114$ to
+$0.104$ and $0.087$ to $0.074$). All three language trees show the same drop. Library commit `415484d` removed the
+lower clamp $\Phi' \geq 0$ from the false discovery proportion (FDP) estimate, which makes the estimate larger, and it
+is the only library change on the path of TAFS and TOMP. Both stop their T-loop on stagnation, so the larger estimate
+raises the voting threshold instead of shortening the loop.
 
 ![kappa x rho, CappedSpread support](simulation_results/plots/da_trex_mc_da_nn_kappa_rho_capped.png)
 
@@ -170,11 +180,10 @@ $\rho \in \lbrace0.1, \ldots, 0.9\rbrace$:
 
 - **Up to $\rho \approx 0.7$ the mismatch is benign**. FDR stays at or below target for all solvers and SNRs —
   the NN groups capture enough of the (rapidly decaying) AR(1) neighborhood to deflate the nearby shadows.
-- **At $\rho = 0.8\text{–}0.9$ control breaks down sharply** (up to $0.65$ for TLARS at $\mathrm{SNR}=0.5$,
+- **At $\rho = 0.8\text{–}0.9$ control breaks down sharply** (up to $0.64$ for TLARS at $\mathrm{SNR}=0.5$,
   $\rho=0.9$). AR(1) correlation beyond the effective NN window leaks through as false discoveries, exactly the
   failure mode the finite-range group design cannot see (a plausible reading the data do not test directly). TOMP
-  is again the most robust but still violates at
-  $\rho \geq 0.8$, and TLARS_STAG shows the same violations as TLARS.
+  is again the most robust but still violates at $\rho = 0.9$, and TLARS_STAG shows the same violations as TLARS.
 - Read this against **Demo 01** (same AR(1) data, correctly-specified `AR1` correction, FDR-controlled over the
   full $\rho$ grid). The gap between the two quantifies the price of the wrong dependency model — negligible at
   moderate correlation, large in the strong-correlation regime.

@@ -151,8 +151,9 @@ The figure (Portable Network Graphics (PNG) and Portable Document Format (PDF), 
 
 Against the previous run on library commit `44cf1ab`, TAFS and TOMP lose $0.011\text{–}0.019$ of FDR at
 $\mathrm{SNR}=2$ and $5$ while their TPR stays flat. All three language trees show the same drop, so it is more than
-Monte Carlo noise. The corrected FDP estimate of library commit `415484d` is the likely cause, but no paired run has
-tested that.
+Monte Carlo noise. The corrected FDP estimate of library commit `415484d` causes it, because it is the only library
+change on the path of the two solvers. Both stop their T-loop on stagnation, so the larger estimate raises the voting
+threshold instead of shortening the loop.
 
 ![SNR sweep on multi-level prior-groups data](simulation_results/plots/da_trex_mc_da_groups_toeplitz_leaf_fdr_tpr.png)
 

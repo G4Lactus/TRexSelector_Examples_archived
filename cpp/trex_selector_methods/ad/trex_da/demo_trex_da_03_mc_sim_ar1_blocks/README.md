@@ -185,7 +185,7 @@ come from the long T-loop.
 - Read this demo against **Demo 02** (same block AR(1) core plus $975$ white-noise columns,
   $n=300$, and the stricter target $\mathrm{tFDR}=0.1$). The pure block design at half the sample size shows higher
   realized FDR in $396$ of the $408$ shared cells — culminating in TLARS's $\rho=0.9$ violation — and lower TPR in
-  $334$. It is the harder problem, although the two demos differ in $n$ and the target as well as in the white
+  $337$. It is the harder problem, although the two demos differ in $n$ and the target as well as in the white
   padding.
 - The linkage story is consistent across both demos. Linkage matters little at the well-correlated base point,
   but **Single linkage is the fragile choice** at low $\rho$ and large $Q$, so Complete or Average are

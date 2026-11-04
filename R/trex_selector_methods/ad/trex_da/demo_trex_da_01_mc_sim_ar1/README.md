@@ -12,18 +12,18 @@ R port of the C++ demo
 with the same data-generating process (DGP), control parameters, sweep axes, console summaries and result-file
 naming. The numbers below are this R run's own results. R uses its own random number streams, so they differ from the
 C++ and Python numbers within Monte Carlo noise, not exactly. A cell-by-cell comparison with the C++ run (200 trials
-per cell on both sides, $z$ = difference divided by the combined Monte Carlo standard error) finds $|z| > 3$ in 1 of
-the 1,152 FDR and true positive rate (TPR) cells of this demo. Over the whole DA-TRex suite it is 27 of 9,344 cells
-(0.29 %), the rate that noise alone produces.
+per cell on both sides, $z$ = difference divided by the combined Monte Carlo standard error) finds $|z| > 3$ in 5 of
+the 1,152 FDR and true positive rate (TPR) cells of this demo. Over the whole DA-TRex suite it is 29 of 9,344 cells
+(0.31 %), the rate that noise alone produces.
 
 The greedy solvers use *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for TAFS/TOMP, `0` for TLARS and
 TLARS_STAG). Look up `Exchangeable_Tie_Breaking_DA_TRex.md` in the TRex_Research documentation.
 TAFS additionally runs with its adaptive forward-selection (AFS) correlation parameter `rho_afs = 0.3`
 (`0` for TLARS, TLARS_STAG and TOMP), which is why the figures label it `TAFS (rho = 0.3)`.
-With this fix, **all four DA solvers stay below the target in every cell of all three parts** (at most $0.18$),
-including the greedy-solver cells at $\rho = 0.9$ that keep power. There the FDR is $0.18$ for TAFS and $0.15$ for
-TOMP, both at gap=100 (Part 3) and under Random support (Part 2), and TAFS/TOMP also retain more power than DA-TLARS
-(TPR $0.64$ and $0.66$ vs. $0.45$ at gap=100).
+With this fix, **all four DA solvers stay below the target in every cell of all three parts** (at most $0.19$),
+including the greedy-solver cells at $\rho = 0.9$ that keep power. There the FDR of TAFS is $0.18$ at gap=100
+(Part 3) and $0.19$ under Random support (Part 2), TOMP holds $0.15$ in both, and TAFS/TOMP also retain more power
+than DA-TLARS (TPR $0.64$ and $0.67$ vs. $0.45$ at gap=100).
 
 ---
 
@@ -112,8 +112,8 @@ worker processes (first command-line argument, else `TREX_NUM_WORKERS`, else 8, 
 finished grid cell is appended to a cache in `simulation_results/cache/`, so a stopped run picks up where it stopped,
 and a finished run removes the cache. Support indices are **1-based** (R convention, while the Python suite is
 0-based). The script sources [`../trex_da_dgps.R`](../trex_da_dgps.R), [`../da_sim_common.R`](../da_sim_common.R),
-`../../../support_generators.R` and `../../../mc_runtime.R`. With 8 workers the full run took 2.2 hours on library
-commit `44cf1ab`.
+`../../../support_generators.R` and `../../../mc_runtime.R`. With 8 workers the full run took about 2.2 hours on
+library commit `09debc6`.
 
 Afterwards, regenerate the figures from the comma-separated values (CSV) files with
 [`generate_plots.sh`](generate_plots.sh), which drives the suite's ggplot2 plotter
@@ -149,12 +149,12 @@ support:
 
 ![SNR sweep by support placement](simulation_results/plots/da_trex_mc_da_ar1_snr_support_grid.png)
 
-All four DA solvers stay below $\mathrm{tFDR}=0.2$ at every SNR (worst cell $0.115$, DA-TOMP at $\mathrm{SNR}=0.5$
+All four DA solvers stay below $\mathrm{tFDR}=0.2$ at every SNR (worst cell $0.108$, DA-TOMP at $\mathrm{SNR}=0.5$
 under Random support). The base TLARS and TLARS_STAG rows violate the target from $\mathrm{SNR}=0.5$ on (FDR
-$0.27\text{–}0.29$ CappedSpread and $0.29\text{–}0.31$ Random), while base TAFS and TOMP stay below it (at most
-$0.19$). The DA cost in TPR appears from $\mathrm{SNR}=0.5$ on and is largest for TLARS, peaking at
-$\mathrm{SNR}=1$ (DA $0.58$ vs. base $0.87$ CappedSpread, $0.47$ vs. $0.86$ Random). At $\mathrm{SNR}=2$ it is still
-$0.82$ vs. $1.00$ (CappedSpread) and $0.65$ vs. $1.00$ under Random support, where the active variables are not kept
+$0.27\text{–}0.29$ CappedSpread and $0.29\text{–}0.30$ Random), while base TAFS and TOMP stay below it (at most
+$0.16$). The DA cost in TPR appears from $\mathrm{SNR}=0.5$ on and is largest for TLARS, peaking at
+$\mathrm{SNR}=1$ (DA $0.57$ vs. base $0.87$ CappedSpread, $0.45$ vs. $0.86$ Random). At $\mathrm{SNR}=2$ it is still
+$0.82$ vs. $1.00$ (CappedSpread) and $0.64$ vs. $1.00$ under Random support, where the active variables are not kept
 apart by construction. The greedy solvers pay less (TOMP $0.97$ vs. $0.98$ CappedSpread and $0.79$ vs.
 $0.97$ Random). TLARS_STAG gives the same FDR and TPR as TLARS within Monte Carlo noise, in the DA rows and in the base
 rows.
@@ -171,14 +171,27 @@ DA-TRex+AR1 vs. base T-Rex over $\rho \in \lbrace0.0, 0.1, \dots, 0.9\rbrace$.
   gap $20 < \kappa = 38$, so all active variables fall inside each other's correction windows, DA suppresses
   everything (TPR $\le 0.001$), and the small residual FDR values are rare lone-survivor events. The per-trial false
   discovery proportion (FDP) is then binary, hence the large standard deviation (sd) in the tables, with DA-TLARS at
-  $0.090 \pm 0.287$, TLARS_STAG at $0.015 \pm 0.122$ and the greedy solvers at $0.005 \pm 0.071$.
+  $0.115 \pm 0.320$, while TLARS_STAG and the greedy solvers sit at $0.010 \pm 0.100$.
 - **Random support, right column:** most actives stay isolated, so power persists to $\rho = 0.9$
-  (TPR $\approx 0.32$ for the greedy DA solvers) while FDR stays controlled ($0.15\text{–}0.18$). Base T-Rex TLARS
-  crosses the target at $\rho = 0.6$ and climbs to $0.56$ (CappedSpread $0.61$), and at $\rho = 0.9$ even base TAFS
-  and TOMP exceed it ($0.23\text{–}0.29$ over both placements).
-- **TLARS_STAG:** same power as DA-TLARS, while its T-loop stops after at most $6.6$ steps on average, where DA-TLARS
-  averages up to $T \approx 48$ at $\rho = 0.9$ (CappedSpread, $41$ under Random support). Its FDR is at most
-  $0.092$ over both $\rho$ sweeps.
+  (TPR $0.31\text{–}0.32$ for the greedy DA solvers) while FDR stays controlled ($0.15\text{–}0.19$). Base T-Rex
+  TLARS crosses the target at $\rho = 0.6$ and climbs to $0.55$ (CappedSpread $0.60$), and at $\rho = 0.9$ even base
+  TAFS and TOMP exceed it ($0.22\text{–}0.28$ over both placements).
+- **TLARS_STAG:** same power as DA-TLARS, while its T-loop stops after at most $6.5$ steps on average, where DA-TLARS
+  averages up to $T \approx 40$ at $\rho = 0.9$ (CappedSpread, $34$ under Random support). Its FDR is at most
+  $0.094$ over both $\rho$ sweeps.
+
+Against the previous run on library commit `44cf1ab`, TAFS and TOMP lose FDR in all three parts, in the DA rows and
+in the base rows alike, while their TPR stays flat. Averaged over all cells of the three parts, the FDR of DA-TAFS
+falls from $0.079$ to $0.055$ and that of DA-TOMP from $0.068$ to $0.045$, and the base rows fall from $0.143$ to
+$0.124$ (TAFS) and from $0.117$ to $0.095$ (TOMP). The largest drop sits in this $\rho$ sweep, where DA-TAFS under
+CappedSpread support falls from $0.091$ to $0.039$ at $\rho = 0.6$, about nine combined standard errors. The C++ and
+Python runs show the same drop, so it is more than Monte Carlo noise. Library commit `415484d` removed the lower clamp
+$\Phi' \geq 0$ from the FDP estimate, which makes the estimate larger, and it is the only library change between the
+two runs on the path of TAFS and TOMP under the STANDARD L-loop. Both stop their T-loop on stagnation, so the larger
+estimate raises the voting threshold instead of shortening the loop. TLARS runs without the stagnation stop, so there
+the estimate can end the T-loop earlier. The base TLARS row keeps its FDR ($0.238$ to $0.233$) while its mean T-loop
+length falls from $8.4$ to $7.0$ steps, most at $\rho = 0.9$ ($36.5$ to $16.8$ under CappedSpread support).
+DA-TLARS and TLARS_STAG move much less ($0.064$ to $0.054$ and $0.057$ to $0.049$).
 
 ---
 
@@ -196,8 +209,8 @@ by construction.
   `rho_thr_DA`, the `trex_da_control()` default), explained in the figure caption. It is a property of the correction
   itself, identical for all four solvers.
 - **Random-support baseline (bottom row)** shows one line per method. There the TAFS FDR ends at $0.18$ at
-  $\rho = 0.9$, the same value Part 2 measures for this setting with other random draws, and TOMP ends at $0.14$
-  (Part 2 $0.15$). Both stay below the target.
+  $\rho = 0.9$, close to the $0.19$ that Part 2 measures for this setting with other random draws, and TOMP ends at
+  $0.15$ (Part 2 $0.15$). Both stay below the target.
 - **TPR heatmap** — TPR collapses in exactly the cells with gap $\le \max(\kappa, 1)$, a structural property of the
   AR1 correction window, not a solver artifact. The window spans $|j-k| \le \kappa$, so at $\rho = 0.4$ the gap $= 5$
   column, equal to $\kappa = 5$, collapses as well. The selector computes the window from the AR(1) coefficient it
@@ -205,13 +218,13 @@ by construction.
   at $\rho = 0$, where the printed $\kappa$ is $0$. At $\rho = 0.9$ the mean true positive proportion (TPP) drops
   from $0.55$ (gap $= 50/100$, above the boundary) to below $0.001$ at gap $= 20$.
 - **FDR heatmap** — with the exchangeable tie-breaking, the wide-gap / $\text{high-}\rho$ corner
-  (gap $= 100/50$, $\rho = 0.9$) stays controlled for TAFS ($0.18/0.16$) and TOMP ($0.15/0.14$), and the four-solver
+  (gap $= 100/50$, $\rho = 0.9$) stays controlled for TAFS ($0.18/0.15$) and TOMP ($0.15/0.14$), and the four-solver
   mean shown in the heatmap is $0.13/0.12$. The C++ README documents that these cells exceeded the target before the
   tie-breaking was added, driven by collinear shadows (distance-1 neighbors of true actives) that greedy
   winner-take-all selection let through the DA deflation.
 - **TLARS_STAG below the boundary** — where the support gap is smaller than $\kappa$ and no true variable survives
-  (gap $\le 20$ at $\rho = 0.9$), DA-TLARS still raises false alarms in $8.5\text{–}11.5\,\%$ of the runs, while
-  TLARS_STAG stays at or below $2.5\,\%$. The long T-loop of DA-TLARS most likely gives null variables more chances
+  (gap $\le 20$ at $\rho = 0.9$), DA-TLARS still raises false alarms in $5.0\text{–}10.5\,\%$ of the runs, while
+  TLARS_STAG stays at or below $1.5\,\%$. The long T-loop of DA-TLARS most likely gives null variables more chances
   to collect votes, which the stagnation stop cuts short.
 
 ---

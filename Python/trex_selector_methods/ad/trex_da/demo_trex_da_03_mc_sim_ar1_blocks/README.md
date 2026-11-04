@@ -134,7 +134,7 @@ below.
 
 - **FDR stays under the $\mathrm{tFDR}=0.2$ target at every SNR** (worst cell $0.113$, TLARS at
   $\mathrm{SNR}=2$ under Complete linkage) — but visibly higher than the white-noise-diluted Demo 02
-  ($\leq 0.034$ over its SNR sweep). Demo 02 runs at its stricter target of $0.1$ and twice the sample size, so the
+  ($\leq 0.027$ over its SNR sweep). Demo 02 runs at its stricter target of $0.1$ and twice the sample size, so the
   gap reflects the target and $n$ as well as the null structure. In an all-block design every false discovery
   candidate is a correlated shadow.
 - In TPR, TOMP is the strongest from $\mathrm{SNR}=1$ on ($0.98\text{–}1.0$ from $\mathrm{SNR}=2$), while TLARS and
@@ -172,7 +172,7 @@ below.
 - Complete/Average linkage handle growing blocks gracefully (TOMP $0.97\text{–}0.99$,
   TAFS $0.87\text{–}0.92$, TLARS and TLARS_STAG $0.80\text{–}0.88$ throughout), while **Single linkage loses power
   once blocks grow** and sits $0.07\text{–}0.18$ TPR below them from $Q = 15$ on (TOMP $0.85\text{–}0.90$,
-  TLARS $0.69\text{–}0.75$) — the same fragility as in Demo 02's $Q$ sweep, where Single trails by up to $0.18$.
+  TLARS $0.69\text{–}0.75$) — the same fragility as in Demo 02's $Q$ sweep, where Single trails by up to $0.19$.
 
 ![Q sweep across HAC linkage](simulation_results/plots/da_trex_mc_da_ar1_blocks_Q_linkage_grid.png)
 
@@ -209,8 +209,8 @@ The figures draw TLARS_STAG dashed in the TLARS colour.
 
 - Read this demo against **Demo 02** (same block AR(1) core plus $975$ white-noise columns,
   $n=300$, stricter target $\mathrm{tFDR}=0.1$). The pure block design at half the sample size shows a higher
-  realized FDR in $397$ of the $408$ shared cells — culminating in TLARS's $\rho=0.9$ violation — and a lower TPR
-  in $355$ of them, with TAFS on the $Q$ sweep as the main exception. So the pure block design is the harder
+  realized FDR in $396$ of the $408$ shared cells — culminating in TLARS's $\rho=0.9$ violation — and a lower TPR
+  in $353$ of them, with TAFS on the $Q$ sweep as the main exception. So the pure block design is the harder
   problem, although the two demos differ in more than the white padding.
 - The linkage story is consistent across both demos. Linkage is irrelevant at the well-correlated base point,
   but **Single linkage is the fragile choice** at low $\rho$ and large $Q$, so Complete or Average are

@@ -122,8 +122,9 @@ The figure (`.png` and `.pdf`, plus an interactive Plotly `.html` page with `--p
 
 Against the previous run on library commit `44cf1ab`, TAFS and TOMP lose $0.007\text{–}0.019$ of FDR at
 $\mathrm{SNR}=2$ and $5$ while their TPR stays flat. All three language trees show the same drop, so it is more than
-Monte Carlo noise. The corrected false discovery proportion (FDP) estimate of library commit `415484d` is the likely
-cause, but no paired run has tested that.
+Monte Carlo noise. The corrected false discovery proportion (FDP) estimate of library commit `415484d` causes it,
+because it is the only library change on the path of the two solvers. Both stop their T-loop on stagnation, so the
+larger estimate raises the voting threshold instead of shortening the loop.
 
 ![SNR sweep on multi-level prior-groups data](simulation_results/plots/da_trex_mc_da_groups_toeplitz_leaf_fdr_tpr.png)
 
@@ -150,7 +151,7 @@ occurrence profile:
 - **The LARS path distributes credit**. After an active enters, its group siblings still carry
   residual correlation with $y$ and collect *intermediate* occurrences — distinct from both the
   active's high $\Phi$ and the bulk at $\approx 0$, exactly the profile a symmetric pairwise
-  penalty cannot separate. The dummy-calibrated false discovery proportion (FDP) estimate $\widehat{\mathrm{FDP}}$
+  penalty cannot separate. The dummy-calibrated FDP estimate $\widehat{\mathrm{FDP}}$
   cannot see them either (dummies are uncorrelated with $X$), so they are selected. The FDR plateau, *flat in SNR*,
   is consistent with a structural leak. Shadows inherit signal through the shared group factors and rise together
   with the actives.

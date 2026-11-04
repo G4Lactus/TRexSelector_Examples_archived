@@ -148,17 +148,17 @@ plotter's `sweep2d` mode.
 
 DA-TRex+NN vs. base T-Rex over $\mathrm{SNR} \in \lbrace0.1, 0.2, 0.5, 1, 2, 5\rbrace$, CappedSpread vs. Random support:
 
-- All four DA solvers stay below $\mathrm{tFDR}=0.2$ at every SNR (worst cell $0.116$, DA-TLARS at
+- All four DA solvers stay below $\mathrm{tFDR}=0.2$ at every SNR (worst cell $0.108$, DA-TLARS at
   $\mathrm{SNR}=5$, CappedSpread), while base T-Rex TLARS violates from $\mathrm{SNR}=1$ on (FDR
-  $\approx 0.22\text{–}0.27$) and with Random support already at $\mathrm{SNR}=0.5$ ($0.207$). Base TLARS_STAG
-  behaves the same ($0.21\text{–}0.27$ from $\mathrm{SNR}=0.5$ on), and base TAFS grazes the target at
-  $\mathrm{SNR}=5$ ($0.19\text{–}0.20$).
+  $\approx 0.22\text{–}0.26$) and with Random support already at $\mathrm{SNR}=0.5$ ($0.213$). Base TLARS_STAG
+  behaves the same ($0.21\text{–}0.26$ from $\mathrm{SNR}=0.5$ on), and base TAFS comes closest to the target at
+  $\mathrm{SNR}=5$ ($0.16\text{–}0.18$).
 - From $\mathrm{SNR}=2$ on, the DA cost in true positive rate (TPR) is modest and concentrates in DA-TLARS (e.g.
-  $0.88$ vs. base $1.00$ at $\mathrm{SNR}=2$, CappedSpread), while DA-TAFS/TOMP reach $\approx 0.92\text{–}1.00$ from
+  $0.89$ vs. base $0.99$ at $\mathrm{SNR}=2$, CappedSpread), while DA-TAFS/TOMP reach $\approx 0.94\text{–}1.00$ from
   $\mathrm{SNR}=2$ on. Below that the cost is large, for every solver at $\mathrm{SNR}=0.5$ (DA $0.08\text{–}0.12$
-  against base $0.29\text{–}0.42$) and for DA-TLARS at $\mathrm{SNR}=1$ ($0.58\text{–}0.62$ against
-  $0.86\text{–}0.87$).
-- DA-TLARS runs its T-loop almost to the cap ($T \approx 130\text{–}144$ of $150$), while TLARS_STAG stops after
+  against base $0.29\text{–}0.42$) and for DA-TLARS at $\mathrm{SNR}=1$ ($0.55\text{–}0.62$ against
+  $0.84\text{–}0.87$).
+- DA-TLARS runs its T-loop almost to the cap ($T \approx 129\text{–}144$ of $150$), while TLARS_STAG stops after
   about $8$ steps with the same FDR and TPR.
 - The two support placements behave nearly identically. The CappedSpread actives (spacing 20) sit far outside each
   other's bands of width $\kappa=3$, and Random placements give only about $5\,\%$ of the actives a second active
@@ -181,10 +181,21 @@ in cyan.
 - Group sizes grow with $\kappa$, so once the band is wide *and* strongly correlated the residual shadow
   discoveries accumulate — the NN analogue of Demo 01's gap-vs-window story, but entering through the band
   width rather than the support spacing.
-- **TPR degrades gracefully** toward the same corner, down to $0.60\text{–}0.71$ for every solver at
+- **TPR degrades gracefully** toward the same corner, down to $0.61\text{–}0.71$ for every solver at
   $\kappa = 15$, $\rho = 0.9$, and is essentially flat elsewhere.
-- TLARS_STAG gives the same heatmaps as TLARS (mean FDR and TPR changes below $0.004$) and violates in the same six
+- TLARS_STAG gives the same heatmaps as TLARS (mean FDR and TPR changes below $0.002$) and violates in the same six
   cells.
+
+Against the previous run on library commit `44cf1ab`, DA-TAFS and DA-TOMP lose FDR in all three parts while their
+TPR stays flat, and all three language trees show the same drop. Over the $204$ DA cells of the four tables, the mean
+FDR falls from $0.087$ to $0.071$ for TAFS and from $0.074$ to $0.057$ for TOMP, and $87$ and $90$ of these cells move
+by more than three standard errors. The mean TPR goes from $0.654$ to $0.656$ for TAFS and stays at $0.660$ for TOMP.
+The drop is largest in this $\kappa \times \rho$ sweep, where the means fall from $0.101$ to $0.075$ (TAFS) and from
+$0.084$ to $0.057$ (TOMP). The base TAFS and TOMP rows of Part 1 lose FDR as well ($0.107$ to $0.097$ and $0.087$ to
+$0.071$), while DA-TLARS and TLARS_STAG move much less ($0.112$ to $0.105$ and $0.110$ to $0.104$). Library commit
+`415484d` removed the lower clamp $\Phi' \geq 0$ from the false discovery proportion (FDP) estimate, which makes the
+estimate larger. It is the only library change on the path of TAFS and TOMP, and both stop their T-loop on
+stagnation, so the larger estimate raises the voting threshold instead of shortening the loop.
 
 ![kappa x rho, CappedSpread support](simulation_results/plots/da_trex_mc_da_nn_kappa_rho_capped.png)
 
@@ -198,14 +209,14 @@ The same DA-TRex+NN selector applied to AR(1) data over $\mathrm{SNR} \in \lbrac
 $\rho \in \lbrace0.1, \ldots, 0.9\rbrace$:
 
 - **Up to $\rho \approx 0.7$ the mismatch is benign**. FDR stays at or below target for all solvers and SNRs
-  (worst cell $0.17$) — the NN groups capture enough of the (rapidly decaying) AR(1) neighborhood to deflate
+  (worst cell $0.15$) — the NN groups capture enough of the (rapidly decaying) AR(1) neighborhood to deflate
   the nearby shadows.
 - **At $\rho = 0.8\text{–}0.9$ control breaks down sharply** (up to $0.61$ for TLARS at $\mathrm{SNR}=0.5$,
-  $\rho=0.9$, CappedSpread, with TAFS $0.45$ and TOMP $0.40$ in the same cell). AR(1) correlation beyond the effective
+  $\rho=0.9$, CappedSpread, with TAFS $0.44$ and TOMP $0.40$ in the same cell). AR(1) correlation beyond the effective
   NN window leaks through as false discoveries, exactly the failure mode the finite-range group design cannot see (a
   plausible reading the data do not test directly).
   TOMP recovers fastest as SNR grows (at most $0.20$ from $\mathrm{SNR}=2$ on and $0.11$ at $\mathrm{SNR}=5$,
-  $\rho=0.9$) while TLARS stays at $0.38\text{–}0.47$ there. TLARS_STAG violates in the same $15$ cells as TLARS.
+  $\rho=0.9$) while TLARS stays at $0.38\text{–}0.46$ there. TLARS_STAG violates in the same $14$ cells as TLARS.
 - Read this against **Demo 01** (same AR(1) data, correctly-specified `AR1` correction, FDR-controlled over the
   full $\rho$ grid). The gap between the two quantifies the price of the wrong dependency model — negligible at
   moderate correlation, large in the strong-correlation regime.

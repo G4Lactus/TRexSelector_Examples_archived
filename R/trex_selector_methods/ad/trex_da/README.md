@@ -100,35 +100,35 @@ Each demo writes its result tables to its own `simulation_results/data/` folder 
 `./generate_plots.sh` renders the figures from these tables into `simulation_results/plots/` via the shared
 [trex_da_plt_utils.R](trex_da_plt_utils.R), with the same file names as the Python suite.
 
-The committed results are the first R run of all eight demos (200 Monte Carlo trials per cell, 8 workers, about
-25 h in total). R draws its own random numbers, so its cells agree with C++ and Python up to Monte Carlo noise, not
-exactly. Of 9,344 cells compared with C++, 27 (0.29 %) lie more than three Monte Carlo standard errors away, the
-rate noise alone produces. The largest single differences are 0.085 in the false discovery rate (FDR) (Demo 08,
-DA-TOMP at $\rho = 0.7$ and $\mathrm{SNR} = 0.5$, the high-variance false-alarm cell) and 0.117 in the true positive
-rate (TPR).
+The committed results are the R run of all eight demos on library commit `09debc6` (200 Monte Carlo trials per cell,
+8 workers, about 25 h in total). R draws its own random numbers, so its cells agree with C++ and Python up to Monte
+Carlo noise, not exactly. Of 9,344 cells compared with C++, 29 (0.31 %) lie more than three Monte Carlo standard
+errors away, the rate noise alone produces. The largest single differences are 0.120 in the false discovery rate
+(FDR) (Demo 01, DA-TLARS at gap 10 and $\rho = 0.9$, a high-variance false-alarm cell below the correction-window
+boundary) and 0.122 in the true positive rate (TPR) (Demo 04, DA-TLARS_STAG at $M = 3$ with heavy-tailed noise and
+Single linkage).
 
 ## What to expect
 
 DA-TRex keeps the FDR far closer to the target than the classical (no-DA) T-Rex selector on the same correlated
-data. In Demo 01 at $\mathrm{SNR} = 2$ and $\rho = 0.7$ the DA rows realize an FDR of $0.03\text{–}0.09$, while base
+data. In Demo 01 at $\mathrm{SNR} = 2$ and $\rho = 0.7$ the DA rows realize an FDR of $0.03\text{–}0.05$, while base
 T-Rex TLARS reaches $0.27\text{–}0.29$. The greedy DA solvers stay below the target of $0.2$ across the whole $\rho$
-grid of Demo 01 for both support placements (at most $0.18$).
+grid of Demo 01 for both support placements (at most $0.19$).
 
 TLARS_STAG matches TLARS within Monte Carlo noise in every demo, except below the correction-window boundary of
-Demo 01, where it raises fewer false alarms (FDR at most $0.025$ against $0.085\text{–}0.115$ at $\rho = 0.9$).
-Averaged over a demo's DA cells, the TPR changes by at most $0.003$ and the FDR by at most $+0.001$. Each of the two
-breaks the target in 54 DA cells over all demos, the cells
-where only one of the two crosses it lie within $0.024$ of the target, and the T-loop of TLARS_STAG stops after at
-most $8.2$ steps on average.
+Demo 01, where it raises fewer false alarms (FDR at most $0.015$ against $0.050\text{–}0.115$ at $\rho = 0.9$).
+Averaged over a demo's DA cells, the TPR changes by at most $0.004$ and the FDR by at most $+0.003$. TLARS breaks the
+target in 55 DA cells over all demos and TLARS_STAG in 52, the cells where only one of the two crosses it lie within
+$0.018$ of the target, and the T-loop of TLARS_STAG stops after at most $8.0$ steps on average.
 
 The demo READMEs document the known rough edges.
 
 - TLARS, and TLARS_STAG with it, breaks the target at $\rho = 0.9$ on the block designs under Average and Complete
   linkage (Demos 03 and 04, FDR $0.21\text{–}0.25$), and on the multi-level prior-groups design of Demo 06, where its
   FDR stays near $0.36$ from $\mathrm{SNR} = 0.5$ on while TAFS and TOMP stay below $0.2$.
-- Heavy-tailed noise raises the FDR in Demo 05 (mean over the DA cells $0.117$ against $0.075$ with Gaussian noise)
+- Heavy-tailed noise raises the FDR in Demo 05 (mean over the DA cells $0.113$ against $0.071$ with Gaussian noise)
   without costing power, while in Demo 04 the two noise models give the same averages.
-- The NN correction breaks down when applied to AR(1) data at $\rho \geq 0.8$ (Demo 07, FDR up to $0.63$ for TLARS
+- The NN correction breaks down when applied to AR(1) data at $\rho \geq 0.8$ (Demo 07, FDR up to $0.62$ for TLARS
   at $\rho = 0.9$).
 - Equicorrelation suppresses the DA selector from $\rho = 0.025$ on (Demo 08, TPR at most $0.005$).
 

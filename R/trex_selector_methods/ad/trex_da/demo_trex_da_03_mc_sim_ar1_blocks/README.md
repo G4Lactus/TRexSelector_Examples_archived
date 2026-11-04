@@ -17,7 +17,7 @@ naming. Indices are 1-based (R convention). The numbers below are this R run's o
 numbers, so they differ from the C++ and Python runs within Monte Carlo noise, not exactly. A cell-by-cell comparison
 with the C++ run, with $z$ the difference divided by the combined Monte Carlo standard error of the two 200-trial
 means, finds $1$ cell with $|z| > 3$ among the 816 cells of this demo (FDR and TPR of every solver at every grid point).
-Over the whole DA-TRex suite 27 of 9,344 cells (0.29 %) exceed $|z| > 3$, about the rate that noise alone produces.
+Over the whole DA-TRex suite 29 of 9,344 cells (0.31 %) exceed $|z| > 3$, about the rate that noise alone produces.
 
 The greedy solvers use *exchangeable tie-breaking* (`exch_tie_alpha = 0.25` for TAFS/TOMP, `0` for
 TLARS/TLARS_STAG). See `Exchangeable_Tie_Breaking_DA_TRex.md` in the TRex_Research documentation.
@@ -168,7 +168,7 @@ four grids are embedded below.
 
 - **FDR stays under the $\mathrm{tFDR}=0.2$ target at every SNR** (worst cell $0.131$, TLARS_STAG at
   $\mathrm{SNR}=0.6$ under Complete linkage). It runs above the white-noise-diluted Demo 02 in all $84$ shared
-  cells. Demo 02 stays at or below $0.029$ over its SNR sweep, at its stricter target of $0.1$ and twice the
+  cells. Demo 02 stays at or below $0.030$ over its SNR sweep, at its stricter target of $0.1$ and twice the
   sample size, so the gap reflects the target and $n$ as well as the null structure. There most null variables are
   independent white-noise columns, while here every null variable shares a correlated block with a signal
   variable.
@@ -210,7 +210,7 @@ four grids are embedded below.
 - Complete/Average linkage handle growing blocks well (TOMP $0.96\text{–}0.99$, TAFS $0.88\text{–}0.92$, TLARS and
   TLARS_STAG $0.82\text{–}0.89$ throughout), while **Single linkage loses power once blocks grow**. From $Q = 10$ on
   it trails them by $0.06\text{–}0.16$ TPR (TOMP $0.81\text{–}0.93$, TAFS $0.75\text{–}0.81$, TLARS and TLARS_STAG
-  $0.68\text{–}0.75$). Demo 02's $Q$ sweep shows the same fragility, where Single trails by up to $0.21$.
+  $0.68\text{–}0.75$). Demo 02's $Q$ sweep shows the same fragility, where Single trails by up to $0.22$.
 
 ![Q sweep across HAC linkage](simulation_results/plots/da_trex_mc_da_ar1_blocks_Q_linkage_grid.png)
 
@@ -247,7 +247,7 @@ TLARS_STAG dashed in the TLARS colour.
 
 - Read this demo against **Demo 02**, which adds $975$ white-noise columns (at its base point) to the same block
   AR(1) core and runs at $n=300$ with the stricter target $\mathrm{tFDR}=0.1$. Here the realized FDR is higher in
-  $393$ of the $408$ cells the two demos share, and the TPR is lower in $338$ of them, with TAFS under Complete and
+  $397$ of the $408$ cells the two demos share, and the TPR is lower in $340$ of them, with TAFS under Complete and
   Average linkage on the $Q$ sweep as the main exception. The pure block design at half the sample size is the
   harder problem, although the two demos differ in more than the white padding.
 - The linkage story is consistent across both demos. Here Complete and Average agree within $0.06$ TPR and $0.02$

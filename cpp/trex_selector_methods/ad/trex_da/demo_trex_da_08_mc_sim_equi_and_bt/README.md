@@ -154,35 +154,46 @@ The single figure goes to `simulation_results/plots/`:
 
 ---
 
-## Results (MC = 200, library 44cf1ab)
+## Results (MC = 200, library 09debc6)
 
 ![Equi 2D sweep: rho by SNR](simulation_results/plots/da_trex_mc_da_equi_rho_snr_grid.png)
 
 - **The DA suppression cliff sits at the first nonzero grid point, $\rho = 0.025$, in every SNR
-  column.** At $\rho = 0$ all four DA solvers are controlled (FDR $0.05\text{–}0.16$) with the power
-  the SNR allows (TPR $0.36\text{–}0.39$ at SNR $0.5$, $0.83\text{–}0.94$ at SNR $1$, at least $0.996$ at
+  column.** At $\rho = 0$ all four DA solvers are controlled (FDR $0.06\text{–}0.15$) with the power
+  the SNR allows (TPR $0.35\text{–}0.39$ at SNR $0.5$, $0.84\text{–}0.94$ at SNR $1$, at least $0.996$ at
   SNR $2/5$). At $\rho = 0.025$ they are already dead (TPR $\le 0.005$, TLARS consuming all
   $T = 150$ dummies), and from $\rho = 0.05$ on the TPR stays at or below $0.002$. **Signal strength never moves
   the cliff** — it only changes how much power is lost at it. DA-EQUI works only where no
   correction is needed.
-- **Base T-Rex TLARS fails unsafe from the same grid point**: FDR $0.35\text{–}0.40$ at
-  $\rho = 0.025$, climbing monotonically to $0.93\text{–}0.97$ at $\rho = 0.9$ in every column — at
+- **Base T-Rex TLARS fails unsafe from the same grid point**: FDR $0.34\text{–}0.39$ at
+  $\rho = 0.025$, climbing monotonically to $0.92\text{–}0.97$ at $\rho = 0.9$ in every column — at
   SNR $5$, $\rho = 0.4$ it finds essentially all actives (TPR $0.99$) buried in garbage
-  (FDR $0.84$).
+  (FDR $0.82$).
 - **High-SNR nuance on the greedy base side**: at SNR $= 5$, base TOMP is FDR-controlled at
-  *every* $\rho$ (FDR $\le 0.13$) with full power through $\rho = 0.2$ (TPR $\ge 0.997$, and $0.65$ at
-  $\rho = 0.4$), and base TAFS is at/near the limit up to $\rho = 0.4$ (FDR $0.17\text{–}0.22$). At lower
-  SNR both violate early. At SNR $0.5$ they exceed the target from $\rho = 0.05$ on, and at SNR $1$ base TAFS
-  does from $\rho = 0.1$ and base TOMP from $\rho = 0.2$. So for moderate equicorrelation and strong signal,
-  plain greedy T-Rex (TOMP) is the most reliable selector, while the DA-EQUI correction selects almost nothing there.
+  *every* $\rho$ (FDR $\le 0.09$) with full power through $\rho = 0.2$ (TPR $\ge 0.996$, and $0.65$ at
+  $\rho = 0.4$), and base TAFS is at/near the limit from $\rho = 0.1$ to $0.4$ (FDR $0.17\text{–}0.22$). At lower
+  SNR both violate early. At SNR $0.5$ base TAFS exceeds the target from $\rho = 0.05$ on and base TOMP from
+  $\rho = 0.1$ ($0.198$ at $\rho = 0.05$), and at SNR $1$ base TAFS does from $\rho = 0.1$ and base TOMP from
+  $\rho = 0.2$. So for moderate equicorrelation and strong signal, plain greedy T-Rex (TOMP) is the most reliable
+  selector, while the DA-EQUI correction selects almost nothing there.
 - **TLARS_STAG matches TLARS in both rows.** With the stagnation stop, FDR and TPR differ from TLARS by at most
-  $0.02$ and $0.03$, while the T-loop of the DA row stops after at most $8$ steps instead of running into the cap
-  of $150$, and the base row's median $T$ drops from $105$ to $10$.
-- **DA-TOMP raises false alarms at high $\rho$ and low SNR.** At SNR $0.5$ its FDR reaches $0.245$ at
+  $0.01$, while the T-loop of the DA row stops after at most $8$ steps instead of running into the cap of $150$, and
+  the base row's median $T$ drops from $49$ to $10$.
+- **DA-TOMP raises false alarms at high $\rho$ and low SNR.** At SNR $0.5$ its FDR reaches $0.230$ at
   $\rho = 0.7$ and $0.205$ at $\rho = 0.9$, slightly above the target, while it finds no true variable there. The
   next section explains this false-alarm plateau, and the check at the end of this document repeats it with
   $1{,}000$ runs per cell. The crossing at $\rho = 0.7$ is Monte Carlo noise, and the plateau itself sits at about the
   target level.
+
+Against the previous run on library commit `44cf1ab`, TAFS and TOMP lose FDR beyond Monte Carlo noise wherever they
+select variables, while their TPR stays flat. Over all $32$ cells the base rows drop from $0.394$ to $0.385$ (TAFS) and
+from $0.191$ to $0.179$ (TOMP), most at SNR $2$ and $5$. At $\rho = 0$, the only point where DA-EQUI selects, the mean
+FDR over the four SNR columns drops from $0.112$ to $0.093$ for DA-TAFS and from $0.094$ to $0.076$ for DA-TOMP. All
+three language trees show the same drop. Library commit `415484d` removed the lower clamp $\Phi' \geq 0$ from the FDP
+estimate, which makes the estimate larger, and it is the only library change on the path of TAFS and TOMP. Both stop
+their T-loop on stagnation, so the larger estimate raises the voting threshold instead of shortening the loop. Base
+TLARS runs without the stagnation stop, so there the estimate ends the T-loop earlier. Its mean $T$ falls from $87$ to
+$69$, while its FDR barely moves ($0.674$ to $0.668$).
 
 **Bottom line**: equicorrelation defeats individual variable selection for the DA framework —
 DA-EQUI fails *safe* (selects nothing for any $\rho \ge 0.025$, regardless of SNR, apart from the false-alarm
@@ -287,7 +298,7 @@ the target is $0.013$.
 | 0.9 | 0.206 | 0.968 |
 | 0.95 | 0.219 | 0.967 |
 
-- **The crossing at $\rho = 0.7$ is Monte Carlo noise.** The demo's $0.245$ was a high draw, and with $1{,}000$ runs the
+- **The crossing at $\rho = 0.7$ is Monte Carlo noise.** The demo's $0.230$ was a high draw, and with $1{,}000$ runs the
   rate is $0.163$, clearly below the target. An earlier probe of the same kind found $0.176$.
 - **The plateau sits at about the target level.** Pooled over $\rho \ge 0.8$ it is $638$ false alarms in $3{,}000$
   runs, an FDR of $0.213$, at most about one percentage point above the target ($1.7$ standard errors).
