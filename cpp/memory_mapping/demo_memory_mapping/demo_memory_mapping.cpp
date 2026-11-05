@@ -567,8 +567,10 @@ int main() {
     cdiagnostics::print_section_header("Memory Mapping Demo Suite");
 
     omp_utils::print_info();
-    omp_utils::set_num_threads(6);
-    std::cout << "Running with " << omp_utils::get_max_threads() << " threads\n\n";
+    // Six threads for the demo's own loops and as the library's budget
+    omp_set_num_threads(6);
+    omp_utils::set_num_threads(omp_utils::get_max_threads());
+    std::cout << "Running with " << omp_utils::get_num_threads() << " threads\n\n";
 
     try {
 

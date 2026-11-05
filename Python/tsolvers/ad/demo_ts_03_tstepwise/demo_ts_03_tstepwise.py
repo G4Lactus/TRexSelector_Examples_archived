@@ -30,6 +30,7 @@ from trexselector.utils import (
     compute_fdp,
     compute_tpp,
     get_max_threads,
+    get_num_threads,
     numpy_to_memmap,
     set_num_threads,
 )
@@ -322,8 +323,8 @@ if __name__ == "__main__":
     print()
     print_section_header("T-Stepwise Demo Suite")
 
-    set_num_threads(6)
-    print(f"Running with {get_max_threads()} threads\n")
+    set_num_threads(min(6, get_max_threads()))
+    print(f"Running with {get_num_threads()} threads\n")
 
     # Optional arguments: the parts to run (default: all)
     run = PartSelection()

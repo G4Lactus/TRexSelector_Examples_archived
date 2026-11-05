@@ -63,8 +63,9 @@ module of the C++ demos, through the `Rscript` on the `PATH` or the one that `RS
 Portable Network Graphics (PNG) and Portable Document Format (PDF) files to `simulation_results/plots/`. The PDF is
 written with `pdf(timestamp = FALSE)`, so a rerun on the same data gives a byte-identical file.
 
-The output below is a run against library b95b984 (TRexSelector 2.0.0). The demo pins six Open Multi-Processing
-(OpenMP) threads with `trex_set_num_threads(6L)`, as the C++ demo does, and confirms it in its first lines:
+The output below is a run against library b95b984 (TRexSelector 2.0.0). The demo sets a budget of six Open
+Multi-Processing (OpenMP) threads with `trex_set_num_threads(min(6L, trex_get_max_threads()))`, as the C++ demo does,
+and confirms it in its first lines:
 
 ```text
 ============================================================
@@ -74,10 +75,11 @@ Running with 6 threads
 ```
 
 The line reads `Running with 6 threads` only when TRexSelector was built with OpenMP, and a build without it compiles
-single-threaded, where `trex_set_num_threads()` does nothing and the demo prints `Running with 1 threads`. Linux and
-Windows builds use R's own OpenMP flags, while on macOS, where R from the Comprehensive R Archive Network (CRAN) has
-none, the configure script of the package links R's own OpenMP runtime when an `omp.h` is available (from Homebrew or
-the OpenMP package of mac.r-project.org), otherwise Homebrew's libomp, and builds single-threaded without either.
+single-threaded, where `trex_get_max_threads()` is 1, so the demo sets a budget of 1 and prints
+`Running with 1 threads`. Linux and Windows builds use R's own OpenMP flags, while on macOS, where R from the
+Comprehensive R Archive Network (CRAN) has none, the configure script of the package links R's own OpenMP runtime when
+an `omp.h` is available (from Homebrew or the OpenMP package of mac.r-project.org), otherwise Homebrew's libomp, and
+builds single-threaded without either.
 
 ---
 

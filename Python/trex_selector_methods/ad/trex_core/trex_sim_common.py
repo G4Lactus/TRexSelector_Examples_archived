@@ -389,7 +389,7 @@ def _make_trex_ctrl_from_dict(d):
         solver_name, lambda2, rho_afs, ncgmp_variant,
         K, max_dummy_multiplier, use_max_T_stop, opt_threshold,
         lloop_strategy, tloop_stagnation_stop, tloop_max_stagnant_steps,
-        parallel_rnd_experiments, use_memory_mapping,
+        parallel_rnd_experiments, max_inner_threads, use_memory_mapping,
         dummy_distribution (a spec dict for _make_dummy_distribution).
     """
     import trexselector as trex
@@ -407,6 +407,7 @@ def _make_trex_ctrl_from_dict(d):
         ("tloop_stagnation_stop",    "tloop_stagnation_stop",    bool),
         ("tloop_max_stagnant_steps", "tloop_max_stagnant_steps", int),
         ("parallel_rnd_experiments", "parallel_rnd_experiments", bool),
+        ("max_inner_threads",        "max_inner_threads",        int),
         ("use_memory_mapping",       "use_memory_mapping",       bool),
     )
     for key, attr, cast in scalar_fields:

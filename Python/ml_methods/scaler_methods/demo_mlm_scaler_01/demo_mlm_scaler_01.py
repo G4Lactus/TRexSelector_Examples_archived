@@ -39,6 +39,7 @@ from trexselector.utils import (
     AccessMode,
     MemoryMappedMatrix,
     get_max_threads,
+    get_num_threads,
     set_num_threads,
 )
 
@@ -261,7 +262,7 @@ if __name__ == "__main__":
     # cpp initializes OpenMP with 6 threads; the backend thread pool is
     # configured here through the same utils entry points.
     set_num_threads(min(6, get_max_threads()))
-    print(f"Running with {get_max_threads()} threads\n")
+    print(f"Running with {get_num_threads()} threads\n")
 
     demo_scaler_comparison()
     demo_scaler_inverse_transform()

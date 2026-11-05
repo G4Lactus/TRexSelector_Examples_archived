@@ -44,11 +44,11 @@ independent columns, so the column-correlation is essentially the identity:
   [Expandability](#expandability)), so every solver sees identical data
 
 Trials run **sequentially** (no `ProcessPoolExecutor`) so wall-clock and RSS
-readings are undistorted. The $K$ random experiments inside `select()` also run one after another, and the
-selector's Open Multi-Processing (OpenMP) threads parallelize the column loops inside each experiment. The
-thread count is **pinned to `TREX_NUM_WORKERS` (default 8)** (`set_num_threads(_NUM_THREADS)`) to match the C++
-and R demos. Left at the library default (all logical cores) the threads would compete with the page cache the
-out-of-core points live on.
+readings are undistorted. The $K$ random experiments inside `select()` also run one after another, and
+`TREX_NUM_WORKERS` (default 8) Open Multi-Processing (OpenMP) threads run the column loops inside each experiment
+(normalization, dummy generation and the solver's passes). The demo sets them as `max_inner_threads` in the control
+and as the library's default budget (`set_num_threads(_NUM_THREADS)`), to match the C++ and R demos. Left at the
+library default the selector runs single-threaded.
 
 ---
 
@@ -112,6 +112,7 @@ lloop_strategy           = STANDARD  # Fresh i.i.d. dummy matrix per L-loop iter
 tloop_stagnation_stop    = True      # Early exit when R_mat stagnates
 tloop_max_stagnant_steps = 5         # Stagnation window
 parallel_rnd_experiments = False     # Sequential experiments (Python default is True — pinned to False)
+max_inner_threads        = 8         # TREX_NUM_WORKERS threads inside each experiment
 use_memory_mapping       = True      # All points: X mmap + D mmap + solver serialization
 tFDR                     = 0.1       # Target FDR control level
 ```

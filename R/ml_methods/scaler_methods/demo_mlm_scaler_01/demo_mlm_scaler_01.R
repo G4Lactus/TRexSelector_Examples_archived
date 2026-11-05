@@ -277,7 +277,7 @@ print_section_header("DataTransformer Demo Suite")
 
 # Six OpenMP threads, as the C++ demo
 trex_set_num_threads(min(6L, trex_get_max_threads()))
-cat(sprintf("Running with %d threads\n\n", trex_get_max_threads()))
+cat(sprintf("Running with %d threads\n\n", trex_get_num_threads()))
 
 demo_scaler_comparison()
 demo_scaler_inverse_transform()

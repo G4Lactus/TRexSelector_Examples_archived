@@ -401,7 +401,8 @@ int main(int argc, char** argv) {
         // Parts after num_MC and threads; argv[2] takes the place of the program name
         const ts_perf::PartSelection run(argc > 2 ? argc - 2 : 1, argc > 2 ? argv + 2 : argv);
 
-        // Parallel over the runs; the solvers' own OpenMP loops stay single-threaded
+        // Parallel over the runs on the demo's team; the solvers' own OpenMP loops stay single-threaded
+        omp_set_num_threads(threads);
         omp_utils::set_num_threads(threads);
         omp_set_max_active_levels(1);
         trex::utils::logging::setWarningsEnabled(false);

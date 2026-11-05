@@ -274,7 +274,7 @@ print_section_header("HAC Memory-Mapped Demo Suite (N=2k x P=4k)")
 
 # Six OpenMP threads, as the C++ demo
 trex_set_num_threads(min(6L, trex_get_max_threads()))
-cat(sprintf("Running with %d threads\n\n", trex_get_max_threads()))
+cat(sprintf("Running with %d threads\n\n", trex_get_num_threads()))
 
 demo_lsh_linkage_comparison_mmap()
 

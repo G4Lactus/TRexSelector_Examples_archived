@@ -478,10 +478,12 @@ static TRexControlParameter make_scalability_trex_ctrl(const DemoSolverInfo& sol
     ctrl.tloop_stagnation_stop    = true;
     ctrl.tloop_max_stagnant_steps = 5;
     // Sequential random experiments (mirrors R parallel_rnd_experiments = FALSE, as in demos
-    // 02/03/07): one experiment working set in RAM at a time (OpenMP threads
-    // parallelize the column loops inside it), not K concurrent ones — essential
-    // out-of-core. This is the C++ struct default, pinned here to be explicit.
+    // 02/03/07): one experiment working set in RAM at a time, not K concurrent ones —
+    // essential out-of-core. This is the C++ struct default, pinned here to be explicit.
     ctrl.parallel_rnd_experiments = false;
+    // TREX_NUM_WORKERS threads (default 8) run the column loops inside each experiment:
+    // normalization, dummy generation and the solver's passes.
+    ctrl.max_inner_threads        = trex_mc_workers::count();
     // Always on: memory-mapped dummy matrices D + solver warm-start state
     // serialized to disk between T-loop iterations. Together with the
     // mmap-generated X/y this makes the whole pipeline memory-mapped.
@@ -1091,11 +1093,12 @@ int main(int argc, char** argv) {
     std::cout.setf(std::ios::unitbuf);
     install_cleanup_handlers();
 
-    // OpenMP threads (TREX_NUM_WORKERS, default 8) parallelize the column loops
-    // inside each random experiment; experiments and MC trials run one after
-    // another for undistorted timing.
+    // TREX_NUM_WORKERS threads (default 8) for the data generation (the library's
+    // default budget) and inside each random experiment (max_inner_threads);
+    // experiments and MC trials run one after another for undistorted timing.
     omp_set_num_threads(trex_mc_workers::count());
-    std::cout << "Running with " << omp_get_max_threads() << " threads\n\n";
+    trex::utils::openmp::set_num_threads(trex_mc_workers::count());
+    std::cout << "Running with " << trex::utils::openmp::get_num_threads() << " threads\n\n";
 
     const double ram_gib = physical_ram_gib();
 

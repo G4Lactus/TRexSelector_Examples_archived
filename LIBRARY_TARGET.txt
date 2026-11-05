@@ -1,38 +1,43 @@
 Library line:   TRexSelector dev_beyond (a sibling checkout TRexSelector-beyond next to this repository)
-Pinned commit:  7868669 (2026-11-04; C++ 1.0.0 / R 2.0.0 / Python 1.0.0): the R and Python packages return to the
-                name TRexSelector (R) and trexselector (Python, one spelling for PyPI and the import), library
-                WP19 and D13. Five commits since 09debc6, none moves a demo result: 94822ca changes the Tikhonov
-                selector only (its demos are parked), 4aa5023 adds the SKIPL warning that demo 04 prints in its
-                logs from now on (TLARS 10p and 20p, per selector), 913afcc and ed80a96 touch no demo. The
-                Examples follow the names (library(TRexSelector) and TRexSelector:: in R, import trexselector in
-                Python with the trex and _tsn aliases unchanged, the install lines, the READMEs), and the six
-                set_num_threads(1) worker initializers of the Python Monte Carlo helpers are gone, because the
-                selectors and solvers run serially by default since WP15. The documentation-only library commit
-                b9466cf (the Eigen homepage URL, a CRAN incoming NOTE) follows the pin and changes nothing
-                installed.
-Validated C++:  SDK installed from 7868669 (the previous install moved to the Trash first); the Examples targets
-                built without warnings against it, and demo_trex_01_single_run reproduces its committed files
-                byte for byte.
-Validated Py:   trexselector 1.0.0 installed from 7868669 (repo .venv from source, conda trex-dev and
-                trex-dev-beyond from one cp312 wheel, TRexSelectorNeo removed from each first);
-                demo_trex_01_single_run keeps its committed files.
-Validated R:    TRexSelector 2.0.0 installed from 7868669 into the default library (TRexSelectorNeo removed
-                first; the install replaces the pure-R 1.0.0 that sat there, which no demo uses);
-                demo_trex_01_single_run keeps its committed files.
-Rerun:          none, the pin moves no result; the reruns on 09debc6 stand (see its entry in the git log of
-                this file).
-Pending:        Still pending from 415484d: trex_core 09 and 10 in R (a later stage), and after the push
-                trex_core 08 in Python and R (nightly runner).
-Previous pins:  09debc6 (2026-10-27), 415484d (2026-10-24), 61fd84c (2026-10-21), 44cf1ab (2026-09-28), b95b984
-                (2026-09-27), 8ad3376 (2026-09-26), f390bfc (2026-09-25), d404033 (2026-09-25); what changed
-                between pins is in the git log of this file and in the library's HISTORY.md.
+Pinned commit:  223c89e (2026-11-05; C++ 1.0.0 / R 2.0.0 / Python 1.0.0): the library is single-threaded by
+                default. 28 OpenMP regions that took the runtime's default team (normalizer, dummy generator and
+                distributions, data generator, DA correlation scan, scalers, clustering) now run on the
+                selector's max_inner_threads or on the library's default budget, which set_num_threads() sets
+                (initially 1) and get_num_threads() reads. No result moves: 50 seeded selections (the core
+                selector with TLARS, TAFS and TOMP over the 11 dummy distributions and three L-loop strategies,
+                the DA selector with AR1, BT, NN and EQUI) are bitwise identical to 7868669 at 1 and 12 threads,
+                and a default select runs on one core (CPU/wall 1.00 in Python and R, before 3.0 and 2.5).
+                set_num_threads() no longer sets the OpenMP team, so the Examples follow: the C++ T-solver perf
+                demos and demo_memory_mapping set their own team with omp_set_num_threads(), the C++ ml_methods
+                demos also set the library budget, the "Running with N threads" lines print the budget, and
+                trex_core demo 08 sets max_inner_threads to TREX_NUM_WORKERS in the three languages. The
+                documentation commits b9466cf and e16e879 lie between the pins.
+Validated C++:  SDK installed from 223c89e (the previous install moved to the Trash first); the Examples targets
+                built without warnings, demo_trex_01_single_run reproduces its committed files byte for byte,
+                and the twelve T-solver demos print "Running with 6 threads".
+Validated Py:   trexselector 1.0.0 installed from 223c89e (repo .venv from source, conda trex-dev and
+                trex-dev-beyond from one cp312 wheel); demo_trex_01_single_run keeps its committed files, and the
+                twelve T-solver demos print "Running with 6 threads".
+Validated R:    TRexSelector 2.0.0 installed from 223c89e into the default library (old objects purged,
+                --preclean); demo_trex_01_single_run keeps its committed files, and the twelve T-solver demos
+                print "Running with 6 threads".
+Rerun:          none, the pin moves no result. The C++ runtimes of trex_core demo 08 (recorded at 61fd84c) come
+                from the earlier thread setting (8 threads for the data generation, normalization and dummy
+                generation, single-threaded solvers), as its README says.
+Pending:        After the push trex_core 08 in C++, Python and R (nightly runner, on max_inner_threads = 8), at a
+                later stage trex_core 09 and 10 in R (still pending from 415484d).
+Previous pins:  7868669 (2026-11-04), 09debc6 (2026-10-27), 415484d (2026-10-24), 61fd84c (2026-10-21), 44cf1ab
+                (2026-09-28), b95b984 (2026-09-27), 8ad3376 (2026-09-26), f390bfc (2026-09-25), d404033
+                (2026-09-25); what changed between pins is in the git log of this file and in the library's
+                HISTORY.md.
 
 Install:        cpp    -> in <library>/cpp: cmake --preset local-install && cmake --build --preset local-install-build
                           && cmake --install build/release-portable
                           (headers under cpp/install/include/TRexSelector/; the Examples presets point at
                           ../../TRexSelector-beyond/cpp/install; move the old cpp/install away first, an install
                           does not remove headers of deleted sources)
-                R      -> R CMD INSTALL --preclean <library>/R/TRexSelector
+                R      -> purge <library>/R/TRexSelector/src of *.o and TRexSelector.so, then
+                          R CMD INSTALL --preclean <library>/R/TRexSelector
                           (into R's default library; demos: Rscript <demo>.R, no R_LIBS)
                 Python -> at the Examples root: python3 -m venv .venv
                           && .venv/bin/pip install <library>/Python/trexselector pandas matplotlib plotly

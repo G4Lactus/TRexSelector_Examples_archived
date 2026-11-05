@@ -325,8 +325,8 @@ demo_terminated_paths <- function(variant) {
 print_section_header("T-NCGMP Demo Suite")
 
 # Six OpenMP threads, as the C++ demo
-trex_set_num_threads(6L)
-cat(sprintf("Running with %d threads\n\n", trex_get_max_threads()))
+trex_set_num_threads(min(6L, trex_get_max_threads()))
+cat(sprintf("Running with %d threads\n\n", trex_get_num_threads()))
 
 # Optional arguments: the parts to run (default: all)
 run <- part_selection()

@@ -121,7 +121,8 @@ int main(int argc, char** argv) {
         const auto num_MC = static_cast<std::size_t>(ts_perf::parse_positive(argc > 1 ? argv[1] : nullptr, 500));
         const int threads = static_cast<int>(ts_perf::parse_positive(argc > 2 ? argv[2] : nullptr, 6));
 
-        // Parallel over the runs; the solvers' own OpenMP loops stay single-threaded
+        // Parallel over the runs on the demo's team; the solvers' own OpenMP loops stay single-threaded
+        omp_set_num_threads(threads);
         omp_utils::set_num_threads(threads);
         omp_set_max_active_levels(1);
         trex::utils::logging::setWarningsEnabled(false);

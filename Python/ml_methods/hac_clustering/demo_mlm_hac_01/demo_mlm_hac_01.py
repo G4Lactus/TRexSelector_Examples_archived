@@ -63,7 +63,7 @@ from trexselector.ml_methods.clustering import (
     agglomerative_cluster,
     cut_tree,
 )
-from trexselector.utils import get_max_threads, set_num_threads
+from trexselector.utils import get_max_threads, get_num_threads, set_num_threads
 
 
 def print_section_header(title):
@@ -468,7 +468,7 @@ if __name__ == "__main__":
 
     # cpp initializes OpenMP with 6 threads; mirrored via the utils entry points.
     set_num_threads(min(6, get_max_threads()))
-    print(f"Running with {get_max_threads()} threads\n")
+    print(f"Running with {get_num_threads()} threads\n")
 
     # Each demo is guarded by its own if-toggle so individual parts can be
     # switched off while iterating on one of them (mirrors the cpp main()).

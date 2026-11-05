@@ -487,7 +487,8 @@ void demo_lsh_linkage_comparison_mmap() {
 // ==================================================================================
 
 void init_omp_environment(int threads = 6) {
-    omp_set_num_threads(threads);
+    omp_set_num_threads(threads);              // the demo's own loops
+    omp_utils::set_num_threads(threads);       // the library's scalers and clustering
     omp_set_schedule(omp_sched_static, 0);
 }
 

@@ -110,7 +110,7 @@ import pandas as pd  # noqa: E402
 
 import trexselector as trex  # noqa: E402
 from trexselector.utils import (  # noqa: E402
-    AccessMode, MemoryMappedMatrix, get_max_threads, set_num_threads,
+    AccessMode, MemoryMappedMatrix, get_num_threads, set_num_threads,
 )
 
 from trex_helpers import make_dual_out  # noqa: E402
@@ -131,11 +131,10 @@ _NUM_RND_EXP = 20      # K random experiments
 _DUMMY_MULT  = 10      # base block max_dummy_multiplier
 _LARGE_P_DUMMY_MULT = 5      # large-p block cap (bounds the dummy disk)
 _DISK_RESERVE_GIB   = 50.0   # free disk left untouched by the pre-flight
-_NUM_THREADS = resolve_workers()  # OpenMP threads for select(), TREX_NUM_WORKERS
+_NUM_THREADS = resolve_workers()  # OpenMP threads inside select(), TREX_NUM_WORKERS
                        # (default 8) as in the C++ demo. Left unset, the library
-                       # defaults to all logical cores, which competes with the
-                       # page cache the out-of-core points live on — so it is
-                       # pinned for a fair, stable run.
+                       # runs single-threaded, so the count is set explicitly
+                       # (max_inner_threads) for a run comparable across languages.
 
 # Base block: full n x p cross. Points whose volume X + K*L*X passes physical
 # RAM are the out-of-core regime that only the memory-mapped pipeline reaches.
@@ -224,6 +223,9 @@ def _make_scalability_ctrl_dict(solver_desc, dummy_mult):
         # out-of-core, and the setting the other trex demos use. Python's
         # default here is True.
         parallel_rnd_experiments = False,
+        # TREX_NUM_WORKERS threads run the column loops inside each experiment:
+        # normalization, dummy generation and the solver's passes.
+        max_inner_threads        = _NUM_THREADS,
         use_memory_mapping       = True,          # X mmap + D mmap + solver serialization
     )
 
@@ -887,11 +889,11 @@ def demo_trex_scalability(grid, file_stem, block_title, num_MC_target,
 if __name__ == "__main__":
     _install_cleanup_handlers()
 
-    # Pin the selector's OpenMP to a fixed thread count (mirrors the C++ demo).
-    # Experiments and trials run one after another; the threads parallelize
-    # the column loops inside each experiment, comparable across languages.
+    # Fixed thread count (mirrors the C++ demo): the library's default budget
+    # here, max_inner_threads in the control. Experiments and trials run one
+    # after another; the threads run the column loops inside each experiment.
     set_num_threads(_NUM_THREADS)
-    print(f"Running with {get_max_threads()} thread(s) "
+    print(f"Running with {get_num_threads()} thread(s) "
           f"(pinned to match the C++ demo)\n")
 
     # CLI:  [smoke | base | large] [num_MC]  (order-independent; num_MC is any

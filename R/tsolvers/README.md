@@ -144,13 +144,13 @@ R/tsolvers/ad/demo_ts_01_tlars/generate_plots.sh               # path figure fro
 ```
 
 If the package is installed in a separate library, prefix the commands with `R_LIBS=<R library>`. Every solver demo
-takes the parts to run as optional arguments and pins six Open Multi-Processing (OpenMP) threads with
-`trex_set_num_threads(6L)`. The demos print `Running with 6 threads` only when TRexSelector was built with OpenMP,
-and a build without it compiles single-threaded, where `trex_set_num_threads()` does nothing and the demos print
-`Running with 1 threads`. Linux and Windows builds use R's own OpenMP flags, while on macOS, where R from the
-Comprehensive R Archive Network (CRAN) has none, the configure script of the package links R's own OpenMP runtime when
-an `omp.h` is available (from Homebrew or the OpenMP package of mac.r-project.org), otherwise Homebrew's libomp, and
-builds single-threaded without either.
+takes the parts to run as optional arguments and sets a budget of six Open Multi-Processing (OpenMP) threads with
+`trex_set_num_threads(min(6L, trex_get_max_threads()))`. The demos print `Running with 6 threads` only when TRexSelector
+was built with OpenMP, and a build without it compiles single-threaded, where `trex_get_max_threads()` is 1, so the
+demos set a budget of 1 and print `Running with 1 threads`. Linux and Windows builds use R's own OpenMP flags, while on
+macOS, where R from the Comprehensive R Archive Network (CRAN) has none, the configure script of the package links R's
+own OpenMP runtime when an `omp.h` is available (from Homebrew or the OpenMP package of mac.r-project.org), otherwise
+Homebrew's libomp, and builds single-threaded without either.
 
 The library log lines go through `Rcpp::Rcout`, so they appear in order with the output of the demo, also in a file
 or a pipe. The demos clean up the checkpoint and memory-mapped files they create inside their own folder.

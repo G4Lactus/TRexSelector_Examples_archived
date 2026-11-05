@@ -34,7 +34,7 @@
 #     (i) corrupt per-trial wall-clock, (ii) confound RSS, and (iii) multiply
 #     the on-disk dummy backing. The K random experiments inside select() also
 #     run one after another; OpenMP threads (TREX_NUM_WORKERS, default 8)
-#     parallelize the column loops inside each.
+#     run the column loops inside each (max_inner_threads).
 #
 # Fully memory-mapped pipeline in every point: X is generated column-chunk by
 # column-chunk into an mmap backing file via dgp_chunked_gauss_snr() (never
@@ -124,8 +124,8 @@ DUMMY_MULT  <- 10L     # base block max_dummy_multiplier
 LARGE_P_DUMMY_MULT <- 5L     # large-p block cap (bounds the dummy disk)
 DISK_RESERVE_GIB   <- 50.0   # free disk left untouched by the pre-flight
 
-# OpenMP threads for select(), pinned like the C++/Python demos:
-# TREX_NUM_WORKERS, else 8 (0 = all cores).
+# OpenMP threads inside select() (max_inner_threads), set like the C++/Python
+# demos: TREX_NUM_WORKERS, else 8 (0 = all cores).
 NUM_THREADS <- local({
   a <- suppressWarnings(as.integer(Sys.getenv("TREX_NUM_WORKERS", "8")))
   if (is.na(a)) 8L else if (a < 1L) parallel::detectCores() else a
@@ -242,6 +242,7 @@ RAM_GIB <- .physical_ram_gib()
     tloop_stagnation_stop    = TRUE,
     tloop_max_stagnant_steps = 5L,
     parallel_rnd_experiments = FALSE,          # sequential random experiments
+    max_inner_threads        = NUM_THREADS,    # column loops inside each experiment
     use_memory_mapping       = TRUE            # X mmap + D mmap + solver serialization
   )
 }
@@ -803,11 +804,12 @@ demo_trex_scalability <- function(grid, file_stem, block_title, num_MC_target,
 # Main
 # ==============================================================================
 
-# Pin the selector's OpenMP to a fixed thread count (mirrors the C++/Python
-# demos); experiments and trials run one after another.
+# Fixed thread count (mirrors the C++/Python demos): the library's default
+# budget here, max_inner_threads in the control. Experiments and trials run
+# one after another.
 TRexSelector::trex_set_num_threads(NUM_THREADS)
 cat(sprintf("Running with %d thread(s) (pinned to match the C++ demo)\n\n",
-            TRexSelector::trex_get_max_threads()))
+            TRexSelector::trex_get_num_threads()))
 
 # CLI:  [smoke | base | large] [num_MC]  (order-independent; num_MC is any
 # integer token; without a block token both blocks run, base first)

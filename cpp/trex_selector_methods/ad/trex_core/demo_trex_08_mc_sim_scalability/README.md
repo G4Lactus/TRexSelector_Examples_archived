@@ -133,7 +133,8 @@ The data-generating process (DGP) mirrors **Demo 03** (variable support), with N
 
 Trials run **sequentially** so wall-clock and RSS measurements are undistorted. The $K$ random experiments inside
 `select()` also run one after another, and the `TREX_NUM_WORKERS` Open Multi-Processing (OpenMP) threads
-(default 8) parallelize the column loops inside each experiment (correlations, dummy generation, normalization).
+(default 8) run the column loops inside each experiment (normalization, dummy generation and the solver's passes).
+The demo sets them as `max_inner_threads` and as the library's default budget, which the data generation uses.
 
 ---
 
@@ -153,6 +154,7 @@ lloop_strategy           = STANDARD  # Fresh i.i.d. dummy matrix per L-loop iter
 tloop_stagnation_stop    = true      # Early exit when R_mat stagnates
 tloop_max_stagnant_steps = 5         # Stagnation window
 parallel_rnd_experiments = false     # Sequential experiments; one D working set at a time
+max_inner_threads        = 8         # TREX_NUM_WORKERS threads inside each experiment
 use_memory_mapping       = true      # All points: X/y mmap + D mmap + solver serialization
 tFDR                     = 0.1       # Target FDR control level
 ```
@@ -267,6 +269,11 @@ point, which shows the two caps side by side. Render it with `./generate_plots.s
 The recorded run uses library commit `61fd84c`, 10 trials per $(n, p, \text{solver})$ and 8 OpenMP threads on a
 machine with 64 GiB of RAM. It took 23.3 hours, 16.5 hours of trial time in the base block (480 trials) and
 7.1 hours in the large-p block (60 trials, one of them the calibration trial).
+
+At that commit the 8 threads ran the data generation, the normalization and the dummy generation, while each solver
+ran single-threaded. Library commit `223c89e` made the library single-threaded by default, so the demo now sets
+`max_inner_threads` and the solvers' passes run on the 8 threads as well. The runtimes below therefore come from the
+earlier thread setting, and a rerun on the current code is pending. FDR and TPR do not depend on the thread count.
 
 - **The pipeline processes data far beyond RAM.** The largest base point, $n = 5{,}000$, $p = 150{,}000$, touches
   117–129 GiB per T-iteration, twice the RAM, and every trial completes. The process peak RSS of the whole run is

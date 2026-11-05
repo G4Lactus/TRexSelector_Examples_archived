@@ -505,7 +505,7 @@ print_section_header("Dendrograms Demo Suite")
 
 # Six OpenMP threads, as the C++ demo
 trex_set_num_threads(min(6L, trex_get_max_threads()))
-cat(sprintf("Running with %d threads\n\n", trex_get_max_threads()))
+cat(sprintf("Running with %d threads\n\n", trex_get_num_threads()))
 
 # Each demo is guarded by its own if-toggle so individual parts can be
 # switched off while iterating on one of them (mirrors the cpp main()).

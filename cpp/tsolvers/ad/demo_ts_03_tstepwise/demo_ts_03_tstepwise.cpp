@@ -15,6 +15,7 @@
 // ============================================================================
 
 // std includes
+#include <algorithm>
 #include <iomanip>
 #include <iostream>
 #include <string>
@@ -530,8 +531,9 @@ int main(int argc, char** argv) {
 
     // Print OpenMP info
     omp_utils::print_info();
-    omp_utils::set_num_threads(6);
-    std::cout << "Running with " << omp_utils::get_max_threads() << " threads\n\n";
+    // Six threads as the library's budget, one in a build without OpenMP
+    omp_utils::set_num_threads(std::min(6, omp_utils::get_max_threads()));
+    std::cout << "Running with " << omp_utils::get_num_threads() << " threads\n\n";
 
     try {
 

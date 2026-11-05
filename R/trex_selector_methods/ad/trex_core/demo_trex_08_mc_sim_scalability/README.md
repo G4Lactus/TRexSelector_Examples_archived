@@ -34,9 +34,10 @@ point. While $n$ and $p$ scale, the correlation structure does not:
 
 ![Design-matrix correlation of the shared i.i.d. Gaussian DGP (shown at n=300, p=1,000, natural order, no clustering)](../dgp_corr_plots/trex_gauss.png)
 
-The $K$ random experiments inside `select()` run one after another, and the selector's Open Multi-Processing
-(OpenMP) threads parallelize the column loops inside each experiment. The thread count is pinned to
-`TREX_NUM_WORKERS` (default 8, `0` = all cores) through `trex_set_num_threads()`, as in the C++/Python demos.
+The $K$ random experiments inside `select()` run one after another, and `TREX_NUM_WORKERS` (default 8, `0` = all
+cores) Open Multi-Processing (OpenMP) threads run the column loops inside each experiment (normalization, dummy
+generation and the solver's passes). The demo sets them as `max_inner_threads` in `trex_control()` and as the
+library's default budget through `trex_set_num_threads()`, as in the C++/Python demos.
 
 ## The grid
 
@@ -89,6 +90,7 @@ Every option explicit, identical to the C++ reference: `K = 20`,
 `tloop_stagnation_stop = TRUE`, `tloop_max_stagnant_steps = 5`,
 `parallel_rnd_experiments = FALSE` (sequential random experiments — one experiment working set
 in RAM at a time, essential out-of-core),
+`max_inner_threads = NUM_THREADS` (`TREX_NUM_WORKERS`, default 8),
 `use_memory_mapping = TRUE`.
 
 ## Measurements
