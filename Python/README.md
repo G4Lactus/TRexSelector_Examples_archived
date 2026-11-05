@@ -87,7 +87,6 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install <path-to>/TRexSelector/Python/trexselector
 pip install pandas matplotlib plotly
-pip install -r requirements-dev.txt   # optional: mypy + stubs for the linter
 ```
 
 The old package name `trex_selector` is obsolete — all demos in this tree

@@ -36,6 +36,10 @@ deprecated/
 .github/
 .claude/
 documentation/
+# Local developer tooling (Python linter and type checker)
+/ruff.toml
+/mypy.ini
+/requirements-dev.txt
 
 ################################
 ############ C/C++ #############

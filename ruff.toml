@@ -1,6 +1,0 @@
-# Ruff settings for the Python sources of the Examples repository.
-# The package imports form their own block after the third-party imports, as
-# the import conventions in Python/README.md describe.
-
-[lint.isort]
-known-first-party = ["trexselector"]
