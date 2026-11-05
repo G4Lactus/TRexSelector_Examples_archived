@@ -79,6 +79,7 @@
 #   python demo_trex_08_mc_sim_scalability.py large 2   # large-p block, num_MC=2
 #   python demo_trex_08_mc_sim_scalability.py smoke     # tiny end-to-end check
 #   python demo_trex_08_mc_sim_scalability.py smoke 3   # smoke grid, num_MC=3
+#   TREX_SOLVERS=TLARS limits the computed solvers (cached ones still count).
 #
 # ==============================================================================
 
@@ -115,6 +116,7 @@ from trexselector.utils import (  # noqa: E402
 
 from trex_helpers import make_dual_out  # noqa: E402
 from trex_sim_common import _make_trex_ctrl_from_dict, compute_fdp, compute_tpp, resolve_workers  # noqa: E402
+import solver_filter  # noqa: E402  (on sys.path through trex_sim_common)
 from support_generators import make_support_random  # noqa: E402
 
 # ==============================================================================
@@ -649,8 +651,9 @@ def run_scalability_grid_point(n, p, num_MC, dummy_mult, solver_desc, tFDR, snr,
 
     Only the missing trial indices [0, num_MC) are computed; each is appended to
     the raw store immediately (trial-level durability), so a crash keeps them.
-    With disk_ok=False nothing is computed and only cached trials count; the
-    return value is None when the cell has no trials at all.
+    With disk_ok=False (no disk, or solver not in TREX_SOLVERS) nothing is
+    computed and only cached trials count; the return value is None when the
+    cell has no trials at all.
     """
     ctrl_dict = _make_scalability_ctrl_dict(solver_desc, dummy_mult)
     mmap_filestem = os.path.join(_TMPDIR, f"demo08_scalability_n{n}_p{p}")
@@ -863,11 +866,13 @@ def demo_trex_scalability(grid, file_stem, block_title, num_MC_target,
                   "for this point")
         print("", flush=True)
 
+        # TREX_SOLVERS limits the computed solvers; the others keep their cache.
         for solver_desc in _SOLVERS:
             cell_cache = cache.setdefault((n, p, solver_desc["name"]), {})
+            compute = disk_ok and solver_filter.selected(solver_desc["name"])
             agg = run_scalability_grid_point(
                 n, p, num_MC, dummy_mult, solver_desc, _TFDR, _SNR,
-                rnd_coef, _S_TRUE, cell_cache, raw_path, disk_ok)
+                rnd_coef, _S_TRUE, cell_cache, raw_path, compute)
             if agg is not None:
                 results[solver_desc["name"]][(n, p)] = agg
 

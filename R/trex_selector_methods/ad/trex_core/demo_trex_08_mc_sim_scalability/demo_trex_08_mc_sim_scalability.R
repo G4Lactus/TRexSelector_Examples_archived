@@ -89,6 +89,7 @@
 #   Rscript demo_trex_08_mc_sim_scalability.R large 2   # large-p block, num_MC=2
 #   Rscript demo_trex_08_mc_sim_scalability.R smoke     # tiny end-to-end check
 #   Rscript demo_trex_08_mc_sim_scalability.R smoke 3   # smoke grid, num_MC=3
+#   TREX_SOLVERS=TLARS limits the computed solvers (cached ones still count).
 #
 # ==============================================================================
 
@@ -105,6 +106,7 @@ this_dir_ <- tryCatch(
     if (length(file_arg) > 0) dirname(normalizePath(sub("--file=", "", file_arg[1]))) else "."
   }
 )
+source(file.path(this_dir_, "..", "..", "..", "mc_runtime.R"))  # solver_selected()
 source(file.path(this_dir_, "..", "..", "..", "support_generators.R"))
 source(file.path(this_dir_, "..", "trex_sim_utils.R"))
 
@@ -539,8 +541,9 @@ run_scalability_grid_point <- function(n, p, num_MC, dummy_mult, solver_entry,
   # Ensure >= num_MC trials exist for this (n, p, solver) cell, then aggregate.
   # Only the missing trial indices [0, num_MC) are computed; each is appended
   # to the raw store immediately (trial-level durability). With
-  # disk_ok = FALSE nothing is computed and only cached trials count; agg is
-  # NULL when the cell has no trials at all.
+  # disk_ok = FALSE (no disk, or solver not in TREX_SOLVERS) nothing is
+  # computed and only cached trials count; agg is NULL when the cell has no
+  # trials at all.
   ctrl <- .make_scalability_ctrl(solver_entry, dummy_mult)
   mmap_filestem <- file.path(TMP_DIR, sprintf("demo08_scalability_n%d_p%d", n, p))
 
@@ -775,12 +778,14 @@ demo_trex_scalability <- function(grid, file_stem, block_title, num_MC_target,
     }
     cat("\n")
 
+    # TREX_SOLVERS limits the computed solvers; the others keep their cache.
     for (solver_entry in SOLVERS) {
       key        <- .cell_key(gp$n, gp$p, solver_entry$name)
       cell_cache <- if (is.null(cache[[key]])) list() else cache[[key]]
+      compute    <- disk_ok && solver_selected(solver_entry$name)
       point <- run_scalability_grid_point(
         gp$n, gp$p, gp$num_MC, gp$dummy_mult, solver_entry, TFDR, SNR,
-        rnd_coef, S_TRUE, cell_cache, raw_path, disk_ok
+        rnd_coef, S_TRUE, cell_cache, raw_path, compute
       )
       cache[[key]] <- point$cell_cache
       if (!is.null(point$agg)) results[[solver_entry$name]][[key]] <- point$agg

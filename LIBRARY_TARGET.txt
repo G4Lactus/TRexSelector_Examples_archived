@@ -1,35 +1,34 @@
 Library line:   TRexSelector dev_beyond (a sibling checkout TRexSelector-beyond next to this repository)
-Pinned commit:  223c89e (2026-11-05; C++ 1.0.0 / R 2.0.0 / Python 1.0.0): the library is single-threaded by
-                default. 28 OpenMP regions that took the runtime's default team (normalizer, dummy generator and
-                distributions, data generator, DA correlation scan, scalers, clustering) now run on the
-                selector's max_inner_threads or on the library's default budget, which set_num_threads() sets
-                (initially 1) and get_num_threads() reads. No result moves: 50 seeded selections (the core
-                selector with TLARS, TAFS and TOMP over the 11 dummy distributions and three L-loop strategies,
-                the DA selector with AR1, BT, NN and EQUI) are bitwise identical to 7868669 at 1 and 12 threads,
-                and a default select runs on one core (CPU/wall 1.00 in Python and R, before 3.0 and 2.5).
-                set_num_threads() no longer sets the OpenMP team, so the Examples follow: the C++ T-solver perf
-                demos and demo_memory_mapping set their own team with omp_set_num_threads(), the C++ ml_methods
-                demos also set the library budget, the "Running with N threads" lines print the budget, and
-                trex_core demo 08 sets max_inner_threads to TREX_NUM_WORKERS in the three languages. The
-                documentation commits b9466cf and e16e879 lie between the pins.
-Validated C++:  SDK installed from 223c89e (the previous install moved to the Trash first); the Examples targets
+Pinned commit:  16a680f (2026-11-05; C++ 1.0.0 / R 2.0.0 / Python 1.0.0): the seeded generators count their draws
+                and engine seedings toward the parallel work threshold, so generate_dummies() and the AR(1)
+                design generator split from about 0.2 ms of serial work. 223c89e had counted plain entries and
+                kept them serial below 1e6 entries (n = 150 x 5,000 dummy columns: 38.4 ms at a budget of 8, now
+                5.2 ms). It sits on 223c89e, which made the library single-threaded by default: the selector's
+                regions run on max_inner_threads, the stand-alone kernels on the library's default budget, which
+                set_num_threads() sets (initially 1). No result moves: 50 seeded selections (the core selector
+                with TLARS, TAFS and TOMP over the 11 dummy distributions and three L-loop strategies, the DA
+                selector with AR1, BT, NN and EQUI) are bitwise identical to 7868669 at 1 and 12 threads, and a
+                default select runs on one core (CPU/wall 1.00 in Python and R). The Examples follow
+                set_num_threads() as the library's budget (30bdab3), and trex_core demo 08 runs select() on
+                max_inner_threads = TREX_NUM_WORKERS and honours TREX_SOLVERS in the three languages.
+Validated C++:  SDK installed from 16a680f (the previous install moved to the Trash first); the Examples targets
                 built without warnings, demo_trex_01_single_run reproduces its committed files byte for byte,
-                and the twelve T-solver demos print "Running with 6 threads".
-Validated Py:   trexselector 1.0.0 installed from 223c89e (repo .venv from source, conda trex-dev and
+                and the demo 08 smoke is re-recorded (select 0.3-0.8 s per trial, 1.3-3.6 s at 223c89e).
+Validated Py:   trexselector 1.0.0 installed from 16a680f (repo .venv from source, conda trex-dev and
                 trex-dev-beyond from one cp312 wheel); demo_trex_01_single_run keeps its committed files, and the
-                twelve T-solver demos print "Running with 6 threads".
-Validated R:    TRexSelector 2.0.0 installed from 223c89e into the default library (old objects purged,
-                --preclean); demo_trex_01_single_run keeps its committed files, and the twelve T-solver demos
-                print "Running with 6 threads".
+                demo 08 smoke is re-recorded.
+Validated R:    TRexSelector 2.0.0 installed from 16a680f into the default library (old objects purged,
+                --preclean); demo_trex_01_single_run keeps its committed files, and the demo 08 smoke is
+                re-recorded.
 Rerun:          none, the pin moves no result. The C++ runtimes of trex_core demo 08 (recorded at 61fd84c) come
                 from the earlier thread setting (8 threads for the data generation, normalization and dummy
                 generation, single-threaded solvers), as its README says.
 Pending:        After the push trex_core 08 in C++, Python and R (nightly runner, on max_inner_threads = 8), at a
                 later stage trex_core 09 and 10 in R (still pending from 415484d).
-Previous pins:  7868669 (2026-11-04), 09debc6 (2026-10-27), 415484d (2026-10-24), 61fd84c (2026-10-21), 44cf1ab
-                (2026-09-28), b95b984 (2026-09-27), 8ad3376 (2026-09-26), f390bfc (2026-09-25), d404033
-                (2026-09-25); what changed between pins is in the git log of this file and in the library's
-                HISTORY.md.
+Previous pins:  223c89e (2026-11-05), 7868669 (2026-11-04), 09debc6 (2026-10-27), 415484d (2026-10-24), 61fd84c
+                (2026-10-21), 44cf1ab (2026-09-28), b95b984 (2026-09-27), 8ad3376 (2026-09-26), f390bfc
+                (2026-09-25), d404033 (2026-09-25); what changed between pins is in the git log of this file and
+                in the library's HISTORY.md.
 
 Install:        cpp    -> in <library>/cpp: cmake --preset local-install && cmake --build --preset local-install-build
                           && cmake --install build/release-portable
